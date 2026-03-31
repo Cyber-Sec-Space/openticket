@@ -11,9 +11,9 @@ export async function authenticate(
     await signIn('credentials', Object.fromEntries(formData))
   } catch (error) {
     if (error instanceof AuthError) {
-      const errCode = (error.cause?.err as any)?.code || error.type;
-      if (errCode === "Missing2FA") return "REQUIRES_2FA";
-      if (errCode === "Invalid2FA") return "INVALID_2FA";
+      const errMessage = (error.cause?.err as any)?.message;
+      if (errMessage === "Missing2FA") return "REQUIRES_2FA";
+      if (errMessage === "Invalid2FA") return "INVALID_2FA";
       
       switch (error.type) {
         case 'CredentialsSignin':

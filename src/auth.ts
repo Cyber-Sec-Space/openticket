@@ -5,12 +5,18 @@ import bcrypt from "bcryptjs"
 import * as OTPAuth from "otpauth"
 import { CredentialsSignin } from "next-auth"
 
-class Missing2FAError extends CredentialsSignin {
-  code = "Missing2FA"
+class Missing2FAError extends Error {
+  constructor() {
+    super("Missing2FA");
+    this.name = "Missing2FAError";
+  }
 }
 
-class Invalid2FAError extends CredentialsSignin {
-  code = "Invalid2FA"
+class Invalid2FAError extends Error {
+  constructor() {
+    super("Invalid2FA");
+    this.name = "Invalid2FAError";
+  }
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
