@@ -52,7 +52,7 @@ export function VulnStatusChart({ data }: { data: StatusData[] }) {
 
   return (
     <div className="w-full h-80">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={320}>
         <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
           <defs>
             <linearGradient id="pieOpen" x1="0" y1="0" x2="1" y2="1">

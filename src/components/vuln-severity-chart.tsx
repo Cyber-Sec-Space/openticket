@@ -33,7 +33,7 @@ export function VulnSeverityChart({ data }: { data: SeverityData[] }) {
 
   return (
     <div className="w-full h-80">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={320}>
         <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
           <defs>
              <filter id="radarGlow" x="-20%" y="-20%" width="140%" height="140%">
