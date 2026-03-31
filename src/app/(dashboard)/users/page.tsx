@@ -2,11 +2,12 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ShieldCheck, UserCog, Mail } from "lucide-react"
+import { ShieldCheck, UserCog, Mail, Plus, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ConfirmForm } from "@/components/ui/confirm-form"
-import { updateUserRole } from "./actions"
+import { updateUserRole, deleteUserAction } from "./actions"
 import { Button } from "@/components/ui/button"
 
 export default async function UsersPage() {
@@ -29,6 +30,13 @@ export default async function UsersPage() {
             <UserCog className="mr-3 text-emerald-400 h-8 w-8" /> Identity Integration Map
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">Assign structural responsibilities shaping the defense-in-depth model.</p>
+        </div>
+        <div>
+          <Link href="/users/new">
+            <Button className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              <Plus className="w-4 h-4 mr-2" /> Provision Identity
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -82,8 +90,9 @@ export default async function UsersPage() {
                  <TableCell className="text-right pr-6">
                     {/* Admins shouldn't casually alter themselves through this module to prevent locking out of root keys */}
                     {user.id === session.user.id ? (
-                      <span className="text-xs text-muted-foreground italic mr-2 opacity-50">Authorized Origin Limit</span>
+                      <span className="text-xs text-muted-foreground italic opacity-50 block py-1.5">Authorized Origin Limit</span>
                     ) : (
+                    <div className="flex justify-end items-center">
                       <ConfirmForm action={updateUserRole} promptMessage={`Permit role manipulation for ${user.email}? This enacts immediate platform-wide policy shifts.`}>
                          <div className="flex justify-end gap-2 items-center">
                             <input type="hidden" name="userId" value={user.id} />
@@ -97,11 +106,20 @@ export default async function UsersPage() {
                                 <SelectItem value="ADMIN" className="text-primary font-bold">ADMIN</SelectItem>
                               </SelectContent>
                             </Select>
-                            <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10 h-8 text-xs font-mono">
+                            <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10 h-8 text-xs font-mono mr-2">
                                SET
                             </Button>
                          </div>
                       </ConfirmForm>
+                      
+                      <ConfirmForm action={deleteUserAction} promptMessage={`DANGER: Permanently excise identity ${user.email}? Data loss is irreversible.`}>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <input type="hidden" name="actionType" value="DELETE" />
+                        <Button type="submit" variant="ghost" size="icon" className="h-8 w-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </ConfirmForm>
+                    </div>
                     )}
                  </TableCell>
                </TableRow>

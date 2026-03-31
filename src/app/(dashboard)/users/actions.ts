@@ -41,3 +41,36 @@ export async function updateUserRole(formData: FormData) {
 
   revalidatePath("/users")
 }
+
+export async function deleteUserAction(formData: FormData) {
+  const session = await auth()
+  
+  if (!session?.user || session.user.role !== 'ADMIN') {
+    throw new Error("Forbidden: Strict Access Control")
+  }
+
+  const targetUserId = formData.get("userId") as string
+
+  if (!targetUserId) return
+
+  if (targetUserId === session.user.id) {
+    throw new Error("Operation blocked: Administrators cannot surgically excise their own root credentials.")
+  }
+
+  const deletedUser = await db.user.delete({
+    where: { id: targetUserId }
+  })
+
+  // Log to global audit
+  await db.auditLog.create({
+    data: {
+      action: "USER_DELETED",
+      entityType: "User",
+      entityId: targetUserId,
+      userId: session.user.id,
+      changes: `Identity profile ${deletedUser.email} officially revoked and destroyed.`
+    }
+  })
+
+  revalidatePath("/users")
+}
