@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Analytics: Deepened Dashboard metrics extracting independent Vulnerability telemetry via 2 additional structural stat grids (6-node total).
+- Analytics: Engineered dual `Recharts` vectors mapping global vulnerability states—a high-contrast Donut Chart depicting resolution lifecycles, and a specialized Radar Spiderweb modeling CVSS severity threat distribution.
 - Analytics: Refactored Main Dashboard visual density, introducing a parallel `Recent Declarations` activity feed resolving blank spaces on generic loads.
 - Analytics: Upgraded React Recharts primitives utilizing SVG `<linearGradient>` and custom HTML tooltips, producing a highly polished premium aesthetic.
 - Security: Bound globally-configurable Two-Factor Enforce directives natively into the NextAuth resolution stream restricting credentials entirely if misaligned.

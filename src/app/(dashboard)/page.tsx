@@ -1,8 +1,10 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3 } from "lucide-react"
+import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target } from "lucide-react"
 import { DashboardCharts } from "@/components/dashboard-charts"
+import { VulnStatusChart } from "@/components/vuln-status-chart"
+import { VulnSeverityChart } from "@/components/vuln-severity-chart"
 
 export default async function Home() {
   const session = await auth()
@@ -21,6 +23,9 @@ export default async function Home() {
   const totalAssets = await db.asset.count()
   const compromisedAssets = await db.asset.count({ where: { status: 'COMPROMISED' } })
 
+  const openVulns = await db.vulnerability.count({ where: { status: 'OPEN' } })
+  const criticalVulns = await db.vulnerability.count({ where: { severity: 'CRITICAL', status: { not: 'RESOLVED' } } })
+
   const severitiesData = await db.incident.groupBy({
     by: ['severity'],
     _count: { severity: true },
@@ -32,12 +37,28 @@ export default async function Home() {
     return { severity: sev, count: found ? found._count.severity : 0 }
   })
 
-  // Fetch recent actionable incidents
   const recentIncidents = await db.incident.findMany({
     where: filterParams,
     orderBy: { createdAt: 'desc' },
     take: 4,
     include: { reporter: { select: { name: true, email: true } } }
+  })
+
+  // Vulnerability Aggregation (Not filtered by REPORTER strictly to show total org exposure)
+  const vulnStatusData = await db.vulnerability.groupBy({
+    by: ['status'], _count: { status: true }
+  })
+  const vulnStatusMatrix = ['OPEN', 'MITIGATED', 'RESOLVED'].map(st => {
+    const found = vulnStatusData.find(d => d.status === st)
+    return { status: st, count: found ? found._count.status : 0 }
+  })
+
+  const vulnSeverityData = await db.vulnerability.groupBy({
+    by: ['severity'], _count: { severity: true }, where: { status: { not: 'RESOLVED' } }
+  })
+  const vulnSeverityMatrix = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => {
+    const found = vulnSeverityData.find(d => d.severity === sev)
+    return { severity: sev, count: found ? found._count.severity : 0 }
   })
 
   return (
@@ -57,7 +78,7 @@ export default async function Home() {
       </header>
       
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
         <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><ShieldAlert size={80} /></div>
           <div>
@@ -90,21 +111,72 @@ export default async function Home() {
             <h3 className="text-4xl font-bold text-orange-500">{compromisedAssets}</h3>
           </div>
         </div>
+
+        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 text-purple-500 opacity-10 group-hover:scale-110 transition-transform"><Target size={80} /></div>
+          <div>
+            <p className="text-sm font-medium text-purple-400 uppercase tracking-wider mb-2">Open Vulns</p>
+            <h3 className="text-4xl font-bold text-purple-500">{openVulns}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group border-indigo-500/30">
+          <div className="absolute top-0 left-0 w-2 h-full bg-indigo-500 shadow-[0_0_15px_#6366f1]" />
+          <div className="absolute top-0 right-0 p-4 text-indigo-500 opacity-10 group-hover:scale-110 transition-transform"><ScanFace size={80} /></div>
+          <div className="pl-4">
+            <p className="text-sm font-medium text-indigo-400 uppercase tracking-wider mb-2">Critical CVEs</p>
+            <h3 className="text-4xl font-bold text-indigo-500">{criticalVulns}</h3>
+          </div>
+        </div>
       </div>
 
       {/* Dynamic Analytics & Info Grid */}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="glass-card rounded-xl border border-white/5 overflow-hidden col-span-1 lg:col-span-2 shadow-2xl flex flex-col">
-          <div className="p-5 border-b border-border/50 bg-black/20 flex items-center justify-between">
-             <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-indigo-400" />
-                Active Severity Triage Matrix
-             </h3>
-             <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Live Telemetry</span>
+      <div className="mt-8 grid grid-cols-1 xl:grid-cols-3 gap-8">
+        
+        {/* Left Core Analytics Column */}
+        <div className="col-span-1 xl:col-span-2 flex flex-col gap-8">
+          
+          <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
+            <div className="p-5 border-b border-border/50 bg-black/20 flex items-center justify-between">
+               <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-indigo-400" />
+                  Active Incident Severity Matrix
+               </h3>
+               <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Incident Node</span>
+            </div>
+            <div className="p-6 flex-1 flex flex-col justify-center">
+              <DashboardCharts data={chartMatrix} />
+            </div>
           </div>
-          <div className="p-6 flex-1 flex flex-col justify-center">
-            <DashboardCharts data={chartMatrix} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+             {/* Vuln Radar */}
+             <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-indigo-950/10">
+                <div className="p-5 border-b border-indigo-500/20 bg-indigo-500/5">
+                   <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                      <Target className="w-4 h-4 text-indigo-400" />
+                      Threat Vector Distribution
+                   </h3>
+                </div>
+                <div className="p-4 flex-1">
+                  <VulnSeverityChart data={vulnSeverityMatrix} />
+                </div>
+             </div>
+             
+             {/* Vuln Donut */}
+             <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
+                <div className="p-5 border-b border-border/50 bg-black/20">
+                   <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                      <ScanFace className="w-4 h-4 text-emerald-400" />
+                      Vulnerability Resolution Status
+                   </h3>
+                </div>
+                <div className="p-4 flex-1">
+                  <VulnStatusChart data={vulnStatusMatrix} />
+                </div>
+             </div>
           </div>
+          
         </div>
 
         {/* Right Sidebar */}
