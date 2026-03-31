@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-export default async function IncidentDetailPage({ params }: { params: { id: string } }) {
+export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth()
   if (!session?.user) return null
 
   const incident = await db.incident.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       reporter: true,
       assignee: true,
@@ -45,7 +46,7 @@ export default async function IncidentDetailPage({ params }: { params: { id: str
         entityType: "Incident",
         entityId: incident!.id,
         userId: sessionUrl.user.id,
-        changes: { status: formData.get("status") }
+        changes: { status: formData.get("status") as string }
       }
     })
     redirect(`/incidents/${incident?.id}`)

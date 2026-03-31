@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 ## main
+### Fixed
+- Fixed Next.js 15 dynamic routing issue where `params` was not being handled as a Promise inside the incident detail view.
+- Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
+
 ### Added
 - Created OpenTicket MVP core Next.js project.
 - Implemented Postgres via Prisma ORM schemas for Account, Session, User, VerificationToken, Incident, Asset, Comment, AuditLog.
