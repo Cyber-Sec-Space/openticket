@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Management: Deployed System Configuration framework (Phase 12) featuring a global `SystemSetting` singleton database entity.
+- UI: Introduced a restrictive `/system` boundary dashboard accessible solely to Admin personnel for managing Registration, Role assignment mapping, and Universal 2FA enforcement flags.
 - Security: Implemented Phase 11 Two-Factor Authentication (TOTP) pipeline within NextAuth Credentials provider.
 - UI: Added Settings Identity Preferences panel rendering Dual-Phase QR code setups securely leveraging otplib algorithms.
 - UI: Rectified visual margin collapsing on `Apply Layout` boundaries and refined `Enable 2FA` button text legibility.

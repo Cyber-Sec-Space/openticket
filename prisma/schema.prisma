@@ -74,6 +74,19 @@ model VerificationToken {
 }
 
 // -----------------------------------------------------------------------------
+// Global Configuration (Singleton Model)
+// -----------------------------------------------------------------------------
+
+model SystemSetting {
+  id                 String   @id @default("global") // Enforce singleton
+  allowRegistration  Boolean  @default(true)
+  requireGlobal2FA   Boolean  @default(false)
+  defaultUserRole    Role     @default(REPORTER)
+
+  updatedAt          DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
 // OpenTicket Core Models
 // -----------------------------------------------------------------------------
 
