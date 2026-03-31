@@ -3,8 +3,9 @@ import { auth } from "@/auth"
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isOnLoginPage = req.nextUrl.pathname.startsWith('/login');
+  const isOnRegisterPage = req.nextUrl.pathname.startsWith('/register');
 
-  if (isOnLoginPage) {
+  if (isOnLoginPage || isOnRegisterPage) {
     if (isLoggedIn) return Response.redirect(new URL('/', req.nextUrl));
     return;
   }
