@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Trash2, Edit3, ShieldAlert, Activity } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
+import { ConfirmForm } from "@/components/ui/confirm-form"
 
 export default async function IncidentDetailPage({ 
   params, 
@@ -153,11 +154,11 @@ export default async function IncidentDetailPage({
           )}
 
           {session.user.role === 'ADMIN' && (
-             <form action={deleteIncidentAction}>
+             <ConfirmForm action={deleteIncidentAction} promptMessage="Are you absolutely sure you want to PERMANENTLY terminate this incident? All associated intelligence and operational timelines will be destroyed. This cannot be undone.">
                 <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
                   <Trash2 className="w-4 h-4 mr-2" /> Terminate Incident
                 </Button>
-             </form>
+             </ConfirmForm>
           )}
         </div>
       </div>
@@ -187,7 +188,7 @@ export default async function IncidentDetailPage({
             </CardHeader>
             <div className="p-6">
               {isEditing ? (
-                <form action={editDetailsAction} className="space-y-4">
+                <ConfirmForm action={editDetailsAction} className="space-y-4" promptMessage="Commit definitive modifications to this intelligence brief?">
                   <div className="space-y-2">
                     <Label className="text-primary/70 text-xs uppercase tracking-widest">Incident Definition</Label>
                     <Input name="title" defaultValue={incident.title} className="bg-black/50 border-white/10" required />
@@ -222,7 +223,7 @@ export default async function IncidentDetailPage({
                        <Button variant="ghost" type="button">Cancel</Button>
                     </Link>
                   </div>
-                </form>
+                </ConfirmForm>
               ) : (
                 <div className="space-y-8">
                   <div>
@@ -340,7 +341,7 @@ export default async function IncidentDetailPage({
                 <CardDescription className="text-xs text-muted-foreground">Adjust operational state and assignees</CardDescription>
               </CardHeader>
               <div className="p-6">
-                <form action={updateIncidentAction} className="space-y-5">
+                <ConfirmForm action={updateIncidentAction} className="space-y-5" promptMessage="Enforce these updated Execution and Triage policies?">
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Execution Personnel (Assignees)</Label>
                     <MultiAssigneePicker 
@@ -383,7 +384,7 @@ export default async function IncidentDetailPage({
                   <Button type="submit" className="w-full font-semibold bg-primary hover:bg-primary/80 shadow-[0_0_15px_rgba(0,255,200,0.2)] mt-2">
                     Commit Changes
                   </Button>
-                </form>
+                </ConfirmForm>
               </div>
             </div>
           )}
