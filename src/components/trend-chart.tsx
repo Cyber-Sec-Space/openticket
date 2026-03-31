@@ -2,7 +2,8 @@
 
 import {
   Area,
-  AreaChart,
+  Line,
+  ComposedChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -15,6 +16,8 @@ interface TrendData {
   date: string;
   incidents: number;
   vulnerabilities: number;
+  incResolveRate: number;
+  vulnResolveRate: number;
 }
 
 export function TrendChart({ data }: { data: TrendData[] }) {
@@ -24,16 +27,18 @@ export function TrendChart({ data }: { data: TrendData[] }) {
         <div className="bg-black/90 border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl">
           <p className="text-white/50 text-[10px] font-bold mb-2 tracking-[0.2em] uppercase">{label}</p>
           {payload.map((entry: any, index: number) => (
-            <p key={index} className="flex items-center text-sm font-bold mb-1">
-              <span 
-                className="w-2.5 h-2.5 rounded-full mr-3" 
-                style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}` }} 
-              />
-              <span className="text-white w-24">{entry.name}</span>
-              <span className="text-white text-lg font-black" style={{ color: entry.color }}>
-                {entry.value}
+            <div key={index} className="flex items-center justify-between text-sm font-bold mb-1">
+              <div className="flex items-center">
+                <span 
+                  className="w-2.5 h-2.5 rounded-full mr-3 shrink-0" 
+                  style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}` }} 
+                />
+                <span className="text-white w-32">{entry.name}</span>
+              </div>
+              <span className="text-white text-lg font-black ml-4" style={{ color: entry.color }}>
+                {entry.value}{entry.name.includes('Rate') ? '%' : ''}
               </span>
-            </p>
+            </div>
           ))}
         </div>
       );
@@ -44,7 +49,7 @@ export function TrendChart({ data }: { data: TrendData[] }) {
   return (
     <div className="w-full h-80">
       <ResponsiveContainer width="100%" height={320}>
-        <AreaChart
+        <ComposedChart
           data={data}
           margin={{ top: 20, right: 20, left: -20, bottom: 0 }}
         >
@@ -68,12 +73,23 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             dy={10}
           />
           <YAxis 
+            yAxisId="left"
             stroke="#52525b" 
             tickLine={false} 
             axisLine={false}
             tick={{ fontSize: 11, fill: '#71717a' }}
             allowDecimals={false}
             dx={-10}
+          />
+          <YAxis 
+            yAxisId="right"
+            orientation="right"
+            stroke="#52525b" 
+            tickLine={false} 
+            axisLine={false}
+            tick={{ fontSize: 11, fill: '#71717a' }}
+            tickFormatter={(value) => `${value}%`}
+            dx={10}
           />
           <Tooltip 
             cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 2, fill: 'transparent' }} 
@@ -86,6 +102,7 @@ export function TrendChart({ data }: { data: TrendData[] }) {
              align="right"
           />
           <Area 
+            yAxisId="left"
             name="Active Incidents"
             type="monotone" 
             dataKey="incidents" 
@@ -96,7 +113,8 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             animationDuration={2000}
           />
           <Area 
-            name="Vulnerabilities"
+            yAxisId="left"
+            name="Active Vulns"
             type="monotone" 
             dataKey="vulnerabilities" 
             stroke="#8b5cf6" 
@@ -105,7 +123,29 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             fill="url(#colorVulns)" 
             animationDuration={2000}
           />
-        </AreaChart>
+          <Line 
+            yAxisId="right"
+            name="Inc Resolve Rate"
+            type="monotone" 
+            dataKey="incResolveRate" 
+            stroke="#10b981" 
+            strokeWidth={2}
+            dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: '#fff' }}
+            animationDuration={2000}
+          />
+          <Line 
+            yAxisId="right"
+            name="Vuln Resolve Rate"
+            type="monotone" 
+            dataKey="vulnResolveRate" 
+            stroke="#f59e0b" 
+            strokeWidth={2}
+            dot={{ r: 3, fill: '#f59e0b', strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: '#fff' }}
+            animationDuration={2000}
+          />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )

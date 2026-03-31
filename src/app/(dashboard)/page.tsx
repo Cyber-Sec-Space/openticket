@@ -52,31 +52,57 @@ export default async function Home() {
   const startDate = new Date();
   startDate.setDate(now.getDate() - trendDays);
 
-  const recentIncsForTrend = await db.incident.findMany({
-    where: { ...filterParams, createdAt: { gte: startDate } },
-    select: { createdAt: true }
+  const allIncsForTrend = await db.incident.findMany({
+    where: filterParams,
+    select: { createdAt: true, updatedAt: true, status: true }
   });
   
-  const recentVulnsForTrend = await db.vulnerability.findMany({
-    where: { createdAt: { gte: startDate } },
-    select: { createdAt: true }
+  const allVulnsForTrend = await db.vulnerability.findMany({
+    select: { createdAt: true, updatedAt: true, status: true }
   });
 
   const trendData = [];
   for (let i = trendDays - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const dStart = new Date(now);
+    dStart.setDate(dStart.getDate() - i);
+    dStart.setHours(0, 0, 0, 0);
+
+    const dEnd = new Date(dStart);
+    dEnd.setHours(23, 59, 59, 999);
+
+    const dateStr = dStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     
-    const isSameDay = (date1: Date, date2: Date) => 
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate();
+    // Active at the end of the day
+    const activeInc = allIncsForTrend.filter(inc => 
+      inc.createdAt <= dEnd && 
+      ( !['RESOLVED','CLOSED'].includes(inc.status) || inc.updatedAt > dEnd )
+    ).length;
+
+    const activeVuln = allVulnsForTrend.filter(v => 
+      v.createdAt <= dEnd && 
+      ( !['RESOLVED','MITIGATED'].includes(v.status) || v.updatedAt > dEnd )
+    ).length;
+
+    // Resolved ON this day
+    const resolvedInc = allIncsForTrend.filter(inc => 
+      ['RESOLVED','CLOSED'].includes(inc.status) && 
+      inc.updatedAt >= dStart && inc.updatedAt <= dEnd
+    ).length;
+
+    const resolvedVuln = allVulnsForTrend.filter(v => 
+      ['RESOLVED','MITIGATED'].includes(v.status) && 
+      v.updatedAt >= dStart && v.updatedAt <= dEnd
+    ).length;
+
+    const incResolveRate = (activeInc + resolvedInc) > 0 ? (resolvedInc / (activeInc + resolvedInc)) * 100 : 0;
+    const vulnResolveRate = (activeVuln + resolvedVuln) > 0 ? (resolvedVuln / (activeVuln + resolvedVuln)) * 100 : 0;
 
     trendData.push({
       date: dateStr,
-      incidents: recentIncsForTrend.filter(inc => isSameDay(inc.createdAt, d)).length,
-      vulnerabilities: recentVulnsForTrend.filter(v => isSameDay(v.createdAt, d)).length
+      incidents: activeInc,
+      vulnerabilities: activeVuln,
+      incResolveRate: parseFloat(incResolveRate.toFixed(1)),
+      vulnResolveRate: parseFloat(vulnResolveRate.toFixed(1))
     });
   }
 
