@@ -140,13 +140,13 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
         <Table>
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-              <TableHead className="font-semibold text-primary">Key</TableHead>
+              <TableHead className="font-semibold text-primary pl-6">Key</TableHead>
               <TableHead className="font-semibold text-primary">Title</TableHead>
               <TableHead className="font-semibold text-primary">Severity</TableHead>
               <TableHead className="font-semibold text-primary">Status</TableHead>
               <TableHead className="font-semibold text-primary">Reporter</TableHead>
               <TableHead className="font-semibold text-primary border-r border-border/20">Assignee</TableHead>
-              <TableHead className="font-semibold text-primary text-right">Created</TableHead>
+              <TableHead className="font-semibold text-primary text-right pr-6">Created</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -162,7 +162,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                 key={incident.id}
                 className="cursor-pointer border-border hover:bg-primary/10 transition-colors relative group"
               >
-                <TableCell className="font-mono text-xs text-muted-foreground">
+                <TableCell className="font-mono text-xs text-muted-foreground pl-6">
                   <Link href={`/incidents/${incident.id}`} className="absolute inset-0" aria-label={`View ${incident.title}`} />
                   INC-{incident.id.substring(0, 6).toUpperCase()}
                 </TableCell>
@@ -185,7 +185,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                     ? incident.assignees.map(a => a.name).join(', ')
                     : <span className="text-muted-foreground/50 italic">Unassigned</span>}
                 </TableCell>
-                <TableCell className="text-right text-muted-foreground text-sm font-mono">{incident.createdAt.toLocaleDateString()}</TableCell>
+                <TableCell className="text-right text-muted-foreground text-sm font-mono pr-6">{incident.createdAt.toLocaleDateString()}</TableCell>
               </TableRow>
             ))}
           </TableBody>

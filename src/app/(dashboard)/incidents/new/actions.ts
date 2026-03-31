@@ -31,6 +31,24 @@ export async function createIncident(prevState: any, formData: FormData) {
     }
   })
 
+  // Phase 7: SOAR Automations
+  if (severity === 'CRITICAL' && assetId) {
+    await db.asset.update({
+      where: { id: assetId },
+      data: { status: 'COMPROMISED' }
+    })
+    
+    await db.auditLog.create({
+      data: {
+        action: "SOAR_AUTO_QUARANTINE",
+        entityType: "Asset",
+        entityId: assetId,
+        userId: session.user.id,
+        changes: `Asset automatically marked as COMPROMISED due to CRITICAL Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} tracking.`
+      }
+    })
+  }
+
   await db.auditLog.create({
     data: {
       action: "INCIDENT_CREATED",

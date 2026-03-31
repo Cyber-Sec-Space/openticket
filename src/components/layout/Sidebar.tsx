@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ShieldAlert, Server, Home, LogOut, Users, FileText } from "lucide-react"
+import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Sidebar({ userRole }: { userRole?: string }) {
@@ -22,6 +22,9 @@ export function Sidebar({ userRole }: { userRole?: string }) {
   if (userRole === 'ADMIN') {
     navItems.push({ name: "Users", href: "/users", icon: Users })
   }
+
+  // Everyone can manage their own profile
+  navItems.push({ name: "Settings", href: "/settings", icon: Settings })
 
   return (
     <aside className="w-64 h-screen border-r border-border/40 glass-panel bg-background/50 flex flex-col fixed left-0 top-0 z-40 hidden md:flex">

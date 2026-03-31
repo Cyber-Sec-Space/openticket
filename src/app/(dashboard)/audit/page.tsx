@@ -95,12 +95,12 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
         <Table>
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-              <TableHead className="font-semibold text-primary">Timestamp</TableHead>
+              <TableHead className="font-semibold text-primary pl-6">Timestamp</TableHead>
               <TableHead className="font-semibold text-primary">Operative</TableHead>
               <TableHead className="font-semibold text-primary">Domain</TableHead>
               <TableHead className="font-semibold text-primary">Action Executed</TableHead>
               <TableHead className="font-semibold text-primary">Payload Diff</TableHead>
-              <TableHead className="font-semibold text-primary text-right">Target Key</TableHead>
+              <TableHead className="font-semibold text-primary text-right pr-6">Target Key</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -116,7 +116,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
                 key={log.id} 
                 className="border-border/50 hover:bg-purple-500/5 transition-colors"
               >
-                <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap pl-6">
                   {log.createdAt.toLocaleString()}
                 </TableCell>
                 
@@ -143,7 +143,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
                   {String(log.changes || "No explicit changes tracked.")}
                 </TableCell>
 
-                <TableCell className="text-right text-muted-foreground font-mono text-xs opacity-60">
+                <TableCell className="text-right text-muted-foreground font-mono text-xs opacity-60 pr-6">
                   {log.entityType === 'Incident' || log.entityType === 'Asset' ? (
                      <Link href={log.entityType === 'Incident' ? `/incidents/${log.entityId}` : `/assets/${log.entityId}`} className="hover:text-primary transition-colors hover:underline">
                         ID-{log.entityId.substring(0, 6).toUpperCase()}

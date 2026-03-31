@@ -36,7 +36,7 @@ export default async function UsersPage() {
         <Table>
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-               <TableHead className="font-semibold text-primary">Identity Profile (UID)</TableHead>
+               <TableHead className="font-semibold text-primary pl-6">Identity Profile (UID)</TableHead>
                <TableHead className="font-semibold text-primary">Contact (Email)</TableHead>
                <TableHead className="font-semibold text-primary text-center">Current Privilege Tier</TableHead>
                <TableHead className="font-semibold text-primary text-right pr-6">Management Payload</TableHead>
@@ -51,7 +51,7 @@ export default async function UsersPage() {
                </TableRow>
             ) : users.map(user => (
                <TableRow key={user.id} className="hover:bg-emerald-400/5 border-border transition-colors">
-                 <TableCell className="font-medium text-foreground py-4">
+                 <TableCell className="font-medium text-foreground py-4 pl-6">
                    <div className="flex items-center gap-3">
                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-400/20 to-primary/20 flex items-center justify-center border border-white/5">
                         <span className="text-xs font-mono font-bold text-emerald-400">{user.name?.charAt(0).toUpperCase() || "U"}</span>

@@ -94,6 +94,24 @@ export default async function IncidentDetailPage({
       }
     })
 
+    // Phase 7: Dynamic Triage Auto-Isolation rules
+    if (newSeverity === 'CRITICAL' && newAssetId && newAssetId !== 'UNLINKED') {
+      await db.asset.update({
+        where: { id: newAssetId },
+        data: { status: 'COMPROMISED' }
+      })
+
+      await db.auditLog.create({
+        data: {
+          action: "SOAR_AUTO_QUARANTINE",
+          entityType: "Asset",
+          entityId: newAssetId,
+          userId: sessionUrl.user.id,
+          changes: `Asset automatically marked as COMPROMISED due to escalating Incident INC-${incident!.id.substring(0, 8).toUpperCase()} to CRITICAL.`
+        }
+      })
+    }
+
     await db.auditLog.create({
       data: {
         action: "TRIAGE_POLICY_CHANGED",

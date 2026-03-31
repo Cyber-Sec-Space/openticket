@@ -1,7 +1,8 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { ShieldAlert, Server, Activity, Users, AlertTriangle } from "lucide-react"
+import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3 } from "lucide-react"
+import { DashboardCharts } from "@/components/dashboard-charts"
 
 export default async function Home() {
   const session = await auth()
@@ -19,6 +20,19 @@ export default async function Home() {
   
   const totalAssets = await db.asset.count()
   const compromisedAssets = await db.asset.count({ where: { status: 'COMPROMISED' } })
+
+  // Phase 7: Analytics Computations
+  const severitiesData = await db.incident.groupBy({
+    by: ['severity'],
+    _count: { severity: true },
+    where: filterParams
+  })
+
+  // Format array explicitly mapping missing elements if needed
+  const chartMatrix = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => {
+    const found = severitiesData.find(d => d.severity === sev)
+    return { severity: sev, count: found ? found._count.severity : 0 }
+  })
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in-up">
@@ -72,20 +86,41 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Quick Actions / Navigation */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold tracking-tight mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link href="/incidents" className="group p-8 glass-card flex flex-col items-center justify-center text-center rounded-xl overflow-hidden hover:shadow-[0_0_30px_rgba(0,255,200,0.1)] transition-all">
-            <ShieldAlert className="w-12 h-12 text-primary mb-4 group-hover:-translate-y-2 transition-transform duration-300" />
-            <h3 className="text-xl font-semibold mb-2">Manage Incidents</h3>
-            <p className="text-sm text-muted-foreground">View, update, and resolve ongoing security tickets.</p>
-          </Link>
-          <Link href="/assets" className="group p-8 glass-card flex flex-col items-center justify-center text-center rounded-xl overflow-hidden hover:shadow-[0_0_30px_rgba(0,255,200,0.1)] transition-all">
-            <Server className="w-12 h-12 text-blue-400 mb-4 group-hover:-translate-y-2 transition-transform duration-300" />
-            <h3 className="text-xl font-semibold mb-2">Asset Inventory</h3>
-            <p className="text-sm text-muted-foreground">Audit, maintain, and track IT infrastructure footprints.</p>
-          </Link>
+      {/* Phase 7: Dynamic Analytics Chart */}
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="glass-card rounded-xl border border-white/5 overflow-hidden col-span-1 lg:col-span-2 shadow-2xl">
+          <div className="p-5 border-b border-border/50 bg-black/10">
+             <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-purple-400" />
+                Active Triage Breakdown 
+             </h3>
+          </div>
+          <div className="p-6">
+            <DashboardCharts data={chartMatrix} />
+          </div>
+        </div>
+
+        {/* Quick Actions / Navigation */}
+        <div className="col-span-1 border border-primary/20 bg-primary/5 rounded-xl flex flex-col justify-between p-6">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-primary mb-4">Command Actions</h2>
+            <div className="space-y-3">
+              <Link href="/incidents/new" className="group flex items-center p-4 bg-black/40 hover:bg-black border border-white/5 hover:border-primary/50 text-white rounded-lg transition-all shadow-xl">
+                 <ShieldAlert className="w-5 h-5 mr-3 text-primary group-hover:scale-110" />
+                 <div className="text-sm">
+                   <strong className="block font-semibold">Declare Incident</strong>
+                   <span className="text-xs text-muted-foreground">Log security anomaly</span>
+                 </div>
+              </Link>
+              <Link href="/assets/new" className="group flex items-center p-4 bg-black/40 hover:bg-black border border-white/5 hover:border-blue-400/50 text-white rounded-lg transition-all shadow-xl">
+                 <Server className="w-5 h-5 mr-3 text-blue-400 group-hover:scale-110" />
+                 <div className="text-sm">
+                   <strong className="block font-semibold">Catalog Infrastructure</strong>
+                   <span className="text-xs text-muted-foreground">Bind server mapping</span>
+                 </div>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>

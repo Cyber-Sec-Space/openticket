@@ -134,12 +134,12 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
         <Table>
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-              <TableHead className="font-semibold text-primary">Asset Key</TableHead>
+              <TableHead className="font-semibold text-primary pl-6">Asset Key</TableHead>
               <TableHead className="font-semibold text-primary">Name</TableHead>
               <TableHead className="font-semibold text-primary">Type</TableHead>
               <TableHead className="font-semibold text-primary">IP Address</TableHead>
               <TableHead className="font-semibold text-primary">Status</TableHead>
-              <TableHead className="font-semibold text-primary text-right">Cataloged On</TableHead>
+              <TableHead className="font-semibold text-primary text-right pr-6">Cataloged On</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -155,7 +155,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
                 key={asset.id} 
                 className="hover:bg-primary/5 border-border transition-colors cursor-pointer relative group"
               >
-                <TableCell className="font-mono text-xs text-muted-foreground">
+                <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap pl-6">
                   <Link href={`/assets/${asset.id}`} className="absolute inset-0" aria-label={`View ${asset.name}`} />
                   Node-{asset.id.substring(0, 6).toUpperCase()}
                 </TableCell>
@@ -169,7 +169,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
                     {asset.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right text-muted-foreground text-sm font-mono">{asset.createdAt.toLocaleDateString()}</TableCell>
+                <TableCell className="text-right text-muted-foreground font-mono text-xs pr-6">{asset.createdAt.toLocaleDateString()}</TableCell>
               </TableRow>
             ))}
           </TableBody>
