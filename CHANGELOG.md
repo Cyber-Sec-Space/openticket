@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Complete UI/UX aesthetic overhaul implementing a premium, sleek dark mode tailored for Cybersecurity usage.
+- Global application Layout integration employing a dynamic left-pane Sidebar for streamlined navigation.
+- Glassmorphism UI tokens, neon pulse animations, and immersive data grid layouts across all operational dashboards.
 - Created OpenTicket MVP core Next.js project.
 - Implemented Postgres via Prisma ORM schemas for Account, Session, User, VerificationToken, Incident, Asset, Comment, AuditLog.
 - Integrated Auth.js v5 (NextAuth) with a Credentials provider.
