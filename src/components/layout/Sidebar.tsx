@@ -2,10 +2,10 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ShieldAlert, Server, Home, LogOut } from "lucide-react"
+import { ShieldAlert, Server, Home, LogOut, Users, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function Sidebar() {
+export function Sidebar({ userRole }: { userRole?: string }) {
   const pathname = usePathname()
 
   const navItems = [
@@ -13,6 +13,15 @@ export function Sidebar() {
     { name: "Incidents", href: "/incidents", icon: ShieldAlert },
     { name: "Assets", href: "/assets", icon: Server },
   ]
+
+  // Conditionally inject SECOPS/ADMIN modules
+  if (userRole === 'ADMIN' || userRole === 'SECOPS') {
+    navItems.push({ name: "Audit Logs", href: "/audit", icon: FileText })
+  }
+  
+  if (userRole === 'ADMIN') {
+    navItems.push({ name: "Users", href: "/users", icon: Users })
+  }
 
   return (
     <aside className="w-64 h-screen border-r border-border/40 glass-panel bg-background/50 flex flex-col fixed left-0 top-0 z-40 hidden md:flex">
