@@ -10,6 +10,9 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Phase 3 Schema Expansion: Orchestrated Prisma migrations injecting native `IncidentType` Enums spanning Malware, Phishing, and Breach categorizations.
+- Re-architected the `Incident Intelligence` display panels implementing highly-legible `Key/Value` UI grids explicitly rendering definitions and categories, resolving prior overly-simplistic layouts.
+- Exposed `IncidentType` parameters natively within Next.js Server Action instantiation forms (`/incidents/new`) and Edit Detail modes.
 - Phase 2 Incident Features: Introduced a global text Search capability merging Title, Content, and ID validations via URL parameters.
 - Unified Incident Defense Timelines blending discrete system AuditLogs (triage changes/assignments) seamlessly with user communications.
 - Explicit Ticket Title and Description editability secured via native UI controls for authorized members.

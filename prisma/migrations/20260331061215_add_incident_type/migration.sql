@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "IncidentType" AS ENUM ('MALWARE', 'PHISHING', 'DATA_BREACH', 'UNAUTHORIZED_ACCESS', 'NETWORK_ANOMALY', 'OTHER');
+
+-- AlterTable
+ALTER TABLE "Incident" ADD COLUMN     "type" "IncidentType" NOT NULL DEFAULT 'OTHER';

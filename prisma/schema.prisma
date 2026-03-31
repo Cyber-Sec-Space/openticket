@@ -117,10 +117,20 @@ enum IncidentStatus {
   CLOSED
 }
 
+enum IncidentType {
+  MALWARE
+  PHISHING
+  DATA_BREACH
+  UNAUTHORIZED_ACCESS
+  NETWORK_ANOMALY
+  OTHER
+}
+
 model Incident {
   id          String         @id @default(cuid())
   title       String
   description String         @db.Text
+  type        IncidentType   @default(OTHER)
   severity    Severity       @default(LOW)
   status      IncidentStatus @default(NEW)
   createdAt   DateTime       @default(now())

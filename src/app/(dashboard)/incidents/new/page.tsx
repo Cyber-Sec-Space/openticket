@@ -50,7 +50,29 @@ export default async function NewIncidentPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="type" className="text-sm tracking-wide font-semibold text-primary">Category</Label>
+                <div className="relative">
+                  <select 
+                    id="type" 
+                    name="type" 
+                    className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8"
+                    defaultValue="OTHER"
+                  >
+                    <option value="MALWARE" className="bg-background">Malware Infection</option>
+                    <option value="PHISHING" className="bg-background">Phishing Attempt</option>
+                    <option value="DATA_BREACH" className="bg-background text-destructive">Data Breach</option>
+                    <option value="UNAUTHORIZED_ACCESS" className="bg-background">Unauthorized Access</option>
+                    <option value="NETWORK_ANOMALY" className="bg-background">Network Anomaly</option>
+                    <option value="OTHER" className="bg-background text-muted-foreground">Other / Triage</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="severity" className="text-sm tracking-wide font-semibold text-primary">Threat Severity</Label>
                 <div className="relative">
@@ -72,7 +94,7 @@ export default async function NewIncidentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="assetId" className="text-sm tracking-wide font-semibold text-primary">Correlated Asset (Optional)</Label>
+                <Label htmlFor="assetId" className="text-sm tracking-wide font-semibold text-primary">Correlated Asset</Label>
                 <div className="relative">
                   <select 
                     id="assetId" 
@@ -81,7 +103,7 @@ export default async function NewIncidentPage() {
                   >
                     <option value="" className="bg-background text-muted-foreground">None Selected</option>
                     {assets.map(asset => (
-                      <option key={asset.id} value={asset.id} className="bg-background hover:bg-muted font-mono">{asset.name} [{asset.ipAddress}]</option>
+                      <option key={asset.id} value={asset.id} className="bg-background hover:bg-muted font-mono">{asset.name}</option>
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">

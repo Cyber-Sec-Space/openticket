@@ -13,6 +13,8 @@ export async function createIncident(prevState: any, formData: FormData) {
   const severity = formData.get("severity") as string
   const assetId = formData.get("assetId") as string
 
+  const type = formData.get("type") as string || "OTHER"
+
   if (!title || !description) {
     return { error: "Title and description are required." }
   }
@@ -21,7 +23,8 @@ export async function createIncident(prevState: any, formData: FormData) {
     data: {
       title,
       description,
-      severity: severity || 'LOW',
+      type: type as any,
+      severity: severity as any || 'LOW',
       reporterId: session.user.id,
       assetId: assetId || null,
       status: 'NEW'

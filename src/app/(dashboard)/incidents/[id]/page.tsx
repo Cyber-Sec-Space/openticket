@@ -98,11 +98,12 @@ export default async function IncidentDetailPage({
     if (!sessionUrl || sessionUrl.user.role === 'REPORTER') throw new Error("Forbidden")
     
     const newTitle = formData.get("title") as string
+    const newType = formData.get("type") as string
     const newDesc = formData.get("description") as string
 
     await db.incident.update({
       where: { id: incident!.id },
-      data: { title: newTitle, description: newDesc }
+      data: { title: newTitle, type: newType as any, description: newDesc }
     })
     
     await db.auditLog.create({
@@ -111,7 +112,7 @@ export default async function IncidentDetailPage({
         entityType: "Incident",
         entityId: incident!.id,
         userId: sessionUrl.user.id,
-        changes: `Title / Description updated by Admin`
+        changes: `Title / Category / Description updated by SecOps`
       }
     })
     redirect(`/incidents/${incident!.id}`)
@@ -180,14 +181,36 @@ export default async function IncidentDetailPage({
               {isEditing ? (
                 <form action={editDetailsAction} className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-primary/70">Secure Title</Label>
+                    <Label className="text-primary/70 text-xs uppercase tracking-widest">Incident Definition</Label>
                     <Input name="title" defaultValue={incident.title} className="bg-black/50 border-white/10" required />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label className="text-primary/70">Tactical Description</Label>
-                    <Textarea name="description" rows={8} defaultValue={incident.description} className="bg-black/50 border-white/10 resize-none" required />
+                    <Label className="text-primary/70 text-xs uppercase tracking-widest">Category</Label>
+                    <div className="relative">
+                      <select 
+                        name="type" 
+                        defaultValue={incident.type}
+                        className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8"
+                      >
+                        <option value="MALWARE" className="bg-background">Malware Infection</option>
+                        <option value="PHISHING" className="bg-background">Phishing Attempt</option>
+                        <option value="DATA_BREACH" className="bg-background text-destructive">Data Breach</option>
+                        <option value="UNAUTHORIZED_ACCESS" className="bg-background">Unauthorized Access</option>
+                        <option value="NETWORK_ANOMALY" className="bg-background">Network Anomaly</option>
+                        <option value="OTHER" className="bg-background text-muted-foreground">Other / Triage</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-3 pt-2">
+
+                  <div className="space-y-2">
+                    <Label className="text-primary/70 text-xs uppercase tracking-widest">Tactical Overview</Label>
+                    <Textarea name="description" rows={8} defaultValue={incident.description} className="bg-black/50 border-white/10 resize-none text-sm font-mono leading-relaxed" required />
+                  </div>
+                  <div className="flex gap-3 pt-2 mt-4">
                     <Button type="submit" className="bg-primary hover:bg-primary/80">Save Modifications</Button>
                     <Link href={`/incidents/${incident.id}`}>
                        <Button variant="ghost" type="button">Cancel</Button>
@@ -195,9 +218,37 @@ export default async function IncidentDetailPage({
                   </div>
                 </form>
               ) : (
-                <pre className="whitespace-pre-wrap font-sans text-sm text-foreground/90 leading-relaxed">
-                  {incident.description}
-                </pre>
+                <div className="space-y-8">
+                  <div>
+                    <h4 className="text-xs uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary/70 animate-pulse"></span>
+                      Incident Definition
+                    </h4>
+                    <p className="text-lg font-semibold text-white/90">{incident.title}</p>
+                  </div>
+
+                  <div>
+                     <h4 className="text-xs uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+                      Category Alignment
+                    </h4>
+                    <Badge variant="outline" className="border-primary/40 text-primary/80 bg-primary/5 tracking-wider px-3">
+                      {incident.type.replace('_', ' ')}
+                    </Badge>
+                  </div>
+
+                  <div>
+                     <h4 className="text-xs uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary/70"></span>
+                      Tactical Overview
+                    </h4>
+                    <div className="p-4 rounded-lg border border-white/5 bg-black/20">
+                      <pre className="whitespace-pre-wrap font-sans text-sm text-foreground/80 leading-loose">
+                        {incident.description}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
