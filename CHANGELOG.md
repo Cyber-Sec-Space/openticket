@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Quality of Life: Standardized the default global tracking prefixes across index tables and detail queries from `TKT-` (Ticket) to `INC-` (Incident) fully embracing SecOps nomenclature.
 - Phase 4 Interface Revamp: Exchanged all visually clashing OS-native HTML drop-down menus (`<select>`) globally with custom-styled headless Shadcn `<Select>` elements to standardize the OpenTicket Glassmorphic premium motif across MacOS/Windows variants.
 - Phase 4 Core Expansions (Multi-Assignee Support): Transitioned `Incident` relational parameters dropping singular restrictive `assigneeId` vectors to power scalable Many-To-Many (M2M) `assignees` database array structures resolving bottleneck IR deployments.
 - New Client Element: Minted the `MultiAssigneePicker` component; an elite popover logic block utilizing Lucide arrays empowering execution controllers to pick unlimited user groupings naturally transmitting native REST Form payloads.

@@ -85,7 +85,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               <input 
                 name="q" 
                 defaultValue={resolvedParams.q || ""} 
-                placeholder="Search Title, TKT-ID, or contents..." 
+                placeholder="Search Title, INC-ID, or contents..." 
                 className="h-9 w-full pl-9 pr-3 rounded-md border border-border/60 bg-black/50 text-sm text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
@@ -164,7 +164,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               >
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   <Link href={`/incidents/${incident.id}`} className="absolute inset-0" aria-label={`View ${incident.title}`} />
-                  TKT-{incident.id.substring(0,6).toUpperCase()}
+                  INC-{incident.id.substring(0,6).toUpperCase()}
                 </TableCell>
                 <TableCell className="font-medium text-foreground">
                   {incident.title}

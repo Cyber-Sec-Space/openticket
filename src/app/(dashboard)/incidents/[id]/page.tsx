@@ -155,7 +155,7 @@ export default async function IncidentDetailPage({
           {session.user.role === 'ADMIN' && (
              <form action={deleteIncidentAction}>
                 <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
-                  <Trash2 className="w-4 h-4 mr-2" /> Terminate Ticket
+                  <Trash2 className="w-4 h-4 mr-2" /> Terminate Incident
                 </Button>
              </form>
           )}
@@ -166,7 +166,7 @@ export default async function IncidentDetailPage({
         <div className="flex-1">
           <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">{incident.title}</h1>
           <p className="text-muted-foreground font-mono text-xs opacity-70 flex items-center gap-2">
-            <span className="text-primary"><ShieldAlert className="inline w-3 h-3" /> TKT-{incident.id.substring(0,8).toUpperCase()}</span>
+            <span className="text-primary"><ShieldAlert className="inline w-3 h-3" /> INC-{incident.id.substring(0,8).toUpperCase()}</span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
