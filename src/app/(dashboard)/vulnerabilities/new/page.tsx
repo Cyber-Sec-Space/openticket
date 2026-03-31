@@ -30,7 +30,7 @@ export default async function NewVulnerabilityPage() {
         </div>
       </header>
       
-      <div className="glass-card rounded-xl p-8 border border-border shadow-2xl relative overflow-hidden">
+      <div className="glass-card rounded-xl p-8 border border-border shadow-2xl relative">
         
         <form action={createVulnerabilityAction} className="space-y-6 relative z-10">
           <div className="space-y-3">
