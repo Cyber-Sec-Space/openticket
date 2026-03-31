@@ -52,7 +52,7 @@ export default async function SystemSettingsPage() {
               
               {/* Registration Toggle */}
               <div className="flex flex-row items-center space-x-4 rounded-md border border-white/10 p-5 shadow-sm bg-black/20">
-                <Checkbox id="allowRegistration" name="allowRegistration" value="on" defaultChecked={settings.allowRegistration} />
+                <Checkbox key={String(settings.allowRegistration)} id="allowRegistration" name="allowRegistration" value="on" defaultChecked={settings.allowRegistration} />
                 <div className="space-y-1 leading-none">
                   <Label htmlFor="allowRegistration" className="text-sm font-semibold tracking-wide flex items-center cursor-pointer">
                     <UserPlus className="w-4 h-4 mr-2" /> Allow Public Registration
@@ -65,7 +65,7 @@ export default async function SystemSettingsPage() {
 
               {/* 2FA Toggle */}
               <div className="flex flex-row items-center space-x-4 rounded-md border border-white/10 p-5 shadow-sm bg-black/20">
-                <Checkbox id="requireGlobal2FA" name="requireGlobal2FA" value="on" defaultChecked={settings.requireGlobal2FA} />
+                <Checkbox key={String(settings.requireGlobal2FA)} id="requireGlobal2FA" name="requireGlobal2FA" value="on" defaultChecked={settings.requireGlobal2FA} />
                 <div className="space-y-1 leading-none">
                   <Label htmlFor="requireGlobal2FA" className="text-sm font-semibold tracking-wide flex items-center cursor-pointer text-primary">
                     <Fingerprint className="w-4 h-4 mr-2" /> Enforce Global Two-Factor Verification
@@ -82,7 +82,7 @@ export default async function SystemSettingsPage() {
                 <p className="text-[11px] text-muted-foreground pb-2">
                    Select the initial access tier granted to newly registered operators.
                 </p>
-                <Select name="defaultUserRole" defaultValue={settings.defaultUserRole}>
+                <Select key={settings.defaultUserRole} name="defaultUserRole" defaultValue={settings.defaultUserRole}>
                   <SelectTrigger className="w-[180px] bg-black/50 border-white/10">
                     <SelectValue placeholder="Select Tier" />
                   </SelectTrigger>
