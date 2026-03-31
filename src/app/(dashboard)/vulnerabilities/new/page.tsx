@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { Bug, ShieldAlert, Server } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
+import { MultiAssetPicker } from "@/components/ui/multi-asset-picker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -96,34 +96,11 @@ export default async function NewVulnerabilityPage() {
             </Select>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 relative z-50">
             <Label className="uppercase text-xs tracking-widest text-muted-foreground flex items-center">
                <Server className="w-3 h-3 mr-2" /> Associated Infrastructure (Multi-Select Mapping)
             </Label>
-            <div className="bg-black/20 border border-white/5 rounded-lg p-2 max-h-[200px] overflow-y-auto space-y-1">
-               {assets.length === 0 ? (
-                 <p className="text-xs text-muted-foreground italic text-center py-4">No active assets available in inventory for mapping.</p>
-               ) : (
-                 assets.map(asset => (
-                   <div key={asset.id} className="flex items-center space-x-3 p-2 hover:bg-white/5 rounded-md transition-colors group">
-                     <Checkbox 
-                        id={`asset-${asset.id}`} 
-                        name="assetIds" 
-                        value={asset.id} 
-                        className="border-white/20 data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500 data-[state=checked]:text-white transition-all shadow-md mt-0.5" 
-                     />
-                     <div className="grid gap-0.5 leading-none flex-1">
-                        <Label htmlFor={`asset-${asset.id}`} className="font-mono text-sm cursor-pointer group-hover:text-red-400 transition-colors inline-block w-full">
-                           {asset.name} {asset.ipAddress && <span className="text-xs text-muted-foreground ml-2">({asset.ipAddress})</span>}
-                        </Label>
-                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50">
-                           {asset.type} • {asset.status}
-                        </p>
-                     </div>
-                   </div>
-                 ))
-               )}
-            </div>
+            <MultiAssetPicker assets={assets as any} />
           </div>
 
           <div className="pt-6 border-t border-white/10 flex justify-end">
