@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { redirect } from "next/navigation"
 
 export async function attemptRegistration(prevState: any, formData: FormData) {

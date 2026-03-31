@@ -1,9 +1,15 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { db } from "./lib/db"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import * as OTPAuth from "otpauth"
 import { CredentialsSignin } from "next-auth"
+
+declare module "next-auth" {
+  interface User {
+    role?: string
+  }
+}
 
 class Missing2FAError extends Error {
   constructor() {

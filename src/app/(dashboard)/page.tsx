@@ -186,14 +186,6 @@ export default async function Home() {
         </div>
 
         <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 text-orange-500 opacity-10 group-hover:scale-110 transition-transform"><Users size={80} /></div>
-          <div>
-            <p className="text-sm font-medium text-orange-400 uppercase tracking-wider mb-2">Compromised Assets</p>
-            <h3 className="text-4xl font-bold text-orange-500">{compromisedAssets}</h3>
-          </div>
-        </div>
-
-        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 text-purple-500 opacity-10 group-hover:scale-110 transition-transform"><Target size={80} /></div>
           <div>
             <p className="text-sm font-medium text-purple-400 uppercase tracking-wider mb-2">Open Vulns</p>
@@ -209,14 +201,15 @@ export default async function Home() {
             <h3 className="text-4xl font-bold text-indigo-500">{criticalVulns}</h3>
           </div>
         </div>
-      </div>
 
-      <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 text-orange-500 opacity-10 group-hover:scale-110 transition-transform"><Users size={80} /></div>
-        <div>
-          <p className="text-sm font-medium text-orange-400 uppercase tracking-wider mb-2">Compromised Assets</p>
-          <h3 className="text-4xl font-bold text-orange-500">{compromisedAssets}</h3>
+        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 text-orange-500 opacity-10 group-hover:scale-110 transition-transform"><Users size={80} /></div>
+          <div>
+            <p className="text-sm font-medium text-orange-400 uppercase tracking-wider mb-2">Compromised Assets</p>
+            <h3 className="text-4xl font-bold text-orange-500">{compromisedAssets}</h3>
+          </div>
         </div>
+
       </div>
 
       {/* Dynamic Analytics & Info Grid */}
@@ -280,7 +273,7 @@ export default async function Home() {
 
             {/* Vuln Donut */}
             <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
-              <div className="p-5 border-b border-indigo-500/20 bg-indigo-500/5">
+              <div className="p-5 border-b border-border/50 bg-black/20">
                 <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
                   <ScanFace className="w-4 h-4 text-emerald-400" />
                   Vulnerability Resolution Status
@@ -346,12 +339,6 @@ export default async function Home() {
                 <Server className="w-4 h-4 mr-3 text-blue-400 group-hover:scale-110 transition-transform" />
                 <div className="text-sm">
                   <strong className="block font-medium">Catalog Infrastructure</strong>
-                </div>
-              </Link>
-              <Link href="/vulnerabilities/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-indigo-400/50 text-white rounded-lg transition-all">
-                <AlertTriangle className="w-4 h-4 mr-3 text-indigo-400 group-hover:scale-110 transition-transform" />
-                <div className="text-sm">
-                  <strong className="block font-medium">Log Vulnerability</strong>
                 </div>
               </Link>
             </div>

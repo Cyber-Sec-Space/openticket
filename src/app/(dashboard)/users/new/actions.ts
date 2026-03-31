@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { Role } from "@prisma/client"
 
 export async function createUserAction(formData: FormData) {
