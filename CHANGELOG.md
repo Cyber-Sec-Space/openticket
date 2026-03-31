@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## main
 ### Fixed
+- Resolved Next.js compile error where `(dashboard)` pages conflicted with legacy root pages by clearing out duplicate component files in `/assets`, `/incidents`, and `/page.tsx`.
 - Fixed Next.js 15 dynamic routing issue where `params` was not being handled as a Promise inside the incident detail view.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
