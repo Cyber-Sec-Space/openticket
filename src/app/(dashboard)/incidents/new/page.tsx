@@ -38,7 +38,18 @@ export default async function NewIncidentPage() {
           {/* Note: In a production app with Shadcn UI Form, use react-hook-form. For this MVP we use native HTML forms mapped to next-auth server actions. */}
           <form action={async (formData) => {
             "use server"
-            await createIncident({}, formData)
+            const assetName = formData.get("assetName") as string
+            const resolvedAssetId = !assetName 
+              ? null 
+              : assets.find(a => a.name === assetName)?.id || null
+            
+            const data = new FormData()
+            for (const [key, value] of formData.entries()) {
+              data.append(key, value)
+            }
+            data.set("assetId", resolvedAssetId || "")
+            
+            await createIncident({}, data)
           }} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm tracking-wide font-semibold text-primary">Incident Definition</Label>
@@ -91,14 +102,14 @@ export default async function NewIncidentPage() {
               <div className="space-y-2">
                 <Label htmlFor="assetId" className="text-sm tracking-wide font-semibold text-primary">Correlated Asset</Label>
                 <div className="relative">
-                  <Select name="assetId" defaultValue="">
+                  <Select name="assetName" defaultValue="">
                      <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
                        <SelectValue placeholder="Associate Infrastructure (Optional)" />
                      </SelectTrigger>
                      <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
                        <SelectItem value="" className="text-muted-foreground italic">None Selected</SelectItem>
                        {assets.map(asset => (
-                         <SelectItem key={asset.id} value={asset.id} className="font-mono">{asset.name}</SelectItem>
+                         <SelectItem key={asset.id} value={asset.name} className="font-mono">{asset.name}</SelectItem>
                        ))}
                      </SelectContent>
                   </Select>

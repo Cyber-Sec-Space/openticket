@@ -4,18 +4,17 @@ import { NextResponse } from "next/server"
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await auth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
-  const url = new URL(req.url);
-  const idPath = url.pathname.split('/').pop();
 
   const incident = await db.incident.findUnique({
-    where: { id: idPath },
+    where: { id },
     include: {
       reporter: { select: { id: true, name: true, email: true } },
-      assignee: { select: { id: true, name: true, email: true } },
+      assignees: { select: { id: true, name: true, email: true } },
       asset: true,
       comments: {
         include: { author: { select: { name: true, role: true } } },
@@ -35,12 +34,11 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await auth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
-  const url = new URL(req.url);
-  const idPath = url.pathname.split('/').pop();
 
   if (session.user.role === 'REPORTER') {
     return new NextResponse("Forbidden", { status: 403 })
@@ -50,7 +48,7 @@ export async function PATCH(
     const body = await req.json()
     const { status, assigneeId, severity, assetId } = body
 
-    const existingIncident = await db.incident.findUnique({ where: { id: idPath } })
+    const existingIncident = await db.incident.findUnique({ where: { id } })
     if (!existingIncident) return new NextResponse("Not Found", { status: 404 })
 
     const updateData: any = {}
@@ -60,7 +58,7 @@ export async function PATCH(
     if (assetId !== undefined) updateData.assetId = assetId
 
     const updatedIncident = await db.incident.update({
-      where: { id: idPath },
+      where: { id },
       data: updateData
     })
 

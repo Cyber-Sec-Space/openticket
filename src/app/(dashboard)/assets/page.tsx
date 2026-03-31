@@ -87,7 +87,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
 
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Status</label>
-            <Select name="status" defaultValue={resolvedParams.status || "ALL"}>
+            <Select key={`status-${resolvedParams.status || 'ALL'}`} name="status" defaultValue={resolvedParams.status || "ALL"}>
               <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
@@ -103,7 +103,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
 
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Type</label>
-            <Select name="type" defaultValue={resolvedParams.type || "ALL"}>
+            <Select key={`type-${resolvedParams.type || 'ALL'}`} name="type" defaultValue={resolvedParams.type || "ALL"}>
               <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>

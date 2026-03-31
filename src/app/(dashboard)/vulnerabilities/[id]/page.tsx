@@ -96,7 +96,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
             </h2>
             <form action={updateVulnStatusAction} className="flex items-center space-x-4">
                <input type="hidden" name="vulnId" value={vuln.id} />
-               <Select name="status" defaultValue={vuln.status}>
+               <Select key={`vuln-status-${vuln.status}`} name="status" defaultValue={vuln.status}>
                   <SelectTrigger className="w-[200px] bg-black/30 border-white/10">
                      <SelectValue placeholder="Update Status" />
                   </SelectTrigger>

@@ -23,7 +23,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   }
 
   // URL Filters
-  if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.status = resolvedParams.status;
+  if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.status = resolvedParams.status.replace(/ /g, '_');
   if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.severity = resolvedParams.severity;
 
   if (resolvedParams.q) {
@@ -93,15 +93,15 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
 
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Status</label>
-            <Select name="status" defaultValue={resolvedParams.status || "ALL"}>
+            <Select key={(resolvedParams.status || "ALL").replace(/_/g, ' ')} name="status" defaultValue={(resolvedParams.status || "ALL").replace(/_/g, ' ')}>
               <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
                 <SelectItem value="ALL">All Statuses</SelectItem>
                 <SelectItem value="NEW">New</SelectItem>
-                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                <SelectItem value="PENDING_INFO">Pending Info</SelectItem>
+                <SelectItem value="IN PROGRESS">In Progress</SelectItem>
+                <SelectItem value="PENDING INFO">Pending Info</SelectItem>
                 <SelectItem value="RESOLVED">Resolved</SelectItem>
                 <SelectItem value="CLOSED">Closed</SelectItem>
               </SelectContent>
@@ -110,7 +110,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
 
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Severity</label>
-            <Select name="severity" defaultValue={resolvedParams.severity || "ALL"}>
+            <Select key={`severity-${resolvedParams.severity || 'ALL'}`} name="severity" defaultValue={(resolvedParams.severity || "ALL").replace(/_/g, ' ')}>
               <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
                 <SelectValue placeholder="All Severities" />
               </SelectTrigger>

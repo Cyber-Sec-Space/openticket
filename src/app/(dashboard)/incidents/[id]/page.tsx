@@ -76,18 +76,23 @@ export default async function IncidentDetailPage({
 
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
+    const newAssetName = formData.get("assetName") as string
+    
+    const resolvedAssetId = newAssetName === 'UNLINKED' 
+      ? null 
+      : assets.find(a => a.name === newAssetName)?.id || null
+
     const assigneeIds = formData.getAll("assigneeIds") as string[]
     const validAssigneeIds = assigneeIds.filter(id => id !== "UNASSIGNED")
-    const newAssetId = formData.get("assetId") as string
 
-    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, Target Asset: ${newAssetId === 'UNLINKED' ? 'None' : newAssetId}`
+    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, Target Asset: ${newAssetName}`
 
     await db.incident.update({
       where: { id: incident!.id },
       data: {
-        status: newStatus,
+        status: newStatus.replace(/ /g, '_'),
         severity: newSeverity,
-        assetId: newAssetId === 'UNLINKED' ? null : newAssetId,
+        assetId: resolvedAssetId,
         assignees: {
           set: validAssigneeIds.map(id => ({ id }))
         }
@@ -95,9 +100,9 @@ export default async function IncidentDetailPage({
     })
 
     // Phase 7: Dynamic Triage Auto-Isolation rules
-    if (newSeverity === 'CRITICAL' && newAssetId && newAssetId !== 'UNLINKED') {
+    if (newSeverity === 'CRITICAL' && resolvedAssetId && resolvedAssetId !== 'UNLINKED') {
       await db.asset.update({
-        where: { id: newAssetId },
+        where: { id: resolvedAssetId },
         data: { status: 'COMPROMISED' }
       })
 
@@ -105,7 +110,7 @@ export default async function IncidentDetailPage({
         data: {
           action: "SOAR_AUTO_QUARANTINE",
           entityType: "Asset",
-          entityId: newAssetId,
+          entityId: resolvedAssetId,
           userId: sessionUrl.user.id,
           changes: `Asset automatically marked as COMPROMISED due to escalating Incident INC-${incident!.id.substring(0, 8).toUpperCase()} to CRITICAL.`
         }
@@ -135,7 +140,7 @@ export default async function IncidentDetailPage({
 
     await db.incident.update({
       where: { id: incident!.id },
-      data: { title: newTitle, type: newType as any, description: newDesc }
+      data: { title: newTitle, type: newType.replace(/ /g, '_') as any, description: newDesc }
     })
 
     await db.auditLog.create({
@@ -220,16 +225,16 @@ export default async function IncidentDetailPage({
                   <div className="space-y-2">
                     <Label className="text-primary/70 text-xs uppercase tracking-widest">Category</Label>
                     <div className="relative">
-                      <Select name="type" defaultValue={incident.type || "OTHER"}>
+                      <Select key={`type-${(incident.type || "OTHER").replace(/_/g, ' ')}`} name="type" defaultValue={(incident.type || "OTHER").replace(/_/g, ' ')}>
                         <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                           <SelectValue placeholder="Category..." />
                         </SelectTrigger>
                         <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
                           <SelectItem value="MALWARE">Malware Infection</SelectItem>
                           <SelectItem value="PHISHING">Phishing Attempt</SelectItem>
-                          <SelectItem value="DATA_BREACH" className="text-destructive">Data Breach</SelectItem>
-                          <SelectItem value="UNAUTHORIZED_ACCESS">Unauthorized Access</SelectItem>
-                          <SelectItem value="NETWORK_ANOMALY">Network Anomaly</SelectItem>
+                          <SelectItem value="DATA BREACH" className="text-destructive">Data Breach</SelectItem>
+                          <SelectItem value="UNAUTHORIZED ACCESS">Unauthorized Access</SelectItem>
+                          <SelectItem value="NETWORK ANOMALY">Network Anomaly</SelectItem>
                           <SelectItem value="OTHER" className="text-muted-foreground">Other / Triage</SelectItem>
                         </SelectContent>
                       </Select>
@@ -375,7 +380,7 @@ export default async function IncidentDetailPage({
 
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Severity</Label>
-                    <Select name="severity" defaultValue={incident.severity}>
+                    <Select key={`severity-${incident.severity}`} name="severity" defaultValue={incident.severity}>
                       <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                         <SelectValue />
                       </SelectTrigger>
@@ -390,14 +395,14 @@ export default async function IncidentDetailPage({
 
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Target Node (Asset)</Label>
-                    <Select name="assetId" defaultValue={incident.assetId || "UNLINKED"}>
+                    <Select key={`asset-${incident.asset?.name || "UNLINKED"}`} name="assetName" defaultValue={incident.asset?.name || "UNLINKED"}>
                       <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                         <SelectValue placeholder="Associate Infrastructure (Optional)" />
                       </SelectTrigger>
                       <SelectContent className="bg-black/95 border-border/60 shadow-2xl backdrop-blur-md max-h-64">
                          <SelectItem value="UNLINKED" className="text-muted-foreground italic">None Selected</SelectItem>
                          {assets.map(asset => (
-                           <SelectItem key={asset.id} value={asset.id} className="font-mono">{asset.name}</SelectItem>
+                           <SelectItem key={asset.id} value={asset.name} className="font-mono">{asset.name}</SelectItem>
                          ))}
                       </SelectContent>
                     </Select>
@@ -405,14 +410,14 @@ export default async function IncidentDetailPage({
 
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Status</Label>
-                    <Select name="status" defaultValue={incident.status}>
+                    <Select key={`status-${incident.status.replace(/_/g, ' ')}`} name="status" defaultValue={incident.status.replace(/_/g, ' ')}>
                       <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
                         <SelectItem value="NEW">NEW</SelectItem>
-                        <SelectItem value="IN_PROGRESS">IN PROGRESS</SelectItem>
-                        <SelectItem value="PENDING_INFO">PENDING INFO</SelectItem>
+                        <SelectItem value="IN PROGRESS">IN PROGRESS</SelectItem>
+                        <SelectItem value="PENDING INFO">PENDING INFO</SelectItem>
                         <SelectItem value="RESOLVED">RESOLVED</SelectItem>
                         <SelectItem value="CLOSED">CLOSED</SelectItem>
                       </SelectContent>

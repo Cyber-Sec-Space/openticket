@@ -3,6 +3,8 @@ import { db } from "@/lib/db"
 import Link from "next/link"
 import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target } from "lucide-react"
 import { DashboardCharts } from "@/components/dashboard-charts"
+import { TrendChart } from "@/components/trend-chart"
+import { IncidentRadarChart } from "@/components/incident-radar-chart"
 import { VulnStatusChart } from "@/components/vuln-status-chart"
 import { VulnSeverityChart } from "@/components/vuln-severity-chart"
 
@@ -43,6 +45,59 @@ export default async function Home() {
     take: 4,
     include: { reporter: { select: { name: true, email: true } } }
   })
+
+  // 14 Days Trend Calculation
+  const trendDays = 14;
+  const now = new Date();
+  const startDate = new Date();
+  startDate.setDate(now.getDate() - trendDays);
+
+  const recentIncsForTrend = await db.incident.findMany({
+    where: { ...filterParams, createdAt: { gte: startDate } },
+    select: { createdAt: true }
+  });
+  
+  const recentVulnsForTrend = await db.vulnerability.findMany({
+    where: { createdAt: { gte: startDate } },
+    select: { createdAt: true }
+  });
+
+  const trendData = [];
+  for (let i = trendDays - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    
+    const isSameDay = (date1: Date, date2: Date) => 
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate();
+
+    trendData.push({
+      date: dateStr,
+      incidents: recentIncsForTrend.filter(inc => isSameDay(inc.createdAt, d)).length,
+      vulnerabilities: recentVulnsForTrend.filter(v => isSameDay(v.createdAt, d)).length
+    });
+  }
+
+  // Active Incident Typology & Severity for Radar Chart
+  const activeIncidentsList = await db.incident.findMany({
+    where: { ...filterParams, status: { notIn: ['CLOSED', 'RESOLVED'] } },
+    select: { type: true, severity: true }
+  });
+
+  const types = ['MALWARE', 'PHISHING', 'DATA_BREACH', 'UNAUTHORIZED_ACCESS', 'NETWORK_ANOMALY', 'OTHER'];
+  const incidentRadarData = types.map(type => {
+    const forType = activeIncidentsList.filter(inc => inc.type === type);
+    return {
+      type: type.replace(/_/g, ' '),
+      CRITICAL: forType.filter(inc => inc.severity === 'CRITICAL').length,
+      HIGH: forType.filter(inc => inc.severity === 'HIGH').length,
+      MEDIUM: forType.filter(inc => inc.severity === 'MEDIUM').length,
+      LOW: forType.filter(inc => inc.severity === 'LOW').length,
+      total: forType.length
+    };
+  });
 
   // Vulnerability Aggregation (Not filtered by REPORTER strictly to show total org exposure)
   const vulnStatusData = await db.vulnerability.groupBy({
@@ -140,16 +195,29 @@ export default async function Home() {
             <div className="p-5 border-b border-border/50 bg-black/20 flex items-center justify-between">
               <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-indigo-400" />
-                Active Incident Severity Matrix
+                Detection Trend
               </h3>
-              <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Incident Node</span>
+              <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Past 14 Days</span>
             </div>
             <div className="p-6 flex-1 flex flex-col justify-center min-h-[320px]">
-              <DashboardCharts data={chartMatrix} />
+              <TrendChart data={trendData} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Incident Radar */}
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-rose-950/10 md:col-span-2">
+              <div className="p-5 border-b border-rose-500/20 bg-rose-500/5">
+                <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                  <ShieldAlert className="w-4 h-4 text-rose-400" />
+                  Active Incident Typology & Severity Matrix
+                </h3>
+              </div>
+              <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
+                <IncidentRadarChart data={incidentRadarData} />
+              </div>
+            </div>
+            
             {/* Vuln Radar */}
             <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-indigo-950/10">
               <div className="p-5 border-b border-indigo-500/20 bg-indigo-500/5">

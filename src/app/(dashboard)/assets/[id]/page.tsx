@@ -146,7 +146,7 @@ export default async function AssetDetailPage({
 
                     <div className="space-y-2">
                       <Label className="text-primary/70 text-xs uppercase tracking-widest">Category</Label>
-                      <Select name="type" defaultValue={asset.type}>
+                      <Select key={`asset-type-${asset.type}`} name="type" defaultValue={asset.type}>
                          <SelectTrigger className="flex h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary">
                            <SelectValue />
                          </SelectTrigger>
@@ -162,7 +162,7 @@ export default async function AssetDetailPage({
 
                     <div className="space-y-2">
                       <Label className="text-primary/70 text-xs uppercase tracking-widest">Deployment State</Label>
-                      <Select name="status" defaultValue={asset.status}>
+                      <Select key={`asset-status-${asset.status}`} name="status" defaultValue={asset.status}>
                          <SelectTrigger className="flex h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary">
                            <SelectValue />
                          </SelectTrigger>

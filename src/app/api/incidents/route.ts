@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     where: filterParams,
     include: {
       reporter: { select: { name: true, email: true } },
-      assignee: { select: { name: true, email: true } },
+      assignees: { select: { name: true, email: true } },
       asset: { select: { name: true, type: true } }
     },
     orderBy: { createdAt: 'desc' }
