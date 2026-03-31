@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Analytics: Refactored Main Dashboard visual density, introducing a parallel `Recent Declarations` activity feed resolving blank spaces on generic loads.
+- Analytics: Upgraded React Recharts primitives utilizing SVG `<linearGradient>` and custom HTML tooltips, producing a highly polished premium aesthetic.
 - Security: Bound globally-configurable Two-Factor Enforce directives natively into the NextAuth resolution stream restricting credentials entirely if misaligned.
 - UI: Erected dedicated `/register` endpoints dynamically exposing public enrollment paths governed by Administrative registry flags.
 - Management: Deployed System Configuration framework (Phase 12) featuring a global `SystemSetting` singleton database entity.

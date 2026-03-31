@@ -21,17 +21,23 @@ export default async function Home() {
   const totalAssets = await db.asset.count()
   const compromisedAssets = await db.asset.count({ where: { status: 'COMPROMISED' } })
 
-  // Phase 7: Analytics Computations
   const severitiesData = await db.incident.groupBy({
     by: ['severity'],
     _count: { severity: true },
     where: filterParams
   })
 
-  // Format array explicitly mapping missing elements if needed
   const chartMatrix = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => {
     const found = severitiesData.find(d => d.severity === sev)
     return { severity: sev, count: found ? found._count.severity : 0 }
+  })
+
+  // Fetch recent actionable incidents
+  const recentIncidents = await db.incident.findMany({
+    where: filterParams,
+    orderBy: { createdAt: 'desc' },
+    take: 4,
+    include: { reporter: { select: { name: true, email: true } } }
   })
 
   return (
@@ -86,37 +92,73 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* Phase 7: Dynamic Analytics Chart */}
+      {/* Dynamic Analytics & Info Grid */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="glass-card rounded-xl border border-white/5 overflow-hidden col-span-1 lg:col-span-2 shadow-2xl">
-          <div className="p-5 border-b border-border/50 bg-black/10">
+        <div className="glass-card rounded-xl border border-white/5 overflow-hidden col-span-1 lg:col-span-2 shadow-2xl flex flex-col">
+          <div className="p-5 border-b border-border/50 bg-black/20 flex items-center justify-between">
              <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-purple-400" />
-                Active Triage Breakdown 
+                <BarChart3 className="w-5 h-5 text-indigo-400" />
+                Active Severity Triage Matrix
              </h3>
+             <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Live Telemetry</span>
           </div>
-          <div className="p-6">
+          <div className="p-6 flex-1 flex flex-col justify-center">
             <DashboardCharts data={chartMatrix} />
           </div>
         </div>
 
-        {/* Quick Actions / Navigation */}
-        <div className="col-span-1 border border-primary/20 bg-primary/5 rounded-xl flex flex-col justify-between p-6">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-primary mb-4">Command Actions</h2>
-            <div className="space-y-3">
-              <Link href="/incidents/new" className="group flex items-center p-4 bg-black/40 hover:bg-black border border-white/5 hover:border-primary/50 text-white rounded-lg transition-all shadow-xl">
-                 <ShieldAlert className="w-5 h-5 mr-3 text-primary group-hover:scale-110" />
+        {/* Right Sidebar */}
+        <div className="col-span-1 flex flex-col gap-6">
+          {/* Recent Activity */}
+          <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col flex-1">
+            <div className="p-4 border-b border-border/50 bg-black/20">
+               <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  Recent Declarations
+               </h3>
+            </div>
+            <div className="p-0 flex-1 divide-y divide-white/5">
+              {recentIncidents.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground text-sm font-medium">No recent incidents detected.</div>
+              ) : (
+                recentIncidents.map(inc => (
+                  <Link href={`/incidents/${inc.id}`} key={inc.id} className="block group p-4 hover:bg-white/5 transition-colors">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-1 pr-2">{inc.title}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase
+                        ${inc.severity === 'CRITICAL' ? 'bg-destructive/20 text-red-400' :
+                          inc.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
+                          inc.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-emerald-500/20 text-emerald-400'
+                        }
+                      `}>
+                        {inc.severity}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                      <span>{inc.reporter.name || "Unknown Operator"}</span>
+                      <span>{new Date(inc.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions / Navigation */}
+          <div className="border border-primary/20 bg-primary/5 rounded-xl flex flex-col justify-between p-5 shadow-[0_0_20px_rgba(0,100,255,0.05)]">
+            <h2 className="text-sm font-bold tracking-widest text-primary/80 mb-3 uppercase">Command Actions</h2>
+            <div className="space-y-2">
+              <Link href="/incidents/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-primary/50 text-white rounded-lg transition-all">
+                 <ShieldAlert className="w-4 h-4 mr-3 text-primary group-hover:scale-110 transition-transform" />
                  <div className="text-sm">
-                   <strong className="block font-semibold">Declare Incident</strong>
-                   <span className="text-xs text-muted-foreground">Log security anomaly</span>
+                   <strong className="block font-medium">Declare Incident</strong>
                  </div>
               </Link>
-              <Link href="/assets/new" className="group flex items-center p-4 bg-black/40 hover:bg-black border border-white/5 hover:border-blue-400/50 text-white rounded-lg transition-all shadow-xl">
-                 <Server className="w-5 h-5 mr-3 text-blue-400 group-hover:scale-110" />
+              <Link href="/assets/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-blue-400/50 text-white rounded-lg transition-all">
+                 <Server className="w-4 h-4 mr-3 text-blue-400 group-hover:scale-110 transition-transform" />
                  <div className="text-sm">
-                   <strong className="block font-semibold">Catalog Infrastructure</strong>
-                   <span className="text-xs text-muted-foreground">Bind server mapping</span>
+                   <strong className="block font-medium">Catalog Infrastructure</strong>
                  </div>
               </Link>
             </div>
