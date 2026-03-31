@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ShieldAlert, ArrowLeft } from "lucide-react"
+import { ShieldAlert, ArrowLeft, Activity } from "lucide-react"
 import { createIncident } from "./actions"
 import Link from "next/link"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default async function NewIncidentPage() {
   const session = await auth()
@@ -54,61 +55,53 @@ export default async function NewIncidentPage() {
               <div className="space-y-2">
                 <Label htmlFor="type" className="text-sm tracking-wide font-semibold text-primary">Category</Label>
                 <div className="relative">
-                  <select 
-                    id="type" 
-                    name="type" 
-                    className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8"
-                    defaultValue="OTHER"
-                  >
-                    <option value="MALWARE" className="bg-background">Malware Infection</option>
-                    <option value="PHISHING" className="bg-background">Phishing Attempt</option>
-                    <option value="DATA_BREACH" className="bg-background text-destructive">Data Breach</option>
-                    <option value="UNAUTHORIZED_ACCESS" className="bg-background">Unauthorized Access</option>
-                    <option value="NETWORK_ANOMALY" className="bg-background">Network Anomaly</option>
-                    <option value="OTHER" className="bg-background text-muted-foreground">Other / Triage</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                  </div>
+                  <Select name="type" defaultValue="OTHER">
+                    <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+                      <SelectValue placeholder="Select Threat Classification..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
+                      <SelectItem value="MALWARE">Malware Infection</SelectItem>
+                      <SelectItem value="PHISHING">Phishing Attempt</SelectItem>
+                      <SelectItem value="DATA_BREACH" className="text-destructive">Data Breach</SelectItem>
+                      <SelectItem value="UNAUTHORIZED_ACCESS">Unauthorized Access</SelectItem>
+                      <SelectItem value="NETWORK_ANOMALY">Network Anomaly</SelectItem>
+                      <SelectItem value="OTHER" className="text-muted-foreground">Other / Triage</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="severity" className="text-sm tracking-wide font-semibold text-primary">Threat Severity</Label>
                 <div className="relative">
-                  <select 
-                    id="severity" 
-                    name="severity" 
-                    className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8"
-                    defaultValue="LOW"
-                  >
-                    <option value="LOW" className="bg-background text-white">Low</option>
-                    <option value="MEDIUM" className="bg-background text-yellow-400">Medium</option>
-                    <option value="HIGH" className="bg-background text-orange-500">High</option>
-                    <option value="CRITICAL" className="bg-background text-destructive font-bold">Critical</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                  </div>
+                  <Select name="severity" defaultValue="LOW">
+                     <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+                       <SelectValue placeholder="Assess Initial Threat Level..." />
+                     </SelectTrigger>
+                     <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
+                       <SelectItem value="LOW">Low</SelectItem>
+                       <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
+                       <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>
+                       <SelectItem value="CRITICAL" className="text-destructive font-bold">Critical</SelectItem>
+                     </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="assetId" className="text-sm tracking-wide font-semibold text-primary">Correlated Asset</Label>
                 <div className="relative">
-                  <select 
-                    id="assetId" 
-                    name="assetId" 
-                    className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8"
-                  >
-                    <option value="" className="bg-background text-muted-foreground">None Selected</option>
-                    {assets.map(asset => (
-                      <option key={asset.id} value={asset.id} className="bg-background hover:bg-muted font-mono">{asset.name}</option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                  </div>
+                  <Select name="assetId" defaultValue="">
+                     <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+                       <SelectValue placeholder="Associate Infrastructure (Optional)" />
+                     </SelectTrigger>
+                     <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
+                       <SelectItem value="" className="text-muted-foreground italic">None Selected</SelectItem>
+                       {assets.map(asset => (
+                         <SelectItem key={asset.id} value={asset.id} className="font-mono">{asset.name}</SelectItem>
+                       ))}
+                     </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

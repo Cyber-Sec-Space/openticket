@@ -5,8 +5,9 @@ A Cybersecurity Incident & Inventory Management system for SecOps and IT personn
 ## Core Architecture
 - **Framework:** Next.js 15 (App Router)
 - **Database:** PostgreSQL (with Prisma ORM V6)
-- **Authentication:** Auth.js v5 (NextAuth.js) with role-based access control (RBAC). 
-- **Styling UI:** TailwindCSS v4 with Shadcn UI components.
+- **Authentication:** Auth.js v5 (NextAuth.js) with role-based access control (RBAC).
+- **Assignments:** Native M2M Incident Multi-Assignee (SecOps/Admins) task distribution framework.
+- **Styling UI:** TailwindCSS v4 with Shadcn UI components & custom Glassmorphism designs.
 
 ## Development Setup
 

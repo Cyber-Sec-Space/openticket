@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Trash2, Edit3, ShieldAlert, Activity } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
 
 export default async function IncidentDetailPage({ 
   params, 
@@ -28,7 +30,7 @@ export default async function IncidentDetailPage({
     where: { id },
     include: {
       reporter: true,
-      assignee: true,
+      assignees: true,
       asset: true,
       comments: {
         include: { author: true },
@@ -70,14 +72,20 @@ export default async function IncidentDetailPage({
     
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
-    let newAssigneeId: string | null = formData.get("assigneeId") as string
-    if (!newAssigneeId || newAssigneeId === "UNASSIGNED") newAssigneeId = null;
+    const assigneeIds = formData.getAll("assigneeIds") as string[]
+    const validAssigneeIds = assigneeIds.filter(id => id !== "UNASSIGNED")
 
-    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignee: ${newAssigneeId || 'Unassigned'}`
+    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users`
 
     await db.incident.update({
       where: { id: incident!.id },
-      data: { status: newStatus, severity: newSeverity, assigneeId: newAssigneeId }
+      data: { 
+        status: newStatus, 
+        severity: newSeverity,
+        assignees: {
+          set: validAssigneeIds.map(id => ({ id }))
+        }
+      }
     })
     
     await db.auditLog.create({
@@ -188,21 +196,19 @@ export default async function IncidentDetailPage({
                   <div className="space-y-2">
                     <Label className="text-primary/70 text-xs uppercase tracking-widest">Category</Label>
                     <div className="relative">
-                      <select 
-                        name="type" 
-                        defaultValue={incident.type || "OTHER"}
-                        className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8"
-                      >
-                        <option value="MALWARE" className="bg-background">Malware Infection</option>
-                        <option value="PHISHING" className="bg-background">Phishing Attempt</option>
-                        <option value="DATA_BREACH" className="bg-background text-destructive">Data Breach</option>
-                        <option value="UNAUTHORIZED_ACCESS" className="bg-background">Unauthorized Access</option>
-                        <option value="NETWORK_ANOMALY" className="bg-background">Network Anomaly</option>
-                        <option value="OTHER" className="bg-background text-muted-foreground">Other / Triage</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                      </div>
+                      <Select name="type" defaultValue={incident.type || "OTHER"}>
+                        <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
+                          <SelectValue placeholder="Category..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
+                          <SelectItem value="MALWARE">Malware Infection</SelectItem>
+                          <SelectItem value="PHISHING">Phishing Attempt</SelectItem>
+                          <SelectItem value="DATA_BREACH" className="text-destructive">Data Breach</SelectItem>
+                          <SelectItem value="UNAUTHORIZED_ACCESS">Unauthorized Access</SelectItem>
+                          <SelectItem value="NETWORK_ANOMALY">Network Anomaly</SelectItem>
+                          <SelectItem value="OTHER" className="text-muted-foreground">Other / Triage</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -336,34 +342,42 @@ export default async function IncidentDetailPage({
               <div className="p-6">
                 <form action={updateIncidentAction} className="space-y-5">
                   <div className="space-y-2">
-                    <Label className="text-xs text-white/70">Assignee</Label>
-                    <select name="assigneeId" defaultValue={incident.assigneeId || "UNASSIGNED"} className="w-full rounded-md border border-border/60 bg-black/50 p-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:outline-none transition-all">
-                      <option value="UNASSIGNED" className="text-muted-foreground italic">Unassigned</option>
-                      {eligibleAssignees.map(u => (
-                        <option key={u.id} value={u.id}>{u.name} [{u.role}]</option>
-                      ))}
-                    </select>
+                    <Label className="text-xs text-white/70">Execution Personnel (Assignees)</Label>
+                    <MultiAssigneePicker 
+                      users={eligibleAssignees}
+                      defaultSelectedIds={incident.assignees.map(a => a.id)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Severity</Label>
-                    <select name="severity" defaultValue={incident.severity} className="w-full rounded-md border border-border/60 bg-black/50 p-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:outline-none transition-all">
-                      <option value="LOW">LOW</option>
-                      <option value="MEDIUM">MEDIUM</option>
-                      <option value="HIGH">HIGH</option>
-                      <option value="CRITICAL">CRITICAL</option>
-                    </select>
+                    <Select name="severity" defaultValue={incident.severity}>
+                       <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
+                         <SelectItem value="LOW">LOW</SelectItem>
+                         <SelectItem value="MEDIUM" className="text-yellow-400">MEDIUM</SelectItem>
+                         <SelectItem value="HIGH" className="text-orange-500">HIGH</SelectItem>
+                         <SelectItem value="CRITICAL" className="text-destructive font-bold">CRITICAL</SelectItem>
+                       </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Status</Label>
-                    <select name="status" defaultValue={incident.status} className="w-full rounded-md border border-border/60 bg-black/50 p-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:outline-none transition-all">
-                      <option value="NEW">NEW</option>
-                      <option value="IN_PROGRESS">IN_PROGRESS</option>
-                      <option value="PENDING_INFO">PENDING_INFO</option>
-                      <option value="RESOLVED">RESOLVED</option>
-                      <option value="CLOSED">CLOSED</option>
-                    </select>
+                    <Select name="status" defaultValue={incident.status}>
+                       <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
+                         <SelectItem value="NEW">NEW</SelectItem>
+                         <SelectItem value="IN_PROGRESS">IN_PROGRESS</SelectItem>
+                         <SelectItem value="PENDING_INFO">PENDING_INFO</SelectItem>
+                         <SelectItem value="RESOLVED">RESOLVED</SelectItem>
+                         <SelectItem value="CLOSED">CLOSED</SelectItem>
+                       </SelectContent>
+                    </Select>
                   </div>
 
                   <Button type="submit" className="w-full font-semibold bg-primary hover:bg-primary/80 shadow-[0_0_15px_rgba(0,255,200,0.2)] mt-2">
@@ -376,10 +390,16 @@ export default async function IncidentDetailPage({
 
           {session.user.role === 'REPORTER' && (
              <div className="glass-card rounded-xl p-6 shadow-2xl">
-                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Assigned Handler</strong>
-                  <span className={incident.assignee ? "text-foreground/90 font-medium text-sm" : "text-muted-foreground italic text-sm"}>
-                    {incident.assignee ? incident.assignee.name : "Waiting for Triage"}
-                  </span>
+                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Assigned Handlers</strong>
+                 {incident.assignees.length > 0 ? (
+                   <div className="flex flex-wrap gap-1.5 mt-2">
+                     {incident.assignees.map(a => (
+                       <Badge key={a.id} variant="secondary" className="bg-blue-500/10 text-blue-400 border border-blue-500/20">{a.name}</Badge>
+                     ))}
+                   </div>
+                 ) : (
+                   <span className="text-muted-foreground italic text-sm mt-1 block">Waiting for Triage</span>
+                 )}
              </div>
           )}
         </div>

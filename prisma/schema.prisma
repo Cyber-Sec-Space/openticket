@@ -58,7 +58,7 @@ model User {
   
   // Relations for OpenTicket
   reportedIncidents Incident[] @relation("Reporter")
-  assignedIncidents Incident[] @relation("Assignee")
+  assignedIncidents Incident[] @relation("IncidentAssignees")
   comments          Comment[]
   auditLogs         AuditLog[]
 }
@@ -139,8 +139,7 @@ model Incident {
   reporterId  String
   reporter    User     @relation("Reporter", fields: [reporterId], references: [id])
   
-  assigneeId  String?
-  assignee    User?    @relation("Assignee", fields: [assigneeId], references: [id])
+  assignees   User[]   @relation("IncidentAssignees")
 
   assetId     String?
   asset       Asset?   @relation(fields: [assetId], references: [id], onDelete: SetNull)

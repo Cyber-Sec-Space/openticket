@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ShieldAlert, Plus, Filter, ChevronLeft, ChevronRight, Search } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default async function IncidentsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
@@ -40,7 +41,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
     where: filterParams,
     include: {
       reporter: { select: { name: true } },
-      assignee: { select: { name: true } },
+      assignees: { select: { name: true } },
     },
     orderBy: { createdAt: 'desc' },
     skip: (page - 1) * TAKE,
@@ -92,25 +93,35 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
 
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Status</label>
-            <select name="status" defaultValue={resolvedParams.status || "ALL"} className="h-9 px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
-              <option value="ALL">All Statuses</option>
-              <option value="NEW">New</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="PENDING_INFO">Pending Info</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="CLOSED">Closed</option>
-            </select>
+            <Select name="status" defaultValue={resolvedParams.status || "ALL"}>
+              <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="NEW">New</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                <SelectItem value="PENDING_INFO">Pending Info</SelectItem>
+                <SelectItem value="RESOLVED">Resolved</SelectItem>
+                <SelectItem value="CLOSED">Closed</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Severity</label>
-            <select name="severity" defaultValue={resolvedParams.severity || "ALL"} className="h-9 px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
-               <option value="ALL">All Severities</option>
-               <option value="LOW">Low</option>
-               <option value="MEDIUM">Medium</option>
-               <option value="HIGH">High</option>
-               <option value="CRITICAL">Critical</option>
-            </select>
+            <Select name="severity" defaultValue={resolvedParams.severity || "ALL"}>
+               <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
+                 <SelectValue placeholder="All Severities" />
+               </SelectTrigger>
+               <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
+                 <SelectItem value="ALL">All Severities</SelectItem>
+                 <SelectItem value="LOW">Low</SelectItem>
+                 <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
+                 <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>
+                 <SelectItem value="CRITICAL" className="text-destructive font-bold">Critical</SelectItem>
+               </SelectContent>
+            </Select>
           </div>
 
           <Button type="submit" variant="secondary" className="h-9 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 border-dashed">
@@ -169,7 +180,11 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{incident.reporter?.name || "Unknown"}</TableCell>
-                <TableCell className="text-muted-foreground font-medium border-r border-border/20">{incident.assignee?.name || <span className="text-muted-foreground/50 italic">Unassigned</span>}</TableCell>
+                <TableCell className="text-muted-foreground font-medium border-r border-border/20">
+                  {incident.assignees.length > 0 
+                    ? incident.assignees.map(a => a.name).join(', ') 
+                    : <span className="text-muted-foreground/50 italic">Unassigned</span>}
+                </TableCell>
                 <TableCell className="text-right text-muted-foreground text-sm font-mono">{incident.createdAt.toLocaleDateString()}</TableCell>
               </TableRow>
             ))}
