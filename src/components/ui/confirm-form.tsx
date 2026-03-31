@@ -1,5 +1,6 @@
 "use client"
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle } from "lucide-react"
 
@@ -11,6 +12,11 @@ interface ConfirmFormProps extends React.FormHTMLAttributes<HTMLFormElement> {
 export function ConfirmForm({ action, promptMessage, children, className, ...props }: ConfirmFormProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [formDataCache, setFormDataCache] = useState<FormData | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -35,9 +41,9 @@ export function ConfirmForm({ action, promptMessage, children, className, ...pro
         {children}
       </form>
 
-      {isOpen && (
+      {isOpen && isMounted && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-black/90 border border-primary/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-2xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200 relative overflow-hidden whitespace-normal break-words">
+          <div className="bg-black/90 border border-primary/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-2xl p-6 max-w-sm w-full animate-in zoom-in-95 duration-200 relative overflow-hidden whitespace-normal break-words m-4">
             {/* Ambient Background Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-10 bg-destructive/30 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -57,7 +63,8 @@ export function ConfirmForm({ action, promptMessage, children, className, ...pro
                </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
