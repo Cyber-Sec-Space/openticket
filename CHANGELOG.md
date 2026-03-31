@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Quality of Life: Removed database-centric underscores from `Select` dropdown states (e.g. `IN_PROGRESS` -> `In Progress`) increasing reporting visual elegance.
+- Quality of Life: Corrected `<SelectContent>` popup geometries preventing contextual dropdown menus from physically overlaying/obscuring the underlying trigger Input fields (`alignItemWithTrigger=false`).
 - Security: Implemented a proprietary `<ConfirmForm>` react client boundary wrapping all destructive server actions (e.g. Terminate Incident, Execution modifications) with strict browser-level intent validation checks.
 - Quality of Life: Standardized the default global tracking prefixes across index tables and detail queries from `TKT-` (Ticket) to `INC-` (Incident) fully embracing SecOps nomenclature.
 - Phase 4 Interface Revamp: Exchanged all visually clashing OS-native HTML drop-down menus (`<select>`) globally with custom-styled headless Shadcn `<Select>` elements to standardize the OpenTicket Glassmorphic premium motif across MacOS/Windows variants.

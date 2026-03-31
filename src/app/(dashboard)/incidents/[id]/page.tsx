@@ -371,7 +371,7 @@ export default async function IncidentDetailPage({
                        <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                          <SelectValue />
                        </SelectTrigger>
-                       <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
+                       <SelectContent className="bg-black/95 shadow-[0_0_30px_rgba(0,0,0,0.8)] backdrop-blur-md border border-white/10 mt-1">
                          <SelectItem value="NEW">New</SelectItem>
                          <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                          <SelectItem value="PENDING_INFO">Pending Info</SelectItem>
