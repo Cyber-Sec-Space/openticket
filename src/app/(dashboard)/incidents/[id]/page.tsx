@@ -190,7 +190,7 @@ export default async function IncidentDetailPage({
                     <div className="relative">
                       <select 
                         name="type" 
-                        defaultValue={incident.type}
+                        defaultValue={incident.type || "OTHER"}
                         className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8"
                       >
                         <option value="MALWARE" className="bg-background">Malware Infection</option>
@@ -233,7 +233,7 @@ export default async function IncidentDetailPage({
                       Category Alignment
                     </h4>
                     <Badge variant="outline" className="border-primary/40 text-primary/80 bg-primary/5 tracking-wider px-3">
-                      {incident.type.replace('_', ' ')}
+                      {(incident.type || 'OTHER').replace('_', ' ')}
                     </Badge>
                   </div>
 
