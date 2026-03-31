@@ -22,6 +22,8 @@ export async function createVulnerabilityAction(formData: FormData) {
   const cvssScoreRaw = formData.get("cvssScore") as string
   const cvssScore = cvssScoreRaw ? parseFloat(cvssScoreRaw) : null
 
+  const assetIds = formData.getAll("assetIds") as string[]
+
   if (!title || !description) {
     throw new Error("Validation structural error: missing foundational CVE markers.")
   }
@@ -32,7 +34,10 @@ export async function createVulnerabilityAction(formData: FormData) {
       cveId,
       description,
       cvssScore,
-      severity
+      severity,
+      affectedAssets: {
+        connect: assetIds.map(id => ({ id }))
+      }
     }
   })
 
