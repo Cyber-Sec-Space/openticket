@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ClickableTableRow } from "@/components/ui/clickable-row"
 import { Bug, Plus, ShieldCheck, ShieldAlert, Shield } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -74,7 +75,11 @@ export default async function VulnerabilitiesPage() {
                  </TableCell>
                </TableRow>
             ) : vulnerabilities.map(vuln => (
-               <TableRow key={vuln.id} className="hover:bg-red-400/5 border-border transition-colors">
+               <ClickableTableRow 
+                  key={vuln.id} 
+                  href={`/vulnerabilities/${vuln.id}`} 
+                  className="hover:bg-red-400/5 hover:border-red-500/30 border-border transition-all duration-200 group relative"
+               >
                  <TableCell className="font-medium text-foreground py-4 pl-6">
                     <div className="flex flex-col">
                        <Link href={`/vulnerabilities/${vuln.id}`} className="hover:text-red-400 transition-colors">
@@ -119,7 +124,7 @@ export default async function VulnerabilitiesPage() {
                        {vuln.status}
                     </Badge>
                  </TableCell>
-               </TableRow>
+               </ClickableTableRow>
             ))}
           </TableBody>
         </Table>
