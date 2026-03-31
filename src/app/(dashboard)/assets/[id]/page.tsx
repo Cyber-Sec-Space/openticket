@@ -117,9 +117,9 @@ export default async function AssetDetailPage({
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
           <Badge className={`px-3 py-1 bg-transparent border ${asset.status === 'COMPROMISED' ? 'border-destructive text-destructive shadow-[0_0_15px_rgba(255,20,20,0.3)] animate-pulse' : (asset.status === 'ACTIVE' ? 'border-primary text-primary shadow-[0_0_15px_rgba(0,255,200,0.2)]' : 'border-muted-foreground text-muted-foreground')}`}>
-            {asset.status}
+            {asset.status.replace(/_/g, ' ')}
           </Badge>
-          <Badge variant="outline" className="px-3 py-1 border-white/20 text-white/80 bg-black/20 backdrop-blur-sm">{asset.type}</Badge>
+          <Badge variant="outline" className="px-3 py-1 border-white/20 text-white/80 bg-black/20 backdrop-blur-sm">{asset.type.replace(/_/g, ' ')}</Badge>
         </div>
       </div>
 
@@ -242,12 +242,12 @@ export default async function AssetDetailPage({
                        </TableCell>
                        <TableCell>
                          <Badge className={`bg-transparent border text-[10px] ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive' : 'border-primary/50 text-primary/80'}`}>
-                           {incident.severity}
+                           {incident.severity.replace(/_/g, ' ')}
                          </Badge>
                        </TableCell>
                        <TableCell>
                           <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground bg-black/30 text-[10px]">
-                            {incident.status}
+                            {incident.status.replace(/_/g, ' ')}
                           </Badge>
                        </TableCell>
                      </TableRow>

@@ -103,7 +103,7 @@ export default async function VulnerabilitiesPage() {
 
                  <TableCell className="text-center py-4">
                     <Badge variant="outline" className={`bg-transparent border ${getSeverityStyle(vuln.severity, vuln.cvssScore)} uppercase tracking-widest text-[10px]`}>
-                      {vuln.severity}
+                      {vuln.severity.replace(/_/g, ' ')}
                     </Badge>
                  </TableCell>
 
@@ -121,7 +121,7 @@ export default async function VulnerabilitiesPage() {
                  <TableCell className="text-right pr-6 py-4">
                     <Badge variant="outline" className={`bg-black/50 ${getStatusBadge(vuln.status)}`}>
                        {vuln.status === 'RESOLVED' && <ShieldCheck className="w-3 h-3 mr-1.5" />}
-                       {vuln.status}
+                       {vuln.status.replace(/_/g, ' ')}
                     </Badge>
                  </TableCell>
                </ClickableTableRow>

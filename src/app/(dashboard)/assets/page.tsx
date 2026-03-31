@@ -162,11 +162,11 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
                 <TableCell className="font-medium text-foreground">
                   {asset.name}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{asset.type}</TableCell>
+                <TableCell className="text-muted-foreground">{asset.type.replace(/_/g, ' ')}</TableCell>
                 <TableCell className="font-mono text-sm text-blue-400">{asset.ipAddress || 'Internal/NAT'}</TableCell>
                 <TableCell>
                   <Badge className={`bg-transparent border ${asset.status === 'COMPROMISED' ? 'border-orange-500 text-orange-500 shadow-[0_0_10px_rgba(255,150,0,0.2)] animate-pulse' : (asset.status === 'ACTIVE' ? 'border-primary text-primary' : 'border-muted-foreground text-muted-foreground')}`}>
-                    {asset.status}
+                    {asset.status.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground font-mono text-xs pr-6">{asset.createdAt.toLocaleDateString()}</TableCell>

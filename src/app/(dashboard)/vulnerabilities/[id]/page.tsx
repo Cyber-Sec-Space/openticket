@@ -46,10 +46,10 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
                 CVSS: {vuln.cvssScore !== null ? vuln.cvssScore.toFixed(1) : 'N/A'}
              </Badge>
              <Badge variant={vuln.severity === 'CRITICAL' ? 'destructive' : 'secondary'} className="font-mono bg-black/50">
-                {vuln.severity}
+                {vuln.severity.replace(/_/g, ' ')}
              </Badge>
              <Badge variant="outline" className="font-mono bg-blue-950/30 text-blue-400 border-blue-500/30">
-                {vuln.status}
+                {vuln.status.replace(/_/g, ' ')}
              </Badge>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center">
@@ -133,7 +133,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
                         <Link href={`/assets`} className="flex justify-between items-center group">
                           <div>
                             <p className="font-bold font-mono text-sm text-red-400 group-hover:text-red-300 transition-colors">{asset.name}</p>
-                            <span className="text-[10px] text-muted-foreground uppercase">{asset.type} • {asset.status}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">{asset.type.replace(/_/g, ' ')} • {asset.status.replace(/_/g, ' ')}</span>
                           </div>
                           {asset.ipAddress && <span className="text-xs bg-red-950/50 text-red-300 px-2 py-1 flex items-center rounded border border-red-900/50 font-mono tracking-tighter">{asset.ipAddress}</span>}
                         </Link>

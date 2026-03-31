@@ -171,12 +171,12 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                 </TableCell>
                 <TableCell>
                   <Badge className={`bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_10px_rgba(255,50,50,0.2)] animate-pulse' : 'border-primary text-primary'}`}>
-                    {incident.severity}
+                    {incident.severity.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground bg-black/30">
-                    {incident.status}
+                    {incident.status.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{incident.reporter?.name || "Unknown"}</TableCell>

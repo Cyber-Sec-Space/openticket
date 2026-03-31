@@ -195,9 +195,9 @@ export default async function IncidentDetailPage({
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
           <Badge className={`px-3 py-1 bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_15px_rgba(255,20,20,0.3)] animate-pulse' : 'border-primary text-primary'}`}>
-            {incident.severity}
+            {incident.severity.replace(/_/g, ' ')}
           </Badge>
-          <Badge variant="outline" className="px-3 py-1 border-white/20 text-white/80 bg-black/20 backdrop-blur-sm">{incident.status}</Badge>
+          <Badge variant="outline" className="px-3 py-1 border-white/20 text-white/80 bg-black/20 backdrop-blur-sm">{incident.status.replace(/_/g, ' ')}</Badge>
         </div>
       </div>
 
@@ -263,7 +263,7 @@ export default async function IncidentDetailPage({
                       Category Alignment
                     </h4>
                     <Badge variant="outline" className="border-primary/40 text-primary/80 bg-primary/5 tracking-wider px-3">
-                      {(incident.type || 'OTHER').replace('_', ' ')}
+                      {(incident.type || 'OTHER').replace(/_/g, ' ')}
                     </Badge>
                   </div>
 

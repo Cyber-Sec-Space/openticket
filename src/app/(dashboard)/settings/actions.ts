@@ -32,7 +32,7 @@ export async function generate2FA() {
   const secret = baseSecret.base32
 
   const totp = new OTPAuth.TOTP({
-    issuer: "OpenTicket SecOps",
+    issuer: "OpenTicket",
     label: session.user.email,
     algorithm: "SHA1",
     digits: 6,
@@ -58,7 +58,7 @@ export async function verifyAndEnable2FA(token: string) {
 
   const totp = new OTPAuth.TOTP({ secret: user.twoFactorSecret, algorithm: 'SHA1', digits: 6, period: 30 })
   const isValid = totp.validate({ token, window: 1 }) !== null
-  
+
   if (!isValid) {
     return { error: "Invalid TOTP Code provided. Synchronization failed." }
   }

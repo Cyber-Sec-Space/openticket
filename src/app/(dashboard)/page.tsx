@@ -15,11 +15,11 @@ export default async function Home() {
   const filterParams: any = {}
   if (session.user.role === 'REPORTER') filterParams.reporterId = session.user.id
 
-  const totalIncidents = await db.incident.count({ where: filterParams })
-  const criticalIncidents = await db.incident.count({ 
-    where: { ...filterParams, severity: 'CRITICAL', status: { notIn: ['CLOSED', 'RESOLVED'] } } 
+  const activeIncidents = await db.incident.count({ where: { ...filterParams, status: { notIn: ['CLOSED', 'RESOLVED'] } } })
+  const criticalIncidents = await db.incident.count({
+    where: { ...filterParams, severity: 'CRITICAL', status: { notIn: ['CLOSED', 'RESOLVED'] } }
   })
-  
+
   const totalAssets = await db.asset.count()
   const compromisedAssets = await db.asset.count({ where: { status: 'COMPROMISED' } })
 
@@ -76,14 +76,14 @@ export default async function Home() {
           </div>
         </div>
       </header>
-      
+
       {/* Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
         <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><ShieldAlert size={80} /></div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Total Incidents</p>
-            <h3 className="text-4xl font-bold">{totalIncidents}</h3>
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Active Incidents</p>
+            <h3 className="text-4xl font-bold">{activeIncidents}</h3>
           </div>
         </div>
 
@@ -132,17 +132,17 @@ export default async function Home() {
 
       {/* Dynamic Analytics & Info Grid */}
       <div className="mt-8 grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
+
         {/* Left Core Analytics Column */}
         <div className="col-span-1 xl:col-span-2 flex flex-col gap-8">
-          
+
           <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
             <div className="p-5 border-b border-border/50 bg-black/20 flex items-center justify-between">
-               <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-indigo-400" />
-                  Active Incident Severity Matrix
-               </h3>
-               <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Incident Node</span>
+              <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-indigo-400" />
+                Active Incident Severity Matrix
+              </h3>
+              <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Incident Node</span>
             </div>
             <div className="p-6 flex-1 flex flex-col justify-center min-h-[320px]">
               <DashboardCharts data={chartMatrix} />
@@ -150,33 +150,33 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-             {/* Vuln Radar */}
-             <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-indigo-950/10">
-                <div className="p-5 border-b border-indigo-500/20 bg-indigo-500/5">
-                   <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
-                      <Target className="w-4 h-4 text-indigo-400" />
-                      Threat Vector Distribution
-                   </h3>
-                </div>
-                <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
-                  <VulnSeverityChart data={vulnSeverityMatrix} />
-                </div>
-             </div>
-             
-             {/* Vuln Donut */}
-             <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
-                <div className="p-5 border-b border-border/50 bg-black/20">
-                   <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
-                      <ScanFace className="w-4 h-4 text-emerald-400" />
-                      Vulnerability Resolution Status
-                   </h3>
-                </div>
-                <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
-                  <VulnStatusChart data={vulnStatusMatrix} />
-                </div>
-             </div>
+            {/* Vuln Radar */}
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-indigo-950/10">
+              <div className="p-5 border-b border-indigo-500/20 bg-indigo-500/5">
+                <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                  <Target className="w-4 h-4 text-indigo-400" />
+                  Threat Vector Distribution
+                </h3>
+              </div>
+              <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
+                <VulnSeverityChart data={vulnSeverityMatrix} />
+              </div>
+            </div>
+
+            {/* Vuln Donut */}
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
+              <div className="p-5 border-b border-border/50 bg-black/20">
+                <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                  <ScanFace className="w-4 h-4 text-emerald-400" />
+                  Vulnerability Resolution Status
+                </h3>
+              </div>
+              <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
+                <VulnStatusChart data={vulnStatusMatrix} />
+              </div>
+            </div>
           </div>
-          
+
         </div>
 
         {/* Right Sidebar */}
@@ -184,10 +184,10 @@ export default async function Home() {
           {/* Recent Activity */}
           <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col flex-1">
             <div className="p-4 border-b border-border/50 bg-black/20">
-               <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
-                  <Activity className="w-4 h-4 text-emerald-400" />
-                  Recent Declarations
-               </h3>
+              <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                Recent Declarations
+              </h3>
             </div>
             <div className="p-0 flex-1 divide-y divide-white/5">
               {recentIncidents.length === 0 ? (
@@ -200,11 +200,11 @@ export default async function Home() {
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase
                         ${inc.severity === 'CRITICAL' ? 'bg-destructive/20 text-red-400' :
                           inc.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
-                          inc.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-emerald-500/20 text-emerald-400'
+                            inc.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-emerald-500/20 text-emerald-400'
                         }
                       `}>
-                        {inc.severity}
+                        {inc.severity.replace(/_/g, ' ')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs text-muted-foreground">
@@ -222,16 +222,16 @@ export default async function Home() {
             <h2 className="text-sm font-bold tracking-widest text-primary/80 mb-3 uppercase">Command Actions</h2>
             <div className="space-y-2">
               <Link href="/incidents/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-primary/50 text-white rounded-lg transition-all">
-                 <ShieldAlert className="w-4 h-4 mr-3 text-primary group-hover:scale-110 transition-transform" />
-                 <div className="text-sm">
-                   <strong className="block font-medium">Declare Incident</strong>
-                 </div>
+                <ShieldAlert className="w-4 h-4 mr-3 text-primary group-hover:scale-110 transition-transform" />
+                <div className="text-sm">
+                  <strong className="block font-medium">Declare Incident</strong>
+                </div>
               </Link>
               <Link href="/assets/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-blue-400/50 text-white rounded-lg transition-all">
-                 <Server className="w-4 h-4 mr-3 text-blue-400 group-hover:scale-110 transition-transform" />
-                 <div className="text-sm">
-                   <strong className="block font-medium">Catalog Infrastructure</strong>
-                 </div>
+                <Server className="w-4 h-4 mr-3 text-blue-400 group-hover:scale-110 transition-transform" />
+                <div className="text-sm">
+                  <strong className="block font-medium">Catalog Infrastructure</strong>
+                </div>
               </Link>
             </div>
           </div>
