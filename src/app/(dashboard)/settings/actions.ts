@@ -3,8 +3,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-// @ts-ignore
-import { authenticator } from "otplib"
+import * as OTPAuth from "otpauth"
 import { revalidatePath } from "next/cache"
 
 export async function updateProfile(formData: FormData) {
@@ -29,8 +28,18 @@ export async function generate2FA() {
   const session = await auth()
   if (!session?.user?.id || !session.user.email) return { error: "Unauthorized" }
 
-  const secret = authenticator.generateSecret()
-  const otpauthUrl = authenticator.keyuri(session.user.email, "OpenTicket SecOps", secret)
+  const baseSecret = new OTPAuth.Secret({ size: 20 })
+  const secret = baseSecret.base32
+
+  const totp = new OTPAuth.TOTP({
+    issuer: "OpenTicket SecOps",
+    label: session.user.email,
+    algorithm: "SHA1",
+    digits: 6,
+    period: 30,
+    secret: baseSecret
+  })
+  const otpauthUrl = totp.toString()
 
   await db.user.update({
     where: { id: session.user.id },
@@ -47,7 +56,8 @@ export async function verifyAndEnable2FA(token: string) {
   const user = await db.user.findUnique({ where: { id: session.user.id } })
   if (!user || !user.twoFactorSecret) return { error: "No secret generated." }
 
-  const isValid = authenticator.verify({ token, secret: user.twoFactorSecret })
+  const totp = new OTPAuth.TOTP({ secret: user.twoFactorSecret, algorithm: 'SHA1', digits: 6, period: 30 })
+  const isValid = totp.validate({ token, window: 1 }) !== null
   
   if (!isValid) {
     return { error: "Invalid TOTP Code provided. Synchronization failed." }

@@ -2,8 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { db } from "./lib/db"
 import bcrypt from "bcryptjs"
-// @ts-ignore
-import { authenticator } from "otplib"
+import * as OTPAuth from "otpauth"
 import { CredentialsSignin } from "next-auth"
 
 class Missing2FAError extends CredentialsSignin {
@@ -40,7 +39,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (!code) {
              throw new Missing2FAError()
           }
-          const isTotpValid = authenticator.verify({ token: code, secret: user.twoFactorSecret })
+          const totp = new OTPAuth.TOTP({ secret: user.twoFactorSecret, algorithm: 'SHA1', digits: 6, period: 30 })
+          const isTotpValid = totp.validate({ token: code, window: 1 }) !== null
           if (!isTotpValid) {
              throw new Invalid2FAError()
           }
