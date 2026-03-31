@@ -100,8 +100,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
                 <SelectItem value="ALL">All Statuses</SelectItem>
                 <SelectItem value="NEW">New</SelectItem>
-                <SelectItem value="IN PROGRESS">In Progress</SelectItem>
-                <SelectItem value="PENDING INFO">Pending Info</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                <SelectItem value="PENDING_INFO">Pending Info</SelectItem>
                 <SelectItem value="RESOLVED">Resolved</SelectItem>
                 <SelectItem value="CLOSED">Closed</SelectItem>
               </SelectContent>
