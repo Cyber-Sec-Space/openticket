@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Phase 2 Incident Features: Introduced a global text Search capability merging Title, Content, and ID validations via URL parameters.
+- Unified Incident Defense Timelines blending discrete system AuditLogs (triage changes/assignments) seamlessly with user communications.
+- Explicit Ticket Title and Description editability secured via native UI controls for authorized members.
+- Hard Permanent Incident Deletion mechanisms gated exclusively to Administrative superusers.
 - Implemented real-time Assignment mechanisms allowing SecOps and Admin users to assign personnel and triage Severity within Incident detailed views.
 - Empowered Incident listing grids with resilient `searchParams` URL filtering combinations.
 - Built native Pagination support (10 items / page) for high-scale incident metric tracking without client-side React hydration drag.

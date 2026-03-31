@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ShieldAlert, Plus, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import { ShieldAlert, Plus, Filter, ChevronLeft, ChevronRight, Search } from "lucide-react"
 
 export default async function IncidentsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
@@ -24,6 +24,14 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   // URL Filters
   if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.status = resolvedParams.status;
   if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.severity = resolvedParams.severity;
+  
+  if (resolvedParams.q) {
+    filterParams.OR = [
+      { title: { contains: resolvedParams.q, mode: "insensitive" } },
+      { description: { contains: resolvedParams.q, mode: "insensitive" } },
+      { id: { contains: resolvedParams.q, mode: "insensitive" } }
+    ]
+  }
 
   const totalCount = await db.incident.count({ where: filterParams })
   const totalPages = Math.ceil(totalCount / TAKE) || 1
@@ -44,6 +52,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
     const params = new URLSearchParams()
     if (resolvedParams.status) params.set("status", resolvedParams.status)
     if (resolvedParams.severity) params.set("severity", resolvedParams.severity)
+    if (resolvedParams.q) params.set("q", resolvedParams.q)
     params.set("page", newPage.toString())
     return `/incidents?${params.toString()}`
   }
@@ -64,12 +73,26 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
         </Link>
       </div>
 
-      <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6">
+      <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">
         <Filter className="w-5 h-5 text-muted-foreground mr-2" />
-        <form method="GET" action="/incidents" className="flex gap-4 items-end flex-wrap">
+        <form method="GET" action="/incidents" className="flex flex-1 gap-4 items-end flex-wrap">
+          
+          <div className="space-y-1 flex-1 min-w-[200px]">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Search</label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input 
+                name="q" 
+                defaultValue={resolvedParams.q || ""} 
+                placeholder="Search Title, TKT-ID, or contents..." 
+                className="h-9 w-full pl-9 pr-3 rounded-md border border-border/60 bg-black/50 text-sm text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-primary outline-none transition-all"
+              />
+            </div>
+          </div>
+
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Status</label>
-            <select name="status" defaultValue={resolvedParams.status || "ALL"} className="h-9 px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-primary outline-none">
+            <select name="status" defaultValue={resolvedParams.status || "ALL"} className="h-9 px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
               <option value="ALL">All Statuses</option>
               <option value="NEW">New</option>
               <option value="IN_PROGRESS">In Progress</option>
@@ -81,7 +104,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
           
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Severity</label>
-            <select name="severity" defaultValue={resolvedParams.severity || "ALL"} className="h-9 px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-primary outline-none">
+            <select name="severity" defaultValue={resolvedParams.severity || "ALL"} className="h-9 px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
                <option value="ALL">All Severities</option>
                <option value="LOW">Low</option>
                <option value="MEDIUM">Medium</option>
@@ -94,15 +117,15 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
             Apply Filters
           </Button>
 
-          {(resolvedParams.status || resolvedParams.severity) && (
+          {(resolvedParams.status || resolvedParams.severity || resolvedParams.q) && (
             <Link href="/incidents">
-              <Button variant="ghost" className="h-9 text-muted-foreground">Clear</Button>
+              <Button variant="ghost" className="h-9 text-muted-foreground hover:text-white">Clear</Button>
             </Link>
           )}
         </form>
       </div>
 
-      <div className="glass-card rounded-xl overflow-hidden border border-border">
+      <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
         <Table>
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
@@ -118,8 +141,9 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
           <TableBody>
             {incidents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
-                  No incidents found matching your criteria.
+                <TableCell colSpan={7} className="text-center h-40 text-muted-foreground">
+                  <span className="block mb-2 text-xl">🔍</span>
+                  No incidents found matching your search.
                 </TableCell>
               </TableRow>
             ) : incidents.map(incident => (

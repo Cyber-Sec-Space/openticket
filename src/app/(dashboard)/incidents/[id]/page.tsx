@@ -6,9 +6,21 @@ import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Trash2, Edit3, ShieldAlert, Activity } from "lucide-react"
 
-export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function IncidentDetailPage({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string }> 
+}) {
   const { id } = await params;
+  const { edit } = await searchParams;
+  const isEditing = edit === "true";
+
   const session = await auth()
   if (!session?.user) return null
 
@@ -25,9 +37,22 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     }
   })
 
+  // Fetch loosely coupled AuditLogs
+  const auditLogs = await db.auditLog.findMany({
+    where: { entityType: 'Incident', entityId: id },
+    include: { user: true },
+    orderBy: { createdAt: 'desc' }
+  })
+
   if (!incident || (session.user.role === 'REPORTER' && incident.reporterId !== session.user.id)) {
     notFound()
   }
+
+  // Construct Unified Timeline
+  const timeline: any[] = [
+    ...incident.comments.map(c => ({ ...c, type: 'COMMENT' })),
+    ...auditLogs.map(l => ({ ...l, type: 'AUDIT', author: l.user, content: `${l.action} -> ${l.changes}` }))
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
   // Only SECOPS/ADMIN can assign tickets.
   let eligibleAssignees: any[] = []
@@ -52,37 +77,90 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
 
     await db.incident.update({
       where: { id: incident!.id },
-      data: { 
-        status: newStatus,
-        severity: newSeverity,
-        assigneeId: newAssigneeId
-      }
+      data: { status: newStatus, severity: newSeverity, assigneeId: newAssigneeId }
     })
     
     await db.auditLog.create({
       data: {
-        action: "INCIDENT_UPDATED",
+        action: "TRIAGE_POLICY_CHANGED",
         entityType: "Incident",
         entityId: incident!.id,
         userId: sessionUrl.user.id,
         changes: changesText
       }
     })
-    redirect(`/incidents/${incident?.id}`)
+    redirect(`/incidents/${incident!.id}`)
+  }
+
+  async function editDetailsAction(formData: FormData) {
+    "use server"
+    const sessionUrl = await auth()
+    if (!sessionUrl || sessionUrl.user.role === 'REPORTER') throw new Error("Forbidden")
+    
+    const newTitle = formData.get("title") as string
+    const newDesc = formData.get("description") as string
+
+    await db.incident.update({
+      where: { id: incident!.id },
+      data: { title: newTitle, description: newDesc }
+    })
+    
+    await db.auditLog.create({
+      data: {
+        action: "DETAILS_EDITED",
+        entityType: "Incident",
+        entityId: incident!.id,
+        userId: sessionUrl.user.id,
+        changes: `Title / Description updated by Admin`
+      }
+    })
+    redirect(`/incidents/${incident!.id}`)
+  }
+
+  async function deleteIncidentAction() {
+    "use server"
+    const sessionUrl = await auth()
+    if (!sessionUrl || sessionUrl.user.role !== 'ADMIN') throw new Error("Forbidden")
+    
+    // Prisma cascading handles Comment/AuditLog deletions seamlessly
+    await db.incident.delete({ where: { id: incident!.id } })
+    redirect(`/incidents`)
   }
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6 animate-fade-in-up">
-      <Link href="/incidents">
-        <Button variant="ghost" className="text-muted-foreground hover:text-white mb-2">← Back to Incidents</Button>
-      </Link>
-      
-      <div className="flex justify-between items-start border-b border-border/80 pb-6">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">{incident.title}</h1>
-          <p className="text-muted-foreground font-mono text-xs opacity-70">TKT-{incident.id.substring(0,8).toUpperCase()}</p>
+      <div className="flex justify-between items-center mb-2">
+        <Link href="/incidents">
+          <Button variant="ghost" className="text-muted-foreground hover:text-white">← Back to Incidents</Button>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          {session.user.role !== 'REPORTER' && !isEditing && (
+             <Link href={`/incidents/${incident.id}?edit=true`}>
+               <Button variant="outline" size="sm" className="bg-black/20 text-blue-400 border-blue-400/30 hover:bg-blue-400/10">
+                 <Edit3 className="w-4 h-4 mr-2" /> Edit Details
+               </Button>
+             </Link>
+          )}
+
+          {session.user.role === 'ADMIN' && (
+             <form action={deleteIncidentAction}>
+                <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
+                  <Trash2 className="w-4 h-4 mr-2" /> Terminate Ticket
+                </Button>
+             </form>
+          )}
         </div>
-        <div className="flex items-center space-x-3">
+      </div>
+      
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start border-b border-border/80 pb-6 gap-4">
+        <div className="flex-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">{incident.title}</h1>
+          <p className="text-muted-foreground font-mono text-xs opacity-70 flex items-center gap-2">
+            <span className="text-primary"><ShieldAlert className="inline w-3 h-3" /> TKT-{incident.id.substring(0,8).toUpperCase()}</span>
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
           <Badge className={`px-3 py-1 bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_15px_rgba(255,20,20,0.3)] animate-pulse' : 'border-primary text-primary'}`}>
             {incident.severity}
           </Badge>
@@ -92,22 +170,43 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card rounded-xl overflow-hidden shadow-2xl">
+          <div className="glass-card rounded-xl overflow-hidden shadow-2xl relative">
             <CardHeader className="border-b border-border/50 bg-black/10">
               <CardTitle className="text-primary font-semibold tracking-wide flex items-center gap-2">
-                Incident Description
+                Incident Intelligence
               </CardTitle>
             </CardHeader>
             <div className="p-6">
-              <pre className="whitespace-pre-wrap font-sans text-sm text-foreground/90 leading-relaxed">
-                {incident.description}
-              </pre>
+              {isEditing ? (
+                <form action={editDetailsAction} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-primary/70">Secure Title</Label>
+                    <Input name="title" defaultValue={incident.title} className="bg-black/50 border-white/10" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-primary/70">Tactical Description</Label>
+                    <Textarea name="description" rows={8} defaultValue={incident.description} className="bg-black/50 border-white/10 resize-none" required />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <Button type="submit" className="bg-primary hover:bg-primary/80">Save Modifications</Button>
+                    <Link href={`/incidents/${incident.id}`}>
+                       <Button variant="ghost" type="button">Cancel</Button>
+                    </Link>
+                  </div>
+                </form>
+              ) : (
+                <pre className="whitespace-pre-wrap font-sans text-sm text-foreground/90 leading-relaxed">
+                  {incident.description}
+                </pre>
+              )}
             </div>
           </div>
 
-          <div className="glass-card rounded-xl overflow-hidden shadow-2xl">
+          <div className="glass-card rounded-xl overflow-hidden shadow-2xl relative border-t-2 border-t-blue-500/30">
             <CardHeader className="border-b border-border/50 bg-black/10">
-              <CardTitle className="text-blue-400 font-semibold tracking-wide">Action Logs & Discussion</CardTitle>
+              <CardTitle className="text-blue-400 font-semibold tracking-wide flex items-center">
+                <Activity className="w-5 h-5 mr-2" /> Unified Defense Timeline
+              </CardTitle>
             </CardHeader>
             <div className="p-6 space-y-4">
               <form action={async (formData) => {
@@ -124,20 +223,27 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
                   name="content" 
                   rows={3} 
                   required
-                  placeholder="Record investigation notes..." 
-                  className="w-full text-sm rounded-lg border border-border/60 bg-black/30 p-3 text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-all resize-none"
+                  placeholder="Record investigation notes or attach intel..." 
+                  className="w-full text-sm rounded-lg border border-border/60 bg-black/30 p-3 text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none"
                 />
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(0,100,255,0.3)]">Record Entry</Button>
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(0,100,255,0.3)]">Post Investigation Log</Button>
               </form>
 
-              <div className="space-y-3 pt-2">
-                {incident.comments.map(c => (
-                  <div key={c.id} className="p-4 rounded-lg border border-border/50 bg-black/20 hover:border-primary/30 transition-colors">
+              <div className="space-y-4 pt-2">
+                {timeline.map((item, idx) => (
+                  <div key={idx} className={`p-4 rounded-lg border transition-colors ${item.type === 'AUDIT' ? 'border-primary/20 bg-primary/5' : 'border-border/50 bg-black/20 hover:border-blue-400/30'}`}>
                     <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
-                      <span className="font-semibold text-white/90">{c.author.name} <span className="opacity-50 text-xs font-normal">({c.author.role})</span></span>
-                      <span className="font-mono text-[10px]">{c.createdAt.toLocaleString()}</span>
+                      <span className={`font-semibold ${item.type === 'AUDIT' ? 'text-primary' : 'text-white/90'}`}>
+                        {item.author?.name || 'System'} 
+                        <span className="opacity-50 text-[10px] font-normal ml-1">({item.type === 'AUDIT' ? 'SYSTEM EVENT' : item.author?.role})</span>
+                      </span>
+                      <span className="font-mono text-[10px] opacity-70">{item.createdAt.toLocaleString()}</span>
                     </div>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{c.content}</p>
+                    {item.type === 'AUDIT' ? (
+                       <p className="text-xs font-mono text-primary/70 bg-black/40 p-2 rounded block">{item.content}</p>
+                    ) : (
+                       <p className="text-sm text-foreground/80 leading-relaxed">{item.content}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -148,7 +254,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
         <div className="space-y-6">
           <div className="glass-card rounded-xl overflow-hidden shadow-2xl">
             <CardHeader className="border-b border-border/50 bg-black/10">
-              <CardTitle className="text-white/90 text-sm font-semibold tracking-wide">Context Details</CardTitle>
+              <CardTitle className="text-white/90 text-sm font-semibold tracking-wide">Identity Context</CardTitle>
             </CardHeader>
             <div className="p-6 space-y-5 text-sm">
               <div>
@@ -164,13 +270,13 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
                 ) : <span className="text-muted-foreground italic text-xs">None Linked</span>}
               </div>
               <div>
-                <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Creation Timeline</strong>
+                <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Record Initialized</strong>
                 <span className="font-mono text-xs text-foreground/80">{incident.createdAt.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
-          {session.user.role !== 'REPORTER' && (
+          {session.user.role !== 'REPORTER' && !isEditing && (
             <div className="glass-card rounded-xl overflow-hidden shadow-2xl border border-primary/30">
               <CardHeader className="border-b border-border/50 bg-primary/10">
                 <CardTitle className="text-primary text-sm font-semibold tracking-wide">Execution Policy & Triage</CardTitle>
