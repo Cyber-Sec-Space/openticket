@@ -147,8 +147,8 @@ enum Severity {
 
 enum IncidentStatus {
   NEW
-  IN_PROGRESS @map("IN PROGRESS")
-  PENDING_INFO @map("PENDING INFO")
+  IN_PROGRESS
+  PENDING_INFO
   RESOLVED
   CLOSED
 }
