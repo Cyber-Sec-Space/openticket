@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
+import { redirect } from "next/navigation"
 import { ShieldCheck, UserCog, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +13,16 @@ export default async function SettingsPage() {
   if (!session?.user?.id) return null
 
   const user = await db.user.findUnique({ where: { id: session.user.id } })
-  if (!user) return null
+  if (!user) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in-up">
+         <div className="glass-card rounded-xl border border-destructive/50 p-8 shadow-2xl flex flex-col items-center justify-center text-center space-y-4">
+            <h2 className="text-xl font-bold text-destructive">Account Desynchronization Detected</h2>
+            <p className="text-muted-foreground w-3/4">Your current browser session identity no longer exists in our authoritative records (it was likely expunged or you are using phantom data). Please terminate this local session immediately.</p>
+         </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in-up">
