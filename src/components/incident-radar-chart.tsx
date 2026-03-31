@@ -1,11 +1,9 @@
 "use client"
 
 import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
+  PieChart,
+  Pie,
+  Cell,
   Tooltip,
   ResponsiveContainer,
   Legend
@@ -20,27 +18,46 @@ interface IncidentRadarData {
   total: number;
 }
 
+const COLORS = [
+  '#ef4444', // red-500
+  '#f97316', // orange-500
+  '#facc15', // yellow-400
+  '#22c55e', // green-500
+  '#3b82f6', // blue-500
+  '#a855f7', // purple-500
+  '#ec4899', // pink-500
+  '#64748b'  // slate-500
+];
+
 export function IncidentRadarChart({ data }: { data: IncidentRadarData[] }) {
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  // Filter out types with no current incidents
+  const activeData = data.filter(d => d.total > 0);
+
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
+      const dataPoint = payload[0].payload;
       return (
-        <div className="bg-black/90 border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl min-w-[180px]">
-          <p className="text-white/50 text-[10px] font-bold mb-3 tracking-[0.2em] uppercase">{label}</p>
-          <div className="space-y-2">
-            {payload.map((entry: any, index: number) => (
-              <div key={index} className="flex items-center justify-between text-sm font-bold">
-                <div className="flex items-center">
-                  <span 
-                    className="w-2.5 h-2.5 rounded-full mr-3" 
-                    style={{ backgroundColor: entry.color || '#0ea5e9', boxShadow: `0 0 10px ${entry.color || '#0ea5e9'}` }} 
-                  />
-                  <span className="text-white/80">{entry.name}</span>
-                </div>
-                <span className="text-lg font-black" style={{ color: entry.color || '#0ea5e9' }}>
-                  {entry.value}
-                </span>
-              </div>
-            ))}
+        <div className="bg-black/95 border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl min-w-[200px]">
+          <h3 className="text-white font-bold mb-3 tracking-widest uppercase text-xs border-b border-white/10 pb-2">
+            {dataPoint.type}
+          </h3>
+          <div className="flex items-center justify-between text-[10px] font-mono text-white/50 mb-1">
+            <span>TOTAL ACTIVE</span>
+            <span className="text-sm font-black text-white">{dataPoint.total}</span>
+          </div>
+          <div className="space-y-1 mt-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-red-500/70 font-semibold">Critical</span>
+              <span className="text-red-400 font-bold">{dataPoint.CRITICAL}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-orange-500/70 font-semibold">High</span>
+              <span className="text-orange-400 font-bold">{dataPoint.HIGH}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-yellow-500/70 font-semibold">Medium</span>
+              <span className="text-yellow-400 font-bold">{dataPoint.MEDIUM}</span>
+            </div>
           </div>
         </div>
       );
@@ -48,44 +65,53 @@ export function IncidentRadarChart({ data }: { data: IncidentRadarData[] }) {
     return null;
   };
 
+  if (activeData.length === 0) {
+    return (
+      <div className="w-full h-80 flex items-center justify-center">
+        <p className="text-white/40 font-mono text-sm tracking-widest uppercase">No Active Incidents Found</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full h-80">
+    <div className="w-full h-80 relative">
       <ResponsiveContainer width="100%" height={320}>
-        <RadarChart cx="50%" cy="50%" outerRadius="65%" data={data} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
           <defs>
-             <filter id="radarGlowInc" x="-20%" y="-20%" width="140%" height="140%">
-               <feGaussianBlur stdDeviation="6" result="blur" />
+            <filter id="pieGlow" x="-20%" y="-20%" width="140%" height="140%">
+               <feGaussianBlur stdDeviation="3" result="blur" />
                <feComposite in="SourceGraphic" in2="blur" operator="over" />
              </filter>
           </defs>
-          <PolarGrid stroke="#ffffff20" />
-          <PolarAngleAxis 
-             dataKey="type" 
-             tick={{ fill: "#a1a1aa", fontSize: 10, fontWeight: 700, letterSpacing: '0.5px' }} 
-          />
-          <PolarRadiusAxis 
-             angle={30} 
-             domain={[0, 'auto']} 
-             tick={false} 
-             axisLine={false} 
-          />
           <Tooltip content={<CustomTooltip />} />
           <Legend 
-             wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} 
-             iconType="circle" 
+             verticalAlign="bottom"
+             height={36}
+             iconType="circle"
+             wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', letterSpacing: '0.05em' }}
           />
-          
-          <Radar 
-            name="Total Active" 
-            dataKey="total" 
-            stroke="#0ea5e9" 
-            strokeWidth={3} 
-            fill="#0ea5e9" 
-            fillOpacity={0.4} 
-            filter="url(#radarGlowInc)" 
-            animationDuration={2000}
-          />
-        </RadarChart>
+          <Pie
+            data={activeData}
+            cx="50%"
+            cy="45%"
+            innerRadius="50%"
+            outerRadius="80%"
+            dataKey="total"
+            nameKey="type"
+            paddingAngle={3}
+            strokeWidth={0}
+            animationDuration={1500}
+            animationBegin={200}
+          >
+            {activeData.map((entry, index) => (
+              <Cell 
+                 key={`cell-${index}`} 
+                 fill={COLORS[index % COLORS.length]} 
+                 filter="url(#pieGlow)"
+              />
+            ))}
+          </Pie>
+        </PieChart>
       </ResponsiveContainer>
     </div>
   )

@@ -56,7 +56,7 @@ export default async function Home() {
     where: filterParams,
     select: { createdAt: true, updatedAt: true, status: true }
   });
-  
+
   const allVulnsForTrend = await db.vulnerability.findMany({
     select: { createdAt: true, updatedAt: true, status: true }
   });
@@ -71,26 +71,26 @@ export default async function Home() {
     dEnd.setHours(23, 59, 59, 999);
 
     const dateStr = dStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    
+
     // Active at the end of the day
-    const activeInc = allIncsForTrend.filter(inc => 
-      inc.createdAt <= dEnd && 
-      ( !['RESOLVED','CLOSED'].includes(inc.status) || inc.updatedAt > dEnd )
+    const activeInc = allIncsForTrend.filter(inc =>
+      inc.createdAt <= dEnd &&
+      (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > dEnd)
     ).length;
 
-    const activeVuln = allVulnsForTrend.filter(v => 
-      v.createdAt <= dEnd && 
-      ( !['RESOLVED','MITIGATED'].includes(v.status) || v.updatedAt > dEnd )
+    const activeVuln = allVulnsForTrend.filter(v =>
+      v.createdAt <= dEnd &&
+      (!['RESOLVED', 'MITIGATED'].includes(v.status) || v.updatedAt > dEnd)
     ).length;
 
     // Resolved ON this day
-    const resolvedInc = allIncsForTrend.filter(inc => 
-      ['RESOLVED','CLOSED'].includes(inc.status) && 
+    const resolvedInc = allIncsForTrend.filter(inc =>
+      ['RESOLVED', 'CLOSED'].includes(inc.status) &&
       inc.updatedAt >= dStart && inc.updatedAt <= dEnd
     ).length;
 
-    const resolvedVuln = allVulnsForTrend.filter(v => 
-      ['RESOLVED','MITIGATED'].includes(v.status) && 
+    const resolvedVuln = allVulnsForTrend.filter(v =>
+      ['RESOLVED', 'MITIGATED'].includes(v.status) &&
       v.updatedAt >= dStart && v.updatedAt <= dEnd
     ).length;
 
@@ -211,6 +211,14 @@ export default async function Home() {
         </div>
       </div>
 
+      <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 text-orange-500 opacity-10 group-hover:scale-110 transition-transform"><Users size={80} /></div>
+        <div>
+          <p className="text-sm font-medium text-orange-400 uppercase tracking-wider mb-2">Compromised Assets</p>
+          <h3 className="text-4xl font-bold text-orange-500">{compromisedAssets}</h3>
+        </div>
+      </div>
+
       {/* Dynamic Analytics & Info Grid */}
       <div className="mt-8 grid grid-cols-1 xl:grid-cols-3 gap-8">
 
@@ -245,18 +253,18 @@ export default async function Home() {
             </div>
 
             {/* Incident Radar */}
-            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-rose-950/10">
-              <div className="p-5 border-b border-rose-500/20 bg-rose-500/5">
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-amber-950/10">
+              <div className="p-5 border-b border-amber-500/20 bg-amber-500/5">
                 <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
-                  <ShieldAlert className="w-4 h-4 text-rose-400" />
-                  Active Incident Typology Radar
+                  <ShieldAlert className="w-4 h-4 text-amber-400" />
+                  Active Incident Typology Distribution
                 </h3>
               </div>
               <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
                 <IncidentRadarChart data={incidentRadarData} />
               </div>
             </div>
-            
+
             {/* Vuln Radar */}
             <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-indigo-950/10">
               <div className="p-5 border-b border-indigo-500/20 bg-indigo-500/5">
@@ -271,8 +279,8 @@ export default async function Home() {
             </div>
 
             {/* Vuln Donut */}
-            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
-              <div className="p-5 border-b border-border/50 bg-black/20">
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-emerald-950/10">
+              <div className="p-5 border-b border-emerald-500/20 bg-emerald-500/5">
                 <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
                   <ScanFace className="w-4 h-4 text-emerald-400" />
                   Vulnerability Resolution Status
