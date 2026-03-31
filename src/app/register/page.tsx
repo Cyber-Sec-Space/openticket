@@ -1,6 +1,35 @@
 import { RegisterForm } from "./register-form"
+import { db } from "@/lib/db"
+import { ShieldAlert } from "lucide-react"
+import Link from "next/link"
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const allowRegistration = settings?.allowRegistration ?? true
+
+  if (!allowRegistration) {
+    return (
+      <div className="flex h-screen w-full relative overflow-hidden bg-background">
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="flex w-full items-center justify-center p-4 relative z-10">
+          <div className="w-full max-w-md space-y-6 glass-panel p-8 rounded-2xl border border-destructive/50 shadow-2xl text-center">
+            <ShieldAlert className="w-16 h-16 text-destructive mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-destructive">Enrollment Suspended</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              By administrative decree, public operator registration is currently deactivated on this node.
+            </p>
+            <div className="pt-6">
+              <Link href="/login" className="text-primary hover:text-primary/80 transition-colors uppercase tracking-widest text-xs font-bold border border-primary/20 p-3 rounded-md block bg-primary/5">
+                [ Return to Portal ]
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen w-full relative overflow-hidden bg-background">
       {/* Background Orbs */}
