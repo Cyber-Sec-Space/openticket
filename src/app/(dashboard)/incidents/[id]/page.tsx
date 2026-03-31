@@ -66,6 +66,11 @@ export default async function IncidentDetailPage({
     })
   }
 
+  // SSR Mappings for SelectValue hydration
+  const S_MAP: Record<string, string> = { LOW: "Low", MEDIUM: "Medium", HIGH: "High", CRITICAL: "Critical" }
+  const ST_MAP: Record<string, string> = { NEW: "New", IN_PROGRESS: "In Progress", PENDING_INFO: "Pending Info", RESOLVED: "Resolved", CLOSED: "Closed" }
+  const C_MAP: Record<string, string> = { MALWARE: "Malware Infection", PHISHING: "Phishing Attempt", DATA_BREACH: "Data Breach", UNAUTHORIZED_ACCESS: "Unauthorized Access", NETWORK_ANOMALY: "Network Anomaly", OTHER: "Other / Triage" }
+
   async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
@@ -199,7 +204,7 @@ export default async function IncidentDetailPage({
                     <div className="relative">
                       <Select name="type" defaultValue={incident.type || "OTHER"}>
                         <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
-                          <SelectValue placeholder="Category..." />
+                          <SelectValue>{C_MAP[incident.type || "OTHER"] || "Category..."}</SelectValue>
                         </SelectTrigger>
                         <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
                           <SelectItem value="MALWARE">Malware Infection</SelectItem>
@@ -354,7 +359,7 @@ export default async function IncidentDetailPage({
                     <Label className="text-xs text-white/70">Severity</Label>
                     <Select name="severity" defaultValue={incident.severity}>
                        <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
-                         <SelectValue />
+                         <SelectValue>{S_MAP[incident.severity] || incident.severity}</SelectValue>
                        </SelectTrigger>
                        <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
                          <SelectItem value="LOW">Low</SelectItem>
@@ -369,7 +374,7 @@ export default async function IncidentDetailPage({
                     <Label className="text-xs text-white/70">Status</Label>
                     <Select name="status" defaultValue={incident.status}>
                        <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
-                         <SelectValue />
+                         <SelectValue>{ST_MAP[incident.status] || incident.status}</SelectValue>
                        </SelectTrigger>
                        <SelectContent className="bg-black/95 shadow-[0_0_30px_rgba(0,0,0,0.8)] backdrop-blur-md border border-white/10 mt-1">
                          <SelectItem value="NEW">New</SelectItem>
