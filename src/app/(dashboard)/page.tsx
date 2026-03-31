@@ -144,7 +144,7 @@ export default async function Home() {
                </h3>
                <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Incident Node</span>
             </div>
-            <div className="p-6 flex-1 flex flex-col justify-center">
+            <div className="p-6 flex-1 flex flex-col justify-center min-h-[320px]">
               <DashboardCharts data={chartMatrix} />
             </div>
           </div>
@@ -158,7 +158,7 @@ export default async function Home() {
                       Threat Vector Distribution
                    </h3>
                 </div>
-                <div className="p-4 flex-1">
+                <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
                   <VulnSeverityChart data={vulnSeverityMatrix} />
                 </div>
              </div>
@@ -171,7 +171,7 @@ export default async function Home() {
                       Vulnerability Resolution Status
                    </h3>
                 </div>
-                <div className="p-4 flex-1">
+                <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
                   <VulnStatusChart data={vulnStatusMatrix} />
                 </div>
              </div>

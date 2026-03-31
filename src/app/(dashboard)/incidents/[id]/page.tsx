@@ -411,8 +411,8 @@ export default async function IncidentDetailPage({
                       </SelectTrigger>
                       <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
                         <SelectItem value="NEW">NEW</SelectItem>
-                        <SelectItem value="IN PROGRESS">IN PROGRESS</SelectItem>
-                        <SelectItem value="PENDING INFO">PENDING INFO</SelectItem>
+                        <SelectItem value="IN_PROGRESS">IN PROGRESS</SelectItem>
+                        <SelectItem value="PENDING_INFO">PENDING INFO</SelectItem>
                         <SelectItem value="RESOLVED">RESOLVED</SelectItem>
                         <SelectItem value="CLOSED">CLOSED</SelectItem>
                       </SelectContent>
