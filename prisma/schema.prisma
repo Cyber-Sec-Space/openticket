@@ -50,11 +50,13 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  passwordHash  String?   // Added for Credentials provider MVP
-  role          Role      @default(REPORTER)
+  passwordHash       String?   // Added for Credentials provider MVP
+  role               Role      @default(REPORTER)
+  isTwoFactorEnabled Boolean   @default(false)
+  twoFactorSecret    String?
 
-  accounts      Account[]
-  sessions      Session[]
+  accounts           Account[]
+  sessions           Session[]
   
   // Relations for OpenTicket
   reportedIncidents Incident[] @relation("Reporter")

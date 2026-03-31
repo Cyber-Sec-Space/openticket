@@ -1,12 +1,13 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { ShieldCheck, ShieldAlert, UserCog, Mail, ServerCog, HardDrive, Cpu } from "lucide-react"
+import { ShieldCheck, UserCog, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { updateProfile } from "./actions"
+import { TwoFactorPanel } from "./two-factor-panel"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -72,67 +73,16 @@ export default async function SettingsPage() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-white/5">
+               <div className="pt-6 border-t border-white/5">
                  <Button type="submit" className="w-32 bg-blue-600 hover:bg-blue-500 font-semibold shadow-[0_0_15px_rgba(0,100,255,0.3)]">
                    Apply Layout
                  </Button>
-              </div>
-           </form>
-        </div>
+               </div>
+            </form>
+            
+            <TwoFactorPanel isEnabled={user.isTwoFactorEnabled} />
+         </div>
       </div>
-
-      {/* Exclusive ADMIN System Settings Block */}
-      {user.role === 'ADMIN' && (
-        <div className="glass-card rounded-xl overflow-hidden border border-red-500/20 mt-8 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
-          <CardHeader className="border-b border-red-500/10 bg-red-950/20 p-6">
-            <CardTitle className="text-red-400 tracking-wide flex items-center">
-              <ServerCog className="w-5 h-5 mr-3 text-red-500" />
-              Global System Administration
-            </CardTitle>
-            <CardDescription className="text-red-400/60">
-              Authoritative parameter control. Modifications propagate instantaneously across all nodes.
-            </CardDescription>
-          </CardHeader>
-          
-          <div className="p-6 space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Parameter 1 */}
-                <div className="bg-black/40 border border-white/5 p-4 rounded-lg flex justify-between items-center transition-colors hover:bg-black/60">
-                   <div className="space-y-1">
-                      <h4 className="font-semibold text-sm flex items-center"><ShieldAlert className="w-4 h-4 mr-2 text-orange-500"/> Strict MFA Enforcement</h4>
-                      <p className="text-xs text-muted-foreground">Mandate multi-factor hooks globally.</p>
-                   </div>
-                   <Button variant="outline" size="sm" className="bg-transparent border-orange-500/50 text-orange-400 hover:bg-orange-500 hover:text-white">Enable</Button>
-                </div>
-
-                {/* Parameter 2 */}
-                <div className="bg-black/40 border border-white/5 p-4 rounded-lg flex justify-between items-center transition-colors hover:bg-black/60">
-                   <div className="space-y-1">
-                      <h4 className="font-semibold text-sm flex items-center"><HardDrive className="w-4 h-4 mr-2 text-blue-400"/> Audit Ledger Archival</h4>
-                      <p className="text-xs text-muted-foreground">Offload telemetry older than 90 days.</p>
-                   </div>
-                   <Button variant="outline" size="sm" className="bg-transparent border-blue-500/50 text-blue-400 hover:bg-blue-500 hover:text-white">Archive</Button>
-                </div>
-             </div>
-
-             {/* Danger Zone */}
-             <div className="pt-6 border-t border-red-500/10 mt-6">
-                <h3 className="text-xs uppercase tracking-widest text-red-500 font-bold mb-4 flex items-center">
-                  <Cpu className="w-4 h-4 mr-2" /> Danger Zone Engine Constraints
-                </h3>
-                <div className="bg-red-950/20 border border-red-500/30 rounded-lg p-5 flex justify-between items-center">
-                   <div>
-                     <h4 className="font-bold text-red-400 text-sm">Force DB Architecture Sync</h4>
-                     <p className="text-xs text-red-400/60 mt-1 max-w-sm">Triggers Prisma structural rebuilds. May severely distrupt active SECOPS triage. Use strictly during deployment windows.</p>
-                   </div>
-                   <Button variant="destructive" className="font-bold tracking-widest text-xs shadow-[0_0_15px_rgba(220,38,38,0.5)] bg-red-600">
-                     INITIALIZE REBUILD
-                   </Button>
-                </div>
-             </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

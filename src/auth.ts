@@ -2,6 +2,17 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { db } from "./lib/db"
 import bcrypt from "bcryptjs"
+// @ts-ignore
+import { authenticator } from "otplib"
+import { CredentialsSignin } from "next-auth"
+
+class Missing2FAError extends CredentialsSignin {
+  code = "Missing2FA"
+}
+
+class Invalid2FAError extends CredentialsSignin {
+  code = "Invalid2FA"
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -9,6 +20,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        totpCode: { label: "2FA Token", type: "text" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -22,6 +34,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
         const isValid = await bcrypt.compare(credentials.password as string, user.passwordHash)
         if (!isValid) return null
+
+        if (user.isTwoFactorEnabled && user.twoFactorSecret) {
+          const code = credentials.totpCode as string
+          if (!code) {
+             throw new Missing2FAError()
+          }
+          const isTotpValid = authenticator.verify({ token: code, secret: user.twoFactorSecret })
+          if (!isTotpValid) {
+             throw new Invalid2FAError()
+          }
+        }
+
         return {
           id: user.id,
           email: user.email,
