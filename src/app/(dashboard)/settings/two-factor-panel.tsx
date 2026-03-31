@@ -69,7 +69,7 @@ export function TwoFactorPanel({ isEnabled }: { isEnabled: boolean }) {
   }
 
   return (
-    <div className="pt-6 mt-6 border-t border-white/5 space-y-4">
+    <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
        <div className="flex justify-between items-start">
          <div className="space-y-1">
             <h3 className="text-sm font-semibold text-primary uppercase tracking-widest flex items-center">
@@ -94,7 +94,7 @@ export function TwoFactorPanel({ isEnabled }: { isEnabled: boolean }) {
                      <ShieldAlert className="w-4 h-4 mr-2 opacity-50" /> Vulnerable
                   </div>
                   {setupStep === "IDLE" && (
-                     <Button disabled={isPending} onClick={handleInitiateSetup} size="sm" className="h-8 uppercase text-[10px] tracking-widest bg-emerald-600 hover:bg-emerald-500 font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                     <Button disabled={isPending} onClick={handleInitiateSetup} size="sm" className="h-8 uppercase text-[10px] tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:text-white">
                         Enable 2FA
                      </Button>
                   )}

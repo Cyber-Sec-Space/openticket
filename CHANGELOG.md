@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Security: Implemented Phase 11 Two-Factor Authentication (TOTP) pipeline within NextAuth Credentials provider.
 - UI: Added Settings Identity Preferences panel rendering Dual-Phase QR code setups securely leveraging otplib algorithms.
+- UI: Rectified visual margin collapsing on `Apply Layout` boundaries and refined `Enable 2FA` button text legibility.
 - Core: Augmented Prisma schemas with TwoFactorSecret properties, enforcing robust login step-ups actively preventing credential stuffing.
 - Security: Implemented a proprietary `<ConfirmForm>` react client boundary wrapping all destructive server actions (e.g. Terminate Incident, Execution modifications) with strict browser-level intent validation checks.
 - Quality of Life: Standardized the default global tracking prefixes across index tables and detail queries from `TKT-` (Ticket) to `INC-` (Incident) fully embracing SecOps nomenclature.

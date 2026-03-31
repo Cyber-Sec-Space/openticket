@@ -73,14 +73,16 @@ export default async function SettingsPage() {
                 </div>
               </div>
 
-               <div className="pt-6 border-t border-white/5">
-                 <Button type="submit" className="w-32 bg-blue-600 hover:bg-blue-500 font-semibold shadow-[0_0_15px_rgba(0,100,255,0.3)]">
+               <div className="pt-8 border-t border-white/10">
+                 <Button type="submit" className="w-32 text-white bg-blue-600 hover:bg-blue-500 font-semibold shadow-[0_0_15px_rgba(0,100,255,0.3)]">
                    Apply Layout
                  </Button>
                </div>
             </form>
             
-            <TwoFactorPanel isEnabled={user.isTwoFactorEnabled} />
+            <div className="pt-4">
+               <TwoFactorPanel isEnabled={user.isTwoFactorEnabled} />
+            </div>
          </div>
       </div>
     </div>
