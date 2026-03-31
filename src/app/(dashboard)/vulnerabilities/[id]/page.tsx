@@ -13,6 +13,7 @@ interface MatchProps {
 }
 
 export default async function VulnerabilityDetailPage({ params }: MatchProps) {
+  const { id } = await params
   const session = await auth()
   
   if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SECOPS')) {
@@ -20,7 +21,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
   }
 
   const vuln = await db.vulnerability.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       affectedAssets: true
     }
