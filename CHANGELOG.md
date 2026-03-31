@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Implemented real-time Assignment mechanisms allowing SecOps and Admin users to assign personnel and triage Severity within Incident detailed views.
+- Empowered Incident listing grids with resilient `searchParams` URL filtering combinations.
+- Built native Pagination support (10 items / page) for high-scale incident metric tracking without client-side React hydration drag.
 - Complete UI/UX aesthetic overhaul implementing a premium, sleek dark mode tailored for Cybersecurity usage.
 - Global application Layout integration employing a dynamic left-pane Sidebar for streamlined navigation.
 - Glassmorphism UI tokens, neon pulse animations, and immersive data grid layouts across all operational dashboards.

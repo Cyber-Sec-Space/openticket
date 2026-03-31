@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
 
 export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,34 +20,52 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
       asset: true,
       comments: {
         include: { author: true },
-        orderBy: { createdAt: 'asc' }
+        orderBy: { createdAt: 'desc' }
       }
     }
   })
 
-  // Security check mapping
   if (!incident || (session.user.role === 'REPORTER' && incident.reporterId !== session.user.id)) {
     notFound()
   }
 
-  // Define Server Actions for Admins/SecOps inline Since Next.js Next 14/15 allows closures
-  async function updateStatus(formData: FormData) {
+  // Only SECOPS/ADMIN can assign tickets.
+  let eligibleAssignees: any[] = []
+  if (session.user.role !== 'REPORTER') {
+    eligibleAssignees = await db.user.findMany({
+      where: { role: { in: ['ADMIN', 'SECOPS'] } },
+      select: { id: true, name: true, role: true }
+    })
+  }
+
+  async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
     if (!sessionUrl || sessionUrl.user.role === 'REPORTER') throw new Error("Forbidden")
     
+    const newStatus = formData.get("status") as any
+    const newSeverity = formData.get("severity") as any
+    let newAssigneeId: string | null = formData.get("assigneeId") as string
+    if (!newAssigneeId || newAssigneeId === "UNASSIGNED") newAssigneeId = null;
+
+    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignee: ${newAssigneeId || 'Unassigned'}`
+
     await db.incident.update({
       where: { id: incident!.id },
-      data: { status: formData.get("status") as any }
+      data: { 
+        status: newStatus,
+        severity: newSeverity,
+        assigneeId: newAssigneeId
+      }
     })
     
     await db.auditLog.create({
       data: {
-        action: "STATUS_CHANGED",
+        action: "INCIDENT_UPDATED",
         entityType: "Incident",
         entityId: incident!.id,
         userId: sessionUrl.user.id,
-        changes: { status: formData.get("status") as string }
+        changes: changesText
       }
     })
     redirect(`/incidents/${incident?.id}`)
@@ -91,16 +110,6 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
               <CardTitle className="text-blue-400 font-semibold tracking-wide">Action Logs & Discussion</CardTitle>
             </CardHeader>
             <div className="p-6 space-y-4">
-              {incident.comments.map(c => (
-                <div key={c.id} className="p-4 rounded-lg border border-border/50 bg-black/20 hover:border-primary/30 transition-colors">
-                  <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
-                    <span className="font-semibold text-white/90">{c.author.name} <span className="opacity-50 text-xs font-normal">({c.author.role})</span></span>
-                    <span className="font-mono text-[10px]">{c.createdAt.toLocaleString()}</span>
-                  </div>
-                  <p className="text-sm text-foreground/80 leading-relaxed">{c.content}</p>
-                </div>
-              ))}
-              
               <form action={async (formData) => {
                 "use server"
                 const sessionUrl = await auth()
@@ -110,16 +119,28 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
                   data: { content, incidentId: incident!.id, authorId: sessionUrl.user.id }
                 })
                 redirect(`/incidents/${incident!.id}`)
-              }} className="space-y-3 pt-4 border-t border-border/50">
+              }} className="space-y-3 pb-6 border-b border-border/50">
                 <textarea 
                   name="content" 
                   rows={3} 
                   required
                   placeholder="Record investigation notes..." 
-                  className="w-full text-sm rounded-lg border border-border/60 bg-black/30 p-3 text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+                  className="w-full text-sm rounded-lg border border-border/60 bg-black/30 p-3 text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-all resize-none"
                 />
                 <Button size="sm" className="bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(0,100,255,0.3)]">Record Entry</Button>
               </form>
+
+              <div className="space-y-3 pt-2">
+                {incident.comments.map(c => (
+                  <div key={c.id} className="p-4 rounded-lg border border-border/50 bg-black/20 hover:border-primary/30 transition-colors">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+                      <span className="font-semibold text-white/90">{c.author.name} <span className="opacity-50 text-xs font-normal">({c.author.role})</span></span>
+                      <span className="font-mono text-[10px]">{c.createdAt.toLocaleString()}</span>
+                    </div>
+                    <p className="text-sm text-foreground/80 leading-relaxed">{c.content}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -135,18 +156,12 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
                 <span className="text-foreground/90 font-medium">{incident.reporter.name}</span>
               </div>
               <div>
-                <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Assigned Handler</strong>
-                <span className={incident.assignee ? "text-foreground/90 font-medium" : "text-muted-foreground italic"}>
-                  {incident.assignee ? incident.assignee.name : "Unassigned"}
-                </span>
-              </div>
-              <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target Asset</strong>
                 {incident.asset ? (
                   <Link href={`/assets/${incident.asset.id}`} className="text-primary hover:underline font-mono text-xs">
                     {incident.asset.name}
                   </Link>
-                ) : <span className="text-muted-foreground italic">None Linked</span>}
+                ) : <span className="text-muted-foreground italic text-xs">None Linked</span>}
               </div>
               <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Creation Timeline</strong>
@@ -156,24 +171,59 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
           </div>
 
           {session.user.role !== 'REPORTER' && (
-            <div className="glass-card rounded-xl overflow-hidden shadow-2xl border border-primary/20">
-              <CardHeader className="border-b border-border/50 bg-primary/5">
-                <CardTitle className="text-primary text-sm font-semibold tracking-wide">Execution Policy</CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">Adjust operational state</CardDescription>
+            <div className="glass-card rounded-xl overflow-hidden shadow-2xl border border-primary/30">
+              <CardHeader className="border-b border-border/50 bg-primary/10">
+                <CardTitle className="text-primary text-sm font-semibold tracking-wide">Execution Policy & Triage</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">Adjust operational state and assignees</CardDescription>
               </CardHeader>
               <div className="p-6">
-                <form action={updateStatus} className="space-y-4">
-                  <select name="status" defaultValue={incident.status} className="w-full rounded-md border border-border/60 bg-black/50 p-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:outline-none transition-all">
-                    <option value="NEW">NEW</option>
-                    <option value="IN_PROGRESS">IN_PROGRESS</option>
-                    <option value="PENDING_INFO">PENDING_INFO</option>
-                    <option value="RESOLVED">RESOLVED</option>
-                    <option value="CLOSED">CLOSED</option>
-                  </select>
-                  <Button type="submit" className="w-full bg-primary hover:bg-primary/80 shadow-[0_0_15px_rgba(0,255,200,0.2)]">Commit State</Button>
+                <form action={updateIncidentAction} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white/70">Assignee</Label>
+                    <select name="assigneeId" defaultValue={incident.assigneeId || "UNASSIGNED"} className="w-full rounded-md border border-border/60 bg-black/50 p-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                      <option value="UNASSIGNED" className="text-muted-foreground italic">Unassigned</option>
+                      {eligibleAssignees.map(u => (
+                        <option key={u.id} value={u.id}>{u.name} [{u.role}]</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white/70">Severity</Label>
+                    <select name="severity" defaultValue={incident.severity} className="w-full rounded-md border border-border/60 bg-black/50 p-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                      <option value="LOW">LOW</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="HIGH">HIGH</option>
+                      <option value="CRITICAL">CRITICAL</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white/70">Status</Label>
+                    <select name="status" defaultValue={incident.status} className="w-full rounded-md border border-border/60 bg-black/50 p-2.5 text-sm text-white focus:ring-2 focus:ring-primary focus:outline-none transition-all">
+                      <option value="NEW">NEW</option>
+                      <option value="IN_PROGRESS">IN_PROGRESS</option>
+                      <option value="PENDING_INFO">PENDING_INFO</option>
+                      <option value="RESOLVED">RESOLVED</option>
+                      <option value="CLOSED">CLOSED</option>
+                    </select>
+                  </div>
+
+                  <Button type="submit" className="w-full font-semibold bg-primary hover:bg-primary/80 shadow-[0_0_15px_rgba(0,255,200,0.2)] mt-2">
+                    Commit Changes
+                  </Button>
                 </form>
               </div>
             </div>
+          )}
+
+          {session.user.role === 'REPORTER' && (
+             <div className="glass-card rounded-xl p-6 shadow-2xl">
+                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Assigned Handler</strong>
+                  <span className={incident.assignee ? "text-foreground/90 font-medium text-sm" : "text-muted-foreground italic text-sm"}>
+                    {incident.assignee ? incident.assignee.name : "Waiting for Triage"}
+                  </span>
+             </div>
           )}
         </div>
       </div>
