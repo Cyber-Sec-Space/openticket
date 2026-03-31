@@ -66,6 +66,9 @@ export default async function IncidentDetailPage({
     })
   }
 
+  // Fetch global assets for reallocation dropdown
+  const assets = await db.asset.findMany({ orderBy: { name: 'asc' } })
+
   async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
@@ -75,14 +78,16 @@ export default async function IncidentDetailPage({
     const newSeverity = formData.get("severity") as any
     const assigneeIds = formData.getAll("assigneeIds") as string[]
     const validAssigneeIds = assigneeIds.filter(id => id !== "UNASSIGNED")
+    const newAssetId = formData.get("assetId") as string
 
-    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users`
+    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, Target Asset: ${newAssetId === 'UNLINKED' ? 'None' : newAssetId}`
 
     await db.incident.update({
       where: { id: incident!.id },
       data: {
         status: newStatus,
         severity: newSeverity,
+        assetId: newAssetId === 'UNLINKED' ? null : newAssetId,
         assignees: {
           set: validAssigneeIds.map(id => ({ id }))
         }
@@ -361,6 +366,21 @@ export default async function IncidentDetailPage({
                         <SelectItem value="MEDIUM" className="text-yellow-400">MEDIUM</SelectItem>
                         <SelectItem value="HIGH" className="text-orange-500">HIGH</SelectItem>
                         <SelectItem value="CRITICAL" className="text-destructive font-bold">CRITICAL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white/70">Target Node (Asset)</Label>
+                    <Select name="assetId" defaultValue={incident.assetId || "UNLINKED"}>
+                      <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
+                        <SelectValue placeholder="Associate Infrastructure (Optional)" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black/95 border-border/60 shadow-2xl backdrop-blur-md max-h-64">
+                         <SelectItem value="UNLINKED" className="text-muted-foreground italic">None Selected</SelectItem>
+                         {assets.map(asset => (
+                           <SelectItem key={asset.id} value={asset.id} className="font-mono">{asset.name}</SelectItem>
+                         ))}
                       </SelectContent>
                     </Select>
                   </div>
