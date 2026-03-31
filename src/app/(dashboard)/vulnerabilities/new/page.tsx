@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { notFound } from "next/navigation"
-import { Bug, ShieldAlert, Fingerprint } from "lucide-react"
+import { Bug, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,8 +27,8 @@ export default async function NewVulnerabilityPage() {
       </header>
       
       <div className="glass-card rounded-xl p-8 border border-border shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-5 text-red-500">
-           <Fingerprint size={120} />
+        <div className="absolute top-0 right-[-20px] p-8 opacity-[0.03] text-red-500 pointer-events-none transform -rotate-12">
+           <Bug size={160} />
         </div>
         
         <form action={createVulnerabilityAction} className="space-y-6 relative z-10">
