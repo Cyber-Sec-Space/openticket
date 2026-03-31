@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings } from "lucide-react"
+import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Sidebar({ userRole }: { userRole?: string }) {
@@ -16,6 +16,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
 
   // Conditionally inject SECOPS/ADMIN modules
   if (userRole === 'ADMIN' || userRole === 'SECOPS') {
+    navItems.push({ name: "Vulnerabilities", href: "/vulnerabilities", icon: Bug })
     navItems.push({ name: "Audit Logs", href: "/audit", icon: FileText })
   }
   

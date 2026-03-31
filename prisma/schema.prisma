@@ -99,7 +99,28 @@ model Asset {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  incidents Incident[]
+  incidents       Incident[]
+  vulnerabilities Vulnerability[] @relation("AssetVulnerabilities")
+}
+
+enum VulnStatus {
+  OPEN
+  MITIGATED
+  RESOLVED
+}
+
+model Vulnerability {
+  id          String     @id @default(cuid())
+  title       String
+  cveId       String?
+  cvssScore   Float?
+  description String     @db.Text
+  severity    Severity   @default(LOW)
+  status      VulnStatus @default(OPEN)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  affectedAssets Asset[] @relation("AssetVulnerabilities")
 }
 
 enum Severity {
@@ -111,8 +132,8 @@ enum Severity {
 
 enum IncidentStatus {
   NEW
-  IN PROGRESS
-  PENDING INFO
+  IN_PROGRESS
+  PENDING_INFO
   RESOLVED
   CLOSED
 }
