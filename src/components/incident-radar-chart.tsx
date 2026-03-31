@@ -32,11 +32,11 @@ export function IncidentRadarChart({ data }: { data: IncidentRadarData[] }) {
                 <div className="flex items-center">
                   <span 
                     className="w-2.5 h-2.5 rounded-full mr-3" 
-                    style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}` }} 
+                    style={{ backgroundColor: entry.color || '#0ea5e9', boxShadow: `0 0 10px ${entry.color || '#0ea5e9'}` }} 
                   />
                   <span className="text-white/80">{entry.name}</span>
                 </div>
-                <span className="text-lg font-black" style={{ color: entry.color }}>
+                <span className="text-lg font-black" style={{ color: entry.color || '#0ea5e9' }}>
                   {entry.value}
                 </span>
               </div>
@@ -75,10 +75,16 @@ export function IncidentRadarChart({ data }: { data: IncidentRadarData[] }) {
              iconType="circle" 
           />
           
-          <Radar name="CRITICAL" dataKey="CRITICAL" stroke="#ef4444" strokeWidth={2} fill="#ef4444" fillOpacity={0.3} filter="url(#radarGlowInc)" />
-          <Radar name="HIGH" dataKey="HIGH" stroke="#f97316" strokeWidth={2} fill="#f97316" fillOpacity={0.3} filter="url(#radarGlowInc)" />
-          <Radar name="MEDIUM" dataKey="MEDIUM" stroke="#eab308" strokeWidth={2} fill="#eab308" fillOpacity={0.2} filter="url(#radarGlowInc)" />
-          <Radar name="LOW" dataKey="LOW" stroke="#10b981" strokeWidth={1} fill="#10b981" fillOpacity={0.1} />
+          <Radar 
+            name="Total Active" 
+            dataKey="total" 
+            stroke="#0ea5e9" 
+            strokeWidth={3} 
+            fill="#0ea5e9" 
+            fillOpacity={0.4} 
+            filter="url(#radarGlowInc)" 
+            animationDuration={2000}
+          />
         </RadarChart>
       </ResponsiveContainer>
     </div>

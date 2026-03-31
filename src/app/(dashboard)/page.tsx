@@ -205,12 +205,25 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Incident Severity */}
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-rose-950/10">
+              <div className="p-5 border-b border-rose-500/20 bg-rose-500/5">
+                <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                  <BarChart3 className="w-4 h-4 text-rose-400" />
+                  Active Incident Severity Matrix
+                </h3>
+              </div>
+              <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
+                <DashboardCharts data={chartMatrix} />
+              </div>
+            </div>
+
             {/* Incident Radar */}
-            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-rose-950/10 md:col-span-2">
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-rose-950/10">
               <div className="p-5 border-b border-rose-500/20 bg-rose-500/5">
                 <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
                   <ShieldAlert className="w-4 h-4 text-rose-400" />
-                  Active Incident Typology & Severity Matrix
+                  Active Incident Typology Radar
                 </h3>
               </div>
               <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
