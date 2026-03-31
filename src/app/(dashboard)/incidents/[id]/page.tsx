@@ -357,10 +357,10 @@ export default async function IncidentDetailPage({
                          <SelectValue />
                        </SelectTrigger>
                        <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
-                         <SelectItem value="LOW">LOW</SelectItem>
-                         <SelectItem value="MEDIUM" className="text-yellow-400">MEDIUM</SelectItem>
-                         <SelectItem value="HIGH" className="text-orange-500">HIGH</SelectItem>
-                         <SelectItem value="CRITICAL" className="text-destructive font-bold">CRITICAL</SelectItem>
+                         <SelectItem value="LOW">Low</SelectItem>
+                         <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
+                         <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>
+                         <SelectItem value="CRITICAL" className="text-destructive font-bold">Critical</SelectItem>
                        </SelectContent>
                     </Select>
                   </div>
@@ -372,11 +372,11 @@ export default async function IncidentDetailPage({
                          <SelectValue />
                        </SelectTrigger>
                        <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
-                         <SelectItem value="NEW">NEW</SelectItem>
-                         <SelectItem value="IN_PROGRESS">IN_PROGRESS</SelectItem>
-                         <SelectItem value="PENDING_INFO">PENDING_INFO</SelectItem>
-                         <SelectItem value="RESOLVED">RESOLVED</SelectItem>
-                         <SelectItem value="CLOSED">CLOSED</SelectItem>
+                         <SelectItem value="NEW">New</SelectItem>
+                         <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                         <SelectItem value="PENDING_INFO">Pending Info</SelectItem>
+                         <SelectItem value="RESOLVED">Resolved</SelectItem>
+                         <SelectItem value="CLOSED">Closed</SelectItem>
                        </SelectContent>
                     </Select>
                   </div>
