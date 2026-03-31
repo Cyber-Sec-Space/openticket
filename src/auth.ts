@@ -19,6 +19,13 @@ class Invalid2FAError extends Error {
   }
 }
 
+class Global2FAEnforcedError extends Error {
+  constructor() {
+    super("Global2FAEnforced");
+    this.name = "Global2FAEnforcedError";
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
@@ -40,7 +47,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const isValid = await bcrypt.compare(credentials.password as string, user.passwordHash)
         if (!isValid) return null
 
-        if (user.isTwoFactorEnabled && user.twoFactorSecret) {
+        // Fetch global directives
+        const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+        const requireGlobal2FA = settings?.requireGlobal2FA ?? false
+
+        // Determine effective 2FA status (either enforced globally or opted-in personally)
+        if (requireGlobal2FA || user.isTwoFactorEnabled) {
+          if (!user.isTwoFactorEnabled || !user.twoFactorSecret) {
+            // Global lock restricts non-compliant nodes entirely
+            if (requireGlobal2FA) throw new Global2FAEnforcedError()
+            // Otherwise, normal missing path (should never theoretically trigger if isTwoFactorEnabled without secret, unless DB compromised)
+            return null
+          }
+
           const code = credentials.totpCode as string
           if (!code) {
              throw new Missing2FAError()

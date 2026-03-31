@@ -14,6 +14,7 @@ export async function authenticate(
       const errMessage = (error.cause?.err as any)?.message;
       if (errMessage === "Missing2FA") return "REQUIRES_2FA";
       if (errMessage === "Invalid2FA") return "INVALID_2FA";
+      if (errMessage === "Global2FAEnforced") return "GLOBAL_LOCKED";
       
       switch (error.type) {
         case 'CredentialsSignin':

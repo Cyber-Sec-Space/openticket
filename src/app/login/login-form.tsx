@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export function LoginForm() {
+export function LoginForm({ allowRegistration = false }: { allowRegistration?: boolean }) {
   const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined)
   const [showTwoFactor, setShowTwoFactor] = useState(false)
   const [persistedEmail, setPersistedEmail] = useState("")
@@ -83,8 +83,10 @@ export function LoginForm() {
       )}
       
       {errorMessage && errorMessage !== "REQUIRES_2FA" && (
-        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in-95">
-          {errorMessage === "INVALID_2FA" ? "Invalid Two-Factor Code provided." : errorMessage}
+        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in-95 leading-relaxed">
+          {errorMessage === "INVALID_2FA" ? "Invalid Two-Factor Code provided." : 
+           errorMessage === "GLOBAL_LOCKED" ? "Administrator Enforcement: This endpoint is structurally clamped pending TOTP interlock. Contact SecOps." : 
+           errorMessage}
         </div>
       )}
 
@@ -101,6 +103,14 @@ export function LoginForm() {
            <button type="button" onClick={() => setShowTwoFactor(false)} className="text-xs text-muted-foreground hover:text-white transition-colors underline underline-offset-4">
              Abort & Return to Identity Selection
            </button>
+        </div>
+      )}
+
+      {!showTwoFactor && allowRegistration && (
+        <div className="mt-6 flex justify-center w-full border-t border-white/5 pt-4">
+           <a href="/register" className="text-xs font-mono tracking-widest text-primary/60 hover:text-primary transition-colors underline underline-offset-4 border-primary/20 hover:border-primary">
+             [ INITIATE ENROLLMENT ]
+           </a>
         </div>
       )}
     </form>

@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - Adjusted Prisma JSON typing for server action FormData to prevent compile-time type mismatches.
 
 ### Added
+- Security: Bound globally-configurable Two-Factor Enforce directives natively into the NextAuth resolution stream restricting credentials entirely if misaligned.
+- UI: Erected dedicated `/register` endpoints dynamically exposing public enrollment paths governed by Administrative registry flags.
 - Management: Deployed System Configuration framework (Phase 12) featuring a global `SystemSetting` singleton database entity.
 - UI: Introduced a restrictive `/system` boundary dashboard accessible solely to Admin personnel for managing Registration, Role assignment mapping, and Universal 2FA enforcement flags.
 - Security: Implemented Phase 11 Two-Factor Authentication (TOTP) pipeline within NextAuth Credentials provider.

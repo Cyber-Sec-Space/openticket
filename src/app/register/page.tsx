@@ -1,10 +1,6 @@
-import { LoginForm } from "./login-form"
-import { db } from "@/lib/db"
+import { RegisterForm } from "./register-form"
 
-export default async function LoginPage() {
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
-  const allowRegistration = settings?.allowRegistration ?? true
-
+export default function RegisterPage() {
   return (
     <div className="flex h-screen w-full relative overflow-hidden bg-background">
       {/* Background Orbs */}
@@ -19,10 +15,10 @@ export default async function LoginPage() {
               OpenTicket
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Cybersecurity Incident & Asset Operations
+              New Operator Initialization
             </p>
           </div>
-          <LoginForm allowRegistration={allowRegistration} />
+          <RegisterForm />
         </div>
       </div>
     </div>
