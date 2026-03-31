@@ -69,7 +69,9 @@ export function TwoFactorPanel({ isEnabled }: { isEnabled: boolean }) {
   }
 
   return (
-    <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
+    <div className="space-y-6">
+       <hr className="my-8 border-white/10" />
+       
        <div className="flex justify-between items-start">
          <div className="space-y-1">
             <h3 className="text-sm font-semibold text-primary uppercase tracking-widest flex items-center">
