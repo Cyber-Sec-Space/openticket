@@ -253,10 +253,10 @@ export default async function Home() {
             </div>
 
             {/* Incident Radar */}
-            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-amber-950/10">
-              <div className="p-5 border-b border-amber-500/20 bg-amber-500/5">
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-rose-950/10">
+              <div className="p-5 border-b border-rose-500/20 bg-rose-500/5">
                 <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
-                  <ShieldAlert className="w-4 h-4 text-amber-400" />
+                  <ShieldAlert className="w-4 h-4 text-rose-400" />
                   Active Incident Typology Distribution
                 </h3>
               </div>
@@ -279,8 +279,8 @@ export default async function Home() {
             </div>
 
             {/* Vuln Donut */}
-            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col bg-emerald-950/10">
-              <div className="p-5 border-b border-emerald-500/20 bg-emerald-500/5">
+            <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col">
+              <div className="p-5 border-b border-indigo-500/20 bg-indigo-500/5">
                 <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
                   <ScanFace className="w-4 h-4 text-emerald-400" />
                   Vulnerability Resolution Status
@@ -346,6 +346,12 @@ export default async function Home() {
                 <Server className="w-4 h-4 mr-3 text-blue-400 group-hover:scale-110 transition-transform" />
                 <div className="text-sm">
                   <strong className="block font-medium">Catalog Infrastructure</strong>
+                </div>
+              </Link>
+              <Link href="/vulnerabilities/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-indigo-400/50 text-white rounded-lg transition-all">
+                <AlertTriangle className="w-4 h-4 mr-3 text-indigo-400 group-hover:scale-110 transition-transform" />
+                <div className="text-sm">
+                  <strong className="block font-medium">Log Vulnerability</strong>
                 </div>
               </Link>
             </div>
