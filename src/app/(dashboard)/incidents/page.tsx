@@ -14,9 +14,9 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   const resolvedParams = await searchParams;
   const page = parseInt(resolvedParams.page || "1", 10);
   const TAKE = 10;
-  
+
   const filterParams: any = {}
-  
+
   // Hard RBAC rule: reporters only see their own tickets
   if (session.user.role === 'REPORTER') {
     filterParams.reporterId = session.user.id
@@ -25,7 +25,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   // URL Filters
   if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.status = resolvedParams.status;
   if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.severity = resolvedParams.severity;
-  
+
   if (resolvedParams.q) {
     filterParams.OR = [
       { title: { contains: resolvedParams.q, mode: "insensitive" } },
@@ -77,15 +77,15 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
       <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">
         <Filter className="w-5 h-5 text-muted-foreground mr-2" />
         <form method="GET" action="/incidents" className="flex flex-1 gap-4 items-end flex-wrap">
-          
+
           <div className="space-y-1 flex-1 min-w-[200px]">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Search</label>
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input 
-                name="q" 
-                defaultValue={resolvedParams.q || ""} 
-                placeholder="Search Title, INC-ID, or contents..." 
+              <input
+                name="q"
+                defaultValue={resolvedParams.q || ""}
+                placeholder="Search Title, INC-ID, or contents..."
                 className="h-9 w-full pl-9 pr-3 rounded-md border border-border/60 bg-black/50 text-sm text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-primary outline-none transition-all"
               />
             </div>
@@ -100,27 +100,27 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
                 <SelectItem value="ALL">All Statuses</SelectItem>
                 <SelectItem value="NEW">New</SelectItem>
-                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                <SelectItem value="PENDING_INFO">Pending Info</SelectItem>
+                <SelectItem value="IN PROGRESS">In Progress</SelectItem>
+                <SelectItem value="PENDING INFO">Pending Info</SelectItem>
                 <SelectItem value="RESOLVED">Resolved</SelectItem>
                 <SelectItem value="CLOSED">Closed</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Severity</label>
             <Select name="severity" defaultValue={resolvedParams.severity || "ALL"}>
-               <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
-                 <SelectValue placeholder="All Severities" />
-               </SelectTrigger>
-               <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
-                 <SelectItem value="ALL">All Severities</SelectItem>
-                 <SelectItem value="LOW">Low</SelectItem>
-                 <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
-                 <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>
-                 <SelectItem value="CRITICAL" className="text-destructive font-bold">Critical</SelectItem>
-               </SelectContent>
+              <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none transition-all">
+                <SelectValue placeholder="All Severities" />
+              </SelectTrigger>
+              <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
+                <SelectItem value="ALL">All Severities</SelectItem>
+                <SelectItem value="LOW">Low</SelectItem>
+                <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
+                <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>
+                <SelectItem value="CRITICAL" className="text-destructive font-bold">Critical</SelectItem>
+              </SelectContent>
             </Select>
           </div>
 
@@ -158,13 +158,13 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                 </TableCell>
               </TableRow>
             ) : incidents.map(incident => (
-              <TableRow 
-                key={incident.id} 
+              <TableRow
+                key={incident.id}
                 className="cursor-pointer border-border hover:bg-primary/10 transition-colors relative group"
               >
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   <Link href={`/incidents/${incident.id}`} className="absolute inset-0" aria-label={`View ${incident.title}`} />
-                  INC-{incident.id.substring(0,6).toUpperCase()}
+                  INC-{incident.id.substring(0, 6).toUpperCase()}
                 </TableCell>
                 <TableCell className="font-medium text-foreground">
                   {incident.title}
@@ -181,8 +181,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                 </TableCell>
                 <TableCell className="text-muted-foreground">{incident.reporter?.name || "Unknown"}</TableCell>
                 <TableCell className="text-muted-foreground font-medium border-r border-border/20">
-                  {incident.assignees.length > 0 
-                    ? incident.assignees.map(a => a.name).join(', ') 
+                  {incident.assignees.length > 0
+                    ? incident.assignees.map(a => a.name).join(', ')
                     : <span className="text-muted-foreground/50 italic">Unassigned</span>}
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground text-sm font-mono">{incident.createdAt.toLocaleDateString()}</TableCell>
@@ -198,13 +198,13 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
           </p>
           <div className="flex gap-2">
             <Link href={page > 1 ? buildPageUrl(page - 1) : "#"} className={page <= 1 ? "pointer-events-none opacity-50" : ""}>
-               <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4 mr-1"/> Prev</Button>
+              <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
             </Link>
             <div className="flex items-center justify-center px-4 font-mono text-sm border-x border-border/50">
-               Pg {page} / {totalPages}
+              Pg {page} / {totalPages}
             </div>
             <Link href={page < totalPages ? buildPageUrl(page + 1) : "#"} className={page >= totalPages ? "pointer-events-none opacity-50" : ""}>
-               <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10">Next <ChevronRight className="w-4 h-4 ml-1"/></Button>
+              <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
             </Link>
           </div>
         </div>

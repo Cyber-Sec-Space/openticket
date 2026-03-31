@@ -13,10 +13,6 @@ export default async function NewIncidentPage() {
   const session = await auth()
   if (!session?.user) return null
 
-  // SSR Mappings for SelectValue hydration
-  const S_MAP: Record<string, string> = { LOW: "Low", MEDIUM: "Medium", HIGH: "High", CRITICAL: "Critical" }
-  const C_MAP: Record<string, string> = { MALWARE: "Malware Infection", PHISHING: "Phishing Attempt", DATA_BREACH: "Data Breach", UNAUTHORIZED_ACCESS: "Unauthorized Access", NETWORK_ANOMALY: "Network Anomaly", OTHER: "Other / Triage" }
-
   const assets = await db.asset.findMany({
     orderBy: { name: 'asc' }
   })
@@ -61,7 +57,7 @@ export default async function NewIncidentPage() {
                 <div className="relative">
                   <Select name="type" defaultValue="OTHER">
                     <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
-                      <SelectValue>{C_MAP["OTHER"]}</SelectValue>
+                      <SelectValue placeholder="Select Threat Classification..." />
                     </SelectTrigger>
                     <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
                       <SelectItem value="MALWARE">Malware Infection</SelectItem>
@@ -80,7 +76,7 @@ export default async function NewIncidentPage() {
                 <div className="relative">
                   <Select name="severity" defaultValue="LOW">
                      <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
-                       <SelectValue>{S_MAP["LOW"]}</SelectValue>
+                       <SelectValue placeholder="Assess Initial Threat Level..." />
                      </SelectTrigger>
                      <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
                        <SelectItem value="LOW">Low</SelectItem>

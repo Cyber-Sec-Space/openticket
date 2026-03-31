@@ -111,8 +111,8 @@ enum Severity {
 
 enum IncidentStatus {
   NEW
-  IN_PROGRESS
-  PENDING_INFO
+  IN PROGRESS
+  PENDING INFO
   RESOLVED
   CLOSED
 }
