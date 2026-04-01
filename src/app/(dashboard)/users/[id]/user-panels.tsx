@@ -56,21 +56,23 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl w-full bg-black/95 border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)] max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogContent className="w-[95vw] md:max-w-4xl h-[85vh] md:max-h-[800px] bg-black/95 border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)] flex flex-col overflow-hidden p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-emerald-400">
               <Clock className="w-5 h-5" /> Detailed Telemetry Matrix
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-emerald-400 border-emerald-500/30 ml-auto">Total: {totalAuditLogs.toLocaleString()}</Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[60vh] mt-4">
+          <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar mt-4">
             {auditLogs.length === 0 ? <p className="text-sm text-muted-foreground italic text-center py-8">No immutable telemetry recorded.</p> : auditLogs.map(log => (
               <div key={log.id} className="p-3 bg-white/5 rounded-lg border border-white/5 text-sm space-y-2">
                 <div className="flex justify-between items-center pb-2 border-b border-white/5">
                   <span className="font-mono text-emerald-400">{log.action}</span>
                   <span className="text-[10px] text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</span>
                 </div>
-                <p className="text-muted-foreground text-xs leading-relaxed break-words font-mono opacity-80">{typeof log.changes === 'object' ? JSON.stringify(log.changes) : String(log.changes)}</p>
+                <div className="text-muted-foreground text-[10px] leading-relaxed break-all whitespace-pre-wrap font-mono opacity-80 bg-black/40 p-2 rounded max-h-32 overflow-y-auto mt-2">
+                  {typeof log.changes === 'object' ? JSON.stringify(log.changes, null, 2) : String(log.changes)}
+                </div>
               </div>
             ))}
           </div>
@@ -110,14 +112,14 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl w-full bg-black/95 border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogContent className="w-[95vw] md:max-w-4xl h-[85vh] md:max-h-[800px] bg-black/95 border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] flex flex-col overflow-hidden p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-blue-400">
               <FileJson className="w-5 h-5" /> Aggregated Evidence Payload
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-blue-400 border-blue-500/30 ml-auto">Total: {totalAttachments.toLocaleString()}</Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[60vh] mt-4">
+          <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar mt-4">
             {attachments.length === 0 ? <p className="text-sm text-muted-foreground italic text-center py-8">No digital evidence uploaded.</p> : attachments.map(att => (
               <div key={att.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 group hover:border-blue-400/30 transition-colors">
                 <div className="max-w-[70%]">
@@ -167,14 +169,14 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="max-w-5xl w-full bg-black/95 border border-orange-500/30 shadow-[0_0_50px_rgba(249,115,22,0.1)] max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogContent className="w-[95vw] md:max-w-5xl h-[85vh] md:max-h-[800px] bg-black/95 border border-orange-500/30 shadow-[0_0_50px_rgba(249,115,22,0.1)] flex flex-col overflow-hidden p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-orange-400">
               <Activity className="w-5 h-5" /> Bound Incidents Matrix
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-orange-400 border-orange-500/30 ml-auto">Total: {totalIncidents.toLocaleString()}</Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 custom-scrollbar max-h-[60vh] overflow-y-auto mt-4 p-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 custom-scrollbar flex-1 overflow-y-auto mt-4 p-1">
             {assignedIncidents.length === 0 ? <p className="text-sm text-muted-foreground italic col-span-full text-center py-8">No active escalations mapped to this operator.</p> : assignedIncidents.map(inc => (
               <Link key={inc.id} href={`/incidents/${inc.id}`} className="block">
                 <div className="p-4 bg-white/5 border border-white/5 rounded-xl hover:border-orange-500/50 transition-colors cursor-pointer group space-y-3">
