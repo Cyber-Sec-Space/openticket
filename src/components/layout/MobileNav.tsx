@@ -47,8 +47,8 @@ export function MobileNav({ userRole }: { userRole?: string }) {
   navItems.push({ name: "Settings", href: "/settings", icon: Settings })
 
   return (
-    <>
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-border/40 glass-panel bg-black/60 sticky top-0 z-40 backdrop-blur-xl">
+    <header className="md:hidden relative z-50">
+      <div className="flex items-center justify-between p-4 border-b border-border/40 glass-panel bg-black/60 sticky top-0 backdrop-blur-xl">
         <div className="flex items-center">
           <ShieldAlert className="w-6 h-6 text-primary mr-2" />
           <span className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
@@ -64,7 +64,7 @@ export function MobileNav({ userRole }: { userRole?: string }) {
       </div>
 
       {isOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex animate-in fade-in duration-200">
           <div 
             className="fixed inset-0 bg-black/80 backdrop-blur-sm" 
             onClick={() => setIsOpen(false)}
@@ -118,6 +118,6 @@ export function MobileNav({ userRole }: { userRole?: string }) {
           </aside>
         </div>
       )}
-    </>
+    </header>
   )
 }
