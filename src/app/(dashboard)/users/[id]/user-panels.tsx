@@ -66,18 +66,20 @@ export function UserPanels({
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-emerald-400 border-emerald-500/30 ml-auto">Total: {totalAuditLogs.toLocaleString()}</Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 flex-1 overflow-y-auto min-h-0 pr-2 custom-scrollbar mt-4">
-            {auditLogs.length === 0 ? <p className="text-sm text-muted-foreground italic text-center py-8">No immutable telemetry recorded.</p> : auditLogs.map(log => (
-              <div key={log.id} className="p-3 bg-white/5 rounded-lg border border-white/5 text-sm space-y-2">
-                <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                  <span className="font-mono text-emerald-400">{log.action}</span>
-                  <span className="text-[10px] text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</span>
+          <div className="flex-1 overflow-y-auto min-h-0 pr-2 custom-scrollbar mt-4 flex flex-col items-center">
+            <div className="w-full max-w-4xl space-y-3">
+              {auditLogs.length === 0 ? <p className="text-sm text-muted-foreground italic text-center py-8">No immutable telemetry recorded.</p> : auditLogs.map(log => (
+                <div key={log.id} className="p-4 bg-white/5 rounded-xl border border-white/5 text-sm space-y-2 hover:bg-white/10 transition-colors">
+                  <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                    <span className="font-mono text-emerald-400 font-bold">{log.action}</span>
+                    <span className="text-[10px] text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="text-muted-foreground text-xs leading-relaxed break-all whitespace-pre-wrap font-mono opacity-80 bg-black/40 p-3 rounded-lg max-h-40 overflow-y-auto mt-2">
+                    {typeof log.changes === 'object' ? JSON.stringify(log.changes, null, 2) : String(log.changes)}
+                  </div>
                 </div>
-                <div className="text-muted-foreground text-[10px] leading-relaxed break-all whitespace-pre-wrap font-mono opacity-80 bg-black/40 p-2 rounded max-h-32 overflow-y-auto mt-2">
-                  {typeof log.changes === 'object' ? JSON.stringify(log.changes, null, 2) : String(log.changes)}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
           {totalAuditLogs > TAKE_AUDIT && (
              <div className="flex justify-between items-center pt-4 border-t border-white/10 mt-2">
@@ -125,20 +127,22 @@ export function UserPanels({
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-blue-400 border-blue-500/30 ml-auto">Total: {totalAttachments.toLocaleString()}</Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 flex-1 overflow-y-auto min-h-0 pr-2 custom-scrollbar mt-4">
-            {attachments.length === 0 ? <p className="text-sm text-muted-foreground italic text-center py-8">No digital evidence uploaded.</p> : attachments.map(att => (
-              <div key={att.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 group hover:border-blue-400/30 transition-colors">
-                <div className="max-w-[70%]">
-                  <p className="text-sm font-mono text-foreground truncate">{att.filename}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(att.createdAt).toLocaleDateString()}</p>
+          <div className="flex-1 overflow-y-auto min-h-0 pr-2 custom-scrollbar mt-4 flex flex-col items-center">
+            <div className="w-full max-w-4xl space-y-3">
+              {attachments.length === 0 ? <p className="text-sm text-muted-foreground italic text-center py-8">No digital evidence uploaded.</p> : attachments.map(att => (
+                <div key={att.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 group hover:border-blue-400/30 transition-colors">
+                  <div className="max-w-[70%]">
+                    <p className="text-sm font-mono text-foreground truncate font-semibold">{att.filename}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(att.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <a href={att.fileUrl} download>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 text-blue-400 hover:bg-blue-400/20 rounded-full">
+                      <Download className="w-5 h-5" />
+                    </Button>
+                  </a>
                 </div>
-                <a href={att.fileUrl} download>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400 hover:bg-blue-400/20">
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </a>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
           {totalAttachments > TAKE_FILE && (
              <div className="flex justify-between items-center pt-4 border-t border-white/10 mt-2">
@@ -185,21 +189,23 @@ export function UserPanels({
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-orange-400 border-orange-500/30 ml-auto">Total: {totalIncidents.toLocaleString()}</Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 custom-scrollbar flex-1 overflow-y-auto min-h-0 mt-4 p-1">
-            {assignedIncidents.length === 0 ? <p className="text-sm text-muted-foreground italic col-span-full text-center py-8">No active escalations mapped to this operator.</p> : assignedIncidents.map(inc => (
-              <Link key={inc.id} href={`/incidents/${inc.id}`} className="block">
-                <div className="p-4 bg-white/5 border border-white/5 rounded-xl hover:border-orange-500/50 transition-colors cursor-pointer group space-y-3">
-                  <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-mono text-muted-foreground">ID-{inc.id.substring(0,6).toUpperCase()}</span>
-                    <Badge className="bg-orange-900/50 text-orange-400 border border-orange-500/30 text-[10px] py-0">{inc.status}</Badge>
+          <div className="flex-1 overflow-y-auto min-h-0 mt-4 p-1 custom-scrollbar flex flex-col items-center">
+            <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {assignedIncidents.length === 0 ? <p className="text-sm text-muted-foreground italic col-span-full text-center py-8">No active escalations mapped to this operator.</p> : assignedIncidents.map(inc => (
+                <Link key={inc.id} href={`/incidents/${inc.id}`} className="block">
+                  <div className="p-5 bg-white/5 border border-white/5 rounded-2xl hover:border-orange-500/50 transition-colors cursor-pointer group space-y-3">
+                    <div className="flex justify-between items-start">
+                      <span className="text-[10px] font-mono text-muted-foreground">ID-{inc.id.substring(0,6).toUpperCase()}</span>
+                      <Badge className="bg-orange-900/50 text-orange-400 border border-orange-500/30 text-[10px] py-0">{inc.status}</Badge>
+                    </div>
+                    <h3 className="text-sm font-semibold truncate group-hover:text-orange-400 transition-colors">{inc.title}</h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                      <span className="px-2 py-1 rounded bg-black/40 inline-block">{inc.severity}</span>
+                    </div>
                   </div>
-                  <h3 className="text-sm font-semibold truncate group-hover:text-orange-400 transition-colors">{inc.title}</h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                    <span className="px-2 py-1 rounded bg-black/40 inline-block">{inc.severity}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
           
           {totalIncidents > TAKE_INC && (
