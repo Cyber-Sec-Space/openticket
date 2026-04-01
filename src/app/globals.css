@@ -154,3 +154,14 @@
 .glass-card:hover {
   @apply border-white/20 bg-card/80;
 }
+
+/* Failsafe to guarantee Mobile NavBar hiding on Desktop sizes */
+@media (min-width: 768px) {
+  .desktop-hide-nav {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}

@@ -47,7 +47,7 @@ export function MobileNav({ userRole }: { userRole?: string }) {
   navItems.push({ name: "Settings", href: "/settings", icon: Settings })
 
   return (
-    <header className="md:hidden relative z-50">
+    <header className="md:hidden desktop-hide-nav relative z-50">
       <div className="flex items-center justify-between p-4 border-b border-border/40 glass-panel bg-black/60 sticky top-0 backdrop-blur-xl">
         <div className="flex items-center">
           <ShieldAlert className="w-6 h-6 text-primary mr-2" />
