@@ -8,9 +8,10 @@ import { IncidentRadarChart } from "@/components/incident-radar-chart"
 import { VulnStatusChart } from "@/components/vuln-status-chart"
 import { VulnSeverityChart } from "@/components/vuln-severity-chart"
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
-  const { page } = await (searchParams || { page: "1" });
+export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string; filter?: string }> }) {
+  const { page, filter } = await (searchParams || {});
   const currentPage = parseInt(page || "1", 10);
+  const currentFilter = filter || "all";
   const TAKE = 5;
   const skip = (currentPage - 1) * TAKE;
 
@@ -49,17 +50,26 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     status: { notIn: ['CLOSED', 'RESOLVED'] }
   };
   
-  if (session.user.role !== 'REPORTER') {
-    boardFilterParams.OR = [
-      { reporterId: session.user.id },
-      { assignees: { some: { id: session.user.id } } },
-      { assignees: { none: {} } }
-    ]
+  if (currentFilter === 'reported') {
+     boardFilterParams.reporterId = session.user.id;
+  } else if (currentFilter === 'assigned') {
+     boardFilterParams.assignees = { some: { id: session.user.id } };
+  } else if (currentFilter === 'unassigned' && session.user.role !== 'REPORTER') {
+     boardFilterParams.assignees = { none: {} };
   } else {
-    boardFilterParams.OR = [
-      { reporterId: session.user.id },
-      { assignees: { some: { id: session.user.id } } }
-    ]
+     // Default 'all' logic
+    if (session.user.role !== 'REPORTER') {
+      boardFilterParams.OR = [
+        { reporterId: session.user.id },
+        { assignees: { some: { id: session.user.id } } },
+        { assignees: { none: {} } }
+      ]
+    } else {
+      boardFilterParams.OR = [
+        { reporterId: session.user.id },
+        { assignees: { some: { id: session.user.id } } }
+      ]
+    }
   }
 
   const [boardIncidents, boardTotal] = await Promise.all([
@@ -319,12 +329,22 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <div className="col-span-1 flex flex-col gap-6">
           {/* Personal Case Board */}
           <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col flex-1">
-            <div className="p-4 border-b border-border/50 bg-black/20 flex items-center justify-between">
-              <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
-                <LayoutList className="w-4 h-4 text-emerald-400" />
-                Your Action Board
-              </h3>
-              <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-mono">{boardTotal} Active</span>
+            <div className="p-4 border-b border-border/50 bg-black/20 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
+                  <LayoutList className="w-4 h-4 text-emerald-400" />
+                  Your Action Board
+                </h3>
+                <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-mono">{boardTotal} Active</span>
+              </div>
+              <div className="flex flex-wrap gap-2 text-[10px] uppercase font-bold tracking-wider">
+                <Link href={`?filter=all`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'all' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>All</Link>
+                <Link href={`?filter=assigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'assigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Assigned to me</Link>
+                <Link href={`?filter=reported`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'reported' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Reported by me</Link>
+                {session.user.role !== 'REPORTER' && (
+                  <Link href={`?filter=unassigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'unassigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Unassigned</Link>
+                )}
+              </div>
             </div>
             <div className="p-0 flex-1 divide-y divide-white/5 flex flex-col min-h-[400px]">
               {boardIncidents.length === 0 ? (
@@ -380,14 +400,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
               {totalPages > 1 && (
                 <div className="p-3 border-t border-white/5 flex items-center justify-between bg-black/40 mt-auto">
                    <Link 
-                     href={currentPage <= 1 ? '#' : `?page=${currentPage - 1}`} 
+                     href={currentPage <= 1 ? '#' : `?page=${currentPage - 1}&filter=${currentFilter}`} 
                      className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
                    >
                      <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                    </Link>
                    <span className="text-xs font-mono text-muted-foreground">P. {currentPage} / {totalPages}</span>
                    <Link 
-                     href={currentPage >= totalPages ? '#' : `?page=${currentPage + 1}`}
+                     href={currentPage >= totalPages ? '#' : `?page=${currentPage + 1}&filter=${currentFilter}`}
                      className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
                    >
                      Next <ChevronRight className="w-4 h-4 ml-1" />
