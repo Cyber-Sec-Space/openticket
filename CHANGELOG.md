@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Schema: Adjusted native `Prisma ERD` model synchronizing `SystemSetting`, `Attachment` properties alongside `Architecture.md` representations.
 
 ### Fixed
+- Migrated legacy `middleware.ts` to `proxy.ts` to resolve fatal Turbopack parsing crashes (`TypeError: Cannot read properties of undefined (reading 'modules')`) and `404` errors under Next.js 16.2.1 conventions.
 - Fixed bug where Investigation Logs failed to post due to a missing `type="submit"` attribute on the Radix/Base-UI button element binding.
 - Resolved Next.js compile error where `(dashboard)` pages conflicted with legacy root pages by clearing out duplicate component files in `/assets`, `/incidents`, and `/page.tsx`.
 - Fixed Next.js 15 dynamic routing issue where `params` was not being handled as a Promise inside the incident detail view.
