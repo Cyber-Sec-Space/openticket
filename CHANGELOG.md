@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 ## main
+### Added
+- Attachments: Integrated local binary storage capabilities `/api/upload` linked to Incidents and Vulnerabilities acting as centralized execution evidence.
+- SLA Management: Enabled strict dynamic `targetSlaDate` bindings with UI shifting indicators marking overdue constraints.
+- Notification (Webhook): Configured external SOC integration triggers capable of posting payload states directly into Discord/Slack formats.
+- Data Delivery: Surfaced a high-speed `/api/export` comma-separated report compiler mapped to individual query scopes.
+- UI: Reconstructed Index dashboards embedding Next.js `searchParam` pagination controllers & advanced filters preserving performance on large structural datasets.
+- Schema: Adjusted native `Prisma ERD` model synchronizing `SystemSetting`, `Attachment` properties alongside `Architecture.md` representations.
+
 ### Fixed
 - Fixed bug where Investigation Logs failed to post due to a missing `type="submit"` attribute on the Radix/Base-UI button element binding.
 - Resolved Next.js compile error where `(dashboard)` pages conflicted with legacy root pages by clearing out duplicate component files in `/assets`, `/incidents`, and `/page.tsx`.

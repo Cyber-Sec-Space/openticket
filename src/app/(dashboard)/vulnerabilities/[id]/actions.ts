@@ -15,6 +15,8 @@ export async function updateVulnStatusAction(formData: FormData) {
 
   const vulnId = formData.get("vulnId") as string
   const newStatusRaw = formData.get("status") as string
+  const targetSlaDateRaw = formData.get("targetSlaDate") as string
+  const targetSlaDate = targetSlaDateRaw && targetSlaDateRaw.trim() !== "" ? new Date(targetSlaDateRaw) : null
   
   if (!vulnId || !newStatusRaw) {
     throw new Error("Missing parameters for mutating Vulnerability states.")
@@ -25,7 +27,7 @@ export async function updateVulnStatusAction(formData: FormData) {
   // Authoritative mutate hook
   const updatedVuln = await db.vulnerability.update({
     where: { id: vulnId },
-    data: { status: newStatus },
+    data: { status: newStatus, targetSlaDate },
     select: { title: true }
   })
 

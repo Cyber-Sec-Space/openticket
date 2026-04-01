@@ -3,6 +3,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
+import { dispatchWebhook } from "@/lib/webhook"
 
 export async function createIncident(prevState: any, formData: FormData) {
   const session = await auth()
@@ -58,6 +59,16 @@ export async function createIncident(prevState: any, formData: FormData) {
       changes: { title, severity }
     }
   })
+
+  // Phase 9: Webhook Dispatch
+  if (severity === 'CRITICAL' || severity === 'HIGH') {
+    await dispatchWebhook({
+      title: `Incident Declared: ${title}`,
+      description: description,
+      severity: severity,
+      url: `${process.env.NEXTAUTH_URL}/incidents/${newIncident.id}`
+    })
+  }
 
   redirect(`/incidents/${newIncident.id}`)
 }

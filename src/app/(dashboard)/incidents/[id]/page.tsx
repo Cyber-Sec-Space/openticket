@@ -5,13 +5,15 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { dispatchWebhook } from "@/lib/webhook"
+import { uploadAttachment } from "@/app/actions/upload"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Trash2, Edit3, ShieldAlert, Activity } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
+import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload } from "lucide-react"
 
 export default async function IncidentDetailPage({
   params,
@@ -36,7 +38,8 @@ export default async function IncidentDetailPage({
       comments: {
         include: { author: true },
         orderBy: { createdAt: 'desc' }
-      }
+      },
+      attachments: true
     }
   })
 
@@ -77,6 +80,8 @@ export default async function IncidentDetailPage({
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
     const newAssetName = formData.get("assetName") as string
+    const targetSlaDateRaw = formData.get("targetSlaDate") as string
+    const targetSlaDate = targetSlaDateRaw && targetSlaDateRaw.trim() !== "" ? new Date(targetSlaDateRaw) : null
     
     const resolvedAssetId = newAssetName === 'UNLINKED' 
       ? null 
@@ -85,7 +90,7 @@ export default async function IncidentDetailPage({
     const assigneeIds = formData.getAll("assigneeIds") as string[]
     const validAssigneeIds = assigneeIds.filter(id => id !== "UNASSIGNED")
 
-    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, Target Asset: ${newAssetName}`
+    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, SLA: ${targetSlaDate ? targetSlaDate.toISOString() : 'Removed'}`
 
     await db.incident.update({
       where: { id: incident!.id },
@@ -93,6 +98,7 @@ export default async function IncidentDetailPage({
         status: newStatus.replace(/ /g, '_'),
         severity: newSeverity,
         assetId: resolvedAssetId,
+        targetSlaDate,
         assignees: {
           set: validAssigneeIds.map(id => ({ id }))
         }
@@ -126,6 +132,17 @@ export default async function IncidentDetailPage({
         changes: changesText
       }
     })
+
+    // Phase 9: Webhook Dispatch for Escalations
+    if (newSeverity === 'CRITICAL' || newStatus === 'RESOLVED') {
+      await dispatchWebhook({
+        title: `Incident Update: ${incident!.title}`,
+        description: `Status changed to ${newStatus}, Severity: ${newSeverity}`,
+        severity: newSeverity,
+        url: `${process.env.NEXTAUTH_URL}/incidents/${incident!.id}`
+      })
+    }
+
     redirect(`/incidents/${incident!.id}`)
   }
 
@@ -288,6 +305,43 @@ export default async function IncidentDetailPage({
             </div>
           </div>
 
+          <div className="glass-card rounded-xl overflow-hidden shadow-2xl relative border-t-2 border-t-indigo-500/30">
+            <CardHeader className="border-b border-border/50 bg-black/10 p-5">
+              <CardTitle className="text-indigo-400 font-semibold tracking-wide flex items-center">
+                <Paperclip className="w-5 h-5 mr-2" /> Digital Evidence & Attachments
+              </CardTitle>
+            </CardHeader>
+            <div className="p-6 space-y-4">
+              <form action={async (formData) => {
+                "use server"
+                formData.append("incidentId", incident!.id)
+                await uploadAttachment(formData)
+                redirect(`/incidents/${incident!.id}`)
+              }} className="flex items-center gap-3 pb-6 border-b border-border/50">
+                <Input type="file" name="file" className="bg-black/50 border-white/10 flex-1 text-xs file:text-xs file:bg-primary/20 file:text-primary file:border-0 file:rounded-md file:cursor-pointer" required />
+                <Button type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_15px_rgba(100,0,255,0.3)]">
+                  <Upload className="w-4 h-4 mr-2" /> Upload
+                </Button>
+              </form>
+
+              {incident.attachments.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                  {incident.attachments.map(att => (
+                    <a key={att.id} href={att.fileUrl} target="_blank" rel="noreferrer" className="flex items-center p-3 rounded-lg border border-border/50 bg-black/20 hover:border-indigo-400/30 transition-colors group">
+                      <Paperclip className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-indigo-400" />
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="text-sm font-medium text-white/90 truncate">{att.filename}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground">{att.createdAt.toLocaleDateString()}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground/60 py-4 italic">No evidence uploaded yet.</p>
+              )}
+            </div>
+          </div>
+
           <div className="glass-card rounded-xl overflow-hidden shadow-2xl relative border-t-2 border-t-blue-500/30">
             <CardHeader className="border-b border-border/50 bg-black/10 p-5">
               <CardTitle className="text-blue-400 font-semibold tracking-wide flex items-center">
@@ -359,6 +413,15 @@ export default async function IncidentDetailPage({
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Record Initialized</strong>
                 <span className="font-mono text-xs text-foreground/80">{incident.createdAt.toLocaleString()}</span>
               </div>
+              <div>
+                <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target SLA</strong>
+                {incident.targetSlaDate ? (
+                  <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${new Date() > incident.targetSlaDate ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
+                    <Calendar className="w-3 h-3 inline mr-1" />
+                    {incident.targetSlaDate.toLocaleString()}
+                  </span>
+                ) : <span className="text-muted-foreground italic text-xs">No Deadline Set</span>}
+              </div>
             </div>
           </div>
 
@@ -422,6 +485,16 @@ export default async function IncidentDetailPage({
                         <SelectItem value="CLOSED">CLOSED</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-white/70">Target SLA Date</Label>
+                    <Input 
+                      type="datetime-local" 
+                      name="targetSlaDate" 
+                      defaultValue={incident.targetSlaDate ? new Date(incident.targetSlaDate.getTime() - incident.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+                      className="flex h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary transition-all [color-scheme:dark]"
+                    />
                   </div>
 
                   <Button type="submit" className="w-full font-semibold bg-primary hover:bg-primary/80 shadow-[0_0_15px_rgba(0,255,200,0.2)] mt-2">

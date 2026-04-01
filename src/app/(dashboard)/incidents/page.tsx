@@ -67,11 +67,18 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">Monitor, assign, and respond to ongoing security tickets across the enterprise.</p>
         </div>
-        <Link href="/incidents/new">
-          <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
-            <Plus className="w-4 h-4 mr-2" /> Report Incident
-          </Button>
-        </Link>
+        <div className="flex gap-4">
+          <Link href="/api/export?type=incident">
+            <Button variant="secondary" className="bg-black/40 hover:bg-black/60 border border-white/20">
+              Export CSV
+            </Button>
+          </Link>
+          <Link href="/incidents/new">
+            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
+              <Plus className="w-4 h-4 mr-2" /> Report Incident
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">

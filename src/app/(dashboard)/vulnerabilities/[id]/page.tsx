@@ -1,9 +1,11 @@
 import { auth } from "@/auth"
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
-import { Bug, ShieldAlert, Server, Trash2, ShieldCheck, Activity } from "lucide-react"
+import { uploadAttachment } from "@/app/actions/upload"
+import { Bug, ShieldAlert, Server, Trash2, ShieldCheck, Activity, Calendar, Paperclip, Upload } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateVulnStatusAction, deleteVulnerabilityAction } from "./actions"
 import Link from "next/link"
@@ -23,7 +25,8 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
   const vuln = await db.vulnerability.findUnique({
     where: { id },
     include: {
-      affectedAssets: true
+      affectedAssets: true,
+      attachments: { orderBy: { createdAt: 'desc' } }
     }
   })
 
@@ -85,29 +88,86 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
              <div className="bg-black/40 rounded-lg p-5 border border-white/5 whitespace-pre-wrap font-mono text-sm leading-relaxed text-muted-foreground/90">
                 {vuln.description}
              </div>
-             <p className="text-xs text-muted-foreground/30 mt-4 text-right">
-                Discovered: {new Date(vuln.createdAt).toLocaleString()}
-             </p>
+             
+             <div className="flex justify-between items-center mt-4">
+                {vuln.targetSlaDate ? (
+                   <span className={`font-mono text-xs font-semibold px-2 py-1 rounded ${new Date() > vuln.targetSlaDate ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
+                      <Calendar className="w-3 h-3 inline mr-2" />
+                      Target SLA: {vuln.targetSlaDate.toLocaleString()}
+                   </span>
+                ) : (
+                   <span className="text-muted-foreground italic text-xs"><Calendar className="w-3 h-3 inline mr-1" /> No Remediation SLA enforced</span>
+                )}
+                <p className="text-xs text-muted-foreground/30 text-right">
+                   Discovered: {new Date(vuln.createdAt).toLocaleString()}
+                </p>
+             </div>
           </div>
           
+          <div className="glass-card rounded-xl overflow-hidden p-6 shadow-2xl relative border-t-2 border-t-indigo-500/30">
+            <h2 className="text-lg font-bold tracking-tight mb-4 flex items-center text-indigo-400">
+               <Paperclip className="w-5 h-5 mr-3" /> Digital Evidence & Artifacts
+            </h2>
+            <form action={async (formData) => {
+              "use server"
+              formData.append("vulnId", vuln!.id)
+              await uploadAttachment(formData)
+            }} className="flex items-center gap-3 pb-6 border-b border-border/50">
+               <Input type="file" name="file" className="bg-black/50 border-white/10 flex-1 text-xs file:text-xs file:bg-primary/20 file:text-primary file:border-0 file:rounded-md file:cursor-pointer" required />
+               <Button type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_15px_rgba(100,0,255,0.3)]">
+                  <Upload className="w-4 h-4 mr-2" /> Upload
+               </Button>
+            </form>
+
+            <div className="pt-4 grid grid-cols-1 gap-3">
+               {vuln.attachments.length > 0 ? (
+                 vuln.attachments.map(att => (
+                   <a key={att.id} href={att.fileUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-black/20 hover:border-indigo-400/30 transition-colors group">
+                     <div className="flex items-center overflow-hidden mr-4">
+                       <Paperclip className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-indigo-400 flex-shrink-0" />
+                       <span className="text-sm font-medium text-white/90 truncate">{att.filename}</span>
+                     </div>
+                     <span className="text-[10px] font-mono text-muted-foreground flex-shrink-0">{att.createdAt.toLocaleDateString()}</span>
+                   </a>
+                 ))
+               ) : (
+                 <p className="text-center text-sm text-muted-foreground/60 py-2 italic">No structural evidence artifacts appended.</p>
+               )}
+            </div>
+          </div>
+
           <div className="glass-card rounded-xl p-6 border border-border mt-8 shadow-2xl">
             <h2 className="text-lg font-bold tracking-tight mb-4 flex items-center text-primary/80">
                <Activity className="w-5 h-5 mr-3 text-purple-400" /> Operational Posture
             </h2>
-            <form action={updateVulnStatusAction} className="flex items-center space-x-4">
+            <form action={updateVulnStatusAction} className="flex flex-col space-y-4">
                <input type="hidden" name="vulnId" value={vuln.id} />
-               <Select key={`vuln-status-${vuln.status}`} name="status" defaultValue={vuln.status}>
-                  <SelectTrigger className="w-[200px] bg-black/30 border-white/10">
-                     <SelectValue placeholder="Update Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black/95 shadow-2xl border-white/10">
-                     <SelectItem value="OPEN" className="text-red-400 font-bold">OPEN / UNPATCHED</SelectItem>
-                     <SelectItem value="MITIGATED" className="text-yellow-400">MITIGATED (Temp Fix)</SelectItem>
-                     <SelectItem value="RESOLVED" className="text-green-400 font-bold">RESOLVED</SelectItem>
-                  </SelectContent>
-               </Select>
-               <Button type="submit" variant="secondary" className="shadow-[0_0_10px_rgba(255,255,255,0.1)]">
-                  Apply State
+               <div className="flex gap-4">
+                 <div className="flex-1 space-y-2">
+                   <label className="text-xs text-white/70 uppercase tracking-widest">Enforce SLA Date</label>
+                   <Input 
+                     type="datetime-local" 
+                     name="targetSlaDate" 
+                     defaultValue={vuln.targetSlaDate ? new Date(vuln.targetSlaDate.getTime() - vuln.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+                     className="flex h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary transition-all [color-scheme:dark]"
+                   />
+                 </div>
+                 <div className="flex-1 space-y-2">
+                   <label className="text-xs text-white/70 uppercase tracking-widest">Workflow State</label>
+                   <Select key={`vuln-status-${vuln.status}`} name="status" defaultValue={vuln.status}>
+                      <SelectTrigger className="w-full bg-black/30 border-white/10 h-10">
+                         <SelectValue placeholder="Update Status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black/95 shadow-2xl border-white/10">
+                         <SelectItem value="OPEN" className="text-red-400 font-bold">OPEN / UNPATCHED</SelectItem>
+                         <SelectItem value="MITIGATED" className="text-yellow-400">MITIGATED (Temp Fix)</SelectItem>
+                         <SelectItem value="RESOLVED" className="text-green-400 font-bold">RESOLVED</SelectItem>
+                      </SelectContent>
+                   </Select>
+                 </div>
+               </div>
+               <Button type="submit" variant="secondary" className="w-full shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+                  Apply Structural State
                </Button>
             </form>
           </div>

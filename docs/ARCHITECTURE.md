@@ -75,13 +75,22 @@ erDiagram
         String title
         Enum status "NEW, IN_PROGRESS..."
         Enum severity "CRITICAL, HIGH, MEDIUM, LOW"
+        DateTime targetSlaDate
         String assetId FK
     }
     Vulnerability {
         String id PK
         String cveId
         Enum severity
+        DateTime targetSlaDate
         String assetId FK
+    }
+    Attachment {
+        String id PK
+        String filename
+        String fileUrl
+        String incidentId FK
+        String vulnId FK
     }
     AuditLog {
         String id PK
@@ -93,6 +102,9 @@ erDiagram
     Asset ||--o{ Incident : "Subject of"
     Asset ||--o{ Vulnerability : "Affected by"
     User ||--o{ AuditLog : "Performs"
+    User ||--o{ Attachment : "Uploads"
+    Incident ||--o{ Attachment : "Contains"
+    Vulnerability ||--o{ Attachment : "Contains"
 ```
 
 ---

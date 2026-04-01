@@ -4,25 +4,55 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ClickableTableRow } from "@/components/ui/clickable-row"
-import { Bug, Plus, ShieldCheck, ShieldAlert, Shield } from "lucide-react"
+import { Bug, Plus, ShieldCheck, ShieldAlert, Filter, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export default async function VulnerabilitiesPage() {
+export default async function VulnerabilitiesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
   
   if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SECOPS')) {
     return notFound()
   }
 
+  const resolvedParams = await searchParams;
+  const page = parseInt(resolvedParams.page || "1", 10);
+  const TAKE = 10;
+
+  const filterParams: any = {}
+
+  if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.status = resolvedParams.status.replace(/ /g, '_');
+  if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.severity = resolvedParams.severity;
+
+  if (resolvedParams.q) {
+    filterParams.OR = [
+      { title: { contains: resolvedParams.q, mode: "insensitive" } },
+      { cveId: { contains: resolvedParams.q, mode: "insensitive" } },
+      { id: { contains: resolvedParams.q, mode: "insensitive" } }
+    ]
+  }
+
+  const totalCount = await db.vulnerability.count({ where: filterParams })
+  const totalPages = Math.ceil(totalCount / TAKE) || 1
+
   const vulnerabilities = await db.vulnerability.findMany({
+    where: filterParams,
     orderBy: { createdAt: 'desc' },
-    include: {
-      affectedAssets: true
-    }
+    include: { affectedAssets: true },
+    skip: (page - 1) * TAKE,
+    take: TAKE,
   })
 
-  // Helper logic mapping severity to tailwind variables
+  const buildPageUrl = (newPage: number) => {
+    const params = new URLSearchParams()
+    if (resolvedParams.status) params.set("status", resolvedParams.status)
+    if (resolvedParams.severity) params.set("severity", resolvedParams.severity)
+    if (resolvedParams.q) params.set("q", resolvedParams.q)
+    params.set("page", newPage.toString())
+    return `/vulnerabilities?${params.toString()}`
+  }
+
   const getSeverityStyle = (severity: string, score: number | null) => {
     if (score && score >= 9.0) return "border-red-500/50 text-red-500 bg-red-500/10"
     if (severity === 'CRITICAL') return "border-red-500/50 text-red-500 bg-red-500/10"
@@ -47,7 +77,12 @@ export default async function VulnerabilitiesPage() {
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">Long-term exposure metrics isolating patch management flows from realtime incidents.</p>
         </div>
-        <div>
+        <div className="flex gap-4">
+          <Link href="/api/export?type=vulnerability">
+            <Button variant="secondary" className="bg-black/40 hover:bg-black/60 border border-white/20">
+              Export CSV
+            </Button>
+          </Link>
           <Link href="/vulnerabilities/new">
             <Button className="bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <Plus className="w-4 h-4 mr-2" /> Log Vulnerability
@@ -56,7 +91,67 @@ export default async function VulnerabilitiesPage() {
         </div>
       </div>
 
-      <div className="glass-card rounded-xl overflow-hidden border border-border mt-8 shadow-2xl">
+      <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">
+        <Filter className="w-5 h-5 text-muted-foreground mr-2" />
+        <form method="GET" action="/vulnerabilities" className="flex flex-1 gap-4 items-end flex-wrap">
+
+          <div className="space-y-1 flex-1 min-w-[200px]">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Search</label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                name="q"
+                defaultValue={resolvedParams.q || ""}
+                placeholder="Search Title, CVE-ID..."
+                className="h-9 w-full pl-9 pr-3 rounded-md border border-border/60 bg-black/50 text-sm text-white focus:ring-2 focus:ring-red-400 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Status</label>
+            <Select key={(resolvedParams.status || "ALL").replace(/_/g, ' ')} name="status" defaultValue={(resolvedParams.status || "ALL").replace(/_/g, ' ')}>
+              <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-red-400 outline-none transition-all">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="OPEN">Open</SelectItem>
+                <SelectItem value="MITIGATED">Mitigated</SelectItem>
+                <SelectItem value="RESOLVED">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Severity</label>
+            <Select key={`severity-${resolvedParams.severity || 'ALL'}`} name="severity" defaultValue={(resolvedParams.severity || "ALL").replace(/_/g, ' ')}>
+              <SelectTrigger className="h-9 w-[150px] px-3 rounded-md border border-border/60 bg-black/50 text-sm text-foreground focus:ring-2 focus:ring-red-400 outline-none transition-all">
+                <SelectValue placeholder="All Severities" />
+              </SelectTrigger>
+              <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
+                <SelectItem value="ALL">All Severities</SelectItem>
+                <SelectItem value="LOW">Low</SelectItem>
+                <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
+                <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>
+                <SelectItem value="CRITICAL" className="text-destructive font-bold">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button type="submit" variant="secondary" className="h-9 bg-red-400/20 text-red-400 hover:bg-red-400/30 border border-red-400/30 border-dashed">
+            Apply Filters
+          </Button>
+
+          {(resolvedParams.status || resolvedParams.severity || resolvedParams.q) && (
+            <Link href="/vulnerabilities">
+              <Button variant="ghost" className="h-9 text-muted-foreground hover:text-white">Clear</Button>
+            </Link>
+          )}
+        </form>
+      </div>
+
+      <div className="glass-card rounded-xl overflow-hidden border border-border mb-8 shadow-2xl">
         <Table>
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
@@ -71,6 +166,7 @@ export default async function VulnerabilitiesPage() {
             {vulnerabilities.length === 0 ? (
                <TableRow>
                  <TableCell colSpan={5} className="text-center h-32 text-muted-foreground">
+                   <span className="block text-xl mb-2">🛡️</span>
                    Zero active exposures resolved. Infrastructure reads heavily hardened.
                  </TableCell>
                </TableRow>
@@ -128,6 +224,24 @@ export default async function VulnerabilitiesPage() {
             ))}
           </TableBody>
         </Table>
+        
+        {/* Pagination Footer */}
+        <div className="border-t border-border/50 bg-black/10 p-4 flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing <span className="font-medium text-white">{vulnerabilities.length > 0 ? (page - 1) * TAKE + 1 : 0}</span> to <span className="font-medium text-white">{Math.min(page * TAKE, totalCount)}</span> of <span className="font-medium text-white">{totalCount}</span> results
+          </p>
+          <div className="flex gap-2">
+            <Link href={page > 1 ? buildPageUrl(page - 1) : "#"} className={page <= 1 ? "pointer-events-none opacity-50" : ""}>
+              <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
+            </Link>
+            <div className="flex items-center justify-center px-4 font-mono text-sm border-x border-border/50">
+              Pg {page} / {totalPages}
+            </div>
+            <Link href={page < totalPages ? buildPageUrl(page + 1) : "#"} className={page >= totalPages ? "pointer-events-none opacity-50" : ""}>
+              <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   )

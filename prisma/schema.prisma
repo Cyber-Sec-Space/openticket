@@ -45,24 +45,25 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash       String?   // Added for Credentials provider MVP
+  id                 String    @id @default(cuid())
+  name               String?
+  email              String?   @unique
+  emailVerified      DateTime?
+  image              String?
+  passwordHash       String? // Added for Credentials provider MVP
   role               Role      @default(REPORTER)
   isTwoFactorEnabled Boolean   @default(false)
   twoFactorSecret    String?
 
-  accounts           Account[]
-  sessions           Session[]
-  
+  accounts Account[]
+  sessions Session[]
+
   // Relations for OpenTicket
-  reportedIncidents Incident[] @relation("Reporter")
-  assignedIncidents Incident[] @relation("IncidentAssignees")
+  reportedIncidents Incident[]   @relation("Reporter")
+  assignedIncidents Incident[]   @relation("IncidentAssignees")
   comments          Comment[]
   auditLogs         AuditLog[]
+  attachments       Attachment[]
 }
 
 model VerificationToken {
@@ -78,12 +79,15 @@ model VerificationToken {
 // -----------------------------------------------------------------------------
 
 model SystemSetting {
-  id                 String   @id @default("global") // Enforce singleton
-  allowRegistration  Boolean  @default(true)
-  requireGlobal2FA   Boolean  @default(false)
-  defaultUserRole    Role     @default(REPORTER)
+  id                String  @id @default("global") // Enforce singleton
+  allowRegistration Boolean @default(true)
+  requireGlobal2FA  Boolean @default(false)
+  defaultUserRole   Role    @default(REPORTER)
 
-  updatedAt          DateTime @updatedAt
+  webhookUrl     String?
+  webhookEnabled Boolean @default(false)
+
+  updatedAt DateTime @updatedAt
 }
 
 // -----------------------------------------------------------------------------
@@ -125,17 +129,19 @@ enum VulnStatus {
 }
 
 model Vulnerability {
-  id          String     @id @default(cuid())
-  title       String
-  cveId       String?
-  cvssScore   Float?
-  description String     @db.Text
-  severity    Severity   @default(LOW)
-  status      VulnStatus @default(OPEN)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id            String     @id @default(cuid())
+  title         String
+  cveId         String?
+  cvssScore     Float?
+  description   String     @db.Text
+  severity      Severity   @default(LOW)
+  status        VulnStatus @default(OPEN)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  targetSlaDate DateTime?
 
-  affectedAssets Asset[] @relation("AssetVulnerabilities")
+  affectedAssets Asset[]      @relation("AssetVulnerabilities")
+  attachments    Attachment[]
 }
 
 enum Severity {
@@ -172,38 +178,57 @@ model Incident {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  reporterId  String
-  reporter    User     @relation("Reporter", fields: [reporterId], references: [id])
-  
-  assignees   User[]   @relation("IncidentAssignees")
+  reporterId String
+  reporter   User   @relation("Reporter", fields: [reporterId], references: [id])
 
-  assetId     String?
-  asset       Asset?   @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  assignees User[] @relation("IncidentAssignees")
+
+  assetId String?
+  asset   Asset?  @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  targetSlaDate DateTime?
 
   comments    Comment[]
+  attachments Attachment[]
 }
 
 model Comment {
-  id         String   @id @default(cuid())
-  content    String   @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   incidentId String
   incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  
-  authorId   String
-  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {
-  id           String   @id @default(cuid())
-  action       String   // e.g., "INCIDENT_CREATED", "STATUS_CHANGED"
-  entityType   String   // e.g., "Incident", "Asset"
-  entityId     String
-  changes      Json?    // Optional JSON payload detailing what changed
-  createdAt    DateTime @default(now())
-  
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id         String   @id @default(cuid())
+  action     String // e.g., "INCIDENT_CREATED", "STATUS_CHANGED"
+  entityType String // e.g., "Incident", "Asset"
+  entityId   String
+  changes    Json? // Optional JSON payload detailing what changed
+  createdAt  DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  filename  String
+  fileUrl   String
+  createdAt DateTime @default(now())
+
+  incidentId String?
+  incident   Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  vulnId String?
+  vuln   Vulnerability? @relation(fields: [vulnId], references: [id], onDelete: Cascade)
+
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
 }
