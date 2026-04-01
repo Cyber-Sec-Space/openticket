@@ -10,13 +10,11 @@ export default async function DashboardLayout({
   const session = await auth()
   
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
       <Sidebar userRole={session?.user?.role} />
       <MobileNav userRole={session?.user?.role} />
-      <main className="w-full md:pl-64 min-h-screen flex flex-col relative animate-fade-in-up">
-        <div className="flex-1 w-full mx-auto">
-          {children}
-        </div>
+      <main className="w-full md:pl-64 relative min-h-screen animate-fade-in-up">
+        {children}
       </main>
     </div>
   )
