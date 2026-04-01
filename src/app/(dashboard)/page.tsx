@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target } from "lucide-react"
+import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target, Bug } from "lucide-react"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { TrendChart } from "@/components/trend-chart"
 import { IncidentRadarChart } from "@/components/incident-radar-chart"
@@ -341,6 +341,14 @@ export default async function Home() {
                   <strong className="block font-medium">Catalog Infrastructure</strong>
                 </div>
               </Link>
+              {(session.user.role === 'ADMIN' || session.user.role === 'SECOPS') && (
+                <Link href="/vulnerabilities/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-purple-400/50 text-white rounded-lg transition-all">
+                  <Bug className="w-4 h-4 mr-3 text-purple-400 group-hover:scale-110 transition-transform" />
+                  <div className="text-sm">
+                    <strong className="block font-medium">Log Vulnerability</strong>
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
         </div>
