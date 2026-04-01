@@ -316,7 +316,7 @@ export default async function Home() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs text-muted-foreground">
-                      <span>{inc.reporter.name || "Unknown Operator"}</span>
+                      <span>{inc.reporter?.name || "Deleted Operator"}</span>
                       <span>{new Date(inc.createdAt).toLocaleDateString()}</span>
                     </div>
                   </Link>

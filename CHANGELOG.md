@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
 - UI: Reconstructed Index dashboards embedding Next.js `searchParam` pagination controllers & advanced filters preserving performance on large structural datasets.
 - Schema: Adjusted native `Prisma ERD` model synchronizing `SystemSetting`, `Attachment` properties alongside `Architecture.md` representations.
 
+- IAM Governance: Launched dedicated User Profiling details page `/users/[id]` encapsulating Audit Logs, Evidence Matrix, and SLA assignments.
+- IAM Governance: Integrated Bulk Operations Dashboard supporting massive multi-operator suspension, deletion, and role escalation natively.
+- IAM Governance: Re-architected `onDelete: SetNull` Database relationships globally preserving Evidence and Incident contexts mapping back to `Deleted Operators`.
+- IAM Governance: Deployed `isDisabled` real-time JWT interceptors terminating active attacker sessions instantly upon Account Suspension.
+
 ### Fixed
 - Fortified public Registration API with generic return codes preventing `Enmueration Attacks` and implemented constant-time logic blocking to massively throttle App-level Database DoS injections.
 - Enforced hard `take: 100` ceiling bounds globally across naked Prisma REST endpoints (`/api/incidents`, `/api/assets`) sealing Out of Memory (OOM) API crashing vulnerabilities under massive scalability.

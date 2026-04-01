@@ -376,7 +376,7 @@ export default async function IncidentDetailPage({
             <div className="p-6 space-y-5 text-sm">
               <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Reporter</strong>
-                <span className="text-foreground/90 font-medium">{incident.reporter.name}</span>
+                <span className="text-foreground/90 font-medium">{incident.reporter?.name || "Deleted Operator"}</span>
               </div>
               <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target Asset</strong>

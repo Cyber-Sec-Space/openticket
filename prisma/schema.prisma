@@ -54,6 +54,7 @@ model User {
   role               Role      @default(REPORTER)
   isTwoFactorEnabled Boolean   @default(false)
   twoFactorSecret    String?
+  isDisabled         Boolean   @default(false) // Phase 5 Suspension Support
 
   accounts Account[]
   sessions Session[]
@@ -178,8 +179,8 @@ model Incident {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  reporterId String
-  reporter   User   @relation("Reporter", fields: [reporterId], references: [id])
+  reporterId String?
+  reporter   User?   @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
 
   assignees User[] @relation("IncidentAssignees")
 
@@ -201,8 +202,8 @@ model Comment {
   incidentId String
   incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
 }
 
 model AuditLog {
@@ -213,8 +214,8 @@ model AuditLog {
   changes    Json? // Optional JSON payload detailing what changed
   createdAt  DateTime @default(now())
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Attachment {
@@ -229,6 +230,6 @@ model Attachment {
   vulnId String?
   vuln   Vulnerability? @relation(fields: [vulnId], references: [id], onDelete: Cascade)
 
-  uploaderId String
-  uploader   User   @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  uploaderId String?
+  uploader   User?   @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
 }

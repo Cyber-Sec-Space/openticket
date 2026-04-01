@@ -87,14 +87,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id
         token.role = user.role
       }
+      // Force database check for real-time ban enforcement and Role syncing
+      if (token.id) {
+        const dbUser = await db.user.findUnique({ where: { id: token.id as string }, select: { isDisabled: true, role: true } })
+        if (!dbUser || dbUser.isDisabled) {
+           token.disabled = true; // Signal ban
+        } else {
+           token.role = dbUser.role // Sync RBAC
+        }
+      }
       return token
     },
-    session({ session, token }) {
+    async session({ session, token }) {
+      if (token.disabled) {
+        // Purposely corrupt session to force unauthentication
+        return null as any 
+      }
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as any

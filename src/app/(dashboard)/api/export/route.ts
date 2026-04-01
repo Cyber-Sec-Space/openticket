@@ -38,7 +38,7 @@ export async function GET(req: Request) {
         incident.severity,
         incident.status,
         incident.asset?.name || "Unlinked",
-        incident.reporter.name || incident.reporter.email,
+        incident.reporter?.name || incident.reporter?.email || "Deleted Operator",
         `"${assigneesStr}"`,
         incident.targetSlaDate ? incident.targetSlaDate.toISOString() : "None",
         incident.createdAt.toISOString()
