@@ -20,31 +20,37 @@ interface TrendData {
   vulnResolveRate: number;
 }
 
-export function TrendChart({ data }: { data: TrendData[] }) {
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-black/90 border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl">
-          <p className="text-white/50 text-[10px] font-bold mb-2 tracking-[0.2em] uppercase">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center justify-between text-sm font-bold mb-1">
-              <div className="flex items-center">
-                <span 
-                  className="w-2.5 h-2.5 rounded-full mr-3 shrink-0" 
-                  style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}` }} 
-                />
-                <span className="text-white w-32">{entry.name}</span>
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-black/90 border border-white/10 p-4 rounded-xl shadow-[0_4px_30px_rgba(0,0,0,0.8)] backdrop-blur-xl min-w-[220px]">
+        <p className="text-white/50 text-[10px] font-bold mb-3 tracking-[0.2em] uppercase border-b border-white/10 pb-2">{label}</p>
+        <div className="space-y-2.5">
+          {payload.map((entry: any, index: number) => {
+            const isRate = entry.name.includes('Rate') || entry.name.includes('Resolution');
+            return (
+              <div key={index} className="flex items-center justify-between text-sm font-bold">
+                <div className="flex items-center">
+                  <span 
+                    className="w-2 h-2 rounded-full mr-3 shrink-0" 
+                    style={{ backgroundColor: entry.color, boxShadow: `0 0 8px ${entry.color}` }} 
+                  />
+                  <span className="text-white/80 whitespace-nowrap">{entry.name}</span>
+                </div>
+                <span className="text-lg font-black ml-6" style={{ color: entry.color }}>
+                  {entry.value}{isRate ? '%' : ''}
+                </span>
               </div>
-              <span className="text-white text-lg font-black ml-4" style={{ color: entry.color }}>
-                {entry.value}{entry.name.includes('Rate') ? '%' : ''}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      );
-    }
-    return null;
-  };
+      </div>
+    );
+  }
+  return null;
+};
+
+export function TrendChart({ data }: { data: TrendData[] }) {
 
   return (
     <div className="w-full h-80">
@@ -55,11 +61,11 @@ export function TrendChart({ data }: { data: TrendData[] }) {
         >
           <defs>
             <linearGradient id="colorIncidents" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4}/>
               <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
             </linearGradient>
             <linearGradient id="colorVulns" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+              <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
               <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
             </linearGradient>
           </defs>
@@ -71,6 +77,7 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             axisLine={false} 
             tick={{ fontSize: 11, fontWeight: 700, fill: '#a1a1aa', letterSpacing: '0.5px' }}
             dy={10}
+            minTickGap={20}
           />
           <YAxis 
             yAxisId="left"
@@ -96,10 +103,10 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             content={<CustomTooltip />}
           />
           <Legend 
-             wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} 
+             wrapperStyle={{ fontSize: '11px', fontWeight: 'bold', paddingTop: '10px' }} 
              iconType="circle" 
-             verticalAlign="top" 
-             align="right"
+             verticalAlign="bottom" 
+             align="center"
           />
           <Area 
             yAxisId="left"
@@ -111,10 +118,11 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             fillOpacity={1} 
             fill="url(#colorIncidents)" 
             animationDuration={2000}
+            activeDot={{ r: 6, fill: '#ef4444', stroke: '#000', strokeWidth: 2 }}
           />
           <Area 
             yAxisId="left"
-            name="Active Vulns"
+            name="Active Vulnerabilities"
             type="monotone" 
             dataKey="vulnerabilities" 
             stroke="#8b5cf6" 
@@ -122,27 +130,28 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             fillOpacity={1} 
             fill="url(#colorVulns)" 
             animationDuration={2000}
+            activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#000', strokeWidth: 2 }}
           />
           <Line 
             yAxisId="right"
-            name="Inc Resolve Rate"
+            name="Incident Resolution"
             type="monotone" 
             dataKey="incResolveRate" 
             stroke="#10b981" 
             strokeWidth={2}
-            dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: '#fff' }}
+            dot={{ r: 0 }}
+            activeDot={{ r: 5, fill: '#fff', stroke: '#10b981', strokeWidth: 2 }}
             animationDuration={2000}
           />
           <Line 
             yAxisId="right"
-            name="Vuln Resolve Rate"
+            name="Vuln Resolution"
             type="monotone" 
             dataKey="vulnResolveRate" 
             stroke="#f59e0b" 
             strokeWidth={2}
-            dot={{ r: 3, fill: '#f59e0b', strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: '#fff' }}
+            dot={{ r: 0 }}
+            activeDot={{ r: 5, fill: '#fff', stroke: '#f59e0b', strokeWidth: 2 }}
             animationDuration={2000}
           />
         </ComposedChart>
