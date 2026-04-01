@@ -104,37 +104,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
              </div>
           </div>
           
-          <div className="glass-card rounded-xl overflow-hidden p-6 shadow-2xl relative border-t-2 border-t-indigo-500/30">
-            <h2 className="text-lg font-bold tracking-tight mb-4 flex items-center text-indigo-400">
-               <Paperclip className="w-5 h-5 mr-3" /> Digital Evidence & Artifacts
-            </h2>
-            <form action={async (formData) => {
-              "use server"
-              formData.append("vulnId", vuln!.id)
-              await uploadAttachment(formData)
-            }} className="flex items-center gap-3 pb-6 border-b border-border/50">
-               <Input type="file" name="file" className="bg-black/50 border-white/10 flex-1 text-xs file:text-xs file:bg-primary/20 file:text-primary file:border-0 file:rounded-md file:cursor-pointer" required />
-               <Button type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_15px_rgba(100,0,255,0.3)]">
-                  <Upload className="w-4 h-4 mr-2" /> Upload
-               </Button>
-            </form>
 
-            <div className="pt-4 grid grid-cols-1 gap-3">
-               {vuln.attachments.length > 0 ? (
-                 vuln.attachments.map(att => (
-                   <a key={att.id} href={att.fileUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-black/20 hover:border-indigo-400/30 transition-colors group">
-                     <div className="flex items-center overflow-hidden mr-4">
-                       <Paperclip className="w-4 h-4 mr-3 text-muted-foreground group-hover:text-indigo-400 flex-shrink-0" />
-                       <span className="text-sm font-medium text-white/90 truncate">{att.filename}</span>
-                     </div>
-                     <span className="text-[10px] font-mono text-muted-foreground flex-shrink-0">{att.createdAt.toLocaleDateString()}</span>
-                   </a>
-                 ))
-               ) : (
-                 <p className="text-center text-sm text-muted-foreground/60 py-2 italic">No structural evidence artifacts appended.</p>
-               )}
-            </div>
-          </div>
 
           <div className="glass-card rounded-xl p-6 border border-border mt-8 shadow-2xl">
             <h2 className="text-lg font-bold tracking-tight mb-4 flex items-center text-primary/80">
@@ -174,7 +144,8 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
         </div>
 
         {/* Right Column - Affected Assets Dashboard */}
-        <div className="glass-card rounded-xl border border-border shadow-2xl flex flex-col items-center">
+        <div className="space-y-6">
+          <div className="glass-card rounded-xl border border-border shadow-2xl flex flex-col items-center">
             <div className="w-full text-left p-6 border-b border-white/5 flex items-center bg-black/20">
                <Server className="w-5 h-5 mr-3 text-red-400" /> 
                <h2 className="font-bold tracking-tight text-red-500">Infected Infrastructure</h2>
@@ -202,6 +173,47 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
                  </ul>
                )}
             </div>
+          </div>
+
+          <div className="glass-card rounded-xl overflow-hidden shadow-2xl relative border-t-2 border-t-indigo-500/30">
+            <div className="border-b border-border/50 bg-black/10 p-5">
+              <h2 className="font-bold tracking-tight text-indigo-400 text-sm flex items-center">
+                <Paperclip className="w-4 h-4 mr-2" /> Digital Evidence
+              </h2>
+            </div>
+            <div className="p-5 space-y-4 text-sm z-20">
+              <form action={async (formData) => {
+                "use server"
+                formData.append("vulnId", vuln!.id)
+                await uploadAttachment(formData)
+              }} className="space-y-3 pb-5 border-b border-border/50">
+                <div className="relative group rounded-lg border-2 border-dashed border-indigo-500/20 hover:border-indigo-400/50 hover:bg-indigo-500/5 bg-black/20 transition-all flex flex-col items-center justify-center p-4">
+                  <Input type="file" name="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required />
+                  <Upload className="w-6 h-6 text-indigo-400/50 group-hover:text-indigo-400 mb-2 transition-colors" />
+                  <span className="text-[11px] font-medium text-muted-foreground group-hover:text-indigo-300">Click or drag file here</span>
+                </div>
+                <Button type="submit" size="sm" className="w-full bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_15px_rgba(100,0,255,0.2)]">
+                  Attach Evidence
+                </Button>
+              </form>
+
+              {vuln.attachments.length > 0 ? (
+                <div className="flex flex-col gap-2 pt-1 max-h-[220px] overflow-y-auto pr-1">
+                  {vuln.attachments.map(att => (
+                    <a key={att.id} href={att.fileUrl} target="_blank" rel="noreferrer" className="flex items-center p-2 rounded-lg border border-indigo-500/10 bg-indigo-500/5 hover:border-indigo-400/40 transition-colors group">
+                      <Paperclip className="w-3 h-3 mr-2 text-indigo-400/70 group-hover:text-indigo-400 flex-shrink-0" />
+                      <div className="flex flex-col min-w-0 pr-1">
+                        <span className="text-[11px] font-medium text-white/90 truncate">{att.filename}</span>
+                        <span className="text-[9px] font-mono text-muted-foreground">{att.createdAt.toLocaleDateString()}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-[10px] text-muted-foreground/50 py-2 italic font-mono uppercase tracking-widest">No evidence uploaded</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
