@@ -1,12 +1,12 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
-import { User, Mail, ShieldCheck, Clock, Download, FileJson, ChevronLeft, ChevronRight } from "lucide-react"
+import { User, Mail, ShieldCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { toggleUserStatusAction, deleteUserAction } from "../actions"
+import { UserPanels } from "./user-panels"
 
 export default async function UserDetailPage({
   params,
@@ -43,15 +43,6 @@ export default async function UserDetailPage({
   ])
 
   if (!user) return notFound()
-
-  const mapParams = (updates: Record<string, string>) => {
-    const sp = new URLSearchParams()
-    if (resolvedSearchParams.auditPage) sp.set('auditPage', String(resolvedSearchParams.auditPage))
-    if (resolvedSearchParams.filePage) sp.set('filePage', String(resolvedSearchParams.filePage))
-    if (resolvedSearchParams.incPage) sp.set('incPage', String(resolvedSearchParams.incPage))
-    Object.entries(updates).forEach(([k, v]) => sp.set(k, v))
-    return `?${sp.toString()}`
-  }
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6 animate-fade-in-up">
@@ -97,135 +88,21 @@ export default async function UserDetailPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-        {/* Audit Trail */}
-        <div className="glass-card p-6 rounded-2xl border border-white/10 flex flex-col h-[500px]">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-emerald-400 tracking-tight flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Operator Audit Telemetry
-            </h2>
-            <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-emerald-400 border-emerald-500/30">Total: {totalAuditLogs.toLocaleString()}</Badge>
-          </div>
-          <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            {auditLogs.length === 0 ? <p className="text-xs text-muted-foreground italic">No immutable telemetry recorded.</p> : auditLogs.map(log => (
-              <div key={log.id} className="p-3 bg-black/30 rounded-lg border border-white/5 text-sm space-y-2">
-                <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                  <span className="font-mono text-emerald-400">{log.action}</span>
-                  <span className="text-[10px] text-muted-foreground">{log.createdAt.toLocaleString()}</span>
-                </div>
-                <p className="text-muted-foreground text-xs leading-relaxed break-words">{String(log.changes)}</p>
-              </div>
-            ))}
-          </div>
-          {totalAuditLogs > TAKE_AUDIT && (
-             <div className="flex justify-between items-center pt-4 border-t border-white/10 mt-auto">
-                {auditPage <= 1 ? (
-                   <Button variant="ghost" size="sm" disabled className="h-8 text-xs disabled:opacity-30"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
-                ) : (
-                   <Link href={mapParams({ auditPage: String(auditPage - 1) })}>
-                      <Button variant="ghost" size="sm" className="h-8 text-xs"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
-                   </Link>
-                )}
-                <span className="text-xs font-mono text-muted-foreground">Page {auditPage} of {Math.ceil(totalAuditLogs / TAKE_AUDIT)}</span>
-                {auditPage >= Math.ceil(totalAuditLogs / TAKE_AUDIT) ? (
-                   <Button variant="ghost" size="sm" disabled className="h-8 text-xs disabled:opacity-30">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
-                ) : (
-                   <Link href={mapParams({ auditPage: String(auditPage + 1) })}>
-                      <Button variant="ghost" size="sm" className="h-8 text-xs">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
-                   </Link>
-                )}
-             </div>
-          )}
-        </div>
-
-        {/* Binary Uploads */}
-        <div className="glass-card p-6 rounded-2xl border border-white/10 flex flex-col h-[500px]">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-blue-400 tracking-tight flex items-center gap-2">
-              <FileJson className="w-4 h-4" /> Evidence Payload Matrix
-            </h2>
-            <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-blue-400 border-blue-500/30">Total: {totalAttachments.toLocaleString()}</Badge>
-          </div>
-          <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            {attachments.length === 0 ? <p className="text-xs text-muted-foreground italic">No digital evidence uploaded by this operator.</p> : attachments.map(att => (
-              <div key={att.id} className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5 group hover:border-blue-400/30 transition-colors">
-                <div className="max-w-[70%]">
-                  <p className="text-xs font-mono text-foreground truncate">{att.filename}</p>
-                  <p className="text-[10px] text-muted-foreground">{att.createdAt.toLocaleDateString()}</p>
-                </div>
-                <a href={att.fileUrl} download>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400 hover:bg-blue-400/20">
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </a>
-              </div>
-            ))}
-          </div>
-          {totalAttachments > TAKE_FILE && (
-             <div className="flex justify-between items-center pt-4 border-t border-white/10 mt-auto">
-                {filePage <= 1 ? (
-                   <Button variant="ghost" size="sm" disabled className="h-8 text-xs disabled:opacity-30"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
-                ) : (
-                   <Link href={mapParams({ filePage: String(filePage - 1) })}>
-                      <Button variant="ghost" size="sm" className="h-8 text-xs"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
-                   </Link>
-                )}
-                <span className="text-xs font-mono text-muted-foreground">Page {filePage} of {Math.ceil(totalAttachments / TAKE_FILE)}</span>
-                {filePage >= Math.ceil(totalAttachments / TAKE_FILE) ? (
-                   <Button variant="ghost" size="sm" disabled className="h-8 text-xs disabled:opacity-30">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
-                ) : (
-                   <Link href={mapParams({ filePage: String(filePage + 1) })}>
-                      <Button variant="ghost" size="sm" className="h-8 text-xs">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
-                   </Link>
-                )}
-             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Incident Tracks */}
-      <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-6 mt-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold tracking-tight">Assigned Operational Incidents</h2>
-          <Badge variant="outline" className="font-mono text-[10px] bg-black/40 border-white/10">Active Total: {totalIncidents.toLocaleString()}</Badge>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {assignedIncidents.length === 0 ? <p className="text-xs text-muted-foreground italic col-span-full">No active escalations mapped to this operator.</p> : assignedIncidents.map(inc => (
-            <Link key={inc.id} href={`/incidents/${inc.id}`} className="block">
-              <div className="p-4 bg-black/40 border border-white/5 rounded-xl hover:border-primary/50 transition-colors cursor-pointer group space-y-3">
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-mono text-muted-foreground">ID-{inc.id.substring(0,6).toUpperCase()}</span>
-                  <Badge className="bg-emerald-900 border border-emerald-500/30 text-[10px] py-0">{inc.status}</Badge>
-                </div>
-                <h3 className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{inc.title}</h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                  <span className="px-2 py-1 rounded bg-white/5 inline-block">{inc.severity}</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-        
-        {totalIncidents > TAKE_INC && (
-           <div className="flex justify-center items-center gap-6 pt-4 border-t border-white/10">
-              {incPage <= 1 ? (
-                 <Button variant="outline" size="sm" disabled className="h-8 text-xs disabled:opacity-30"><ChevronLeft className="w-4 h-4 mr-1" /> Previous Block</Button>
-              ) : (
-                 <Link href={mapParams({ incPage: String(incPage - 1) })}>
-                    <Button variant="outline" size="sm" className="h-8 text-xs"><ChevronLeft className="w-4 h-4 mr-1" /> Previous Block</Button>
-                 </Link>
-              )}
-              <span className="text-xs font-mono text-muted-foreground">Page {incPage} of {Math.ceil(totalIncidents / TAKE_INC)}</span>
-              {incPage >= Math.ceil(totalIncidents / TAKE_INC) ? (
-                 <Button variant="outline" size="sm" disabled className="h-8 text-xs disabled:opacity-30">Next Block <ChevronRight className="w-4 h-4 ml-1" /></Button>
-              ) : (
-                 <Link href={mapParams({ incPage: String(incPage + 1) })}>
-                    <Button variant="outline" size="sm" className="h-8 text-xs">Next Block <ChevronRight className="w-4 h-4 ml-1" /></Button>
-                 </Link>
-              )}
-           </div>
-        )}
-      </div>
+      <UserPanels 
+         auditLogs={auditLogs}
+         totalAuditLogs={totalAuditLogs}
+         auditPage={auditPage}
+         TAKE_AUDIT={TAKE_AUDIT}
+         attachments={attachments}
+         totalAttachments={totalAttachments}
+         filePage={filePage}
+         TAKE_FILE={TAKE_FILE}
+         assignedIncidents={assignedIncidents}
+         totalIncidents={totalIncidents}
+         incPage={incPage}
+         TAKE_INC={TAKE_INC}
+         searchParamsRaw={resolvedSearchParams as Record<string, string>}
+      />
     </div>
   )
 }
