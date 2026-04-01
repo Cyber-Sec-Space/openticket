@@ -196,6 +196,10 @@ export default async function IncidentDetailPage({
     redirect(`/incidents`)
   }
 
+  const isOverdue = incident.targetSlaDate && 
+    new Date() > incident.targetSlaDate && 
+    !['RESOLVED', 'CLOSED'].includes(incident.status);
+
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6 animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
@@ -222,9 +226,13 @@ export default async function IncidentDetailPage({
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start border-b border-border/80 pb-6 gap-4">
-        <div className="flex-1">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">{incident.title}</h1>
+      <div className={`flex flex-col md:flex-row md:justify-between md:items-start border-b pb-6 gap-4 border-b-border/80 ${isOverdue ? "relative" : ""}`}>
+        {isOverdue && <div className="absolute top-0 right-0 w-64 h-32 bg-red-500/10 blur-[60px] pointer-events-none rounded-full" />}
+        <div className="flex-1 relative z-10">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1 flex items-center gap-3">
+            {incident.title}
+            {isOverdue && <Badge className="bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(255,0,0,0.8)] border border-red-400 mt-1 uppercase">SLA BREACHED</Badge>}
+          </h1>
           <p className="text-muted-foreground font-mono text-xs opacity-70 flex items-center gap-2">
             <span className="text-primary"><ShieldAlert className="inline w-3 h-3" /> INC-{incident.id.substring(0, 8).toUpperCase()}</span>
           </p>
@@ -393,9 +401,11 @@ export default async function IncidentDetailPage({
               <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target SLA</strong>
                 {incident.targetSlaDate ? (
-                  <span className={`font-mono text-xs font-semibold px-2 py-0.5 rounded ${new Date() > incident.targetSlaDate ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
-                    <Calendar className="w-3 h-3 inline mr-1" />
-                    {incident.targetSlaDate.toLocaleString()}
+                  <span className={`flex items-center gap-2 font-mono text-xs font-semibold px-2 py-1 rounded w-fit ${isOverdue ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(255,50,50,0.4)] animate-pulse' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
+                    <span>
+                      <Calendar className="w-3 h-3 inline mr-1" />
+                      {incident.targetSlaDate.toLocaleString()}
+                    </span>
                   </span>
                 ) : <span className="text-muted-foreground italic text-xs">No Deadline Set</span>}
               </div>

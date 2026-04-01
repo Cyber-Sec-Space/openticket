@@ -301,11 +301,20 @@ export default async function Home() {
               {recentIncidents.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground text-sm font-medium">No recent incidents detected.</div>
               ) : (
-                recentIncidents.map(inc => (
-                  <Link href={`/incidents/${inc.id}`} key={inc.id} className="block group p-4 hover:bg-white/5 transition-colors">
+                recentIncidents.map(inc => {
+                  const isOverdue = inc.targetSlaDate && 
+                    new Date() > inc.targetSlaDate && 
+                    !['RESOLVED', 'CLOSED'].includes(inc.status);
+                  
+                  return (
+                  <Link href={`/incidents/${inc.id}`} key={inc.id} className={`block group p-4 transition-colors relative overflow-hidden ${isOverdue ? 'hover:bg-red-950/20 bg-red-950/5' : 'hover:bg-white/5'}`}>
+                    {isOverdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 shadow-[0_0_10px_rgba(255,0,0,0.8)] animate-pulse" />}
                     <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-1">
-                      <span className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-1 pr-2">{inc.title}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase
+                      <span className={`font-semibold text-sm transition-colors line-clamp-1 pr-2 ${isOverdue ? 'text-red-400 group-hover:text-red-300' : 'group-hover:text-primary'}`}>
+                        {isOverdue && <AlertTriangle className="inline w-3 h-3 mr-1 text-red-500 animate-pulse" />}
+                        {inc.title}
+                      </span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase shrink-0
                         ${inc.severity === 'CRITICAL' ? 'bg-destructive/20 text-red-400' :
                           inc.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
                             inc.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
@@ -315,12 +324,14 @@ export default async function Home() {
                         {inc.severity.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs text-muted-foreground">
-                      <span>{inc.reporter?.name || "Deleted Operator"}</span>
-                      <span>{new Date(inc.createdAt).toLocaleDateString()}</span>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs">
+                      <span className={isOverdue ? 'text-red-400/70' : 'text-muted-foreground'}>{inc.reporter?.name || "Deleted Operator"}</span>
+                      <span className={isOverdue ? 'text-red-500 font-bold' : 'text-muted-foreground'}>
+                        {isOverdue ? 'SLA BREACHED' : new Date(inc.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
                   </Link>
-                ))
+                )})
               )}
             </div>
           </div>

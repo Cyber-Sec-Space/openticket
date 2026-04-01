@@ -164,17 +164,29 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                   No incidents found matching your search.
                 </TableCell>
               </TableRow>
-            ) : incidents.map(incident => (
+            ) : incidents.map(incident => {
+              const isOverdue = incident.targetSlaDate && 
+                new Date() > incident.targetSlaDate && 
+                !['RESOLVED', 'CLOSED'].includes(incident.status);
+
+              return (
               <TableRow
                 key={incident.id}
-                className="cursor-pointer border-border hover:bg-primary/10 transition-colors relative group"
+                className={`cursor-pointer transition-colors relative group
+                  ${isOverdue ? 'border-red-500/50 hover:bg-red-500/10 bg-[linear-gradient(45deg,rgba(255,0,0,0.05)_0%,transparent_100%)] shadow-[inset_4px_0_0_rgba(255,50,50,0.8)]' : 'border-border hover:bg-primary/10'}
+                `}
               >
-                <TableCell className="font-mono text-xs text-muted-foreground pl-6">
+                <TableCell className={`font-mono text-xs pl-6 ${isOverdue ? 'text-red-400 font-bold' : 'text-muted-foreground'}`}>
                   <Link href={`/incidents/${incident.id}`} className="absolute inset-0" aria-label={`View ${incident.title}`} />
                   INC-{incident.id.substring(0, 6).toUpperCase()}
                 </TableCell>
-                <TableCell className="font-medium text-foreground">
-                  {incident.title}
+                <TableCell className="font-medium text-foreground flex items-center h-[52px]">
+                  <span className="truncate max-w-[200px] xl:max-w-[300px]">{incident.title}</span>
+                  {isOverdue && (
+                    <Badge className="ml-3 bg-red-500 text-white animate-pulse shadow-[0_0_10px_rgba(255,0,0,0.6)] border border-red-400 pt-0 pb-0 shrink-0">
+                      SLA BREACHED
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge className={`bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_10px_rgba(255,50,50,0.2)] animate-pulse' : 'border-primary text-primary'}`}>
@@ -182,7 +194,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground bg-black/30">
+                  <Badge variant="outline" className={`border-muted-foreground/30 bg-black/30 ${isOverdue ? 'text-red-400 border-red-500/30' : 'text-muted-foreground'}`}>
                     {incident.status.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
@@ -192,9 +204,15 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                     ? incident.assignees.map(a => a.name).join(', ')
                     : <span className="text-muted-foreground/50 italic">Unassigned</span>}
                 </TableCell>
-                <TableCell className="text-right text-muted-foreground text-sm font-mono pr-6">{incident.createdAt.toLocaleDateString()}</TableCell>
+                <TableCell className="text-right text-muted-foreground text-sm font-mono pr-6">
+                  {isOverdue && incident.targetSlaDate ? (
+                    <span className="text-red-500 font-bold">{incident.targetSlaDate.toLocaleDateString()}</span>
+                  ) : (
+                    incident.createdAt.toLocaleDateString()
+                  )}
+                </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
 
