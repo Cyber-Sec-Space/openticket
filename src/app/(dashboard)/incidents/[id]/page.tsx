@@ -231,7 +231,6 @@ export default async function IncidentDetailPage({
         <div className="flex-1 relative z-10">
           <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1 flex items-center gap-3">
             {incident.title}
-            {isOverdue && <Badge className="bg-red-500 text-white animate-pulse shadow-[0_0_15px_rgba(255,0,0,0.8)] border border-red-400 mt-1 uppercase">SLA BREACHED</Badge>}
           </h1>
           <p className="text-muted-foreground font-mono text-xs opacity-70 flex items-center gap-2">
             <span className="text-primary"><ShieldAlert className="inline w-3 h-3" /> INC-{incident.id.substring(0, 8).toUpperCase()}</span>

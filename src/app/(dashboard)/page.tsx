@@ -327,7 +327,7 @@ export default async function Home() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs">
                       <span className={isOverdue ? 'text-red-400/70' : 'text-muted-foreground'}>{inc.reporter?.name || "Deleted Operator"}</span>
                       <span className={isOverdue ? 'text-red-500 font-bold' : 'text-muted-foreground'}>
-                        {isOverdue ? 'SLA BREACHED' : new Date(inc.createdAt).toLocaleDateString()}
+                        {inc.targetSlaDate ? new Date(inc.targetSlaDate).toLocaleDateString() : new Date(inc.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </Link>

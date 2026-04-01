@@ -153,6 +153,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               <TableHead className="font-semibold text-primary">Status</TableHead>
               <TableHead className="font-semibold text-primary">Reporter</TableHead>
               <TableHead className="font-semibold text-primary border-r border-border/20">Assignee</TableHead>
+              <TableHead className="font-semibold text-primary border-r border-border/20">Target SLA</TableHead>
               <TableHead className="font-semibold text-primary text-right pr-6">Created</TableHead>
             </TableRow>
           </TableHeader>
@@ -182,11 +183,6 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                 </TableCell>
                 <TableCell className="font-medium text-foreground flex items-center h-[52px]">
                   <span className="truncate max-w-[200px] xl:max-w-[300px]">{incident.title}</span>
-                  {isOverdue && (
-                    <Badge className="ml-3 bg-red-500 text-white animate-pulse shadow-[0_0_10px_rgba(255,0,0,0.6)] border border-red-400 pt-0 pb-0 shrink-0">
-                      SLA BREACHED
-                    </Badge>
-                  )}
                 </TableCell>
                 <TableCell>
                   <Badge className={`bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_10px_rgba(255,50,50,0.2)] animate-pulse' : 'border-primary text-primary'}`}>
@@ -204,12 +200,11 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                     ? incident.assignees.map(a => a.name).join(', ')
                     : <span className="text-muted-foreground/50 italic">Unassigned</span>}
                 </TableCell>
+                <TableCell className={`font-mono text-sm border-r border-border/20 ${isOverdue ? 'text-red-500 font-bold' : incident.targetSlaDate ? 'text-muted-foreground' : 'text-muted-foreground/40 italic'}`}>
+                  {incident.targetSlaDate ? incident.targetSlaDate.toLocaleDateString() : '-'}
+                </TableCell>
                 <TableCell className="text-right text-muted-foreground text-sm font-mono pr-6">
-                  {isOverdue && incident.targetSlaDate ? (
-                    <span className="text-red-500 font-bold">{incident.targetSlaDate.toLocaleDateString()}</span>
-                  ) : (
-                    incident.createdAt.toLocaleDateString()
-                  )}
+                  {incident.createdAt.toLocaleDateString()}
                 </TableCell>
               </TableRow>
             )})}
