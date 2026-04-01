@@ -50,7 +50,7 @@ export function RegisterForm() {
       {errorMessage && (
         <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in-95 leading-relaxed">
           {errorMessage === "REGISTRATION_DISABLED" ? "Administrative Decree: Public registration is structurally suspended at this time." : 
-           errorMessage === "USER_EXISTS" ? "Credential collision: This email matrix is already mapped to an active identity." :
+           errorMessage === "REGISTRATION_FAILED" ? "Secure handshake failed: Payload rejected or identity map collision occurred." :
            errorMessage === "MISSING_FIELDS" ? "Incomplete credentials payload." :
            errorMessage === "PASSWORD_TOO_SHORT" ? "Inadequate passphrase length (Under 8 characters)." : errorMessage}
         </div>

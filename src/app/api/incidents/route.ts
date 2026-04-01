@@ -13,6 +13,11 @@ export async function GET(req: Request) {
     filterParams.reporterId = session.user.id
   }
 
+  const takeParam = searchParams.get("take");
+  const skipParam = searchParams.get("skip");
+  const take = Math.min(parseInt(takeParam || "100", 10), 100);
+  const skip = parseInt(skipParam || "0", 10);
+
   const incidents = await db.incident.findMany({
     where: filterParams,
     include: {
@@ -20,7 +25,9 @@ export async function GET(req: Request) {
       assignees: { select: { name: true, email: true } },
       asset: { select: { name: true, type: true } }
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    take,
+    skip
   })
 
   return NextResponse.json(incidents)

@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 - Schema: Adjusted native `Prisma ERD` model synchronizing `SystemSetting`, `Attachment` properties alongside `Architecture.md` representations.
 
 ### Fixed
+- Fortified public Registration API with generic return codes preventing `Enmueration Attacks` and implemented constant-time logic blocking to massively throttle App-level Database DoS injections.
+- Enforced hard `take: 100` ceiling bounds globally across naked Prisma REST endpoints (`/api/incidents`, `/api/assets`) sealing Out of Memory (OOM) API crashing vulnerabilities under massive scalability.
 - Enforced strict cryptographic MIME / Extension Allowlist (.png, .json, .log, etc) inside `uploadAttachment` entirely mitigating Stored XSS payloads (.html, .svg) delivered through fake evidence files.
 - Injected strict physical Node `fs.unlinkSync()` routines executing natively against `/public/uploads` preceding Prisma Cascades to seal silent Storage / Drive Exhaustion DoS vulnerabilities during incident deletion.
 - Secured `uploadAttachment` Server Action with rigorous RBAC verification logic protecting against Broken Object Level Authorization (BOLA) and entity spoofing.

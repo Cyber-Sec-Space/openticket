@@ -8,8 +8,16 @@ export async function GET(req: Request) {
 
   // Reporters should generally be able to list assets so they can tie incidents to them.
   // Optionally restrict this entirely to SecOps/Admins. MVP: all users can view assets.
+  const { searchParams } = new URL(req.url)
+  const takeParam = searchParams.get("take");
+  const skipParam = searchParams.get("skip");
+  const take = Math.min(parseInt(takeParam || "100", 10), 100);
+  const skip = parseInt(skipParam || "0", 10);
+
   const assets = await db.asset.findMany({
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    take,
+    skip
   })
 
   return NextResponse.json(assets)

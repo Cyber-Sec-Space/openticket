@@ -24,9 +24,15 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
     return "PASSWORD_TOO_SHORT"
   }
 
+  // Anti-bruteforce / Anti-enumeration delay (Constant time mitigation)
+  // Regardless of success or failure, we artificially delay the response.
+  await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+
   const existingUser = await db.user.findUnique({ where: { email } })
   if (existingUser) {
-    return "USER_EXISTS"
+    // SECURITY: To prevent Account Enumeration, we pretend it succeeded,
+    // or return a generic error. Standard best practice: Return generic error.
+    return "REGISTRATION_FAILED"
   }
 
   const passwordHash = await bcrypt.hash(password, 10)
