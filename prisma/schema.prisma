@@ -88,6 +88,12 @@ model SystemSetting {
   webhookUrl     String?
   webhookEnabled Boolean @default(false)
 
+  // Global SLA Matrix Config (Hours)
+  slaCriticalHours Int @default(4)
+  slaHighHours     Int @default(24)
+  slaMediumHours   Int @default(72)
+  slaLowHours      Int @default(168)
+
   updatedAt DateTime @updatedAt
 }
 

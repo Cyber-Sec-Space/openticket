@@ -16,18 +16,31 @@ export async function updateSystemSettings(formData: FormData) {
   const requireGlobal2FA = formData.get("requireGlobal2FA") === "on"
   const defaultUserRole = (formData.get("defaultUserRole") as Role) || "REPORTER"
 
+  const slaCriticalHours = parseInt(formData.get("slaCriticalHours") as string || "4", 10)
+  const slaHighHours = parseInt(formData.get("slaHighHours") as string || "24", 10)
+  const slaMediumHours = parseInt(formData.get("slaMediumHours") as string || "72", 10)
+  const slaLowHours = parseInt(formData.get("slaLowHours") as string || "168", 10)
+
   await db.systemSetting.upsert({
     where: { id: "global" },
     update: {
       allowRegistration,
       requireGlobal2FA,
-      defaultUserRole
+      defaultUserRole,
+      slaCriticalHours,
+      slaHighHours,
+      slaMediumHours,
+      slaLowHours
     },
     create: {
       id: "global",
       allowRegistration,
       requireGlobal2FA,
-      defaultUserRole
+      defaultUserRole,
+      slaCriticalHours,
+      slaHighHours,
+      slaMediumHours,
+      slaLowHours
     }
   })
 

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateSystemSettings } from "./actions"
+import { SlaSettingsPanel } from "./sla-settings-panel"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
@@ -22,7 +23,11 @@ export default async function SystemSettingsPage() {
       id: "global",
       allowRegistration: true,
       requireGlobal2FA: false,
-      defaultUserRole: "REPORTER"
+      defaultUserRole: "REPORTER",
+      slaCriticalHours: 4,
+      slaHighHours: 24,
+      slaMediumHours: 72,
+      slaLowHours: 168
     }
   })
 
@@ -92,6 +97,17 @@ export default async function SystemSettingsPage() {
                     <SelectItem value="ADMIN">ADMIN</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <hr className="my-2 border-white/5" />
+              
+              <div className="space-y-3 p-5 border border-white/10 rounded-md bg-black/20">
+                <SlaSettingsPanel defaultSla={{ 
+                  critical: settings.slaCriticalHours, 
+                  high: settings.slaHighHours, 
+                  medium: settings.slaMediumHours, 
+                  low: settings.slaLowHours 
+                }} />
               </div>
 
             </div>

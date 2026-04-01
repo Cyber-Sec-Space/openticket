@@ -81,8 +81,29 @@ export default async function IncidentDetailPage({
     const newSeverity = formData.get("severity") as any
     const newAssetName = formData.get("assetName") as string
     const targetSlaDateRaw = formData.get("targetSlaDate") as string
-    const targetSlaDate = targetSlaDateRaw && targetSlaDateRaw.trim() !== "" ? new Date(targetSlaDateRaw) : null
+    let targetSlaDate = targetSlaDateRaw && targetSlaDateRaw.trim() !== "" ? new Date(targetSlaDateRaw) : null
     
+    // Automatic SLA Recalculation on Severity changes
+    if (newSeverity !== incident!.severity) {
+      const currentIsoSlice = incident!.targetSlaDate 
+        ? new Date(incident!.targetSlaDate.getTime() - incident!.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) 
+        : "";
+      const isManualDateOverride = targetSlaDateRaw !== currentIsoSlice;
+
+      if (!isManualDateOverride) {
+        const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
+        let autoDate = new Date();
+        switch (newSeverity) {
+          case 'CRITICAL': autoDate.setHours(autoDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
+          case 'HIGH':     autoDate.setHours(autoDate.getHours() + (settings?.slaHighHours ?? 24)); break;
+          case 'MEDIUM':   autoDate.setHours(autoDate.getHours() + (settings?.slaMediumHours ?? 72)); break;
+          case 'LOW':
+          default:         autoDate.setHours(autoDate.getHours() + (settings?.slaLowHours ?? 168)); break;
+        }
+        targetSlaDate = autoDate;
+      }
+    }
+
     const resolvedAssetId = newAssetName === 'UNLINKED' 
       ? null 
       : assets.find(a => a.name === newAssetName)?.id || null
@@ -90,7 +111,7 @@ export default async function IncidentDetailPage({
     const assigneeIds = formData.getAll("assigneeIds") as string[]
     const validAssigneeIds = assigneeIds.filter(id => id !== "UNASSIGNED")
 
-    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, SLA: ${targetSlaDate ? targetSlaDate.toISOString() : 'Removed'}`
+    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, SLA: ${targetSlaDate ? targetSlaDate.toLocaleString() : 'Removed'}`
 
     await db.incident.update({
       where: { id: incident!.id },
