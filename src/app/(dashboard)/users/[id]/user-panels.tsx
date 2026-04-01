@@ -56,7 +56,10 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="w-[95vw] sm:max-w-[90vw] md:max-w-5xl max-h-[85vh] bg-black/95 border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)] flex flex-col overflow-hidden p-6">
+        <DialogContent 
+          style={{ width: '95vw', maxWidth: '1000px', maxHeight: '85vh' }}
+          className="bg-black/95 border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)] flex flex-col overflow-hidden p-6"
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-emerald-400">
               <Clock className="w-5 h-5" /> Detailed Telemetry Matrix
@@ -112,7 +115,10 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="w-[95vw] sm:max-w-[90vw] md:max-w-5xl max-h-[85vh] bg-black/95 border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] flex flex-col overflow-hidden p-6">
+        <DialogContent 
+          style={{ width: '95vw', maxWidth: '1000px', maxHeight: '85vh' }}
+          className="bg-black/95 border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] flex flex-col overflow-hidden p-6"
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-blue-400">
               <FileJson className="w-5 h-5" /> Aggregated Evidence Payload
@@ -169,7 +175,10 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="w-[95vw] sm:max-w-[90vw] md:max-w-6xl max-h-[85vh] bg-black/95 border border-orange-500/30 shadow-[0_0_50px_rgba(249,115,22,0.1)] flex flex-col overflow-hidden p-6">
+        <DialogContent 
+          style={{ width: '95vw', maxWidth: '1200px', maxHeight: '85vh' }}
+          className="bg-black/95 border border-orange-500/30 shadow-[0_0_50px_rgba(249,115,22,0.1)] flex flex-col overflow-hidden p-6"
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-orange-400">
               <Activity className="w-5 h-5" /> Bound Incidents Matrix
