@@ -24,6 +24,32 @@ export async function uploadAttachment(formData: FormData) {
     return { error: "Target association missing" }
   }
 
+  // BOLA & RBAC Entity Verification checks
+  if (vulnId) {
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'SECOPS') {
+       return { error: "Forbidden: Strict Vuln BOLA enforcement" }
+    }
+    const vuln = await db.vulnerability.findUnique({ where: { id: vulnId }, select: { id: true }})
+    if (!vuln) return { error: "Vulnerability context invalid" }
+  }
+
+  if (incidentId) {
+    const incident = await db.incident.findUnique({
+      where: { id: incidentId },
+      select: { reporterId: true, assignees: { select: { id: true } } }
+    })
+    
+    if (!incident) return { error: "Incident context invalid" }
+
+    if (session.user.role === 'REPORTER') {
+       const isReporter = incident.reporterId === session.user.id
+       const isAssigned = incident.assignees.some(a => a.id === session.user.id)
+       if (!isReporter && !isAssigned) {
+          return { error: "Forbidden: Strict Incident BOLA isolation" }
+       }
+    }
+  }
+
   // Basic securing of upload
   if (file.size > 10 * 1024 * 1024) { // 10MB limit
     return { error: "File exceeds 10MB limit" }

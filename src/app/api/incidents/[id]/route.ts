@@ -53,7 +53,9 @@ export async function PATCH(
 
     const updateData: any = {}
     if (status) updateData.status = status
-    if (assigneeId !== undefined) updateData.assigneeId = assigneeId
+    if (assigneeId !== undefined) {
+      updateData.assignees = assigneeId === null ? { set: [] } : { set: [{ id: assigneeId }] }
+    }
     if (severity) updateData.severity = severity
     if (assetId !== undefined) updateData.assetId = assetId
 

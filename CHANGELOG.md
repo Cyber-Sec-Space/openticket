@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 - Schema: Adjusted native `Prisma ERD` model synchronizing `SystemSetting`, `Attachment` properties alongside `Architecture.md` representations.
 
 ### Fixed
+- Secured `uploadAttachment` Server Action with rigorous RBAC verification logic protecting against Broken Object Level Authorization (BOLA) and entity spoofing.
+- Resolved fatal Prisma schema mismatch defect within `[PATCH] /api/incidents/[id]/route.ts` REST API, avoiding unhandled 500 exceptions during assignment mutations.
 - Migrated legacy `middleware.ts` to `proxy.ts` to resolve fatal Turbopack parsing crashes (`TypeError: Cannot read properties of undefined (reading 'modules')`) and `404` errors under Next.js 16.2.1 conventions.
 - Moved and redesigned "Digital Evidence" components into right-side control column sidebars for Incidents and Vulnerabilities to enhance form aesthetics and layout.
 - Fixed bug where Investigation Logs failed to post due to a missing `type="submit"` attribute on the Radix/Base-UI button element binding.
