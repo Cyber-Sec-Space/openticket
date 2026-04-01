@@ -57,6 +57,25 @@ export async function deleteUserAction(formData: FormData) {
     throw new Error("Operation blocked: Administrators cannot surgically excise their own root credentials.")
   }
 
+  // Scrub physical orphan files uploaded by the user before Prisma cascade sweeps the metadata
+  try {
+    const userAttachments = await db.attachment.findMany({
+      where: { uploaderId: targetUserId }
+    })
+    if (userAttachments.length > 0) {
+      const fs = await import('fs')
+      const path = await import('path')
+      for (const att of userAttachments) {
+        if (att.fileUrl) {
+          const filepath = path.join(process.cwd(), 'public', att.fileUrl.replace(/^\//, ''))
+          if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to un-link physical files during user deletion", error)
+  }
+
   const deletedUser = await db.user.delete({
     where: { id: targetUserId }
   })
