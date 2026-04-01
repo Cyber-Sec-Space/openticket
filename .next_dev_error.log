@@ -1,0 +1,13 @@
+
+> open-ticket@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.12.164:3000
+- Environments: .env
+✓ Ready in 235ms
+
+ GET /login 200 in 1474ms (next.js: 1140ms, proxy.ts: 244ms, application-code: 90ms)
+ HEAD /login 200 in 22ms (next.js: 1433µs, proxy.ts: 3ms, application-code: 18ms)
+[?25h

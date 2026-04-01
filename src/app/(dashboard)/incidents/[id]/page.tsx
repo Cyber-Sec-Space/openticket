@@ -177,6 +177,20 @@ export default async function IncidentDetailPage({
     const sessionUrl = await auth()
     if (!sessionUrl || sessionUrl.user.role !== 'ADMIN') throw new Error("Forbidden")
 
+    // Scrub physical orphan files before Prisma cascade sweeps the metadata
+    try {
+      const fs = await import('fs')
+      const path = await import('path')
+      for (const att of incident!.attachments || []) {
+        if (att.fileUrl) {
+          const filepath = path.join(process.cwd(), 'public', att.fileUrl.replace(/^\//, ''))
+          if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
+        }
+      }
+    } catch (error) {
+      console.error("Failed to un-link physical files during incident deletion", error)
+    }
+
     // Prisma cascading handles Comment/AuditLog deletions seamlessly
     await db.incident.delete({ where: { id: incident!.id } })
     redirect(`/incidents`)

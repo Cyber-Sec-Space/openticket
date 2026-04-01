@@ -12,6 +12,8 @@ All notable changes to this project will be documented in this file.
 - Schema: Adjusted native `Prisma ERD` model synchronizing `SystemSetting`, `Attachment` properties alongside `Architecture.md` representations.
 
 ### Fixed
+- Enforced strict cryptographic MIME / Extension Allowlist (.png, .json, .log, etc) inside `uploadAttachment` entirely mitigating Stored XSS payloads (.html, .svg) delivered through fake evidence files.
+- Injected strict physical Node `fs.unlinkSync()` routines executing natively against `/public/uploads` preceding Prisma Cascades to seal silent Storage / Drive Exhaustion DoS vulnerabilities during incident deletion.
 - Secured `uploadAttachment` Server Action with rigorous RBAC verification logic protecting against Broken Object Level Authorization (BOLA) and entity spoofing.
 - Resolved fatal Prisma schema mismatch defect within `[PATCH] /api/incidents/[id]/route.ts` REST API, avoiding unhandled 500 exceptions during assignment mutations.
 - Migrated legacy `middleware.ts` to `proxy.ts` to resolve fatal Turbopack parsing crashes (`TypeError: Cannot read properties of undefined (reading 'modules')`) and `404` errors under Next.js 16.2.1 conventions.

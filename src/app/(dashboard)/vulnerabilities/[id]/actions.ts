@@ -56,6 +56,26 @@ export async function deleteVulnerabilityAction(formData: FormData) {
   const vulnId = formData.get("vulnId") as string
   if (!vulnId) throw new Error("Missing vuln ID")
 
+  // Scrub physical orphan files before Prisma cascade sweeps the metadata
+  try {
+    const vuln = await db.vulnerability.findUnique({
+      where: { id: vulnId },
+      include: { attachments: true }
+    })
+    if (vuln?.attachments?.length) {
+      const fs = await import('fs')
+      const path = await import('path')
+      for (const att of vuln.attachments) {
+        if (att.fileUrl) {
+          const filepath = path.join(process.cwd(), 'public', att.fileUrl.replace(/^\//, ''))
+          if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to un-link physical files during vulnerability deletion", error)
+  }
+
   await db.vulnerability.delete({ where: { id: vulnId } })
   revalidatePath("/vulnerabilities")
   redirect("/vulnerabilities")

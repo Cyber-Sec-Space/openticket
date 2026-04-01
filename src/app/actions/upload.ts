@@ -55,6 +55,13 @@ export async function uploadAttachment(formData: FormData) {
     return { error: "File exceeds 10MB limit" }
   }
 
+  const allowedExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.pdf', '.txt', '.csv', '.zip', '.docx', '.log', '.json']
+  const fileExt = path.extname(file.name).toLowerCase()
+  
+  if (!allowedExtensions.includes(fileExt)) {
+    return { error: "Security Violation: Unsupported or potentially malicious file extension." }
+  }
+
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
 
