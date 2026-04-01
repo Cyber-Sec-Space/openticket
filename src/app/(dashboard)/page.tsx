@@ -1,14 +1,19 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target, Bug } from "lucide-react"
+import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target, Bug, ChevronLeft, ChevronRight, LayoutList } from "lucide-react"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { TrendChart } from "@/components/trend-chart"
 import { IncidentRadarChart } from "@/components/incident-radar-chart"
 import { VulnStatusChart } from "@/components/vuln-status-chart"
 import { VulnSeverityChart } from "@/components/vuln-severity-chart"
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { page } = await (searchParams || { page: "1" });
+  const currentPage = parseInt(page || "1", 10);
+  const TAKE = 5;
+  const skip = (currentPage - 1) * TAKE;
+
   const session = await auth()
 
   if (!session?.user) return null
@@ -39,12 +44,35 @@ export default async function Home() {
     return { severity: sev, count: found ? found._count.severity : 0 }
   })
 
-  const recentIncidents = await db.incident.findMany({
-    where: filterParams,
-    orderBy: { createdAt: 'desc' },
-    take: 4,
-    include: { reporter: { select: { name: true, email: true } } }
-  })
+  // Personal Case Board Logic
+  const boardFilterParams: any = {
+    status: { notIn: ['CLOSED', 'RESOLVED'] }
+  };
+  
+  if (session.user.role !== 'REPORTER') {
+    boardFilterParams.OR = [
+      { reporterId: session.user.id },
+      { assignees: { some: { id: session.user.id } } },
+      { assignees: { none: {} } }
+    ]
+  } else {
+    boardFilterParams.OR = [
+      { reporterId: session.user.id },
+      { assignees: { some: { id: session.user.id } } }
+    ]
+  }
+
+  const [boardIncidents, boardTotal] = await Promise.all([
+    db.incident.findMany({
+      where: boardFilterParams,
+      orderBy: { createdAt: 'desc' },
+      take: TAKE,
+      skip,
+      include: { reporter: { select: { name: true, email: true } } }
+    }),
+    db.incident.count({ where: boardFilterParams })
+  ]);
+  const totalPages = Math.ceil(boardTotal / TAKE);
 
   // 14 Days Trend Calculation
   const trendDays = 14;
@@ -289,49 +317,82 @@ export default async function Home() {
 
         {/* Right Sidebar */}
         <div className="col-span-1 flex flex-col gap-6">
-          {/* Recent Activity */}
+          {/* Personal Case Board */}
           <div className="glass-card rounded-xl border border-white/5 overflow-hidden shadow-2xl flex flex-col flex-1">
-            <div className="p-4 border-b border-border/50 bg-black/20">
+            <div className="p-4 border-b border-border/50 bg-black/20 flex items-center justify-between">
               <h3 className="text-white/90 font-semibold tracking-wide flex items-center gap-2 text-sm">
-                <Activity className="w-4 h-4 text-emerald-400" />
-                Recent Declarations
+                <LayoutList className="w-4 h-4 text-emerald-400" />
+                Your Action Board
               </h3>
+              <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-mono">{boardTotal} Active</span>
             </div>
-            <div className="p-0 flex-1 divide-y divide-white/5">
-              {recentIncidents.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground text-sm font-medium">No recent incidents detected.</div>
+            <div className="p-0 flex-1 divide-y divide-white/5 flex flex-col min-h-[400px]">
+              {boardIncidents.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground text-sm font-medium flex-1 flex items-center justify-center">No active tasks in your queue.</div>
               ) : (
-                recentIncidents.map(inc => {
-                  const isOverdue = inc.targetSlaDate && 
-                    new Date() > inc.targetSlaDate && 
-                    !['RESOLVED', 'CLOSED'].includes(inc.status);
-                  
-                  return (
-                  <Link href={`/incidents/${inc.id}`} key={inc.id} className={`block group p-4 transition-colors relative overflow-hidden ${isOverdue ? 'hover:bg-red-950/20 bg-red-950/5' : 'hover:bg-white/5'}`}>
-                    {isOverdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 shadow-[0_0_10px_rgba(255,0,0,0.8)] animate-pulse" />}
-                    <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-1">
-                      <span className={`font-semibold text-sm transition-colors line-clamp-1 pr-2 ${isOverdue ? 'text-red-400 group-hover:text-red-300' : 'group-hover:text-primary'}`}>
-                        {isOverdue && <AlertTriangle className="inline w-3 h-3 mr-1 text-red-500 animate-pulse" />}
-                        {inc.title}
-                      </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase shrink-0
-                        ${inc.severity === 'CRITICAL' ? 'bg-destructive/20 text-red-400' :
-                          inc.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
-                            inc.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-emerald-500/20 text-emerald-400'
-                        }
-                      `}>
-                        {inc.severity.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs">
-                      <span className={isOverdue ? 'text-red-400/70' : 'text-muted-foreground'}>{inc.reporter?.name || "Deleted Operator"}</span>
-                      <span className={isOverdue ? 'text-red-500 font-bold' : 'text-muted-foreground'}>
-                        {inc.targetSlaDate ? new Date(inc.targetSlaDate).toLocaleDateString() : new Date(inc.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </Link>
-                )})
+                <div className="flex-1">
+                  {boardIncidents.map(inc => {
+                    const isOverdue = inc.targetSlaDate && 
+                      new Date() > inc.targetSlaDate && 
+                      !['RESOLVED', 'CLOSED'].includes(inc.status);
+                    
+                    return (
+                    <Link href={`/incidents/${inc.id}`} key={inc.id} className={`block group p-4 transition-colors relative overflow-hidden ${isOverdue ? 'hover:bg-red-950/20 bg-red-950/5' : 'hover:bg-white/5'}`}>
+                      {isOverdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 shadow-[0_0_10px_rgba(255,0,0,0.8)] animate-pulse" />}
+                      <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-1">
+                        <span className={`font-semibold text-sm transition-colors line-clamp-1 pr-2 ${isOverdue ? 'text-red-400 group-hover:text-red-300' : 'group-hover:text-primary'}`}>
+                          {isOverdue && <AlertTriangle className="inline w-3 h-3 mr-1 text-red-500 animate-pulse" />}
+                          {inc.title}
+                        </span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase shrink-0
+                          ${inc.severity === 'CRITICAL' ? 'bg-destructive/20 text-red-400' :
+                            inc.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
+                              inc.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-emerald-500/20 text-emerald-400'
+                          }
+                        `}>
+                          {inc.severity.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs mt-2">
+                        <span className={isOverdue ? 'text-red-400/70 line-clamp-1' : 'text-muted-foreground line-clamp-1'}>
+                          Reporter: {inc.reporter?.name || "Deleted"}
+                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase shrink-0 border
+                            ${inc.status === 'NEW' ? 'bg-blue-500/10 border-blue-400/30 text-blue-400' :
+                              inc.status === 'IN_PROGRESS' ? 'bg-amber-500/10 border-amber-400/30 text-amber-400' :
+                              'bg-indigo-500/10 border-indigo-400/30 text-indigo-400'
+                            }`}>
+                            {inc.status.replace(/_/g, ' ')}
+                          </span>
+                          <span className={isOverdue ? 'text-red-500 font-bold' : 'text-muted-foreground'}>
+                            {inc.targetSlaDate ? new Date(inc.targetSlaDate).toLocaleDateString() : new Date(inc.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  )})}
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="p-3 border-t border-white/5 flex items-center justify-between bg-black/40 mt-auto">
+                   <Link 
+                     href={currentPage <= 1 ? '#' : `?page=${currentPage - 1}`} 
+                     className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
+                   >
+                     <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                   </Link>
+                   <span className="text-xs font-mono text-muted-foreground">P. {currentPage} / {totalPages}</span>
+                   <Link 
+                     href={currentPage >= totalPages ? '#' : `?page=${currentPage + 1}`}
+                     className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
+                   >
+                     Next <ChevronRight className="w-4 h-4 ml-1" />
+                   </Link>
+                </div>
               )}
             </div>
           </div>

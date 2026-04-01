@@ -61,7 +61,7 @@ export function UserPanels({
           className="bg-black/95 border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)] flex flex-col overflow-hidden p-6"
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-400">
+            <DialogTitle className="flex items-center gap-2 text-emerald-400 pr-12">
               <Clock className="w-5 h-5" /> Detailed Telemetry Matrix
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-emerald-400 border-emerald-500/30 ml-auto">Total: {totalAuditLogs.toLocaleString()}</Badge>
             </DialogTitle>
@@ -122,7 +122,7 @@ export function UserPanels({
           className="bg-black/95 border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] flex flex-col overflow-hidden p-6"
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-blue-400">
+            <DialogTitle className="flex items-center gap-2 text-blue-400 pr-12">
               <FileJson className="w-5 h-5" /> Aggregated Evidence Payload
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-blue-400 border-blue-500/30 ml-auto">Total: {totalAttachments.toLocaleString()}</Badge>
             </DialogTitle>
@@ -184,7 +184,7 @@ export function UserPanels({
           className="bg-black/95 border border-orange-500/30 shadow-[0_0_50px_rgba(249,115,22,0.1)] flex flex-col overflow-hidden p-6"
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-orange-400">
+            <DialogTitle className="flex items-center gap-2 text-orange-400 pr-12">
               <Activity className="w-5 h-5" /> Bound Incidents Matrix
               <Badge variant="outline" className="font-mono text-[10px] bg-black/40 text-orange-400 border-orange-500/30 ml-auto">Total: {totalIncidents.toLocaleString()}</Badge>
             </DialogTitle>

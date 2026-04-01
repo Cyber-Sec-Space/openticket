@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## main
 ### Added
+- Dashboard: Refactored generic "Recent Declarations" into a highly personalized, RBAC-filtered "Personal Case Board" with Server-Side Pagination supporting dynamic active-ticket triaging workflows.
 - Attachments: Integrated local binary storage capabilities `/api/upload` linked to Incidents and Vulnerabilities acting as centralized execution evidence.
 - SLA Management: Enabled strict dynamic `targetSlaDate` bindings with UI shifting indicators marking overdue constraints.
 - Notification (Webhook): Configured external SOC integration triggers capable of posting payload states directly into Discord/Slack formats.

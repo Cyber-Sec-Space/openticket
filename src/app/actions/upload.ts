@@ -101,3 +101,57 @@ export async function uploadAttachment(formData: FormData) {
 
   return { success: true, url: createdFile.fileUrl, filename: createdFile.filename }
 }
+
+export async function deleteAttachment(attachmentId: string) {
+  const session = await auth()
+  if (!session?.user) throw new Error("Unauthorized")
+
+  const attachment = await db.attachment.findUnique({
+    where: { id: attachmentId },
+    include: {
+      incident: { select: { reporterId: true, assignees: { select: { id: true } } } },
+      vuln: { select: { id: true } }
+    }
+  })
+
+  if (!attachment) return { error: "Not found" }
+
+  // RBAC for Delete
+  if (session.user.role === 'REPORTER') {
+    if (attachment.uploaderId !== session.user.id) {
+       // Also check if they are assigned to the parent incident
+       if (attachment.incident) {
+          const isAssigned = attachment.incident.assignees.some(a => a.id === session.user.id)
+          if (!isAssigned) return { error: "Forbidden: You cannot delete evidence you did not upload." }
+       } else {
+          return { error: "Forbidden: You cannot delete evidence you did not upload." }
+       }
+    }
+  }
+
+  // Delete from filesystem
+  try {
+     const filePath = path.join(process.cwd(), "public", attachment.fileUrl)
+     if (fs.existsSync(filePath)) {
+       fs.unlinkSync(filePath)
+     }
+  } catch(e) {
+     console.error("Failed deleting file", e)
+  }
+
+  await db.attachment.delete({ where: { id: attachmentId }})
+
+  if (attachment.incidentId) {
+    await db.auditLog.create({
+      data: {
+        action: "ATTACHMENT_DELETED",
+        entityType: "Incident",
+        entityId: attachment.incidentId,
+        userId: session.user.id,
+        changes: `Deleted evidence file: ${attachment.filename}`
+      }
+    })
+  }
+
+  return { success: true }
+}
