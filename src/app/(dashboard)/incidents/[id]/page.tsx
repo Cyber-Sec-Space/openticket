@@ -402,7 +402,7 @@ export default async function IncidentDetailPage({
                 redirect(`/incidents/${incident!.id}`)
               }} className="space-y-3 pb-5 border-b border-border/50">
                 <div className="relative group rounded-lg border-2 border-dashed border-indigo-500/20 hover:border-indigo-400/50 hover:bg-indigo-500/5 bg-black/20 transition-all flex flex-col items-center justify-center p-4">
-                  <Input type="file" name="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required />
+                  <input type="file" name="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required />
                   <Upload className="w-6 h-6 text-indigo-400/50 group-hover:text-indigo-400 mb-2 transition-colors" />
                   <span className="text-[11px] font-medium text-muted-foreground group-hover:text-indigo-300">Click or drag file here</span>
                 </div>
