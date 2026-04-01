@@ -56,7 +56,7 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl bg-black/95 border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
+        <DialogContent className="max-w-4xl w-full bg-black/95 border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)] max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-emerald-400">
               <Clock className="w-5 h-5" /> Detailed Telemetry Matrix
@@ -70,7 +70,7 @@ export function UserPanels({
                   <span className="font-mono text-emerald-400">{log.action}</span>
                   <span className="text-[10px] text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</span>
                 </div>
-                <p className="text-muted-foreground text-xs leading-relaxed break-words">{String(log.changes)}</p>
+                <p className="text-muted-foreground text-xs leading-relaxed break-words font-mono opacity-80">{typeof log.changes === 'object' ? JSON.stringify(log.changes) : String(log.changes)}</p>
               </div>
             ))}
           </div>
@@ -110,7 +110,7 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl bg-black/95 border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
+        <DialogContent className="max-w-4xl w-full bg-black/95 border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.1)] max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-blue-400">
               <FileJson className="w-5 h-5" /> Aggregated Evidence Payload
@@ -167,7 +167,7 @@ export function UserPanels({
             </div>
           </div>
         </DialogTrigger>
-        <DialogContent className="max-w-5xl bg-black/95 border border-orange-500/30 shadow-[0_0_50px_rgba(249,115,22,0.1)]">
+        <DialogContent className="max-w-5xl w-full bg-black/95 border border-orange-500/30 shadow-[0_0_50px_rgba(249,115,22,0.1)] max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-orange-400">
               <Activity className="w-5 h-5" /> Bound Incidents Matrix
