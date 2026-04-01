@@ -507,11 +507,12 @@ export default async function IncidentDetailPage({
 
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Target SLA Date</Label>
-                    <Input 
+                    <input
                       type="datetime-local" 
                       name="targetSlaDate" 
                       defaultValue={incident.targetSlaDate ? new Date(incident.targetSlaDate.getTime() - incident.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
-                      className="flex h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary transition-all [color-scheme:dark]"
+                      className="flex h-10 w-full min-w-0 rounded-lg border border-input bg-black/50 px-2.5 py-1 text-base text-white outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors [color-scheme:dark]"
+                      suppressHydrationWarning
                     />
                   </div>
 
