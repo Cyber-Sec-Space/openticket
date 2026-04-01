@@ -83,7 +83,7 @@ export default async function AssetDetailPage({
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6 animate-fade-in-up">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
         <Link href="/assets">
           <Button variant="ghost" className="text-muted-foreground hover:text-white">← Back to Inventory</Button>
         </Link>

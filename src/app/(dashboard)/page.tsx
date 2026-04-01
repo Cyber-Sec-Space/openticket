@@ -144,7 +144,7 @@ export default async function Home() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in-up">
-      <header className="flex justify-between items-center pb-6 border-b border-white/10">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-white/10">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">System Status</h1>
           <p className="text-muted-foreground mt-2">
@@ -303,7 +303,7 @@ export default async function Home() {
               ) : (
                 recentIncidents.map(inc => (
                   <Link href={`/incidents/${inc.id}`} key={inc.id} className="block group p-4 hover:bg-white/5 transition-colors">
-                    <div className="flex justify-between items-start mb-1">
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-1">
                       <span className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-1 pr-2">{inc.title}</span>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase
                         ${inc.severity === 'CRITICAL' ? 'bg-destructive/20 text-red-400' :
@@ -315,7 +315,7 @@ export default async function Home() {
                         {inc.severity.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs text-muted-foreground">
                       <span>{inc.reporter?.name || "Deleted Operator"}</span>
                       <span>{new Date(inc.createdAt).toLocaleDateString()}</span>
                     </div>

@@ -42,7 +42,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-fade-in-up">
-      <header className="flex justify-between items-start pb-6 border-b border-white/10">
+      <header className="flex flex-col md:flex-row justify-between items-start gap-4 pb-6 border-b border-white/10">
         <div>
           <div className="flex items-center space-x-3 mb-2">
              <Badge variant="outline" className={`font-mono bg-black/50 ${cvssColor} border-${cvssColor.replace('text-', '')}/30`}>
@@ -89,7 +89,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
                 {vuln.description}
              </div>
              
-             <div className="flex justify-between items-center mt-4">
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-4">
                 {vuln.targetSlaDate ? (
                    <span className={`font-mono text-xs font-semibold px-2 py-1 rounded ${new Date() > vuln.targetSlaDate ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
                       <Calendar className="w-3 h-3 inline mr-2" />
@@ -161,7 +161,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
                  <ul className="space-y-2">
                     {vuln.affectedAssets.map(asset => (
                       <li key={asset.id} className="bg-black/40 border border-red-500/20 rounded-lg p-3 hover:bg-black/60 transition-colors">
-                        <Link href={`/assets`} className="flex justify-between items-center group">
+                        <Link href={`/assets`} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group">
                           <div>
                             <p className="font-bold font-mono text-sm text-red-400 group-hover:text-red-300 transition-colors">{asset.name}</p>
                             <span className="text-[10px] text-muted-foreground uppercase">{asset.type.replace(/_/g, ' ')} • {asset.status.replace(/_/g, ' ')}</span>

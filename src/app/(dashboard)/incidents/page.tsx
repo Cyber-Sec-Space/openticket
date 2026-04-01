@@ -60,7 +60,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6 animate-fade-in-up">
-      <div className="flex justify-between items-center border-b border-white/10 pb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center">
             <ShieldAlert className="mr-3 text-primary h-8 w-8" /> Active Incidents

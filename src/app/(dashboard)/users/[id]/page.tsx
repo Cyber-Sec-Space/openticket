@@ -46,7 +46,7 @@ export default async function UserDetailPage({
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6 animate-fade-in-up">
-      <div className="flex justify-between items-center bg-black/40 p-6 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-black/40 p-6 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-6">
           <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border-2 shadow-[0_0_30px_rgba(0,0,0,0.5)] ${user.isDisabled ? 'border-red-500/50 bg-red-950/20 text-red-500' : 'border-emerald-500/50 bg-emerald-950/20 text-emerald-400'}`}>
             <User className="w-10 h-10" />

@@ -198,7 +198,7 @@ export default async function IncidentDetailPage({
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6 animate-fade-in-up">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
         <Link href="/incidents">
           <Button variant="ghost" className="text-muted-foreground hover:text-white">← Back to Incidents</Button>
         </Link>
@@ -349,7 +349,7 @@ export default async function IncidentDetailPage({
               <div className="space-y-4 pt-2">
                 {timeline.map((item, idx) => (
                   <div key={idx} className={`p-4 rounded-lg border transition-colors ${item.type === 'AUDIT' ? 'border-primary/20 bg-primary/5' : 'border-border/50 bg-black/20 hover:border-blue-400/30'}`}>
-                    <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs text-muted-foreground mb-3">
                       <span className={`font-semibold ${item.type === 'AUDIT' ? 'text-primary' : 'text-white/90'}`}>
                         {item.author?.name || 'System'}
                         <span className="opacity-50 text-[10px] font-normal ml-1">({item.type === 'AUDIT' ? 'SYSTEM EVENT' : item.author?.role})</span>

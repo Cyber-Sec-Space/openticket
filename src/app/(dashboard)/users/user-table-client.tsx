@@ -61,7 +61,7 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
     <div className="space-y-4">
       {/* BULK ACTIONS BAR */}
       {selectedIds.size > 0 && (
-        <div className="bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-lg flex items-center justify-between animate-in slide-in-from-top-4">
+        <div className="bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4">
           <div className="flex items-center gap-3">
              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 font-mono border-emerald-500/30">
                {selectedIds.size} Selected
