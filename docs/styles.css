@@ -145,7 +145,22 @@ body.dark-theme {
 
 .nav-links a:hover { color: white; }
 
-.nav-actions { display: flex; gap: 1rem; }
+.nav-actions { display: flex; gap: 1rem; align-items: center; }
+
+.nav-icon-link {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.nav-icon-link:hover {
+  color: white;
+  background: var(--glass);
+}
 
 /* Hero Section */
 .hero {
