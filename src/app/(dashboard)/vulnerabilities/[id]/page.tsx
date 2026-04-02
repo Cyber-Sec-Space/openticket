@@ -5,8 +5,10 @@ import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
 import { FileUploadBox } from "@/components/file-upload-box"
 import { Bug, ShieldAlert, Server, Trash2, ShieldCheck, Activity, Calendar, Paperclip, Upload } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DateTimePicker } from "@/components/ui/datetime-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateVulnStatusAction, deleteVulnerabilityAction } from "./actions"
 import Link from "next/link"
@@ -116,11 +118,9 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
                  <div className="flex gap-4">
                  <div className="flex-1 space-y-2">
                    <label className="text-xs text-white/70 uppercase tracking-widest">Enforce SLA Date</label>
-                   <Input 
-                     type="datetime-local" 
-                     name="targetSlaDate" 
-                     defaultValue={vuln.targetSlaDate ? new Date(vuln.targetSlaDate.getTime() - vuln.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
-                     className="flex !h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary transition-all [color-scheme:dark]"
+                   <DateTimePicker 
+                     name="targetSlaDate"
+                     defaultValue={vuln.targetSlaDate ? new Date(vuln.targetSlaDate.getTime() - vuln.targetSlaDate.getTimezoneOffset() * 60000) : undefined}
                    />
                  </div>
                  <div className="flex-1 space-y-2">
