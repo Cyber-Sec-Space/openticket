@@ -96,8 +96,30 @@ async function main() {
         cvssScore: 9.3,
         description: 'A heap-based buffer overflow vulnerability in FortiOS SSL-VPN may allow a remote unauthenticated attacker to execute code.',
         severity: Severity.HIGH,
-        status: VulnStatus.RESOLVED,
+        status: VulnStatus.OPEN,
         affectedAssets: { connect: [{ id: fw?.id }] }
+      }
+    })
+
+    await prisma.vulnerability.create({
+      data: {
+        title: 'Nginx weak ciphers configured',
+        cvssScore: 5.3,
+        description: 'Server is currently accepting connections using weak TLS ciphers.',
+        severity: Severity.MEDIUM,
+        status: VulnStatus.OPEN,
+        affectedAssets: { connect: [{ id: srvWeb01?.id }, { id: srvWeb02?.id }] }
+      }
+    })
+    
+    await prisma.vulnerability.create({
+      data: {
+        title: 'Internal Server Information Disclosure',
+        cvssScore: 3.1,
+        description: 'Web server is exposing its precise version number in HTTP headers.',
+        severity: Severity.LOW,
+        status: VulnStatus.OPEN,
+        affectedAssets: { connect: [{ id: srvWeb02?.id }] }
       }
     })
     
