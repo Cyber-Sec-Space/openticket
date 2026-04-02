@@ -3,6 +3,10 @@
 <p align="center">
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
 </p>
+<p align="center">
+  <img src="./public/plugins.png" alt="Plugin Architecture" width="48%">
+  <img src="./public/notifications.png" alt="Notification Center" width="48%">
+</p>
 
 [🌐 Read in English](../README.md) | [🏗️ 架構設計書 (Architecture Specs)](docs/ARCHITECTURE.zh-TW.md)
 
@@ -14,6 +18,8 @@
 - **雙因子驗證 (2FA) 安全機制：** 內建基於 TOTP 演算法的 2FA 模組，可完美整合各種標準驗證器應用程式 (如 Google Authenticator, Authy)。更支援系統管理員「一鍵強制全域啟用 2FA」的鎖定功能。
 - **高密度 SOC 配置 (High-Density Layout)：** 重新設計的單行 8 指標 KPI 網格，讓維運人員能一眼看清資安戰場全貌，並將重點應變面板 (Command Actions) 移至上方，極速縮短反應遲滯時間。
 - **陣列化多角色存取控制 (Multi-Role RBAC)：** 原生的多層次權限隔離機制，支援同時為特定維運人員疊加 `ADMIN` (全域基建覆蓋), `SECOPS` (事件處置), `REPORTER` (通報) 與 `API_ACCESS` (開放機器介接) 等複數權限標籤，帶來極大的組織架構彈性。
+- **可插拔的擴展架構 (Plug-and-Play Architecture)：** 具備獨立的資料庫 Hook Engine (事件總線)，所有延伸功能與第三方依賴皆被收斂至 Settings -> Plugins 進行熱插拔與設定，不再讓 Dashboard 塞滿複雜無關的配置。
+- **全方位硬派通知中心 (Omni-channel Notifications)：** 原生支援基於 SMTP 的事件與註冊身份驗證，並提供能夠根據危險等級 (Critical, High) 自訂過濾，且直接推播至桌面作業系統的 HTML5 Web Notifications 背景通知機制。
 - **企業級現代介面 (Enterprise UI)：** 以 TailwindCSS 打造高質感 Blur / Backdrop-filter 動態特效，結合深度互動的 Shadcn 元件、透過 Portal 防裁切與支援手動輸入的客製化 `react-datepicker`，以及視覺化的 Recharts 圖表庫。
 
 ---
@@ -38,6 +44,11 @@
 - 前往 **"Identity Preferences (身分設定) -> API Tokens"** (帳戶需具備 `API_ACCESS` 或 `ADMIN` 標籤)。
 - 生成一組受密碼學保護的自動化金鑰 (例如命名為：*GitHub Actions Push*)。
 - 在外部腳本呼叫 `/api/incidents` 或 `/api/assets` 端點時，將其帶入 Header：`Authorization: Bearer <token>`。該呼叫將自動繼承生成該金鑰者的既有伺服器權限。
+
+### 4. 啟用系統擴充外掛 (Activating System Plugins)
+全域管理者可至 `Plugins` 頁面無縫介入核心事件攔截網：
+- 系統原生存有一套高度優化的 **Slack Critical Notifier**，是一套完全去耦 (Decoupled) 的先導展示外掛。
+- 您可以在 Plugin Store 中一鍵「安裝」，於彈出的模組化設定視窗中貼上您的 Webhook URL。設定完畢後，所有系統中被建立的極端資安事件皆會在不阻塞核心行程的情況下，於毫秒級被推送至您的指定頻道。
 
 ---
 

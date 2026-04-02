@@ -115,8 +115,33 @@ erDiagram
     User ||--o{ ApiToken : "發行 (Issues)"
 ```
 
-### 2.3 機器自動化 API 介接 (Machine-to-Machine API Integration)
-系統內建無頭腳本模式 (Headless)，支援透過主要資料路由 (`/api/incidents`, `/api/assets`) 進行操作。為了維持嚴格的 BOLA 隔離與身分繼承，自動化介接一律採用密碼學令牌，藉由 `Authorization: Bearer <token>` 請求頭進行驗證。這些 Token 必須由已授權的維運單位生成，並且 Token 發出後，會「完全繼承發行者當下的所有陣列權限標籤」。
+### 2.3 機器自動化介接 (Machine-to-Machine API Integration)
+系統內建支援純服務互動 (Headless Execution) 的 REST 端點 (如 `/api/incidents`, `/api/assets`)。為了確保隔離性與權限可追溯性，外部整合會被要求夾帶 `Authorization: Bearer <token>` 標頭。這些金鑰在建立期會**自動繼承發放此金鑰的帳號權限** (陣列形式存放)，藉此讓自動化機器人與呼叫者維持對等的資安授權邊界。
+
+### 2.4 外掛架構與事件總線 (Plugin Architecture EventBus)
+為避免核心後端路由被各種第三方工具或擴充功能 (如 Slack 推播、Teams、Jira 雙向同步) 阻塞，本系統採用非同步的 **Hook Engine**。所有的核心事件 (建立事件/資產覆滅等) 皆會被派發至 EventBus，交由資料庫 `PluginState` 檢核是否已安裝該功能，隨後才會排程執行於外掛空間中。
+
+```mermaid
+graph LR
+    SystemEvents[事件建立 / 資產異動] --> HookEngine((Hook Engine EventBus))
+    HookEngine --> DBCheck{檢查 DB `PluginState` 啟動狀態}
+    DBCheck -- "Activated (安裝)" --> Plugins[執行各實體外掛 (如 Slack Notifier)]
+    DBCheck -- "Disabled (未啟用)" --> Skip[忽略派送]
+    Plugins --> Success[背景傳遞完成]
+    Plugins -- "Error" --> Isolated[隔離錯誤, 保障主線程不崩潰]
+```
+
+### 2.5 全方位通知中心 (Omni-channel Notifications)
+維運通報分為四大層級，透過 `User Preference` 分支為兩種底層通道，保障跨平台零延遲的系統警報。
+
+```mermaid
+graph TD
+    SystemEvent[嚴峻資安系統事件] --> NotificationRouter{用戶設定 (UserPreference)}
+    NotificationRouter -- "Enable Web Notifications" --> PollingQueue[HTML5 Browser Polling]
+    NotificationRouter -- "Enable Email" --> SMTP[SMTP Mailer Service]
+    PollingQueue --> DesktopAlerts[作業系統桌面底層推播]
+    SMTP --> AlertEmail[警報信件與註冊重置驗證信]
+```
 
 ---
 
