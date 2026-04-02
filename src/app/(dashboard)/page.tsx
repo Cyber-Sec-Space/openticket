@@ -260,88 +260,89 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </div>
       </header>
 
-      {/* Metric Cards Master Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group border-emerald-500/20">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Clock size={80} className="text-emerald-500" /></div>
-          <div>
-            <p className="text-sm font-medium text-emerald-400 uppercase tracking-wider mb-2">Mean Time To Resolve (14d)</p>
-            <h3 className="text-4xl font-bold">{mttr}</h3>
-          </div>
-        </div>
-
-        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group border-blue-500/20">
-          <div className="absolute top-0 right-0 p-4 text-blue-500 opacity-10 group-hover:scale-110 transition-transform"><CheckCircle2 size={80} /></div>
-          <div>
-            <p className="text-sm font-medium text-blue-400 uppercase tracking-wider mb-2">SLA Compliance</p>
-            <h3 className="text-4xl font-bold text-blue-500">{complianceRate}</h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Primary Metrics Row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-        <div className="glass-card p-6 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><ShieldAlert size={80} /></div>
+      {/* Metric Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
+        <div className="glass-card p-4 flex flex-col justify-between rounded-xl relative overflow-hidden group border-emerald-500/20">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><Clock size={60} className="text-emerald-500" /></div>
           <div className="flex z-10 flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider line-clamp-1">Active Incidents</p>
+              <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider line-clamp-1">MTTR (14d)</p>
+            </div>
+            <h3 className="text-3xl font-black">{mttr}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card p-4 flex flex-col justify-between rounded-xl relative overflow-hidden group border-blue-500/20">
+          <div className="absolute top-0 right-0 p-3 text-blue-500 opacity-10 group-hover:scale-110 transition-transform"><CheckCircle2 size={60} /></div>
+          <div className="flex z-10 flex-col h-full justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider line-clamp-1">SLA Compliant</p>
+            </div>
+            <h3 className="text-3xl font-black text-blue-500">{complianceRate}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><ShieldAlert size={60} /></div>
+          <div className="flex z-10 flex-col h-full justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider line-clamp-1 whitespace-nowrap">Active Incs</p>
               {renderDelta(deltaActiveInc)}
             </div>
             <h3 className="text-3xl font-black">{activeIncidents}</h3>
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group border-destructive/30">
+        <div className="glass-card p-4 flex flex-col justify-between rounded-xl relative overflow-hidden group border-destructive/30">
           <div className="absolute top-0 left-0 w-1 h-full bg-destructive shadow-[0_0_15px_var(--destructive)]" />
-          <div className="absolute top-0 right-0 p-4 text-destructive opacity-10 group-hover:scale-110 transition-transform"><AlertTriangle size={80} /></div>
+          <div className="absolute top-0 right-0 p-3 text-destructive opacity-10 group-hover:scale-110 transition-transform"><AlertTriangle size={60} /></div>
           <div className="pl-3 flex z-10 flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold text-destructive/80 uppercase tracking-wider line-clamp-1">Active Critical</p>
+              <p className="text-[10px] font-bold text-destructive/80 uppercase tracking-wider line-clamp-1 whitespace-nowrap">Critical Incs</p>
               {renderDelta(deltaCriticalInc)}
             </div>
             <h3 className="text-3xl font-black text-destructive">{criticalIncidents}</h3>
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Server size={80} /></div>
+        <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><Server size={60} /></div>
           <div className="flex z-10 flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider line-clamp-1">Total Assets</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider line-clamp-1 whitespace-nowrap">Total Assets</p>
             </div>
             <h3 className="text-3xl font-black">{totalAssets}</h3>
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 text-purple-500 opacity-10 group-hover:scale-110 transition-transform"><Target size={80} /></div>
+        <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 text-purple-500 opacity-10 group-hover:scale-110 transition-transform"><Target size={60} /></div>
           <div className="flex z-10 flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider line-clamp-1">Open Vulns</p>
+              <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider line-clamp-1 whitespace-nowrap">Open Vulns</p>
               {renderDelta(deltaOpenVulns)}
             </div>
             <h3 className="text-3xl font-black text-purple-500">{openVulns}</h3>
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group border-indigo-500/30">
+        <div className="glass-card p-4 flex flex-col justify-between rounded-xl relative overflow-hidden group border-indigo-500/30">
           <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500 shadow-[0_0_15px_#6366f1]" />
-          <div className="absolute top-0 right-0 p-4 text-indigo-500 opacity-10 group-hover:scale-110 transition-transform"><ScanFace size={80} /></div>
+          <div className="absolute top-0 right-0 p-3 text-indigo-500 opacity-10 group-hover:scale-110 transition-transform"><ScanFace size={60} /></div>
           <div className="pl-3 flex z-10 flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider line-clamp-1">Critical CVEs</p>
+              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider line-clamp-1 whitespace-nowrap">Critical CVEs</p>
               {renderDelta(deltaCriticalVulns)}
             </div>
             <h3 className="text-3xl font-black text-indigo-500">{criticalVulns}</h3>
           </div>
         </div>
 
-        <div className="glass-card p-6 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 text-orange-500 opacity-10 group-hover:scale-110 transition-transform"><Users size={80} /></div>
+        <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 text-orange-500 opacity-10 group-hover:scale-110 transition-transform"><Users size={60} /></div>
           <div className="flex z-10 flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider line-clamp-1">Compromised</p>
+              <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider line-clamp-1 whitespace-nowrap">Compromised</p>
             </div>
             <h3 className="text-3xl font-black text-orange-500">{compromisedAssets}</h3>
           </div>
