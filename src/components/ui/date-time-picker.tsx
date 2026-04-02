@@ -34,18 +34,17 @@ export const DateTimePicker = forwardRef<any, DateTimePickerProps>(
           timeFormat="HH:mm"
           timeIntervals={15}
           timeCaption="Time"
-          dateFormat="MMMM d, yyyy h:mm aa"
+          dateFormat="yyyy/MM/dd HH:mm"
           portalId="calendar-portal"
           showPopperArrow={false}
           customInput={
             <div className="relative w-full">
               <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input 
-                 className="pl-9 cursor-pointer !h-10 text-white bg-black/50 border-white/10" 
+                 className="pl-9 !h-10 text-white bg-black/50 border-white/10" 
                  ref={ref as any}
-                 placeholder="Select target date and time"
+                 placeholder="YYYY/MM/DD HH:mm"
                  autoComplete="off"
-                 readOnly
               />
             </div>
           }
