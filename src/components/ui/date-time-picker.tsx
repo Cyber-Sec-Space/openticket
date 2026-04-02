@@ -12,6 +12,42 @@ export interface DateTimePickerProps extends Omit<DatePickerProps, "onChange"> {
   defaultValue?: string | Date | null;
 }
 
+// Custom input component that auto-adds slashes and colons for YYYY/MM/DD HH:mm format
+const MaskedDateInput = forwardRef<HTMLInputElement, any>(
+  ({ onChange, value, ...props }, ref) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      let val = e.target.value;
+      // Let deletions happen normally, only auto-append when adding characters
+      if (!value || val.length > value.length) {
+        val = val.replace(/[^\d\/\s:]/g, ""); // Allow only valid characters
+        if (val.length === 4) val += "/";
+        if (val.length === 7) val += "/";
+        if (val.length === 10) val += " ";
+        if (val.length === 13) val += ":";
+        val = val.slice(0, 16); // Max length limit
+        e.target.value = val;
+      }
+      if (onChange) onChange(e);
+    };
+
+    return (
+      <div className="relative w-full">
+        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+        <Input 
+          className="pl-9 !h-10 text-white bg-black/50 border-white/10" 
+          ref={ref}
+          placeholder="YYYY/MM/DD HH:mm"
+          autoComplete="off"
+          value={value}
+          onChange={handleChange}
+          {...props}
+        />
+      </div>
+    );
+  }
+);
+MaskedDateInput.displayName = "MaskedDateInput";
+
 export const DateTimePicker = forwardRef<any, DateTimePickerProps>(
   ({ className, name, defaultValue, ...props }, ref) => {
     const [date, setDate] = useState<Date | null>(
@@ -37,17 +73,7 @@ export const DateTimePicker = forwardRef<any, DateTimePickerProps>(
           dateFormat="yyyy/MM/dd HH:mm"
           portalId="calendar-portal"
           showPopperArrow={false}
-          customInput={
-            <div className="relative w-full">
-              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-              <Input 
-                 className="pl-9 !h-10 text-white bg-black/50 border-white/10" 
-                 ref={ref as any}
-                 placeholder="YYYY/MM/DD HH:mm"
-                 autoComplete="off"
-              />
-            </div>
-          }
+          customInput={<MaskedDateInput />}
           wrapperClassName="w-full"
           {...props as any}
         />
