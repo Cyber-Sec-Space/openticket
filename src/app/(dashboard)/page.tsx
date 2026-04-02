@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target, Bug, ChevronLeft, ChevronRight, LayoutList } from "lucide-react"
+import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target, Bug, ChevronLeft, ChevronRight, LayoutList, Clock, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { TrendChart } from "@/components/trend-chart"
 import { IncidentRadarChart } from "@/components/incident-radar-chart"
@@ -92,11 +92,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   const allIncsForTrend = await db.incident.findMany({
     where: filterParams,
-    select: { createdAt: true, updatedAt: true, status: true }
+    select: { createdAt: true, updatedAt: true, status: true, targetSlaDate: true, severity: true }
   });
 
   const allVulnsForTrend = await db.vulnerability.findMany({
-    select: { createdAt: true, updatedAt: true, status: true }
+    select: { createdAt: true, updatedAt: true, status: true, severity: true }
   });
 
   const trendData = [];
@@ -114,12 +114,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     const activeInc = allIncsForTrend.filter(inc =>
       inc.createdAt <= dEnd &&
       (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > dEnd)
-    ).length;
+    );
 
     const activeVuln = allVulnsForTrend.filter(v =>
       v.createdAt <= dEnd &&
       (!['RESOLVED', 'MITIGATED'].includes(v.status) || v.updatedAt > dEnd)
-    ).length;
+    );
+
+    const breachedInc = activeInc.filter(inc => inc.targetSlaDate && inc.targetSlaDate < dEnd).length;
 
     // Resolved ON this day
     const resolvedInc = allIncsForTrend.filter(inc =>
@@ -132,17 +134,79 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       v.updatedAt >= dStart && v.updatedAt <= dEnd
     ).length;
 
-    const incResolveRate = (activeInc + resolvedInc) > 0 ? (resolvedInc / (activeInc + resolvedInc)) * 100 : 0;
-    const vulnResolveRate = (activeVuln + resolvedVuln) > 0 ? (resolvedVuln / (activeVuln + resolvedVuln)) * 100 : 0;
+    const incResolveRate = (activeInc.length + resolvedInc) > 0 ? (resolvedInc / (activeInc.length + resolvedInc)) * 100 : 0;
+    const vulnResolveRate = (activeVuln.length + resolvedVuln) > 0 ? (resolvedVuln / (activeVuln.length + resolvedVuln)) * 100 : 0;
 
     trendData.push({
       date: dateStr,
-      incidents: activeInc,
-      vulnerabilities: activeVuln,
+      incidents: activeInc.length,
+      vulnerabilities: activeVuln.length,
       incResolveRate: parseFloat(incResolveRate.toFixed(1)),
-      vulnResolveRate: parseFloat(vulnResolveRate.toFixed(1))
+      vulnResolveRate: parseFloat(vulnResolveRate.toFixed(1)),
+      incBreached: breachedInc
     });
   }
+
+  // Advanced Analytics
+  const resolvedLast14Days = allIncsForTrend.filter(inc => 
+    ['RESOLVED', 'CLOSED'].includes(inc.status) && 
+    inc.updatedAt >= startDate
+  );
+
+  let mttr = "N/A";
+  if (resolvedLast14Days.length > 0) {
+    const totalHours = resolvedLast14Days.reduce((acc, inc) => {
+      return acc + (inc.updatedAt.getTime() - inc.createdAt.getTime()) / (1000 * 60 * 60);
+    }, 0);
+    mttr = (totalHours / resolvedLast14Days.length).toFixed(1) + "h";
+  }
+
+  const complianceBase = allIncsForTrend.filter(inc => inc.targetSlaDate);
+  const breachedCount = complianceBase.filter(inc => 
+      (inc.targetSlaDate! < now && !['RESOLVED', 'CLOSED'].includes(inc.status)) || 
+      (['RESOLVED', 'CLOSED'].includes(inc.status) && inc.updatedAt > inc.targetSlaDate!)
+  ).length;
+  const complianceRate = complianceBase.length > 0 ? (((complianceBase.length - breachedCount) / complianceBase.length) * 100).toFixed(1) + "%" : "100%";
+
+  const d7DaysAgoEnd = new Date(now);
+  d7DaysAgoEnd.setDate(d7DaysAgoEnd.getDate() - 7);
+  d7DaysAgoEnd.setHours(23, 59, 59, 999);
+
+  const activeInc7DaysAgo = allIncsForTrend.filter(inc => 
+    inc.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > d7DaysAgoEnd)
+  ).length;
+
+  const criticalInc7DaysAgo = allIncsForTrend.filter(inc => 
+    inc.severity === 'CRITICAL' && inc.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > d7DaysAgoEnd)
+  ).length;
+
+  const openVulns7DaysAgo = allVulnsForTrend.filter(v =>
+    v.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'MITIGATED'].includes(v.status) || v.updatedAt > d7DaysAgoEnd)
+  ).length;
+
+  const criticalVulns7DaysAgo = allVulnsForTrend.filter(v =>
+    v.severity === 'CRITICAL' && v.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'MITIGATED'].includes(v.status) || v.updatedAt > d7DaysAgoEnd)
+  ).length;
+
+  const calcDelta = (current: number, past: number) => {
+    if (past === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - past) / past) * 100);
+  };
+
+  const deltaActiveInc = calcDelta(activeIncidents, activeInc7DaysAgo);
+  const deltaCriticalInc = calcDelta(criticalIncidents, criticalInc7DaysAgo);
+  const deltaOpenVulns = calcDelta(openVulns, openVulns7DaysAgo);
+  const deltaCriticalVulns = calcDelta(criticalVulns, criticalVulns7DaysAgo);
+
+  const renderDelta = (delta: number) => {
+    if (delta === 0) return null;
+    return (
+      <span className={`flex items-center text-xs font-bold ${delta > 0 ? 'text-red-500 bg-red-500/10' : 'text-emerald-500 bg-emerald-500/10'} px-2 py-0.5 rounded-full`}>
+        {delta > 0 ? <TrendingUp className="w-3 h-3 mr-0.5" /> : <TrendingDown className="w-3 h-3 mr-0.5" />}
+        {Math.abs(delta)}%
+      </span>
+    );
+  };
 
   // Active Incident Typology & Severity for Radar Chart
   const activeIncidentsList = await db.incident.findMany({
@@ -197,11 +261,30 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       </header>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group border-emerald-500/20">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Clock size={80} className="text-emerald-500" /></div>
+          <div>
+            <p className="text-sm font-medium text-emerald-400 uppercase tracking-wider mb-2">Mean Time To Resolve (14d)</p>
+            <h3 className="text-4xl font-bold">{mttr}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group border-blue-500/20">
+          <div className="absolute top-0 right-0 p-4 text-blue-500 opacity-10 group-hover:scale-110 transition-transform"><CheckCircle2 size={80} /></div>
+          <div>
+            <p className="text-sm font-medium text-blue-400 uppercase tracking-wider mb-2">SLA Compliance</p>
+            <h3 className="text-4xl font-bold text-blue-500">{complianceRate}</h3>
+          </div>
+        </div>
+
         <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><ShieldAlert size={80} /></div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Active Incidents</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Incidents</p>
+              {renderDelta(deltaActiveInc)}
+            </div>
             <h3 className="text-4xl font-bold">{activeIncidents}</h3>
           </div>
         </div>
@@ -210,7 +293,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           <div className="absolute top-0 left-0 w-2 h-full bg-destructive shadow-[0_0_15px_var(--destructive)]" />
           <div className="absolute top-0 right-0 p-4 text-destructive opacity-10 group-hover:scale-110 transition-transform"><AlertTriangle size={80} /></div>
           <div className="pl-4">
-            <p className="text-sm font-medium text-destructive/80 uppercase tracking-wider mb-2">Active Critical</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-destructive/80 uppercase tracking-wider">Active Critical</p>
+              {renderDelta(deltaCriticalInc)}
+            </div>
             <h3 className="text-4xl font-bold text-destructive">{criticalIncidents}</h3>
           </div>
         </div>
@@ -226,7 +312,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <div className="glass-card p-6 flex flex-col justify-between rounded-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 text-purple-500 opacity-10 group-hover:scale-110 transition-transform"><Target size={80} /></div>
           <div>
-            <p className="text-sm font-medium text-purple-400 uppercase tracking-wider mb-2">Open Vulns</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-purple-400 uppercase tracking-wider">Open Vulns</p>
+              {renderDelta(deltaOpenVulns)}
+            </div>
             <h3 className="text-4xl font-bold text-purple-500">{openVulns}</h3>
           </div>
         </div>
@@ -235,7 +324,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           <div className="absolute top-0 left-0 w-2 h-full bg-indigo-500 shadow-[0_0_15px_#6366f1]" />
           <div className="absolute top-0 right-0 p-4 text-indigo-500 opacity-10 group-hover:scale-110 transition-transform"><ScanFace size={80} /></div>
           <div className="pl-4">
-            <p className="text-sm font-medium text-indigo-400 uppercase tracking-wider mb-2">Critical CVEs</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-indigo-400 uppercase tracking-wider">Critical CVEs</p>
+              {renderDelta(deltaCriticalVulns)}
+            </div>
             <h3 className="text-4xl font-bold text-indigo-500">{criticalVulns}</h3>
           </div>
         </div>

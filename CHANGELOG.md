@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## main
 ### Added
+- Analytics: Enriched Main Dashboard with advanced SecOps KPI metrics including 14-days Mean Time To Resolve (MTTR), SLA Compliance tracking cards, and dynamic `incBreached` lines projected on the generic 14-day Detection Trend chart.
+- Analytics: Instantiated 7-day retrospective snapshot tracking across top-level Metric Cards dynamically visualizing `Delta %` (▲/▼) volume drifts for active incidents and vulnerabilities.
 - Dashboard: Refactored generic "Recent Declarations" into a highly personalized, RBAC-filtered "Personal Case Board" with Server-Side Pagination supporting dynamic active-ticket triaging workflows.
   - Added filter control UI (`?filter=all|assigned|reported|unassigned`) allowing operators to instantly pivot context views.
 - Attachments: Integrated local binary storage capabilities `/api/upload` linked to Incidents and Vulnerabilities acting as centralized execution evidence.
