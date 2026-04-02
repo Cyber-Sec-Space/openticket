@@ -35,6 +35,8 @@ export const DateTimePicker = forwardRef<any, DateTimePickerProps>(
           timeIntervals={15}
           timeCaption="Time"
           dateFormat="MMMM d, yyyy h:mm aa"
+          portalId="calendar-portal"
+          showPopperArrow={false}
           customInput={
             <div className="relative w-full">
               <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
@@ -53,7 +55,7 @@ export const DateTimePicker = forwardRef<any, DateTimePickerProps>(
         {/* Inject dark theme styles globally or scoped */}
         <style dangerouslySetInnerHTML={{__html: `
           .react-datepicker-wrapper { width: 100%; display: block; }
-          .react-datepicker-popper { z-index: 50; }
+          .react-datepicker-popper { z-index: 9999; }
           .react-datepicker { font-family: inherit; background-color: #09090b; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
           .react-datepicker__header { background-color: #09090b; border-bottom: 1px solid rgba(255,255,255,0.1); padding-top: 12px; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
           .react-datepicker__current-month, .react-datepicker-time__header, .react-datepicker-year-header { color: #fff; font-weight: 600; font-size: 0.9rem; }
