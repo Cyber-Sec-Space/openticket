@@ -20,7 +20,7 @@ export default async function PluginStorePage() {
   return (
     <div className="space-y-4">
       {uninstalledPlugins.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 pt-2 animate-fade-in-up">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2 animate-fade-in-up">
           {uninstalledPlugins.map(plugin => {
             const state = dbStates.find(s => s.id === plugin.manifest.id);
             return (
@@ -29,6 +29,7 @@ export default async function PluginStorePage() {
                 manifest={plugin.manifest} 
                 isActive={false} 
                 configJson={state?.configJson || null}
+                layout="grid"
               />
             )
           })}

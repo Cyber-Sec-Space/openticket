@@ -18,11 +18,13 @@ import {
 export function PluginCard({ 
   manifest, 
   isActive, 
-  configJson 
+  configJson,
+  layout = "list"
 }: { 
   manifest: OpenTicketPlugin["manifest"], 
   isActive: boolean, 
-  configJson: string | null 
+  configJson: string | null,
+  layout?: "list" | "grid"
 }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [rawConfig, setRawConfig] = useState(configJson ? JSON.parse(configJson) : {});
@@ -37,9 +39,47 @@ export function PluginCard({
     }
   }
 
+  if (layout === "grid") {
+    return (
+      <div className={`p-5 rounded-xl border ${isActive ? 'bg-primary/5 border-primary/30' : 'bg-black/30 border-white/10'} flex flex-col justify-between h-full transition-all hover:bg-white/5 gap-4`}>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between">
+            <ToyBrick className={`w-8 h-8 ${isActive ? 'text-primary animate-pulse' : 'text-neutral-500'}`} />
+            <span className="text-xs bg-white/10 text-white/70 px-2 py-0.5 rounded-full font-medium">{manifest.version}</span>
+          </div>
+          <div>
+            <h3 className="font-bold text-lg tracking-tight text-white">{manifest.name}</h3>
+            {isActive && <span className="inline-block mt-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">Active</span>}
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{manifest.description}</p>
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-end gap-2">
+          <Button 
+            variant={isActive ? "outline" : "default"}
+            size="sm" 
+            onClick={handleToggle} 
+            disabled={isUpdating}
+            className={`${isActive ? 'text-red-400 border-red-500/50 hover:bg-red-500/20' : 'text-black font-bold shadow-[0_0_15px_rgba(0,255,200,0.3)]'} w-full`}
+          >
+            {isActive ? (
+              <>
+                <Trash className="w-4 h-4 mr-2" /> Uninstall
+              </>
+            ) : (
+              <>
+                <Power className="w-4 h-4 mr-2" /> Install
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`p-5 rounded-xl border ${isActive ? 'bg-primary/5 border-primary/30' : 'bg-black/30 border-white/10'} flex flex-col gap-4 transition-all hover:bg-white/5`}>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <ToyBrick className={`w-5 h-5 ${isActive ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
@@ -50,7 +90,7 @@ export function PluginCard({
           <p className="text-sm text-muted-foreground mt-1 max-w-xl">{manifest.description}</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 self-end sm:self-auto">
           {isActive && manifest.id === 'slack-notifier-01' && (
             <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
               <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 border h-8 rounded-md px-3 bg-black/50 border-white/20 text-blue-400 hover:text-blue-300 hover:bg-white/10 hover:border-blue-500/50 shadow-[0_0_10px_rgba(0,100,255,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500">
