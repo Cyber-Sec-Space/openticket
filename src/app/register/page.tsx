@@ -41,7 +41,7 @@ export default async function RegisterPage() {
       <div className="flex w-full items-center justify-center p-4 relative z-10 animate-fade-in-up">
         <div className="w-full max-w-md space-y-8 glass-panel p-8 rounded-2xl border-t border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
           <div className="text-center flex flex-col items-center">
-            <Image src="/logo.png" alt="OpenTicket Logo" width={64} height={64} className="mb-4 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]" />
+            <Image src="/logo.png" alt="OpenTicket Logo" width={64} height={64} className="mb-4 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)] w-[64px] h-[64px]" />
             <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
               OpenTicket
             </h1>
