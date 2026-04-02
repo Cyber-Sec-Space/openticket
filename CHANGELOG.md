@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## 0.2.0
 ### Added
+- Extensibility (Server/Client): Engineered a static-registry Plugin Architecture (`src/lib/plugins/hook-engine`) capable of isolating logic using an automated EventBus (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`).
+- Integrations: Rolled out the first-party `slack-notifier` plugin as a live pilot demonstrating hook interception and Dashboard Web-Widget injection.
 - Notifications (Web): Engineered a global HTML5 Browser Notification polling architecture capable of pushing OS-level desktop alerts (Critical Incidents, Asset Compromise, Assignments, and Resolutions) to active operators across background tabs.
 - Preferences: Deployed a granular Notification Matrix in the `/settings` user panel allowing operators to strictly configure which telemetry events trigger desktop-level popups.
 - Identity Verification: Deployed an impenetrable Registration Wall demanding cryptographic link verification (`VerificationToken`) dispatched directly via SMTP before granting UI access, effectively destroying phantom account generation vectors.

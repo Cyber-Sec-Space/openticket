@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { dispatchWebhook } from "@/lib/webhook"
 import { sendIncidentAssignmentEmail, sendResolutionEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
 import { dispatchAlert, dispatchMassAlert } from "@/lib/notifier"
+import { fireHook } from "@/lib/plugins/hook-engine"
 import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
 import { FileUploadBox } from "@/components/file-upload-box"
 import { Label } from "@/components/ui/label"
@@ -162,6 +163,8 @@ export default async function IncidentDetailPage({
       !['RESOLVED', 'CLOSED'].includes(incident!.status) && 
       incident!.reporter
     ) {
+      await fireHook("onIncidentResolved", incident as any)
+      
       await dispatchAlert(incident!.reporter.id, "RESOLUTION", "Incident Resolved", `INC-${incident!.id.substring(0, 8)} has achieved resolution telemetry.`, `/incidents/${incident!.id}`)
       if (settings?.smtpTriggerOnResolution && incident!.reporter.email) {
         await sendResolutionEmail(incident!.id, incident!.title, incident!.reporter.email, incident!.reporter.name || 'Reporter')
@@ -174,6 +177,8 @@ export default async function IncidentDetailPage({
         where: { id: resolvedAssetId },
         data: { status: 'COMPROMISED' }
       })
+
+      await fireHook("onAssetCompromise", affectedAsset)
 
       const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] } }, select: { id: true, email: true } })
       await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${resolvedAssetId}`)

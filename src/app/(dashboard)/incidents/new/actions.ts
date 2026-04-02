@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache"
 import { dispatchWebhook } from "@/lib/webhook"
 import { sendCriticalAlertEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
 import { dispatchMassAlert } from "@/lib/notifier"
+import { fireHook } from "@/lib/plugins/hook-engine"
 
 export async function createIncident(prevState: any, formData: FormData) {
   const session = await auth()
@@ -62,6 +63,9 @@ export async function createIncident(prevState: any, formData: FormData) {
       data: { status: 'COMPROMISED' }
     })
     
+    // Core Plugin Registry Hook
+    await fireHook("onAssetCompromise", affectedAsset)
+
     if (settings?.smtpTriggerOnAssetCompromise) {
       const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { id: true, email: true } })
       await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
@@ -88,6 +92,9 @@ export async function createIncident(prevState: any, formData: FormData) {
       changes: { title, severity }
     }
   })
+
+  // Core Plugin Registry Hook
+  await fireHook("onIncidentCreated", newIncident)
 
   // Phase 10: Native Notification for UNASSIGNED
   const unassignedAlertUsers = await db.user.findMany({ select: { id: true } })
