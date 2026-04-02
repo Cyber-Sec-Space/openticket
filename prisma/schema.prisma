@@ -326,3 +326,15 @@ model ApiToken {
 
   @@index([tokenHash])
 }
+
+// -----------------------------------------------------------------------------
+// Plugin Management
+// -----------------------------------------------------------------------------
+
+model PluginState {
+  id          String   @id // Corresponds to OpenTicketPlugin.manifest.id
+  isActive    Boolean  @default(false)
+  configJson  String?  @db.Text
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

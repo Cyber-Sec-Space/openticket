@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, Menu, X, LayoutDashboard } from "lucide-react"
+import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, Menu, X, LayoutDashboard, ToyBrick } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function MobileNav({ userRoles }: { userRoles?: string[] }) {
@@ -44,6 +44,7 @@ export function MobileNav({ userRoles }: { userRoles?: string[] }) {
   if (userRoles?.includes('ADMIN')) {
     navItems.push({ name: "Users", href: "/users", icon: Users })
     navItems.push({ name: "System Config", href: "/system", icon: Sliders })
+    navItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })
   }
 
   navItems.push({ name: "Settings", href: "/settings", icon: Settings })

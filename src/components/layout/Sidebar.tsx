@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, LayoutDashboard } from "lucide-react"
+import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, LayoutDashboard, ToyBrick } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Sidebar({ userRoles }: { userRoles?: string[] }) {
@@ -26,6 +26,7 @@ export function Sidebar({ userRoles }: { userRoles?: string[] }) {
   if (userRoles?.includes('ADMIN')) {
     navItems.push({ name: "Users", href: "/users", icon: Users })
     navItems.push({ name: "System Config", href: "/system", icon: Sliders })
+    navItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })
   }
 
   // Everyone can manage their own profile

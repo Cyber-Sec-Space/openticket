@@ -1,7 +1,8 @@
 import { OpenTicketPlugin } from "@/lib/plugins/types";
+import { db } from "@/lib/db";
 
-async function dispatchSecureSlack(text: string) {
-  const url = process.env.SLACK_WEBHOOK_URL;
+async function dispatchSecureSlack(text: string, config: Record<string, any>) {
+  const url = config.webhookUrl;
   if (!url) return;
   
   try {
@@ -15,24 +16,6 @@ async function dispatchSecureSlack(text: string) {
   }
 }
 
-// React Component for Dashboard UI Extensibility
-function SlackStatusWidget() {
-  const isArmed = !!process.env.SLACK_WEBHOOK_URL;
-  return (
-    <div className="glass-card rounded-xl border border-white/10 p-5 shadow-sm hover:shadow-lg transition-all animate-fade-in-up">
-      <div className="flex items-center gap-3">
-        <div className={`w-3 h-3 rounded-full ${isArmed ? 'bg-green-500 animate-pulse' : 'bg-red-500'} shadow-[0_0_10px_currentColor]`} />
-        <div>
-          <h3 className="font-bold text-sm tracking-wide text-primary">SLACK PLUGIN</h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isArmed ? "Armed & Intercepting Webhooks." : "Offline: Missing SLACK_WEBHOOK_URL API Key."}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export const slackIntegration: OpenTicketPlugin = {
   manifest: {
     id: "slack-notifier-01",
@@ -42,18 +25,14 @@ export const slackIntegration: OpenTicketPlugin = {
   },
 
   hooks: {
-    onIncidentCreated: async (incident) => {
+    onIncidentCreated: async (incident, config) => {
       if (incident.severity === "CRITICAL" || incident.severity === "HIGH") {
-        await dispatchSecureSlack(`🚨 *[${incident.severity} INCIDENT]* \n*Title:* ${incident.title}\n*Status:* Tracking Active.`);
+        await dispatchSecureSlack(`🚨 *[${incident.severity} INCIDENT]* \n*Title:* ${incident.title}\n*Status:* Tracking Active.`, config);
       }
     },
     
-    onAssetCompromise: async (asset) => {
-      await dispatchSecureSlack(`🛡️ *[ASSET COMPROMISE]* \n*Asset:* ${asset.name} (${asset.ipAddress || "Unknown IP"})\n*Action:* Structurally Quarantined by SOAR Automations.`);
+    onAssetCompromise: async (asset, config) => {
+      await dispatchSecureSlack(`🛡️ *[ASSET COMPROMISE]* \n*Asset:* ${asset.name} (${asset.ipAddress || "Unknown IP"})\n*Action:* Structurally Quarantined by SOAR Automations.`, config);
     }
-  },
-
-  ui: {
-    dashboardWidgets: [SlackStatusWidget]
   }
 };

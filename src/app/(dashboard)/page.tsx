@@ -7,7 +7,6 @@ import { TrendChart } from "@/components/trend-chart"
 import { IncidentRadarChart } from "@/components/incident-radar-chart"
 import { VulnStatusChart } from "@/components/vuln-status-chart"
 import { VulnSeverityChart } from "@/components/vuln-severity-chart"
-import { activePlugins } from "@/plugins"
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string; filter?: string }> }) {
   const { page, filter } = await (searchParams || {});
@@ -249,17 +248,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-fade-in-up">
-      {/* Plugin Dynamic Widget Drop Zone */}
-      {activePlugins.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {activePlugins.map(plugin => 
-            plugin.ui?.dashboardWidgets?.map((Widget, idx) => (
-              <Widget key={`${plugin.manifest.id}-widget-${idx}`} />
-            ))
-          )}
-        </div>
-      )}
-
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">System Status</h1>

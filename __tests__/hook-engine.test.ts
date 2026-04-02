@@ -2,6 +2,20 @@ import { fireHook } from "../src/lib/plugins/hook-engine";
 import { activePlugins } from "../src/plugins";
 import { OpenTicketPlugin } from "../src/lib/plugins/types";
 
+jest.mock("../src/lib/db", () => ({
+  db: {
+    pluginState: {
+      findMany: jest.fn().mockResolvedValue([
+        { id: "test", isActive: true },
+        { id: "bad", isActive: true },
+        { id: "good", isActive: true },
+        { id: "test2", isActive: true },
+        { id: "test3", isActive: true },
+      ])
+    }
+  }
+}));
+
 // Mock the activePlugins array
 jest.mock("../src/plugins", () => ({
   activePlugins: []
@@ -34,7 +48,7 @@ describe("Hook Engine", () => {
     
     await fireHook("onIncidentCreated", dummyIncident);
 
-    expect(mockOnIncidentCreated).toHaveBeenCalledWith(dummyIncident);
+    expect(mockOnIncidentCreated).toHaveBeenCalledWith(dummyIncident, {});
     expect(mockOnAssetCompromise).not.toHaveBeenCalled();
   });
 

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.2.0
 ### Added
+- Plugin Management: Deployed a `/settings/plugins` interface linking the static Plugin Registry directly to a dynamic PostgreSQL `PluginState` table. Administrators can now visually Install, Uninstall, and Configure Slack credentials via UI without committing ENV variables.
 - Extensibility (Server/Client): Engineered a static-registry Plugin Architecture (`src/lib/plugins/hook-engine`) capable of isolating logic using an automated EventBus (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`).
 - Integrations: Rolled out the first-party `slack-notifier` plugin as a live pilot demonstrating hook interception and Dashboard Web-Widget injection.
 - Notifications (Web): Engineered a global HTML5 Browser Notification polling architecture capable of pushing OS-level desktop alerts (Critical Incidents, Asset Compromise, Assignments, and Resolutions) to active operators across background tabs.
