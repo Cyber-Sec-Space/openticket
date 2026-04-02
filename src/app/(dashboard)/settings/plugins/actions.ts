@@ -5,35 +5,52 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 
 export async function togglePluginState(pluginId: string, currentState: boolean) {
-  const session = await auth()
-  if (!session?.user?.roles.includes("ADMIN")) throw new Error("Unauthorized: Admins only.");
+  const session = await auth();
+  if (!session?.user?.id || !session.user.roles.includes("ADMIN")) {
+    throw new Error("Unauthorized");
+  }
 
+  const newState = !currentState;
   await db.pluginState.upsert({
     where: { id: pluginId },
-    update: { isActive: !currentState },
-    create: { id: pluginId, isActive: !currentState }
-  })
-  
-  revalidatePath("/settings/plugins")
+    update: { isActive: newState },
+    create: { id: pluginId, isActive: newState, configJson: "{}" }
+  });
+
+  revalidatePath('/settings/plugins');
+  revalidatePath('/settings/plugins/store');
 }
 
 export async function updatePluginConfig(pluginId: string, formData: FormData) {
-  const session = await auth()
-  if (!session?.user?.roles.includes("ADMIN")) throw new Error("Unauthorized: Admins only.");
+  const session = await auth();
+  if (!session?.user?.id || !session.user.roles.includes("ADMIN")) {
+    throw new Error("Unauthorized");
+  }
 
-  const payload: Record<string, string> = {};
-  formData.forEach((value, key) => {
-    payload[key] = value.toString();
-  });
+  const state = await db.pluginState.findUnique({ where: { id: pluginId } });
+  let config = {};
+  
+  if (state?.configJson) {
+    try {
+      config = JSON.parse(state.configJson);
+    } catch (e) {
+      console.error("Failed to parse plugin config json", e);
+    }
+  }
 
-  const configJson = JSON.stringify(payload);
+  for (const [key, value] of formData.entries()) {
+    if (typeof value === "string" && !key.startsWith("$ACTION")) {
+        // @ts-ignore
+        config[key] = value;
+    }
+  }
 
   await db.pluginState.upsert({
     where: { id: pluginId },
-    update: { configJson },
-    create: { id: pluginId, configJson }
-  })
+    update: { configJson: JSON.stringify(config) },
+    create: { id: pluginId, isActive: false, configJson: JSON.stringify(config) }
+  });
 
-  revalidatePath("/settings/plugins")
-  return { success: true }
+  revalidatePath('/settings/plugins');
+  revalidatePath('/settings/plugins/store');
 }
