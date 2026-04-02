@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { format } from "date-fns"
+import { format, parse, isValid } from "date-fns"
 import { Calendar as CalendarIcon, Clock, X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -25,48 +25,89 @@ export function DateTimePicker({
   defaultValue,
   name,
   className,
-  placeholder = "Select Target SLA..."
+  placeholder = "yyyy-MM-dd HH:mm"
 }: DateTimePickerProps) {
   const [date, setDate] = React.useState<Date | undefined>(defaultValue)
-  const [selectedTime, setSelectedTime] = React.useState<string>(
-    defaultValue ? format(defaultValue, "HH:mm") : "12:00"
+  const [inputValue, setInputValue] = React.useState<string>(
+    defaultValue ? format(defaultValue, "yyyy-MM-dd HH:mm") : ""
   )
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
 
-  const handleDateSelect = (d: Date | undefined) => {
-    if (!d) return
-    const [h, m] = selectedTime.split(":").map(Number)
-    d.setHours(h || 0, m || 0, 0, 0)
-    setDate(d)
+  // Sync typed value back to internal Date state
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setInputValue(val)
+    
+    if (!val) {
+      setDate(undefined)
+      return
+    }
+
+    const parsed = parse(val, "yyyy-MM-dd HH:mm", new Date())
+    if (isValid(parsed) && val.length === 16) {
+      setDate(parsed)
+    }
   }
 
+  // When Calendar is clicked
+  const handleDateSelect = (d: Date | undefined) => {
+    if (!d) return
+    // preserve time if it was already typed/selected
+    let h = 12, m = 0
+    if (date) {
+      h = date.getHours()
+      m = date.getMinutes()
+    } else if (inputValue.length === 16) {
+      const parsed = parse(inputValue, "yyyy-MM-dd HH:mm", new Date())
+      if (isValid(parsed)) {
+        h = parsed.getHours()
+        m = parsed.getMinutes()
+      }
+    }
+    d.setHours(h, m, 0, 0)
+    setDate(d)
+    setInputValue(format(d, "yyyy-MM-dd HH:mm"))
+  }
+
+  // When Time Input is changed
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const timeVal = e.target.value
-    setSelectedTime(timeVal)
     if (date) {
       const [h, m] = timeVal.split(":").map(Number)
       const newDate = new Date(date)
       newDate.setHours(h || 0, m || 0, 0, 0)
       setDate(newDate)
+      setInputValue(format(newDate, "yyyy-MM-dd HH:mm"))
+    } else {
+      // if no date selected yet but they change time, default to today
+      const [h, m] = timeVal.split(":").map(Number)
+      const newDate = new Date()
+      newDate.setHours(h || 0, m || 0, 0, 0)
+      setDate(newDate)
+      setInputValue(format(newDate, "yyyy-MM-dd HH:mm"))
     }
   }
 
   return (
-    <div className="relative w-full">
+    <div className={cn("relative w-full flex items-center group/picker", className)}>
       {name && <input type="hidden" name={name} value={date ? format(date, "yyyy-MM-dd'T'HH:mm") : ""} />}
-      <Popover>
+      
+      <Input
+        type="text"
+        placeholder={placeholder}
+        value={inputValue}
+        onChange={handleInputChange}
+        className="!h-10 pr-10 bg-black/50 border-white/10 focus-visible:ring-primary focus-visible:bg-black/80 font-mono text-sm shadow-inner transition-colors"
+      />
+
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <PopoverTrigger
-          className={cn(
-            "flex items-center !h-10 w-full justify-start text-left font-normal rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm focus:ring-2 focus:ring-primary transition-all pr-8 hover:bg-black/70 hover:text-white",
-            !date && "text-muted-foreground",
-            className
-          )}
+          className="absolute right-1 text-primary/50 hover:text-primary hover:bg-primary/10 h-8 w-8 rounded transition-all flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          type="button"
         >
-          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-primary/70" />
-          <span className="truncate flex-1">
-            {date ? format(date, "PPP, HH:mm") : placeholder}
-          </span>
+          <CalendarIcon className="h-4 w-4" />
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-black/95 border-border/60 shadow-2xl backdrop-blur-md" align="start">
+        <PopoverContent className="w-auto p-0 bg-black/95 border-border/60 shadow-2xl backdrop-blur-md" align="end" sideOffset={8}>
           <Calendar
             mode="single"
             selected={date}
@@ -81,22 +122,26 @@ export function DateTimePicker({
                 </div>
                 <Input
                   type="time"
-                  value={selectedTime}
+                  value={date ? format(date, "HH:mm") : ""}
                   onChange={handleTimeChange}
                   className="w-32 h-8 text-sm outline-none bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-primary transition-all [color-scheme:dark]"
                 />
              </div>
-             <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-full text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={(e) => {
-                   e.preventDefault()
-                   setDate(undefined)
-                }}
-             >
-                <X className="w-3 h-3 mr-1" /> Clear Date
-             </Button>
+             {date && (
+                <Button 
+                   variant="ghost" 
+                   size="sm" 
+                   className="w-full text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                   onClick={(e) => {
+                      e.preventDefault()
+                      setDate(undefined)
+                      setInputValue("")
+                      setIsPopoverOpen(false)
+                   }}
+                >
+                   <X className="w-3 h-3 mr-1" /> Clear DateTime
+                </Button>
+             )}
           </div>
         </PopoverContent>
       </Popover>
