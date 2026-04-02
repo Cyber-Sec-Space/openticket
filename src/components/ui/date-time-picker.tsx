@@ -14,7 +14,7 @@ export interface DateTimePickerProps extends Omit<DatePickerProps, "onChange"> {
 
 // Custom input component that auto-adds slashes and colons for YYYY/MM/DD HH:mm format
 const MaskedDateInput = forwardRef<HTMLInputElement, any>(
-  ({ onChange, value, ...props }, ref) => {
+  ({ onChange, value, className, ...props }, ref) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let val = e.target.value;
       // Let deletions happen normally, only auto-append when adding characters
@@ -32,9 +32,9 @@ const MaskedDateInput = forwardRef<HTMLInputElement, any>(
 
     return (
       <div className="relative w-full">
-        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
         <Input 
-          className="pl-9 !h-10 text-white bg-black/50 border-white/10" 
+          className={cn("pl-9 !h-10 text-white bg-black/50 border-white/10", className)} 
           ref={ref}
           placeholder="YYYY/MM/DD HH:mm"
           autoComplete="off"
