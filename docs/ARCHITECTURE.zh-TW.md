@@ -14,9 +14,9 @@ graph TD
     Client[使用者瀏覽器] <-->|HTTPS| Router[Next.js App Router]
     
     subgraph Presentation_Layer [前端展示層 / Tailwind CSS]
-        UI1[玻璃擬態 UI]
+        UI1[高密度玻璃擬態 UI]
         UI2[Recharts 儀表板]
-        UI3[Shadcn/BaseUI 元件]
+        UI3[Shadcn 與 Portaled 元件]
     end
     
     subgraph Controller_Server [伺服器控制層 / NextAuth]
@@ -105,3 +105,4 @@ erDiagram
    - 透過 `Auth.js` 強制實施零次設定即可啟用的安全 Cookie 策略。
    - 移除了存在偽隨機數漏洞與已棄用的依賴項（如 `bcryptjs`），全面升級為經過 C++ 編譯驗證的 `bcrypt` 套件。
    - 系統後台包含一鍵切換的全域強制開啟 2FA 開關 (`SystemSetting`)，一旦開啟，任何未綁定 OTP 二階段驗證的使用者都會被限制執行高風險動作（拋出 `Global2FAEnforcedError`），實現徹底的安全隔離。
+* **層級與溢位管理策略 (Z-Index & Overflow Hierarchy)：** 為了實現高密度的集中化儀表板，我們在玻璃擬態卡片中大量使用了 `overflow-hidden` 強制邊界。為避免底層選單與第三方覆蓋元件（如 `react-datepicker`）因此遭到截斷裁切，我們積極引入 React Portals 架構與手動提權的 Z-Index ，使彈出式浮層能夠脫離原有的 DOM 封裝樹，直接渲染在最頂層。

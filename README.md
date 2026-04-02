@@ -8,8 +8,9 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 - **Centralized Dashboard:** Real-time analytics, Typology Distributions, and Severity Matrices tracking organizational exposure.
 - **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
+- **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
 - **Role-Based Access Control (RBAC):** Native multi-tenant segregation distinguishing `ADMIN` (Infrastructure overrides), `SECOPS` (Triage), and `REPORTER` (End-User) roles.
-- **Glassmorphism UI:** Built on TailwindCSS utilizing modern blur/backdrop-filter dynamics, combined with deeply interactive BaseUI/Shadcn dropdown components and Recharts.
+- **Enterprise-Grade UI Components:** Built on TailwindCSS utilizing modern blur/backdrop-filter dynamics, combined with deeply interactive BaseUI/Shadcn components, fully portaled `react-datepicker` forms, and Recharts.
 
 ---
 
@@ -34,7 +35,8 @@ Vulnerability components mirror the system's asset inventory:
 - **Framework:** Next.js 16.2 (App Router & Server Actions)
 - **Database:** PostgreSQL (with Prisma ORM V6)
 - **Authentication:** Auth.js v5 (NextAuth.js) / bcrypt / OTPAuth
-- **Styling & Charts:** TailwindCSS v4, Lucide React, Recharts v3
+- **Styling & Components:** TailwindCSS v4, Lucide React, Shadcn/UI, React-Datepicker (Custom Portals & Context Masking)
+- **Data Visualization:** Recharts v3
 - **Security Scanned by:** Snyk
 
 ---

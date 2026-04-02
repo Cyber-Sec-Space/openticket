@@ -14,9 +14,9 @@ graph TD
     Client[User Browser] <-->|HTTPS| Router[Next.js App Router]
     
     subgraph Presentation_Layer [Presentation Layer / Tailwind CSS]
-        UI1[Glassmorphism UI]
+        UI1[Glassmorphism High-Density UI]
         UI2[Recharts Dashboards]
-        UI3[Shadcn/BaseUI Components]
+        UI3[Shadcn & Portaled Overlays]
     end
     
     subgraph Controller_Server [Server Layer / NextAuth]
@@ -117,3 +117,4 @@ erDiagram
    - We enforce zero configuration default secure cookies using `Auth.js`.
    - Replaced weak pseudo-random generation dependencies (`bcryptjs`) with compiled implementations (`bcrypt`).
    - A global `SystemSetting` toggle can immediately quarantine non-2FA-compliant accounts from performing critical system actions (`Global2FAEnforcedError`).
+* **Z-Index & Overflow Hierarchy Management:** In order to achieve a high-density, centralized dashboard, complex CSS boundaries like `overflow-hidden` are used heavily in Glassmorphism cards. To circumvent these hard structural constraints causing dropdowns and third-party overlays (e.g. `react-datepicker`) to be truncated, we aggressively utilize React Portals (`portalId`) and manual Z-Index elevation to ensure overlays mount dynamically outside the standard React DOM encapsulation tree.

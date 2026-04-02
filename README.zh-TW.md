@@ -8,8 +8,9 @@
 - **集中化儀表板：** 透過即時指標、事件拓樸分佈與嚴重性矩陣，全面掌控組織的曝險狀態。
 - **事件與漏洞雙軌追蹤：** 具備端對端的事件分流管道，能將複雜的資安事件與 CVE 漏洞直接映射到內部受害資產上。
 - **雙因子驗證 (2FA) 安全機制：** 內建基於 TOTP 演算法的 2FA 模組，可完美整合各種標準驗證器應用程式 (如 Google Authenticator, Authy)。更支援系統管理員「一鍵強制全域啟用 2FA」的鎖定功能。
+- **高密度 SOC 配置 (High-Density Layout)：** 重新設計的單行 8 指標 KPI 網格，讓維運人員能一眼看清資安戰場全貌，並將重點應變面板 (Command Actions) 移至上方，極速縮短反應遲滯時間。
 - **模組化角色存取控制 (RBAC)：** 原生的多租戶隔離機制，清楚劃分 `ADMIN` (全域基建覆寫權限), `SECOPS` (事件處置與指派), 以及 `REPORTER` (終端使用者通報) 權限。
-- **現代玻璃擬態介面 (Glassmorphism UI)：** 以 TailwindCSS 打造高質感 Blur / Backdrop-filter 動態特效，並結合深度互動的 BaseUI / Shadcn 下拉選單與 Recharts 圖表庫。
+- **企業級現代介面 (Enterprise UI)：** 以 TailwindCSS 打造高質感 Blur / Backdrop-filter 動態特效，結合深度互動的 Shadcn 元件、透過 Portal 防裁切與支援手動輸入的客製化 `react-datepicker`，以及視覺化的 Recharts 圖表庫。
 
 ---
 
@@ -34,7 +35,8 @@
 - **框架：** Next.js 16.2 (使用 App Router 與 Server Actions 架構)
 - **資料庫：** PostgreSQL (透過 Prisma ORM V6 驅動)
 - **身份驗證：** Auth.js v5 (NextAuth.js) / bcrypt / OTPAuth
-- **樣式與資料視覺化：** TailwindCSS v4, Lucide React, Recharts v3
+- **樣式與核心元件：** TailwindCSS v4, Lucide React, Shadcn/UI, React-Datepicker (支援客製化自動防呆補全)
+- **資料視覺化：** Recharts v3
 - **安全掃描供應鏈：** Snyk
 
 ---
