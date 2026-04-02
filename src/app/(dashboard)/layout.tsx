@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar"
 import { MobileNav } from "@/components/layout/MobileNav"
 import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 
 export default async function DashboardLayout({
   children,
@@ -8,6 +9,9 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
+  if (!session) {
+    redirect("/login")
+  }
   
   return (
     <div className="min-h-screen bg-background text-foreground">

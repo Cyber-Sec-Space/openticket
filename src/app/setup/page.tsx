@@ -1,17 +1,15 @@
-import { LoginForm } from "./login-form"
+import { SetupForm } from "./setup-form"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
-export default async function LoginPage() {
+export default async function SetupPage() {
   const userCount = await db.user.count()
-  if (userCount === 0) {
-    redirect("/setup")
+  
+  if (userCount > 0) {
+    redirect("/login")
   }
-
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
-  const allowRegistration = settings?.allowRegistration ?? true
 
   return (
     <div className="flex h-screen w-full relative overflow-hidden bg-background">
@@ -27,11 +25,11 @@ export default async function LoginPage() {
             <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
               OpenTicket
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Cybersecurity Incident & Asset Operations
+            <p className="mt-2 text-sm text-yellow-500/80 uppercase font-bold tracking-widest">
+              Setup Wizard
             </p>
           </div>
-          <LoginForm allowRegistration={allowRegistration} />
+          <SetupForm />
         </div>
       </div>
     </div>
