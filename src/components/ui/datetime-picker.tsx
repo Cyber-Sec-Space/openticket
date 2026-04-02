@@ -98,7 +98,7 @@ export function DateTimePicker({
           placeholder={placeholder}
           value={inputValue}
           onChange={handleInputChange}
-          className="flex-1 h-full border-0 bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 px-3"
+          className="flex-1 h-full border-0 !bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 px-3"
         />
 
         <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
