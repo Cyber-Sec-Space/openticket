@@ -3,9 +3,6 @@
 <p align="center">
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
 </p>
-<p align="center">
-  <img src="./public/system_screenshot.png" alt="System Screenshot" width="100%">
-</p>
 
 [🌐 Read in Traditional Chinese (繁體中文)](README.zh-TW.md) | [🏗️ Architecture Specs](docs/ARCHITECTURE.md)
 
