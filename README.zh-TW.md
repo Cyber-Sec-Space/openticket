@@ -41,10 +41,11 @@
 - 生成一組受密碼學保護的自動化金鑰 (例如命名為：*GitHub Actions Push*)。
 - 在外部腳本呼叫 `/api/incidents` 或 `/api/assets` 端點時，將其帶入 Header：`Authorization: Bearer <token>`。該呼叫將自動繼承生成該金鑰者的既有伺服器權限。
 
-### 4. 啟用系統擴充外掛 (Activating System Plugins)
-全域管理者可至 `Plugins` 頁面無縫介入核心事件攔截網：
-- 系統原生存有一套高度優化的 **Slack Critical Notifier**，是一套完全去耦 (Decoupled) 的先導展示外掛。
-- 您可以在 Plugin Store 中一鍵「安裝」，於彈出的模組化設定視窗中貼上您的 Webhook URL。設定完畢後，所有系統中被建立的極端資安事件皆會在不阻塞核心行程的情況下，於毫秒級被推送至您的指定頻道。
+### API 與系統整合
+- **Hook Engine 攔截網**：將系統切分為去中心化的事件匯流排架構 (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`)，在不侵入並影響主伺服器穩定性的情況下，獨立發出外部調用。
+- **內建即時外掛 (Plugins)**：平台原生提供諸如 `Slack Critical Notifier`、`PagerDuty Escalator`、`Jira Cloud Synchronization` 以及 `Microsoft Teams Webhook` 等預載官方外掛，實現立即上線。
+- **M2M 自動化金鑰**：具有防禦爆破與反列舉機制的 `ApiToken` 引擎，以 `SHA-256` 生成高安全度 Bearer token，提供 SOAR 與外部 SIEM 完美的無人值守串接環境。
+- **Headless 路由限流器**：防堵惡意或失控自動化腳本的全球 REST 端點門檻，確保資料庫層抽象介面不會崩潰。在不阻塞核心行程的情況下，於毫秒級被推送至您的指定頻道。
 
 ---
 

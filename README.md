@@ -41,10 +41,11 @@ You can directly bridge OpenTicket to your CI/CD pipelines or SOAR orchestrators
 - Mint a new cryptographic automation token (e.g., *GitHub Actions Push*).
 - Provide the generated raw token payload in the Header: `Authorization: Bearer <token>` when directly calling the `/api/incidents` or `/api/assets` endpoints. Your automated integration inherently assumes your exact privilege tier.
 
-### 4. Activating System Plugins
-Global Administrators can manage the Event Intercept framework directly from the `Plugins` panel:
-- OpenTicket embraces extensibility, actively piloting a decouple-ready **Slack Critical Notifier**.
-- Administrators can "Install" these capabilities from the Plugin Store via a single click, feeding their specific environment keys (such as Webhook URLs) via the Config Modal directly mapped to the database. All captured events will rapidly pipe over the Hook Engine concurrently in the background without locking primary server threads.
+### API & Integrations
+- **Hook Engine**: Isolated event-bus architecture (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`) allowing external execution without degrading system stability.
+- **Out-of-the-Box Plugins**: Includes native interceptors such as `Slack Critical Notifier`, `PagerDuty Escalator`, `Jira Cloud Synchronization`, and `Microsoft Teams Webhook` ready for instant deployment.
+- **Machine-to-Machine (M2M) Keys**: Hardened, anti-enumeration `ApiToken` models generating `SHA-256` Bearer authentications for SOAR/SIEM integration logic.
+- **Headless Rate Limiting**: Global REST boundaries throttling aggressive automation scripts to protect structural integrity natively mapping constraints down to the Prisma abstraction. All captured events will rapidly pipe over the Hook Engine concurrently in the background without locking primary server threads.
 
 ---
 
