@@ -108,41 +108,44 @@ export function DateTimePicker({
           >
             <CalendarIcon className="h-4 w-4" />
           </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-black/95 border-border/60 shadow-2xl backdrop-blur-md" align="end" sideOffset={8}>
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={handleDateSelect}
-            initialFocus
-            className="bg-transparent text-white"
-          />
-          <div className="p-3 border-t border-white/10 bg-white/5 flex flex-col gap-3">
-             <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center text-xs text-muted-foreground font-medium uppercase tracking-widest gap-2">
-                  <Clock className="w-4 h-4 text-blue-400" /> Time
-                </div>
-                <Input
-                  type="time"
-                  value={date ? format(date, "HH:mm") : ""}
-                  onChange={handleTimeChange}
-                  className="w-32 h-8 text-sm outline-none bg-black/50 border-white/10 focus-visible:ring-1 focus-visible:ring-primary transition-all [color-scheme:dark]"
-                />
-             </div>
-             {date && (
-                <Button 
-                   variant="ghost" 
-                   size="sm" 
-                   className="w-full text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                   onClick={(e) => {
-                      e.preventDefault()
-                      setDate(undefined)
-                      setInputValue("")
-                      setIsPopoverOpen(false)
-                   }}
-                >
-                   <X className="w-3 h-3 mr-1" /> Clear DateTime
-                </Button>
-             )}
+        <PopoverContent className="w-[280px] p-0 bg-black/95 border-border/80 shadow-[0_0_30px_rgba(0,0,0,0.5)] backdrop-blur-xl rounded-xl overflow-hidden" align="end" sideOffset={8}>
+          <div className="flex flex-col">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={handleDateSelect}
+              initialFocus
+              className="bg-transparent text-white p-3 w-full [&_.rdp-months]:w-full [&_.rdp-month]:w-full"
+            />
+            
+            <div className="border-t border-white/10 bg-white/[0.02] p-3 flex flex-col gap-3">
+               <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center text-xs text-muted-foreground font-medium uppercase tracking-widest gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-blue-400" /> Time
+                  </div>
+                  <input
+                    type="time"
+                    value={date ? format(date, "HH:mm") : ""}
+                    onChange={handleTimeChange}
+                    className="w-24 h-8 px-2 text-sm text-center outline-none bg-black/50 border border-white/10 rounded-md focus:border-primary/50 focus:ring-1 focus:ring-primary transition-all text-white [color-scheme:dark]"
+                  />
+               </div>
+               
+               {date && (
+                  <Button 
+                     variant="ghost" 
+                     className="w-full h-8 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                     onClick={(e) => {
+                        e.preventDefault()
+                        setDate(undefined)
+                        setInputValue("")
+                        setIsPopoverOpen(false)
+                     }}
+                  >
+                     <X className="w-3.5 h-3.5 mr-1" /> Clear DateTime
+                  </Button>
+               )}
+            </div>
           </div>
         </PopoverContent>
       </Popover>
