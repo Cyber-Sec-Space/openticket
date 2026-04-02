@@ -93,12 +93,12 @@ export function DateTimePicker({
       {name && <input type="hidden" name={name} value={date ? format(date, "yyyy-MM-dd'T'HH:mm") : ""} />}
       
       <div className="flex items-center w-full !h-10 rounded-md border border-white/10 bg-black/50 focus-within:ring-2 focus-within:ring-primary focus-within:bg-black/80 shadow-inner transition-colors">
-        <Input
+        <input
           type="text"
           placeholder={placeholder}
           value={inputValue}
           onChange={handleInputChange}
-          className="flex-1 h-full border-0 !bg-transparent font-mono text-sm shadow-none focus-visible:ring-0 px-3"
+          className="flex-1 h-full border-0 bg-transparent font-mono text-sm shadow-none outline-none focus:ring-0 px-3 text-white"
         />
 
         <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
