@@ -49,15 +49,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const boardFilterParams: any = {
     status: { notIn: ['CLOSED', 'RESOLVED'] }
   };
-  
+
   if (currentFilter === 'reported') {
-     boardFilterParams.reporterId = session.user.id;
+    boardFilterParams.reporterId = session.user.id;
   } else if (currentFilter === 'assigned') {
-     boardFilterParams.assignees = { some: { id: session.user.id } };
+    boardFilterParams.assignees = { some: { id: session.user.id } };
   } else if (currentFilter === 'unassigned' && session.user.role !== 'REPORTER') {
-     boardFilterParams.assignees = { none: {} };
+    boardFilterParams.assignees = { none: {} };
   } else {
-     // Default 'all' logic
+    // Default 'all' logic
     if (session.user.role !== 'REPORTER') {
       boardFilterParams.OR = [
         { reporterId: session.user.id },
@@ -148,8 +148,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   }
 
   // Advanced Analytics
-  const resolvedLast14Days = allIncsForTrend.filter(inc => 
-    ['RESOLVED', 'CLOSED'].includes(inc.status) && 
+  const resolvedLast14Days = allIncsForTrend.filter(inc =>
+    ['RESOLVED', 'CLOSED'].includes(inc.status) &&
     inc.updatedAt >= startDate
   );
 
@@ -162,9 +162,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   }
 
   const complianceBase = allIncsForTrend.filter(inc => inc.targetSlaDate);
-  const breachedCount = complianceBase.filter(inc => 
-      (inc.targetSlaDate! < now && !['RESOLVED', 'CLOSED'].includes(inc.status)) || 
-      (['RESOLVED', 'CLOSED'].includes(inc.status) && inc.updatedAt > inc.targetSlaDate!)
+  const breachedCount = complianceBase.filter(inc =>
+    (inc.targetSlaDate! < now && !['RESOLVED', 'CLOSED'].includes(inc.status)) ||
+    (['RESOLVED', 'CLOSED'].includes(inc.status) && inc.updatedAt > inc.targetSlaDate!)
   ).length;
   const complianceRate = complianceBase.length > 0 ? (((complianceBase.length - breachedCount) / complianceBase.length) * 100).toFixed(1) + "%" : "100%";
 
@@ -172,11 +172,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   d7DaysAgoEnd.setDate(d7DaysAgoEnd.getDate() - 7);
   d7DaysAgoEnd.setHours(23, 59, 59, 999);
 
-  const activeInc7DaysAgo = allIncsForTrend.filter(inc => 
+  const activeInc7DaysAgo = allIncsForTrend.filter(inc =>
     inc.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > d7DaysAgoEnd)
   ).length;
 
-  const criticalInc7DaysAgo = allIncsForTrend.filter(inc => 
+  const criticalInc7DaysAgo = allIncsForTrend.filter(inc =>
     inc.severity === 'CRITICAL' && inc.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > d7DaysAgoEnd)
   ).length;
 
@@ -283,6 +283,26 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </div>
 
         <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><Server size={60} /></div>
+          <div className="flex z-10 flex-col h-full justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider line-clamp-1 whitespace-nowrap">Total Assets</p>
+            </div>
+            <h3 className="text-3xl font-black">{totalAssets}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 text-orange-500 opacity-10 group-hover:scale-110 transition-transform"><Users size={60} /></div>
+          <div className="flex z-10 flex-col h-full justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider line-clamp-1 whitespace-nowrap">Compromised</p>
+            </div>
+            <h3 className="text-3xl font-black text-orange-500">{compromisedAssets}</h3>
+          </div>
+        </div>
+
+        <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><ShieldAlert size={60} /></div>
           <div className="flex z-10 flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
@@ -306,16 +326,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         </div>
 
         <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><Server size={60} /></div>
-          <div className="flex z-10 flex-col h-full justify-between">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider line-clamp-1 whitespace-nowrap">Total Assets</p>
-            </div>
-            <h3 className="text-3xl font-black">{totalAssets}</h3>
-          </div>
-        </div>
-
-        <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-3 text-purple-500 opacity-10 group-hover:scale-110 transition-transform"><Target size={60} /></div>
           <div className="flex z-10 flex-col h-full justify-between">
             <div className="flex items-center justify-between mb-4">
@@ -335,16 +345,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
               {renderDelta(deltaCriticalVulns)}
             </div>
             <h3 className="text-3xl font-black text-indigo-500">{criticalVulns}</h3>
-          </div>
-        </div>
-
-        <div className="glass-card p-4 flex flex-col border border-white/5 justify-between rounded-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-3 text-orange-500 opacity-10 group-hover:scale-110 transition-transform"><Users size={60} /></div>
-          <div className="flex z-10 flex-col h-full justify-between">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider line-clamp-1 whitespace-nowrap">Compromised</p>
-            </div>
-            <h3 className="text-3xl font-black text-orange-500">{compromisedAssets}</h3>
           </div>
         </div>
       </div>
@@ -451,66 +451,67 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
               ) : (
                 <div className="flex-1">
                   {boardIncidents.map(inc => {
-                    const isOverdue = inc.targetSlaDate && 
-                      new Date() > inc.targetSlaDate && 
+                    const isOverdue = inc.targetSlaDate &&
+                      new Date() > inc.targetSlaDate &&
                       !['RESOLVED', 'CLOSED'].includes(inc.status);
-                    
+
                     return (
-                    <Link href={`/incidents/${inc.id}`} key={inc.id} className={`block group p-4 transition-colors relative overflow-hidden ${isOverdue ? 'hover:bg-red-950/20 bg-red-950/5' : 'hover:bg-white/5'}`}>
-                      {isOverdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 shadow-[0_0_10px_rgba(255,0,0,0.8)] animate-pulse" />}
-                      <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-1">
-                        <span className={`font-semibold text-sm transition-colors line-clamp-1 pr-2 ${isOverdue ? 'text-red-400 group-hover:text-red-300' : 'group-hover:text-primary'}`}>
-                          {isOverdue && <AlertTriangle className="inline w-3 h-3 mr-1 text-red-500 animate-pulse" />}
-                          {inc.title}
-                        </span>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase shrink-0
-                          ${inc.severity === 'CRITICAL' ? 'bg-destructive/20 text-red-400' :
-                            inc.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
-                              inc.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-emerald-500/20 text-emerald-400'
-                          }
-                        `}>
-                          {inc.severity.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs mt-2">
-                        <span className={isOverdue ? 'text-red-400/70 line-clamp-1' : 'text-muted-foreground line-clamp-1'}>
-                          Reporter: {inc.reporter?.name || "Deleted"}
-                        </span>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase shrink-0 border
-                            ${inc.status === 'NEW' ? 'bg-blue-500/10 border-blue-400/30 text-blue-400' :
-                              inc.status === 'IN_PROGRESS' ? 'bg-amber-500/10 border-amber-400/30 text-amber-400' :
-                              'bg-indigo-500/10 border-indigo-400/30 text-indigo-400'
-                            }`}>
-                            {inc.status.replace(/_/g, ' ')}
+                      <Link href={`/incidents/${inc.id}`} key={inc.id} className={`block group p-4 transition-colors relative overflow-hidden ${isOverdue ? 'hover:bg-red-950/20 bg-red-950/5' : 'hover:bg-white/5'}`}>
+                        {isOverdue && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 shadow-[0_0_10px_rgba(255,0,0,0.8)] animate-pulse" />}
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-1">
+                          <span className={`font-semibold text-sm transition-colors line-clamp-1 pr-2 ${isOverdue ? 'text-red-400 group-hover:text-red-300' : 'group-hover:text-primary'}`}>
+                            {isOverdue && <AlertTriangle className="inline w-3 h-3 mr-1 text-red-500 animate-pulse" />}
+                            {inc.title}
                           </span>
-                          <span className={isOverdue ? 'text-red-500 font-bold' : 'text-muted-foreground'}>
-                            {inc.targetSlaDate ? new Date(inc.targetSlaDate).toLocaleDateString() : new Date(inc.createdAt).toLocaleDateString()}
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase shrink-0
+                          ${inc.severity === 'CRITICAL' ? 'bg-destructive/20 text-red-400' :
+                              inc.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
+                                inc.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                                  'bg-emerald-500/20 text-emerald-400'
+                            }
+                        `}>
+                            {inc.severity.replace(/_/g, ' ')}
                           </span>
                         </div>
-                      </div>
-                    </Link>
-                  )})}
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs mt-2">
+                          <span className={isOverdue ? 'text-red-400/70 line-clamp-1' : 'text-muted-foreground line-clamp-1'}>
+                            Reporter: {inc.reporter?.name || "Deleted"}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm outline-hidden uppercase shrink-0 border
+                            ${inc.status === 'NEW' ? 'bg-blue-500/10 border-blue-400/30 text-blue-400' :
+                                inc.status === 'IN_PROGRESS' ? 'bg-amber-500/10 border-amber-400/30 text-amber-400' :
+                                  'bg-indigo-500/10 border-indigo-400/30 text-indigo-400'
+                              }`}>
+                              {inc.status.replace(/_/g, ' ')}
+                            </span>
+                            <span className={isOverdue ? 'text-red-500 font-bold' : 'text-muted-foreground'}>
+                              {inc.targetSlaDate ? new Date(inc.targetSlaDate).toLocaleDateString() : new Date(inc.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </div>
               )}
 
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="p-3 border-t border-white/5 flex items-center justify-between bg-black/40 mt-auto">
-                   <Link 
-                     href={currentPage <= 1 ? '#' : `?page=${currentPage - 1}&filter=${currentFilter}`} 
-                     className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
-                   >
-                     <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-                   </Link>
-                   <span className="text-xs font-mono text-muted-foreground">P. {currentPage} / {totalPages}</span>
-                   <Link 
-                     href={currentPage >= totalPages ? '#' : `?page=${currentPage + 1}&filter=${currentFilter}`}
-                     className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
-                   >
-                     Next <ChevronRight className="w-4 h-4 ml-1" />
-                   </Link>
+                  <Link
+                    href={currentPage <= 1 ? '#' : `?page=${currentPage - 1}&filter=${currentFilter}`}
+                    className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                  </Link>
+                  <span className="text-xs font-mono text-muted-foreground">P. {currentPage} / {totalPages}</span>
+                  <Link
+                    href={currentPage >= totalPages ? '#' : `?page=${currentPage + 1}&filter=${currentFilter}`}
+                    className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
                 </div>
               )}
             </div>
