@@ -4,8 +4,9 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isOnLoginPage = req.nextUrl.pathname.startsWith('/login');
   const isOnRegisterPage = req.nextUrl.pathname.startsWith('/register');
+  const isOnSetupPage = req.nextUrl.pathname.startsWith('/setup');
 
-  if (isOnLoginPage || isOnRegisterPage) {
+  if (isOnLoginPage || isOnRegisterPage || isOnSetupPage) {
     if (isLoggedIn) return Response.redirect(new URL('/', req.nextUrl));
     return;
   }
