@@ -37,12 +37,20 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
 
   const passwordHash = await bcrypt.hash(password, 10)
   
+  // Bootstrap logic: If this is the absolute first user on the system, make them ADMIN
+  const totalUsers = await db.user.count()
+  let assignedRole = settings?.defaultUserRole ?? "REPORTER"
+  
+  if (totalUsers === 0) {
+    assignedRole = "ADMIN"
+  }
+  
   await db.user.create({
     data: {
       email,
       name,
       passwordHash,
-      role: settings?.defaultUserRole ?? "REPORTER"
+      role: assignedRole
     }
   })
 
