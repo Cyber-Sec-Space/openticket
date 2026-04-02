@@ -14,7 +14,7 @@ import { SlaSettingsPanel } from "./sla-settings-panel"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     redirect("/login")
   }
 
@@ -25,7 +25,7 @@ export default async function SystemSettingsPage() {
       id: "global",
       allowRegistration: true,
       requireGlobal2FA: false,
-      defaultUserRole: "REPORTER",
+      defaultUserRoles: ["REPORTER"],
       slaCriticalHours: 4,
       slaHighHours: 24,
       slaMediumHours: 72,
@@ -89,7 +89,7 @@ export default async function SystemSettingsPage() {
                 <p className="text-[11px] text-muted-foreground pb-2">
                    Select the initial access tier granted to newly registered operators.
                 </p>
-                <Select key={settings.defaultUserRole} name="defaultUserRole" defaultValue={settings.defaultUserRole}>
+                <Select key={settings.defaultUserRoles[0] || "REPORTER"} name="defaultUserRoles" defaultValue={settings.defaultUserRoles[0] || "REPORTER"}>
                   <SelectTrigger className="w-[180px] bg-black/50 border-white/10">
                     <SelectValue placeholder="Select Tier" />
                   </SelectTrigger>

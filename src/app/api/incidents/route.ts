@@ -1,15 +1,16 @@
-import { auth } from "@/auth"
+import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 
 export async function GET(req: Request) {
-  const session = await auth()
+  const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const filterParams: any = {}
   
-  if (session.user.role === 'REPORTER') {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPrivilege) {
     filterParams.reporterId = session.user.id
   }
 
@@ -34,7 +35,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await auth()
+  const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
   try {

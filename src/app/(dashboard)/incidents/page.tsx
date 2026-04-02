@@ -18,7 +18,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   const filterParams: any = {}
 
   // Hard RBAC rule: reporters only see their own tickets
-  if (session.user.role === 'REPORTER') {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPrivilege) {
     filterParams.reporterId = session.user.id
   }
 

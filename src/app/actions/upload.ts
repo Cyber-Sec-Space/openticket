@@ -26,7 +26,8 @@ export async function uploadAttachment(formData: FormData) {
 
   // BOLA & RBAC Entity Verification checks
   if (vulnId) {
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'SECOPS') {
+    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    if (!hasPrivilege) {
        return { error: "Forbidden: Strict Vuln BOLA enforcement" }
     }
     const vuln = await db.vulnerability.findUnique({ where: { id: vulnId }, select: { id: true }})
@@ -41,7 +42,8 @@ export async function uploadAttachment(formData: FormData) {
     
     if (!incident) return { error: "Incident context invalid" }
 
-    if (session.user.role === 'REPORTER') {
+    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    if (!hasPrivilege) {
        const isReporter = incident.reporterId === session.user.id
        const isAssigned = incident.assignees.some(a => a.id === session.user.id)
        if (!isReporter && !isAssigned) {
@@ -117,7 +119,8 @@ export async function deleteAttachment(attachmentId: string) {
   if (!attachment) return { error: "Not found" }
 
   // RBAC for Delete
-  if (session.user.role === 'REPORTER') {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPrivilege) {
     if (attachment.uploaderId !== session.user.id) {
        // Also check if they are assigned to the parent incident
        if (attachment.incident) {

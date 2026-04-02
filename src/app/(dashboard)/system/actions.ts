@@ -7,14 +7,18 @@ import { Role } from "@prisma/client"
 
 export async function updateSystemSettings(formData: FormData) {
   const session = await auth()
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     throw new Error("Unauthorized")
   }
 
   // base-ui Checkbox with name="allowRegistration" will send "on" if checked, otherwise it won't be in formData
   const allowRegistration = formData.get("allowRegistration") === "on"
   const requireGlobal2FA = formData.get("requireGlobal2FA") === "on"
-  const defaultUserRole = (formData.get("defaultUserRole") as Role) || "REPORTER"
+  const defaultUserRolesRaw = formData.getAll("defaultUserRoles") as any[]
+  const defaultUserRoles = defaultUserRolesRaw.length > 0 ? defaultUserRolesRaw : ["REPORTER"]
+
+  const webhookEnabled = formData.get("webhookEnabled") === "on"
+  const webhookUrl = formData.get("webhookUrl") as string || ""
 
   const slaCriticalHours = parseInt(formData.get("slaCriticalHours") as string || "4", 10)
   const slaHighHours = parseInt(formData.get("slaHighHours") as string || "24", 10)
@@ -31,7 +35,9 @@ export async function updateSystemSettings(formData: FormData) {
     update: {
       allowRegistration,
       requireGlobal2FA,
-      defaultUserRole,
+      webhookEnabled,
+      webhookUrl,
+      defaultUserRoles,
       slaCriticalHours,
       slaHighHours,
       slaMediumHours,
@@ -44,7 +50,9 @@ export async function updateSystemSettings(formData: FormData) {
       id: "global",
       allowRegistration,
       requireGlobal2FA,
-      defaultUserRole,
+      webhookEnabled,
+      webhookUrl,
+      defaultUserRoles,
       slaCriticalHours,
       slaHighHours,
       slaMediumHours,

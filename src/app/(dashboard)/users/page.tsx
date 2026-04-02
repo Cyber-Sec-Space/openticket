@@ -10,7 +10,7 @@ export default async function UsersPage() {
   const session = await auth()
   
   // Security Perimeter: Only ADMIN handles User configurations
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     return notFound()
   }
 

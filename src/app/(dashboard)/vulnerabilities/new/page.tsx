@@ -13,7 +13,7 @@ import { createVulnerabilityAction } from "./actions"
 export default async function NewVulnerabilityPage() {
   const session = await auth()
   
-  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SECOPS')) {
+  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
     return notFound()
   }
 

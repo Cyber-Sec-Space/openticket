@@ -16,10 +16,10 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="block md:hidden">
-        <MobileNav userRole={session?.user?.role} />
+        <MobileNav userRoles={session?.user?.roles} />
       </div>
       <div className="flex flex-col md:flex-row">
-        <Sidebar userRole={session?.user?.role} />
+        <Sidebar userRoles={session?.user?.roles} />
         <main className="flex-1 w-full md:ml-64 relative min-h-screen animate-fade-in-up md:p-0">
           {children}
         </main>

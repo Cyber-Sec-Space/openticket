@@ -19,9 +19,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   if (!session?.user) return null
 
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+
   // Metric computations for the dashboard
   const filterParams: any = {}
-  if (session.user.role === 'REPORTER') filterParams.reporterId = session.user.id
+  if (!hasPrivilege) filterParams.reporterId = session.user.id
 
   const activeIncidents = await db.incident.count({ where: { ...filterParams, status: { notIn: ['CLOSED', 'RESOLVED'] } } })
   const criticalIncidents = await db.incident.count({
@@ -54,11 +56,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     boardFilterParams.reporterId = session.user.id;
   } else if (currentFilter === 'assigned') {
     boardFilterParams.assignees = { some: { id: session.user.id } };
-  } else if (currentFilter === 'unassigned' && session.user.role !== 'REPORTER') {
+  } else if (currentFilter === 'unassigned' && hasPrivilege) {
     boardFilterParams.assignees = { none: {} };
   } else {
     // Default 'all' logic
-    if (session.user.role !== 'REPORTER') {
+    if (hasPrivilege) {
       boardFilterParams.OR = [
         { reporterId: session.user.id },
         { assignees: { some: { id: session.user.id } } },
@@ -250,7 +252,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">System Status</h1>
           <p className="text-muted-foreground mt-2">
-            Welcome, <span className="text-primary font-medium">{session.user.name || session.user.email}</span> [{session.user.role}]
+            Welcome, <span className="text-primary font-medium">{session.user.name || session.user.email}</span> [{session.user.roles.join(', ')}]
           </p>
         </div>
         <div className="flex gap-4">
@@ -442,7 +444,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                   <strong className="block font-medium">Catalog Infrastructure</strong>
                 </div>
               </Link>
-              {(session.user.role === 'ADMIN' || session.user.role === 'SECOPS') && (
+              {hasPrivilege && (
                 <Link href="/vulnerabilities/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-purple-400/50 text-white rounded-lg transition-all">
                   <Bug className="w-4 h-4 mr-3 text-purple-400 group-hover:scale-110 transition-transform" />
                   <div className="text-sm">
@@ -467,7 +469,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 <Link href={`?filter=all`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'all' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>All</Link>
                 <Link href={`?filter=assigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'assigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Assigned to me</Link>
                 <Link href={`?filter=reported`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'reported' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Reported by me</Link>
-                {session.user.role !== 'REPORTER' && (
+                {hasPrivilege && (
                   <Link href={`?filter=unassigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'unassigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Unassigned</Link>
                 )}
               </div>

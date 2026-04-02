@@ -52,7 +52,9 @@ export default async function IncidentDetailPage({
     orderBy: { createdAt: 'desc' }
   })
 
-  if (!incident || (session.user.role === 'REPORTER' && incident.reporterId !== session.user.id)) {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  
+  if (!incident || (!hasPrivilege && incident.reporterId !== session.user.id)) {
     notFound()
   }
 
@@ -64,10 +66,10 @@ export default async function IncidentDetailPage({
 
   // Only SECOPS/ADMIN can assign tickets.
   let eligibleAssignees: any[] = []
-  if (session.user.role !== 'REPORTER') {
+  if (hasPrivilege) {
     eligibleAssignees = await db.user.findMany({
-      where: { role: { in: ['ADMIN', 'SECOPS'] } },
-      select: { id: true, name: true, role: true }
+      where: { roles: { hasSome: ['SECOPS'] } },
+      select: { id: true, name: true, roles: true }
     })
   }
 
@@ -77,7 +79,8 @@ export default async function IncidentDetailPage({
   async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || sessionUrl.user.role === 'REPORTER') throw new Error("Forbidden")
+    const hasPostPrivilege = sessionUrl?.user?.roles?.includes('ADMIN') || sessionUrl?.user?.roles?.includes('SECOPS')
+    if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
@@ -172,7 +175,8 @@ export default async function IncidentDetailPage({
   async function editDetailsAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || sessionUrl.user.role === 'REPORTER') throw new Error("Forbidden")
+    const hasPostPrivilege = sessionUrl?.user?.roles?.includes('ADMIN') || sessionUrl?.user?.roles?.includes('SECOPS')
+    if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const newTitle = formData.get("title") as string
     const newType = formData.get("type") as string
@@ -198,7 +202,7 @@ export default async function IncidentDetailPage({
   async function deleteIncidentAction() {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || sessionUrl.user.role !== 'ADMIN') throw new Error("Forbidden")
+    if (!sessionUrl || !sessionUrl.user.roles.includes('ADMIN')) throw new Error("Forbidden")
 
     // Scrub physical orphan files before Prisma cascade sweeps the metadata
     try {
@@ -238,7 +242,7 @@ export default async function IncidentDetailPage({
         </Link>
 
         <div className="flex items-center gap-3">
-          {session.user.role !== 'REPORTER' && !isEditing && (
+          {hasPrivilege && !isEditing && (
             <Link href={`/incidents/${incident.id}?edit=true`}>
               <Button variant="outline" size="sm" className="bg-black/20 text-blue-400 border-blue-400/30 hover:bg-blue-400/10">
                 <Edit3 className="w-4 h-4 mr-2" /> Edit Details
@@ -246,7 +250,7 @@ export default async function IncidentDetailPage({
             </Link>
           )}
 
-          {session.user.role === 'ADMIN' && (
+          {session.user.roles.includes('ADMIN') && (
             <ConfirmForm action={deleteIncidentAction} promptMessage="Are you absolutely sure you want to PERMANENTLY terminate this incident? All associated intelligence and operational timelines will be destroyed. This cannot be undone.">
               <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" /> Terminate Incident
@@ -489,7 +493,7 @@ export default async function IncidentDetailPage({
             </div>
           </div>
 
-          {session.user.role !== 'REPORTER' && !isEditing && (
+          {hasPrivilege && !isEditing && (
             <div className="glass-card rounded-xl overflow-hidden shadow-2xl border border-primary/30">
               <CardHeader className="border-b border-border/50 bg-primary/10 p-5">
                 <CardTitle className="text-primary text-sm font-semibold tracking-wide">Execution Policy & Triage</CardTitle>
@@ -567,7 +571,7 @@ export default async function IncidentDetailPage({
             </div>
           )}
 
-          {session.user.role === 'REPORTER' && (
+          {!hasPrivilege && (
             <div className="glass-card rounded-xl p-6 shadow-2xl">
               <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Assigned Handlers</strong>
               {incident.assignees.length > 0 ? (

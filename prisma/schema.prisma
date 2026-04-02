@@ -15,6 +15,7 @@ enum Role {
   ADMIN
   SECOPS
   REPORTER
+  API_ACCESS
 }
 
 model Account {
@@ -51,13 +52,14 @@ model User {
   emailVerified      DateTime?
   image              String?
   passwordHash       String? // Added for Credentials provider MVP
-  role               Role      @default(REPORTER)
+  roles              Role[]    @default([REPORTER])
   isTwoFactorEnabled Boolean   @default(false)
   twoFactorSecret    String?
   isDisabled         Boolean   @default(false) // Phase 5 Suspension Support
 
-  accounts Account[]
-  sessions Session[]
+  accounts  Account[]
+  sessions  Session[]
+  apiTokens ApiToken[]
 
   // Relations for OpenTicket
   reportedIncidents Incident[]   @relation("Reporter")
@@ -83,7 +85,7 @@ model SystemSetting {
   id                String  @id @default("global") // Enforce singleton
   allowRegistration Boolean @default(true)
   requireGlobal2FA  Boolean @default(false)
-  defaultUserRole   Role    @default(REPORTER)
+  defaultUserRoles  Role[]  @default([REPORTER])
 
   webhookUrl     String?
   webhookEnabled Boolean @default(false)
@@ -252,4 +254,20 @@ model Attachment {
 
   uploaderId String?
   uploader   User?   @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+}
+// -----------------------------------------------------------------------------
+// Machine-to-Machine Authenticators
+// -----------------------------------------------------------------------------
+
+model ApiToken {
+  id          String    @id @default(cuid())
+  name        String
+  tokenHash   String    @unique
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+
+  @@index([tokenHash])
 }

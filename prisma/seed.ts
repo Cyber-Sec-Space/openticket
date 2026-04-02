@@ -19,7 +19,7 @@ async function main() {
         name: 'System Admin',
         email: adminEmail,
         passwordHash,
-        role: Role.ADMIN,
+        roles: [Role.ADMIN, Role.SECOPS],
       }
     })
     console.log(`Created admin account: ${adminEmail} (password: Admin@123)`)

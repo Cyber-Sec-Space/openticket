@@ -13,7 +13,7 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 - **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
 - **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
-- **Role-Based Access Control (RBAC):** Native multi-tenant segregation distinguishing `ADMIN` (Infrastructure overrides), `SECOPS` (Triage), and `REPORTER` (End-User) roles.
+- **Array-based Multi-Role Control (RBAC):** Native multi-tenant segregation distinguishing `ADMIN` (Infrastructure overrides), `SECOPS` (Triage), `REPORTER` (End-User), and `API_ACCESS` (Machine Integration) roles. Users can be assigned multiple roles simultaneously for maximum operational flexibility.
 - **Enterprise-Grade UI Components:** Built on TailwindCSS utilizing modern blur/backdrop-filter dynamics, combined with deeply interactive BaseUI/Shadcn components, fully portaled `react-datepicker` forms, and Recharts.
 
 ---
@@ -32,6 +32,12 @@ Vulnerability components mirror the system's asset inventory:
 - Navigate to **"Log Vulnerability"**.
 - Input the official `CVE-ID` and select its inherent CVSS severity scale.
 - Assign the Node it affects. The Dashboard's *Vulnerability Heatmap* updates immediately in real-time.
+
+### 3. Machine-to-Machine Automation (API Tokens)
+You can directly bridge OpenTicket to your CI/CD pipelines or SOAR orchestrators.
+- Navigate to **"Identity Preferences -> API Tokens"** (Requires `API_ACCESS` or `ADMIN` roles).
+- Mint a new cryptographic automation token (e.g., *GitHub Actions Push*).
+- Provide the generated raw token payload in the Header: `Authorization: Bearer <token>` when directly calling the `/api/incidents` or `/api/assets` endpoints. Your automated integration inherently assumes your exact privilege tier.
 
 ---
 

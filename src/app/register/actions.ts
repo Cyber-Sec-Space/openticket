@@ -42,7 +42,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
       email,
       name,
       passwordHash,
-      role: settings?.defaultUserRole ?? "REPORTER"
+      roles: settings?.defaultUserRoles?.length ? settings.defaultUserRoles : ["REPORTER"]
     }
   })
 

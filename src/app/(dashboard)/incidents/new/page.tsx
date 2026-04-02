@@ -14,10 +14,9 @@ export default async function NewIncidentPage() {
   if (!session?.user) return null
 
   let assets: any[] = []
-  if (session.user.role !== 'REPORTER') {
-    assets = await db.asset.findMany({
-      orderBy: { name: 'asc' }
-    })
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (hasPrivilege) {
+    assets = await db.asset.findMany({ select: { id: true, name: true } })
   }
 
   return (
@@ -102,7 +101,7 @@ export default async function NewIncidentPage() {
                 </div>
               </div>
 
-              {session.user.role !== 'REPORTER' && (
+              {hasPrivilege && (
                 <div className="space-y-2">
                   <Label htmlFor="assetId" className="text-sm tracking-wide font-semibold text-primary">Correlated Asset</Label>
                   <div className="relative">

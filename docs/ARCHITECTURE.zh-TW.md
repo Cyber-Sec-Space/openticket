@@ -61,8 +61,14 @@ erDiagram
     User {
         String id PK
         String email
-        Enum role "ADMIN, SECOPS, REPORTER"
+        EnumArray roles "ADMIN, SECOPS, REPORTER, API_ACCESS"
         Boolean isTwoFactorEnabled
+    }
+    ApiToken {
+        String id PK
+        String name
+        String tokenHash
+        String userId FK
     }
     Asset {
         String id PK
@@ -93,13 +99,19 @@ erDiagram
     Asset ||--o{ Incident : "事件標的 (Subject of)"
     Asset ||--o{ Vulnerability : "受影響 (Affected by)"
     User ||--o{ AuditLog : "執行 (Performs)"
+    User ||--o{ ApiToken : "發行 (Issues)"
 ```
+
+### 2.3 機器自動化 API 介接 (Machine-to-Machine API Integration)
+系統內建無頭腳本模式 (Headless)，支援透過主要資料路由 (`/api/incidents`, `/api/assets`) 進行操作。為了維持嚴格的 BOLA 隔離與身分繼承，自動化介接一律採用密碼學令牌，藉由 `Authorization: Bearer <token>` 請求頭進行驗證。這些 Token 必須由已授權的維運單位生成，並且 Token 發出後，會「完全繼承發行者當下的所有陣列權限標籤」。
 
 ---
 
 ## 3. 關鍵技術決策 (ADR - Architecture Decision Records)
 
 * **Server Actions 優先於 REST API：** 多數的內部狀態異動直接採用 React 的伺服器動作（標註 `"use server"`），並直接處理 `FormData`。這不僅省去了撰寫 `fetch/axios` 的繁瑣程式碼，還能立刻在後端執行驗證。
+* **陣列化多角色存取控制 (Multi-Role RBAC)：** 我們並未選擇使用多個斷開的布林值（如 `isAdmin`, `isSecops`），而是直接使用 PostgreSQL 原生支援的 Array 陣列結構結合 Prisma。這不僅實現了重疊權限分配（例如：[`SECOPS`, `API_ACCESS`]），未來若有新型角色需求，也無須經歷繁瑣的 Database Schema 遷移歷程。
+* **API Token 密碼學儲存機制：** 資料庫拒絕存放明文形式的 `ApiToken` 連線密鑰。當外部系統提出發行請求時，OpenTicket 會呼叫 `crypto.randomBytes(24)` 生成出一組 48 字元的 16 進位字串供操作員複製，並對該字串實施不可逆的 `SHA-256` 雜湊入庫儲存。爾後 API 運行時期的驗證也都透過安全雜湊比對，阻斷任何橫向提權的風險。
 * **元件層級列舉與資料庫列舉對齊：** Prisma 會在不同的應用層以不同的方式解讀字串。我們讓資料庫強制維持原生 PostgreSQL Enum 的命名規範（例如 `IN_PROGRESS`），由於 Next.js React 渲染層不適合顯示帶底線的字串，我們在 UI 層統一呈現無底線字串（例如 `IN PROGRESS`），並在傳回 Server Action 時自動重新組合，以兼容資料庫。
 * **從源頭確保安全性 (Security at Inception)：** 
    - 透過 `Auth.js` 強制實施零次設定即可啟用的安全 Cookie 策略。

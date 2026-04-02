@@ -10,14 +10,14 @@ import { Role } from "@prisma/client"
 export async function createUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
   const email = formData.get("email") as string
   const name = formData.get("name") as string
   const password = formData.get("password") as string
-  const role = formData.get("role") as Role
+  const newRoles = formData.getAll("roles") as Role[]
 
   if (!email || !password || !name) {
     throw new Error("Validation structural error: missing foundational identity markers.")
@@ -33,14 +33,14 @@ export async function createUserAction(formData: FormData) {
   }
 
   // Execute 10-round salted hash
-  const passwordHash = await bcrypt.hash(password, 10)
+  const passwordHash = await bcrypt.hash(password, 12)
 
   const newUser = await db.user.create({
     data: {
       email,
       name,
       passwordHash,
-      role: role || Role.REPORTER
+      roles: newRoles.length > 0 ? newRoles : ['REPORTER']
     }
   })
 
@@ -51,7 +51,7 @@ export async function createUserAction(formData: FormData) {
       entityType: "User",
       entityId: newUser.id,
       userId: session.user.id,
-      changes: `Minted Identity record ${email} assigning Tier [${role}].`
+      changes: `Minted new Identity Record [${email}] with roles [${newRoles.join(', ')}]`
     }
   })
 

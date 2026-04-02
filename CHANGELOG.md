@@ -2,8 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## main
+## 0.2.0
 ### Added
+- Security: Migrated from single-role RBAC to Array-based Multi-Role Access Control supporting blended organizational privileges (e.g., users can be `SECOPS` and `ADMIN` simultaneously).
+- Identity Mapping: Introduced new `API_ACCESS` privilege tier allowing entities to mint non-interactive automation tokens.
+- M2M Authentication: Built Machine-to-Machine API token infrastructure with cryptographic `SHA-256` storage handling Native Bearer authentications across SOAR/CI-CD interfaces.
+- UI: Reconstructed User Management Dashboard allowing checkbox-based matrix selections for multi-role alignments and integrated a dedicated Token management panel (`/settings/tokens`).
 - Analytics: Enriched Main Dashboard with advanced SecOps KPI metrics including 14-days Mean Time To Resolve (MTTR), SLA Compliance tracking cards, and dynamic `incBreached` lines projected on the generic 14-day Detection Trend chart.
 - Analytics: Instantiated 7-day retrospective snapshot tracking across top-level Metric Cards dynamically visualizing `Delta %` (▲/▼) volume drifts for active incidents and vulnerabilities.
 - Dashboard: Refactored generic "Recent Declarations" into a highly personalized, RBAC-filtered "Personal Case Board" with Server-Side Pagination supporting dynamic active-ticket triaging workflows.

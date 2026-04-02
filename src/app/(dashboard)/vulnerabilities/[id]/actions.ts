@@ -9,7 +9,7 @@ import { VulnStatus } from "@prisma/client"
 export async function updateVulnStatusAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SECOPS')) {
+  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -49,7 +49,7 @@ export async function updateVulnStatusAction(formData: FormData) {
 export async function deleteVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     throw new Error("Forbidden: Strict Admin Access Control for Destructive Operations")
   }
 

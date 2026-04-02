@@ -14,7 +14,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
   if (!session?.user) return null
 
   // STRICT BOLA ENFORCEMENT
-  if (session.user.role === 'REPORTER') return notFound()
+  if (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS')) return notFound()
 
   const resolvedParams = await searchParams;
   const page = parseInt(resolvedParams.page || "1", 10);
