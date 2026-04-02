@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Installation | OpenTicket</title>
+  <meta name="description" content="Step-by-step guide to deploying the OpenTicket security operations platform.">
+  
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="dark-theme">
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <!-- Navigation -->
+  <nav class="navbar glass">
+    <div class="nav-container">
+      <div class="logo">
+        <a href="index.html"><img src="assets/openticket_banner_trans.png" alt="OpenTicket Logo" class="logo-img"></a>
+      </div>
+      <div class="nav-links">
+        <a href="index.html#features">Features</a>
+        <a href="index.html#architecture">Architecture</a>
+        <a href="plugins-guide.html">Plugins</a>
+        <a href="installation.html" class="active">Installation</a>
+      </div>
+      <div class="nav-actions">
+        <a href="https://github.com/Cyber-Sec-Space/openticket" target="_blank" class="btn btn-secondary">
+          <i data-lucide="github"></i> GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="content-wrapper section-padding" style="margin-top: 100px;">
+    <div class="reveal">
+      <h1 class="hero-title" style="font-size: 3rem; margin-bottom: 1rem;">Deployment <span class="text-gradient">Guide</span></h1>
+      <p class="section-subtitle" style="text-align: left; margin-bottom: 3rem;">
+        Get OpenTicket running locally or in your production environment in under 5 minutes.
+      </p>
+
+      <div class="bento-card glass" style="margin-bottom: 2rem;">
+        <h3>1. Clone the Repository</h3>
+        <p>Start by cloning the active codebase from GitHub using your preferred Git client.</p>
+        <div class="terminal glass cursor-pointer mt-4">
+          <div class="mac-window-controls"><span></span><span></span><span></span></div>
+          <pre><code><span class="keyword">git</span> clone https://github.com/Cyber-Sec-Space/openticket.git
+<span class="keyword">cd</span> openticket</code></pre>
+        </div>
+      </div>
+
+      <div class="bento-card glass" style="margin-bottom: 2rem;">
+        <h3>2. Configure the Environment</h3>
+        <p>We use Prisma to manage the PostgreSQL database. Ensure you have a running Postgres instance, then duplicate the environment template.</p>
+        <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
+          <pre><code><span class="keyword">cp</span> .env.example .env</code></pre>
+        </div>
+        <p class="mt-4 text-sm text-muted">Edit `.env` and fill in your `DATABASE_URL` and `NEXTAUTH_SECRET`.</p>
+      </div>
+
+      <div class="bento-card glass" style="margin-bottom: 2rem;">
+        <h3>3. Initialize Database</h3>
+        <p>Install dependencies and push the Prisma schema to your target database. This will build all required tables (Incidents, Assets, Users, PluginState).</p>
+        <div class="terminal glass cursor-pointer mt-4">
+          <div class="mac-window-controls"><span></span><span></span><span></span></div>
+          <pre><code><span class="keyword">npm</span> install
+<span class="keyword">npx</span> prisma generate
+<span class="keyword">npx</span> prisma db push</code></pre>
+        </div>
+      </div>
+
+      <div class="bento-card glass">
+        <h3>4. Start the Application</h3>
+        <p>Run the development server. OpenTicket will be accessible globally via your configured localhost port.</p>
+        <div class="terminal glass cursor-pointer mt-4">
+          <div class="mac-window-controls"><span></span><span></span><span></span></div>
+          <pre><code><span class="keyword">npm</span> run dev</code></pre>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="glass border-t">
+    <div class="content-wrapper footer-content">
+      <div class="footer-logo">
+        <img src="assets/openticket_banner_trans.png" alt="OpenTicket" style="height: 32px;">
+      </div>
+      <p class="text-muted">© 2026 Cyber-Sec-Space. Open source under MIT License.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
