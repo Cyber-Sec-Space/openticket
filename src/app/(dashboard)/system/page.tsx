@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { sl } from 'date-fns/locale' // Just in case layout needs it later
-import { Sliders, ShieldCheck, UserPlus, Fingerprint, ShieldAlert } from "lucide-react"
+import { Sliders, ShieldCheck, UserPlus, Fingerprint, ShieldAlert, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -83,6 +83,33 @@ export default async function SystemSettingsPage() {
                 </div>
               </div>
 
+              {/* Identity Verification Toggle */}
+              <div className="flex flex-row items-center space-x-4 rounded-md border border-white/10 p-5 shadow-sm bg-black/20">
+                <Checkbox key={`verify-${settings.requireEmailVerification}`} id="requireEmailVerification" name="requireEmailVerification" value="on" defaultChecked={settings.requireEmailVerification} />
+                <div className="space-y-1 leading-none">
+                  <Label htmlFor="requireEmailVerification" className="text-sm font-semibold tracking-wide flex items-center cursor-pointer text-emerald-400">
+                    <ShieldCheck className="w-4 h-4 mr-2" /> Require Email Verification
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground pt-1 w-3/4">
+                    Strictly block dashboard access for newly registered users until their email is cryptographically verified to belong to them. Action aborts if SMTP is offline.
+                  </p>
+                </div>
+              </div>
+
+              {/* System Platform URL */}
+              <div className="space-y-3 p-5 border border-white/10 rounded-md bg-black/20">
+                <Label htmlFor="systemPlatformUrl" className="text-sm font-semibold tracking-wide text-primary/80">System Resolving URL</Label>
+                <p className="text-[11px] text-muted-foreground pb-2">
+                   The fully qualified address (e.g. `https://soc.company.com`) utilized during auth emails bridging and redirection loops.
+                </p>
+                <Input 
+                   id="systemPlatformUrl" 
+                   name="systemPlatformUrl" 
+                   defaultValue={settings.systemPlatformUrl} 
+                   className="bg-black/40 border-white/10 text-white font-mono"
+                />
+              </div>
+
               {/* Default Role Select */}
               <div className="space-y-3 p-5 border border-white/10 rounded-md bg-black/20">
                 <Label className="text-sm font-semibold tracking-wide text-primary/80">Default Initialization Privilege</Label>
@@ -155,6 +182,83 @@ export default async function SystemSettingsPage() {
                   medium: settings.slaMediumHours, 
                   low: settings.slaLowHours 
                 }} />
+              </div>
+
+              <hr className="my-2 border-white/5" />
+
+              <div className="space-y-4 p-5 border border-white/10 rounded-md bg-black/20">
+                <h3 className="text-sm font-semibold tracking-wide text-primary/80 flex items-center">
+                  <Mail className="w-4 h-4 mr-2" /> SMTP Mail Notifications
+                </h3>
+
+                <div className="flex flex-row items-center space-x-4 mb-4">
+                  <Checkbox key={`smtp-${settings.smtpEnabled}`} id="smtpEnabled" name="smtpEnabled" value="on" defaultChecked={settings.smtpEnabled} />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="smtpEnabled" className="text-sm font-medium cursor-pointer">
+                      Enable Email Dispatches
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground pt-1">
+                      If enabled, critical alerts and assignment notifications will be sent off-platform via this SMTP relay.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-8">
+                  <div className="space-y-2">
+                    <Label htmlFor="smtpHost" className="text-xs text-muted-foreground">SMTP Host</Label>
+                    <Input id="smtpHost" name="smtpHost" defaultValue={settings.smtpHost || ""} placeholder="smtp.example.com" className="bg-black/30 border-white/10 font-mono text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtpPort" className="text-xs text-muted-foreground">Port</Label>
+                    <Input id="smtpPort" name="smtpPort" type="number" defaultValue={settings.smtpPort || 587} placeholder="587" className="bg-black/30 border-white/10 font-mono text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtpUser" className="text-xs text-muted-foreground">User / Identity</Label>
+                    <Input id="smtpUser" name="smtpUser" defaultValue={settings.smtpUser || ""} placeholder="alerts@example.com" className="bg-black/30 border-white/10 font-mono text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtpPassword" className="text-xs text-muted-foreground">Password (Leave blank to keep current)</Label>
+                    <Input id="smtpPassword" name="smtpPassword" type="password" placeholder="••••••••" className="bg-black/30 border-white/10 font-mono text-sm" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="smtpFrom" className="text-xs text-muted-foreground">From Address Name</Label>
+                    <Input id="smtpFrom" name="smtpFrom" defaultValue={settings.smtpFrom || ""} placeholder='"OpenTicket SOC" <noreply@openticket.local>' className="bg-black/30 border-white/10 font-mono text-sm" />
+                  </div>
+                </div>
+
+                <hr className="my-4 border-white/5 mx-4" />
+                
+                <h4 className="text-xs font-semibold tracking-wide text-primary/80 ml-8 mb-2">Automated Triggers</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-8">
+                  <div className="flex items-center space-x-3">
+                    <Checkbox id="smtpTriggerOnCritical" name="smtpTriggerOnCritical" value="on" defaultChecked={settings.smtpTriggerOnCritical} />
+                    <Label htmlFor="smtpTriggerOnCritical" className="text-sm font-medium cursor-pointer">Dispatch on CRITICAL Escalations</Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox id="smtpTriggerOnHigh" name="smtpTriggerOnHigh" value="on" defaultChecked={settings.smtpTriggerOnHigh} />
+                    <Label htmlFor="smtpTriggerOnHigh" className="text-sm font-medium cursor-pointer">Dispatch on HIGH Escalations</Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox id="smtpTriggerOnAssign" name="smtpTriggerOnAssign" value="on" defaultChecked={settings.smtpTriggerOnAssign} />
+                    <Label htmlFor="smtpTriggerOnAssign" className="text-sm font-medium cursor-pointer">Dispatch on Operator Assignment</Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox id="smtpTriggerOnResolution" name="smtpTriggerOnResolution" value="on" defaultChecked={settings.smtpTriggerOnResolution} />
+                    <Label htmlFor="smtpTriggerOnResolution" className="text-sm font-medium cursor-pointer">Dispatch to Reporter on RESOLVED/CLOSED</Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox id="smtpTriggerOnAssetCompromise" name="smtpTriggerOnAssetCompromise" value="on" defaultChecked={settings.smtpTriggerOnAssetCompromise} />
+                    <Label htmlFor="smtpTriggerOnAssetCompromise" className="text-sm font-medium cursor-pointer">Dispatch to ADMIN/SECOPS on Asset COMPROMISED</Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox id="smtpTriggerOnNewUser" name="smtpTriggerOnNewUser" value="on" defaultChecked={settings.smtpTriggerOnNewUser} />
+                    <Label htmlFor="smtpTriggerOnNewUser" className="text-sm font-medium cursor-pointer">Dispatch to ADMIN on New User Registration</Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox id="smtpTriggerOnNewVulnerability" name="smtpTriggerOnNewVulnerability" value="on" defaultChecked={settings.smtpTriggerOnNewVulnerability} />
+                    <Label htmlFor="smtpTriggerOnNewVulnerability" className="text-sm font-medium cursor-pointer">Dispatch to ADMIN on New Vulnerability</Label>
+                  </div>
+                </div>
               </div>
 
             </div>

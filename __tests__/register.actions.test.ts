@@ -1,6 +1,6 @@
 import { attemptRegistration } from "../src/app/register/actions"
 import { db } from "../src/lib/db"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { redirect } from "next/navigation"
 
 jest.mock("../src/lib/db", () => ({
@@ -15,7 +15,7 @@ jest.mock("../src/lib/db", () => ({
   },
 }));
 
-jest.mock("bcryptjs", () => ({
+jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashed_pwd"),
 }));
 
@@ -43,7 +43,7 @@ describe("attemptRegistration", () => {
   });
 
   it("creates user and redirects", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true, defaultUserRole: "SECOPS" });
+    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true, defaultUserRoles: ["SECOPS"] });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
     const fd = new FormData();
     fd.append("name", "Test User");
@@ -51,14 +51,14 @@ describe("attemptRegistration", () => {
     fd.append("password", "longpassword");
 
     await attemptRegistration(undefined, fd);
-    expect(db.user.create).toHaveBeenCalledWith({
-      data: {
+    expect(db.user.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
         email: "test@example.com",
         name: "Test User",
         passwordHash: "hashed_pwd",
-        role: "SECOPS"
-      }
-    });
+        roles: ["SECOPS"]
+      })
+    }));
     expect(redirect).toHaveBeenCalledWith("/login?registered=true");
   });
 });

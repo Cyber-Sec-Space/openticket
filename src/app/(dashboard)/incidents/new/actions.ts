@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { dispatchWebhook } from "@/lib/webhook"
+import { sendCriticalAlertEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
 
 export async function createIncident(prevState: any, formData: FormData) {
   const session = await auth()
@@ -15,6 +16,12 @@ export async function createIncident(prevState: any, formData: FormData) {
   const assetId = formData.get("assetId") as string
 
   const type = formData.get("type") as string || "OTHER"
+
+  const rawTags = formData.getAll("tags") as string[]
+  const tags = rawTags
+    .map(t => t.trim())
+    .filter(t => t !== '')
+    .map(t => t.startsWith('#') ? t : `#${t}`)
 
   if (!title || !description) {
     return { error: "Title and description are required." }
@@ -41,16 +48,22 @@ export async function createIncident(prevState: any, formData: FormData) {
       reporterId: session.user.id,
       assetId: assetId || null,
       status: 'NEW',
-      targetSlaDate
+      targetSlaDate,
+      tags
     }
   })
 
   // Phase 7: SOAR Automations
   if (severity === 'CRITICAL' && assetId) {
-    await db.asset.update({
+    const affectedAsset = await db.asset.update({
       where: { id: assetId },
       data: { status: 'COMPROMISED' }
     })
+    
+    if (settings?.smtpTriggerOnAssetCompromise) {
+      const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { email: true } })
+      await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
+    }
     
     await db.auditLog.create({
       data: {
@@ -75,6 +88,16 @@ export async function createIncident(prevState: any, formData: FormData) {
 
   // Phase 9: Webhook Dispatch
   if (severity === 'CRITICAL' || severity === 'HIGH') {
+    const shouldSendEmail = (severity === 'CRITICAL' && settings?.smtpTriggerOnCritical) || (severity === 'HIGH' && settings?.smtpTriggerOnHigh)
+    if (shouldSendEmail) {
+      const alertedUsers = await db.user.findMany({
+        where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } },
+        select: { email: true }
+      })
+      const targetEmails = alertedUsers.map(u => u.email as string)
+      await sendCriticalAlertEmail(newIncident, targetEmails)
+    }
+
     await dispatchWebhook({
       title: `Incident Declared: ${title}`,
       description: description,

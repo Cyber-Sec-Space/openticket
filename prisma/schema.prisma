@@ -77,6 +77,15 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
 // -----------------------------------------------------------------------------
 // Global Configuration (Singleton Model)
 // -----------------------------------------------------------------------------
@@ -100,6 +109,27 @@ model SystemSetting {
   rateLimitEnabled     Boolean @default(true)
   rateLimitWindowMs    Int     @default(900000) // 15 minutes default
   rateLimitMaxAttempts Int     @default(5)
+
+  // SMTP Configuration
+  smtpEnabled          Boolean @default(false)
+  smtpHost             String?
+  smtpPort             Int?
+  smtpUser             String?
+  smtpPassword         String?
+  smtpFrom             String?
+
+  // SMTP Event Triggers
+  smtpTriggerOnCritical         Boolean @default(true)
+  smtpTriggerOnHigh             Boolean @default(false)
+  smtpTriggerOnAssign           Boolean @default(true)
+  smtpTriggerOnResolution       Boolean @default(true)
+  smtpTriggerOnAssetCompromise  Boolean @default(true)
+  smtpTriggerOnNewUser          Boolean @default(false)
+  smtpTriggerOnNewVulnerability Boolean @default(true)
+
+  // Auth Enforcements
+  requireEmailVerification      Boolean @default(false)
+  systemPlatformUrl             String  @default("http://localhost:3000")
 
   updatedAt DateTime @updatedAt
 }
@@ -203,6 +233,8 @@ model Incident {
 
   reporterId String?
   reporter   User?   @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
+
+  tags        String[]       @default([])
 
   assignees User[] @relation("IncidentAssignees")
 

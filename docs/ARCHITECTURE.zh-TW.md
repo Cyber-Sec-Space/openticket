@@ -63,6 +63,17 @@ erDiagram
         String email
         EnumArray roles "ADMIN, SECOPS, REPORTER, API_ACCESS"
         Boolean isTwoFactorEnabled
+        DateTime emailVerified
+    }
+    VerificationToken {
+        String token PK
+        String identifier
+        DateTime expires
+    }
+    PasswordResetToken {
+        String token PK
+        String email
+        DateTime expires
     }
     ApiToken {
         String id PK
@@ -97,7 +108,9 @@ erDiagram
 
     User ||--o{ Incident : "通報 (Reports)"
     Asset ||--o{ Incident : "事件標的 (Subject of)"
-    Asset ||--o{ Vulnerability : "受影響 (Affected by)"
+    Vulnerability }|--|{ Asset : "Affects"
+    User ||--|{ VerificationToken : "Verifies Identity"
+    User ||--|{ PasswordResetToken : "Overrides Credentials"
     User ||--o{ AuditLog : "執行 (Performs)"
     User ||--o{ ApiToken : "發行 (Issues)"
 ```

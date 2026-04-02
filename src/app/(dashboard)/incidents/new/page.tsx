@@ -8,6 +8,7 @@ import { ShieldAlert, ArrowLeft, Activity } from "lucide-react"
 import { createIncident } from "./actions"
 import Link from "next/link"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TagInput } from "@/components/ui/tag-input"
 
 export default async function NewIncidentPage() {
   const session = await auth()
@@ -119,6 +120,12 @@ export default async function NewIncidentPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tags" className="text-sm tracking-wide font-semibold text-primary">Custom Tags</Label>
+              <TagInput name="tags" placeholder="Add custom topology or markers (press Enter)..." />
+              <p className="text-[10px] text-muted-foreground mt-1">Use tags to freely associate incidents with threat actors (e.g. #APT29) or vectors (e.g. #Ransomware).</p>
             </div>
 
             <div className="space-y-2">

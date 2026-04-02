@@ -53,6 +53,7 @@ export async function authenticate(
 
       if (errMessage === "Invalid2FA") return "INVALID_2FA";
       if (errMessage === "Global2FAEnforced") return "GLOBAL_LOCKED";
+      if (errMessage === "EmailNotVerified") return "EMAIL_NOT_VERIFIED";
       
       switch (error.type) {
         case 'CredentialsSignin':

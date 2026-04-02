@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { dispatchWebhook } from "@/lib/webhook"
+import { sendIncidentAssignmentEmail, sendResolutionEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
 import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
 import { FileUploadBox } from "@/components/file-upload-box"
 import { Label } from "@/components/ui/label"
@@ -15,7 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
-import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload } from "lucide-react"
+import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload, Tag as TagIcon } from "lucide-react"
+import { TagInput } from "@/components/ui/tag-input"
 
 export default async function IncidentDetailPage({
   params,
@@ -82,6 +84,8 @@ export default async function IncidentDetailPage({
     const hasPostPrivilege = sessionUrl?.user?.roles?.includes('ADMIN') || sessionUrl?.user?.roles?.includes('SECOPS')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
+    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
     const newAssetName = formData.get("assetName") as string
@@ -96,7 +100,6 @@ export default async function IncidentDetailPage({
       const isManualDateOverride = targetSlaDateRaw !== currentIsoSlice;
 
       if (!isManualDateOverride) {
-        const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
         let autoDate = new Date();
         switch (newSeverity) {
           case 'CRITICAL': autoDate.setHours(autoDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
@@ -131,12 +134,43 @@ export default async function IncidentDetailPage({
       }
     })
 
+    // Phase 10: Email Dispatch for newly assigned operators
+    const previousAssigneeIds = incident!.assignees.map(a => a.id)
+    const newlyAssignedIds = validAssigneeIds.filter(id => !previousAssigneeIds.includes(id))
+
+    if (newlyAssignedIds.length > 0 && settings?.smtpTriggerOnAssign) {
+      const newlyAssignedUsers = await db.user.findMany({
+        where: { id: { in: newlyAssignedIds }, email: { not: null } },
+        select: { email: true, name: true }
+      })
+      
+      for (const a of newlyAssignedUsers) {
+        if (a.email) {
+          await sendIncidentAssignmentEmail(incident!.id, incident!.title, a.email, a.name || 'Operator')
+        }
+      }
+    }
+
+    if (
+      settings?.smtpTriggerOnResolution && 
+      (newStatus === 'RESOLVED' || newStatus === 'CLOSED') && 
+      !['RESOLVED', 'CLOSED'].includes(incident!.status) && 
+      incident!.reporter?.email
+    ) {
+      await sendResolutionEmail(incident!.id, incident!.title, incident!.reporter.email, incident!.reporter.name || 'Reporter')
+    }
+
     // Phase 7: Dynamic Triage Auto-Isolation rules
     if (newSeverity === 'CRITICAL' && resolvedAssetId && resolvedAssetId !== 'UNLINKED') {
-      await db.asset.update({
+      const affectedAsset = await db.asset.update({
         where: { id: resolvedAssetId },
         data: { status: 'COMPROMISED' }
       })
+
+      if (settings?.smtpTriggerOnAssetCompromise) {
+        const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { email: true } })
+        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
+      }
 
       await db.auditLog.create({
         data: {
@@ -181,10 +215,16 @@ export default async function IncidentDetailPage({
     const newTitle = formData.get("title") as string
     const newType = formData.get("type") as string
     const newDesc = formData.get("description") as string
+    
+    const rawTags = formData.getAll("tags") as string[]
+    const tags = rawTags
+      .map(t => t.trim())
+      .filter(t => t !== '')
+      .map(t => t.startsWith('#') ? t : `#${t}`)
 
     await db.incident.update({
       where: { id: incident!.id },
-      data: { title: newTitle, type: newType.replace(/ /g, '_') as any, description: newDesc }
+      data: { title: newTitle, type: newType.replace(/ /g, '_') as any, description: newDesc, tags }
     })
 
     await db.auditLog.create({
@@ -314,6 +354,11 @@ export default async function IncidentDetailPage({
                   </div>
 
                   <div className="space-y-2">
+                    <Label className="text-primary/70 text-xs uppercase tracking-widest">Custom Tags</Label>
+                    <TagInput name="tags" initialTags={incident.tags || []} placeholder="Add associated tags (e.g. #APT29)" />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label className="text-primary/70 text-xs uppercase tracking-widest">Tactical Overview</Label>
                     <Textarea name="description" rows={8} defaultValue={incident.description} className="bg-black/50 border-white/10 resize-none text-sm font-mono leading-relaxed" required />
                   </div>
@@ -343,6 +388,20 @@ export default async function IncidentDetailPage({
                       {(incident.type || 'OTHER').replace(/_/g, ' ')}
                     </Badge>
                   </div>
+
+                  {incident.tags && incident.tags.length > 0 && (
+                    <div>
+                      <h4 className="text-xs uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                        <TagIcon className="w-3 h-3 text-purple-400" />
+                        Custom Tags
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {incident.tags.map(tag => (
+                           <Badge key={tag} variant="secondary" className="bg-purple-500/10 text-purple-300 border-purple-500/20 font-mono text-xs tracking-wide">{tag}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <h4 className="text-xs uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">

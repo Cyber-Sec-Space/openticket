@@ -40,10 +40,15 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { title, description, severity, assetId } = body
+    const { title, description, severity, assetId, tags = [] } = body
 
     if (!title || !description) {
       return new NextResponse("Title and Description are required", { status: 400 })
+    }
+    
+    let processedTags: string[] = []
+    if (Array.isArray(tags)) {
+      processedTags = tags.map(t => String(t).trim()).filter(t => t !== '').map(t => t.startsWith('#') ? t : `#${t}`)
     }
 
     const newIncident = await db.incident.create({
@@ -53,7 +58,8 @@ export async function POST(req: Request) {
         severity: severity || 'LOW',
         reporterId: session.user.id,
         assetId: assetId || null,
-        status: 'NEW'
+        status: 'NEW',
+        tags: processedTags
       }
     })
 

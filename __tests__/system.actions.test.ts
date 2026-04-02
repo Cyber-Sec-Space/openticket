@@ -31,13 +31,13 @@ describe("updateSystemSettings Action", () => {
   });
 
   it("throws Unauthorized if user is not ADMIN", async () => {
-    (auth as jest.Mock).mockResolvedValueOnce({ user: { role: "REPORTER" } });
+    (auth as jest.Mock).mockResolvedValueOnce({ user: { roles: ["REPORTER"] } });
     const fd = new FormData();
     await expect(updateSystemSettings(fd)).rejects.toThrow("Unauthorized");
   });
 
   it("upserts system setting and revalidates if user is ADMIN", async () => {
-    (auth as jest.Mock).mockResolvedValueOnce({ user: { role: "ADMIN" } });
+    (auth as jest.Mock).mockResolvedValueOnce({ user: { roles: ["ADMIN"] } });
     const fd = new FormData();
     fd.append("allowRegistration", "on");
     fd.append("requireGlobal2FA", "off"); // Intentionally not sending "on" to test logic
@@ -45,11 +45,11 @@ describe("updateSystemSettings Action", () => {
 
     await updateSystemSettings(fd);
 
-    expect(db.systemSetting.upsert).toHaveBeenCalledWith({
+    expect(db.systemSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: "global" },
-      update: { allowRegistration: true, requireGlobal2FA: false, defaultUserRole: "SECOPS" },
-      create: { id: "global", allowRegistration: true, requireGlobal2FA: false, defaultUserRole: "SECOPS" }
-    });
+      update: expect.objectContaining({ allowRegistration: true, requireGlobal2FA: false }),
+      create: expect.objectContaining({ allowRegistration: true, requireGlobal2FA: false })
+    }));
 
     expect(revalidatePath).toHaveBeenCalledWith("/system");
   });

@@ -32,6 +32,13 @@ class Global2FAEnforcedError extends Error {
   }
 }
 
+class EmailNotVerifiedError extends Error {
+  constructor() {
+    super("EmailNotVerified");
+    this.name = "EmailNotVerifiedError";
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
@@ -56,6 +63,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Fetch global directives
         const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
         const requireGlobal2FA = settings?.requireGlobal2FA ?? false
+
+        if (settings?.requireEmailVerification && settings?.smtpEnabled && !user.emailVerified) {
+          throw new EmailNotVerifiedError()
+        }
 
         // Determine effective 2FA status (either enforced globally or opted-in personally)
         if (requireGlobal2FA || user.isTwoFactorEnabled) {

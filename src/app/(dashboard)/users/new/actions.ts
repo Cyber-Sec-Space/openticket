@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import bcrypt from "bcrypt"
 import { Role } from "@prisma/client"
+import { sendNewRegistrationAlertEmail } from "@/lib/mailer"
 
 export async function createUserAction(formData: FormData) {
   const session = await auth()
@@ -54,6 +55,13 @@ export async function createUserAction(formData: FormData) {
       changes: `Minted new Identity Record [${email}] with roles [${newRoles.join(', ')}]`
     }
   })
+
+  // Phase 10: Email Alert on New Registration
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  if (settings?.smtpTriggerOnNewUser) {
+    const admins = await db.user.findMany({ where: { roles: { hasSome: ['ADMIN'] }, email: { not: null }, id: { not: newUser.id } }, select: { email: true } })
+    await sendNewRegistrationAlertEmail(email, name, admins.map(a => a.email as string))
+  }
 
   revalidatePath("/users")
   redirect("/users")

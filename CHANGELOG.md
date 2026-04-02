@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## 0.2.0
 ### Added
+- Identity Verification: Deployed an impenetrable Registration Wall demanding cryptographic link verification (`VerificationToken`) dispatched directly via SMTP before granting UI access, effectively destroying phantom account generation vectors.
+- Self-Service Recovery: Engineered an out-of-band `PasswordResetToken` pipeline permitting operators to rescue lost credentials independently. Includes robust Anti-Enumeration protections on the `/forgot-password` schema to mask valid topological targets.
+- Notification (SMTP): Expanded Notification triggers adding 4 specific system-defined conditionals: `Asset Compromise`, `New Vulnerability`, `Ticket Resolution`, and `Operator Joined`, enabling fully configurable global delivery streams.
 - Security: Migrated from single-role RBAC to Array-based Multi-Role Access Control supporting blended organizational privileges (e.g., users can be `SECOPS` and `ADMIN` simultaneously).
 - Identity Mapping: Introduced new `API_ACCESS` privilege tier allowing entities to mint non-interactive automation tokens.
 - M2M Authentication: Built Machine-to-Machine API token infrastructure with cryptographic `SHA-256` storage handling Native Bearer authentications across SOAR/CI-CD interfaces.
