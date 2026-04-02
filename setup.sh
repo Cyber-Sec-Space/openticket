@@ -24,17 +24,43 @@ else
   echo -e "\033[1;32m[INF] .env file already exists.\033[0m"
 fi
 
-echo -e "\n\033[1;34m[?] Do you need to modify your database connection string? (y/N)\033[0m"
-read -r modify_env < /dev/tty
-if [[ "$modify_env" =~ ^([yY][eE][sS]|[yY])$ ]]; then
-  echo -e "\033[1;34mPlease enter your DATABASE_URL:\033[0m"
-  read -r db_url < /dev/tty
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|^DATABASE_URL=.*|DATABASE_URL=\"$db_url\"|" .env
+echo -e "\n\033[1;34m[?] Do you want to configure PostgreSQL database credentials? (Y/n)\033[0m"
+read -r config_db < /dev/tty
+if [[ ! "$config_db" =~ ^([nN][oO]|[nN])$ ]]; then
+  echo -e "\033[1;36m(Press Enter to accept defaults)\033[0m"
+  
+  read -p "PostgreSQL User [openticket]: " pg_user < /dev/tty
+  pg_user=${pg_user:-openticket}
+  
+  read -p "PostgreSQL Password [supersecure]: " pg_pass < /dev/tty
+  pg_pass=${pg_pass:-supersecure}
+  
+  read -p "PostgreSQL Database Name [openticket_prod]: " pg_db < /dev/tty
+  pg_db=${pg_db:-openticket_prod}
+  
+  read -p "Database Host (e.g. localhost:5432 or db:5432) [localhost:5432]: " pg_host < /dev/tty
+  pg_host=${pg_host:-localhost:5432}
+  
+  db_url="postgresql://${pg_user}:${pg_pass}@${pg_host}/${pg_db}"
+  
+  # Inject distinct PG variables so that Docker Compose can also pick them up natively
+  echo "" >> .env
+  echo "POSTGRES_USER=\"$pg_user\"" >> .env
+  echo "POSTGRES_PASSWORD=\"$pg_pass\"" >> .env
+  echo "POSTGRES_DB=\"$pg_db\"" >> .env
+
+  # Update DATABASE_URL safely
+  if grep -q "^DATABASE_URL=" .env; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s|^DATABASE_URL=.*|DATABASE_URL=\"$db_url\"|" .env
+    else
+      sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"$db_url\"|" .env
+    fi
   else
-    sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"$db_url\"|" .env
+    echo "DATABASE_URL=\"$db_url\"" >> .env
   fi
-  echo -e "\033[1;32m[OK]  Database URL updated.\033[0m"
+
+  echo -e "\033[1;32m[OK]  Database connection dynamically constructed and injected into .env!\033[0m"
 fi
 
 # 2. Dependency Installation
