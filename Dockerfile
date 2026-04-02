@@ -43,6 +43,9 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Install prisma CLI so we can migrate during startup
+RUN npm install prisma
+
 USER nextjs
 
 EXPOSE 3000
