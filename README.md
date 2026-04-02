@@ -1,4 +1,4 @@
-# OpenTicket (MVP)
+# OpenTicket (Beta)
 
 <p align="center">
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
@@ -59,17 +59,32 @@ Vulnerability components mirror the system's asset inventory:
    NEXTAUTH_SECRET="REPLACE_WITH_YOUR_STRONG_SECRET_HASH"
    ```
 
-3. **Database Initialization & Seeding:**
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev --name init
-   npx tsx prisma/seed.ts
-   ```
+## 🚀 Quick Start (Installation)
 
-4. **Start the Turbopack Application:**
-   ```bash
-   npm run dev
-   ```
+OpenTicket provides two frictionless ways to deploy the platform: **Full Containerization** (Recommended for Production) or a **Bare-metal Setup Script** (Recommended for Development).
+
+### Option A: Complete Docker Deployment (Enterprise)
+The simplest way to run OpenTicket is via Docker Compose, which automatically provisions the PostgreSQL database, runs migrations, and starts the optimized Next.js standalone container.
+
+```bash
+docker-compose up -d
+```
+*Your application will boot up on `http://localhost:3000`. Stop it anytime with `docker-compose down`.*
+
+### Option B: Bare-Metal Setup CLI (Development)
+If you prefer running Node.js locally without Docker, simply execute the setup script. It will interactively configure your `.env` file, install dependencies, and run Prisma migrations.
+
+```bash
+# Ensure you have an empty PostgreSQL database available
+chmod +x setup.sh
+./setup.sh
+
+# Start the development server
+npm run dev
+```
+
+### 🪄 First-Time Bootstrap Workflow
+No matter which method you choose, visiting `http://localhost:3000` for the first time will automatically intercept and route you to the **Setup Wizard (`/setup`)**. This securely provisions your first Global System Administrator account.
 
 ## 🔐 Default Test Accounts
 

@@ -1,18 +1,41 @@
 version: '3.8'
 
 services:
-  postgres:
+  db:
     image: postgres:15-alpine
-    container_name: openticket-db
+    container_name: openticket_db
+    restart: always
     environment:
-      POSTGRES_USER: openticket_user
-      POSTGRES_PASSWORD: openticket_password
-      POSTGRES_DB: openticket_dev
+      POSTGRES_USER: ${POSTGRES_USER:-openticket_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-supersecurepassword}
+      POSTGRES_DB: ${POSTGRES_DB:-openticket_prod}
+    volumes:
+      - openticket_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    volumes:
-      - openticket-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openticket_app
     restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-openticket_admin}:${POSTGRES_PASSWORD:-supersecurepassword}@db:5432/${POSTGRES_DB:-openticket_prod}
+      - AUTH_SECRET=${AUTH_SECRET:-generate_a_strong_secret_in_production_environments}
+    depends_on:
+      db:
+        condition: service_healthy
+    # We override the CMD to run migrations first before booting the standalone server
+    # Since npx might not be globally exposed, we use the local node_modules binary
+    command: /bin/sh -c "node ./node_modules/prisma/build/index.js migrate deploy && node server.js"
 
 volumes:
-  openticket-pgdata:
+  openticket_data:

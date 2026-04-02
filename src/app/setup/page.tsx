@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic"
 
 export default async function SetupPage() {
   const userCount = await db.user.count()
+  console.log("SETUP PAGE - User count is:", userCount)
   
   if (userCount > 0) {
     redirect("/login")

@@ -44,23 +44,6 @@
 
 ---
 
-## 💻 本地環境架設 (Development Setup)
-
-1. **資料庫部署：** 透過 Docker 啟動本地 PostgreSQL 服務。
-   ```bash
-   docker compose up -d
-   ```
-
-2. **環境變數配置：** 確保您的根目錄 `.env` 檔案包含必要的環境變數：
-   ```env
-   DATABASE_URL="postgresql://openticket_user:openticket_password@localhost:5432/openticket_dev?schema=public"
-   NEXTAUTH_URL="http://localhost:3000"
-   NEXTAUTH_SECRET="請填入您的複雜加密金鑰"
-   ```
-
-3. **資料庫初始化與測試資料注入 (Seeding)：**
-   ```bash
-   npx prisma generate
    npx prisma migrate dev --name init
    npx tsx prisma/seed.ts
    ```
