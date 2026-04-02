@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, Menu, X } from "lucide-react"
@@ -51,7 +50,7 @@ export function MobileNav({ userRole }: { userRole?: string }) {
     <header className="md:hidden desktop-hide-nav relative z-50">
       <div className="flex items-center justify-between p-4 border-b border-border/40 glass-panel bg-black/60 sticky top-0 backdrop-blur-xl">
         <div className="flex items-center">
-          <Image src="/logo.png" alt="OpenTicket Logo" width={28} height={28} className="mr-3 w-[28px] h-[28px]" />
+          <img src="/logo.png" alt="OpenTicket Logo" className="mr-3 w-7 h-7" />
           <span className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
             OpenTicket
           </span>
