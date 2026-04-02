@@ -53,11 +53,9 @@ export function PluginCard({
         <div className="flex items-center gap-3">
           {isActive && manifest.id === 'slack-notifier-01' && (
             <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="bg-black/50 border-white/20 text-blue-400 hover:text-blue-300 hover:bg-white/10 hover:border-blue-500/50 transition-all shadow-[0_0_10px_rgba(0,100,255,0.1)]">
-                  <SettingsIcon className="w-4 h-4 mr-2" />
-                  Configure
-                </Button>
+              <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 border h-8 rounded-md px-3 bg-black/50 border-white/20 text-blue-400 hover:text-blue-300 hover:bg-white/10 hover:border-blue-500/50 shadow-[0_0_10px_rgba(0,100,255,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <SettingsIcon className="w-4 h-4 mr-2" />
+                Configure
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] border border-white/10 bg-zinc-950 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                 <DialogHeader>
@@ -96,11 +94,11 @@ export function PluginCard({
           )}
 
           <Button 
-            variant="outline" 
+            variant={isActive ? "outline" : "default"}
             size="sm" 
             onClick={handleToggle} 
             disabled={isUpdating}
-            className={`${isActive ? 'text-red-400 border-red-500/50 hover:bg-red-500/20' : 'bg-primary text-black hover:bg-primary/90 border-0 shadow-[0_0_15px_rgba(0,255,200,0.3)]'}`}
+            className={`${isActive ? 'text-red-400 border-red-500/50 hover:bg-red-500/20' : 'text-black font-bold shadow-[0_0_15px_rgba(0,255,200,0.3)]'} w-32`}
           >
             {isActive ? (
               <>
