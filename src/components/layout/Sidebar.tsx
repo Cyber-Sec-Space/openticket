@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders } from "lucide-react"
@@ -32,7 +33,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
   return (
     <aside className="w-64 h-screen border-r border-border/40 glass-panel bg-background/50 flex flex-col fixed left-0 top-0 z-40 hidden md:flex">
       <div className="flex h-16 items-center px-6 border-b border-border/40">
-        <ShieldAlert className="w-6 h-6 text-primary mr-2" />
+        <Image src="/logo.png" alt="OpenTicket Logo" width={28} height={28} className="mr-3" />
         <span className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
           OpenTicket
         </span>
