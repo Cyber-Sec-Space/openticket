@@ -6,8 +6,12 @@ export async function GET(req: Request) {
   const session = await auth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
-  // Reporters should generally be able to list assets so they can tie incidents to them.
-  // Optionally restrict this entirely to SecOps/Admins. MVP: all users can view assets.
+  // STRICT DATA VIEW INVENTORY REMEDIATION
+  // Reporters are entirely isolated from internal topological intelligence.
+  if (session.user.role === 'REPORTER') {
+     return new NextResponse("Forbidden: Access to systemic assets is strictly restricted to SECOPS & ADMIN roles.", { status: 403 })
+  }
+
   const { searchParams } = new URL(req.url)
   const takeParam = searchParams.get("take");
   const skipParam = searchParams.get("skip");

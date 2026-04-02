@@ -21,6 +21,11 @@ export async function updateSystemSettings(formData: FormData) {
   const slaMediumHours = parseInt(formData.get("slaMediumHours") as string || "72", 10)
   const slaLowHours = parseInt(formData.get("slaLowHours") as string || "168", 10)
 
+  // Rate Limiting Config
+  const rateLimitEnabled = formData.get("rateLimitEnabled") === "on"
+  const rateLimitWindowMs = parseInt(formData.get("rateLimitWindowMs") as string || "900000", 10)
+  const rateLimitMaxAttempts = parseInt(formData.get("rateLimitMaxAttempts") as string || "5", 10)
+
   await db.systemSetting.upsert({
     where: { id: "global" },
     update: {
@@ -30,7 +35,10 @@ export async function updateSystemSettings(formData: FormData) {
       slaCriticalHours,
       slaHighHours,
       slaMediumHours,
-      slaLowHours
+      slaLowHours,
+      rateLimitEnabled,
+      rateLimitWindowMs,
+      rateLimitMaxAttempts
     },
     create: {
       id: "global",
@@ -40,7 +48,10 @@ export async function updateSystemSettings(formData: FormData) {
       slaCriticalHours,
       slaHighHours,
       slaMediumHours,
-      slaLowHours
+      slaLowHours,
+      rateLimitEnabled,
+      rateLimitWindowMs,
+      rateLimitMaxAttempts
     }
   })
 

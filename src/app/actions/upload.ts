@@ -129,10 +129,13 @@ export async function deleteAttachment(attachmentId: string) {
     }
   }
 
-  // Delete from filesystem
+  // Delete from filesystem securely
   try {
-     const filePath = path.join(process.cwd(), "public", attachment.fileUrl)
-     if (fs.existsSync(filePath)) {
+     const safeBase = path.resolve(process.cwd(), 'public', 'uploads')
+     const filename = path.basename(attachment.fileUrl)
+     const filePath = path.resolve(safeBase, filename)
+     
+     if (filePath.startsWith(safeBase) && fs.existsSync(filePath)) {
        fs.unlinkSync(filePath)
      }
   } catch(e) {

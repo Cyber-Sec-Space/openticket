@@ -204,10 +204,17 @@ export default async function IncidentDetailPage({
     try {
       const fs = await import('fs')
       const path = await import('path')
+      const safeBase = path.resolve(process.cwd(), 'public', 'uploads')
+      
       for (const att of incident!.attachments || []) {
         if (att.fileUrl) {
-          const filepath = path.join(process.cwd(), 'public', att.fileUrl.replace(/^\//, ''))
-          if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
+          // Extract just the filename, ignoring any injected paths
+          const filename = path.basename(att.fileUrl)
+          const targetPath = path.resolve(safeBase, filename)
+          
+          if (targetPath.startsWith(safeBase) && fs.existsSync(targetPath)) {
+             fs.unlinkSync(targetPath)
+          }
         }
       }
     } catch (error) {

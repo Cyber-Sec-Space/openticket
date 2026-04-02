@@ -31,10 +31,10 @@ export function MobileNav({ userRole }: { userRole?: string }) {
   const navItems = [
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Incidents", href: "/incidents", icon: ShieldAlert },
-    { name: "Assets", href: "/assets", icon: Server },
   ]
 
   if (userRole === 'ADMIN' || userRole === 'SECOPS') {
+    navItems.push({ name: "Assets", href: "/assets", icon: Server })
     navItems.push({ name: "Vulnerabilities", href: "/vulnerabilities", icon: Bug })
     navItems.push({ name: "Audit Logs", href: "/audit", icon: FileText })
   }

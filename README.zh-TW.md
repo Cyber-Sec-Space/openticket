@@ -1,8 +1,9 @@
-# OpenTicket (MVP)
+# OpenTicket (Beta)
 
 <p align="center">
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
 </p>
+
 [🌐 Read in English](../README.md) | [🏗️ 架構設計書 (Architecture Specs)](docs/ARCHITECTURE.zh-TW.md)
 
 專為資安維運 (SecOps) 與 IT 團隊打造的次世代資安事件與資產集中管理系統。作為 Jira 或 ServiceNow 等企業級 IT 工單系統的輕量化、視覺化替代方案而生。

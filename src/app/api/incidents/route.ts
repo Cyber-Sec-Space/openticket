@@ -67,6 +67,24 @@ export async function POST(req: Request) {
       }
     })
 
+    // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation
+    if (newIncident.severity === 'CRITICAL' && newIncident.assetId) {
+      await db.asset.update({
+        where: { id: newIncident.assetId },
+        data: { status: 'COMPROMISED' }
+      })
+
+      await db.auditLog.create({
+        data: {
+          action: "SOAR_AUTO_QUARANTINE",
+          entityType: "Asset",
+          entityId: newIncident.assetId,
+          userId: session.user.id,
+          changes: `Asset automatically marked as COMPROMISED due to CRITICAL Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
+        }
+      })
+    }
+
     return NextResponse.json(newIncident, { status: 201 })
   } catch (error) {
     console.error("[POST /api/incidents]", error)

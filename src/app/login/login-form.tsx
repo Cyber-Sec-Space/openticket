@@ -83,9 +83,10 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
       )}
       
       {errorMessage && errorMessage !== "REQUIRES_2FA" && (
-        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in-95 leading-relaxed">
+        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in-95 leading-relaxed text-center">
           {errorMessage === "INVALID_2FA" ? "Invalid Two-Factor Code provided." : 
            errorMessage === "GLOBAL_LOCKED" ? "Administrator Enforcement: This endpoint is structurally clamped pending TOTP interlock. Contact SecOps." : 
+           errorMessage === "RATE_LIMIT_EXCEEDED" ? "Access Denied: Too many failed network authentication drops. Firewall lockout enabled." :
            errorMessage}
         </div>
       )}

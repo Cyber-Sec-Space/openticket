@@ -23,6 +23,10 @@ All notable changes to this project will be documented in this file.
 - IAM Governance: Deployed `isDisabled` real-time JWT interceptors terminating active attacker sessions instantly upon Account Suspension.
 
 ### Fixed
+- Remediated Broken Object Level Authorization (BOLA) in `api/assets` by proactively isolating `REPORTER` users from horizontal enterprise topology scanning, terminating internal threat visibility vectors.
+- Corrected logic desync within `api/incidents` where Zero-Day `CRITICAL` payloads failed to trigger synchronous SOAR Auto-Quarantine heuristics via direct API creation.
+- Fortified backend generic physical deletion nodes inside `incidents/[id]` and `upload.ts` with extreme native `path.resolve` boundary lockdowns, completely sealing `.env` and DB Path Traversal vulnerabilities from compromised uploads.
+- Introduced a hard Prisma-driven rate-limiting matrix within `System Settings` mitigating automated credential stuffing, infinite logic looping, and TOTP traversal attempts natively within `login` Server Actions.
 - Fortified public Registration API with generic return codes preventing `Enmueration Attacks` and implemented constant-time logic blocking to massively throttle App-level Database DoS injections.
 - Enforced hard `take: 100` ceiling bounds globally across naked Prisma REST endpoints (`/api/incidents`, `/api/assets`) sealing Out of Memory (OOM) API crashing vulnerabilities under massive scalability.
 - Enforced strict cryptographic MIME / Extension Allowlist (.png, .json, .log, etc) inside `uploadAttachment` entirely mitigating Stored XSS payloads (.html, .svg) delivered through fake evidence files.

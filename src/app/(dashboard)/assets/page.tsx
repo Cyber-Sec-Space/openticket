@@ -7,9 +7,14 @@ import { Badge } from "@/components/ui/badge"
 import { Server, Plus, Filter, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+import { notFound } from "next/navigation"
+
 export default async function AssetsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
   if (!session?.user) return null
+
+  // STRICT BOLA ENFORCEMENT
+  if (session.user.role === 'REPORTER') return notFound()
 
   const resolvedParams = await searchParams;
   const page = parseInt(resolvedParams.page || "1", 10);
@@ -59,13 +64,11 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
           <p className="text-muted-foreground mt-2 text-sm">Review real-time telemetry and catalog metadata for enterprise systems.</p>
         </div>
         
-        {session.user.role !== 'REPORTER' && (
-          <Link href="/assets/new">
-            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
-              <Plus className="w-4 h-4 mr-2" /> Register Asset
-            </Button>
-          </Link>
-        )}
+        <Link href="/assets/new">
+          <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
+            <Plus className="w-4 h-4 mr-2" /> Register Asset
+          </Button>
+        </Link>
       </div>
 
       <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">

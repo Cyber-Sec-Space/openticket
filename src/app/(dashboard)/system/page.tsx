@@ -1,8 +1,10 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { Sliders, ShieldCheck, UserPlus, Fingerprint } from "lucide-react"
+import { sl } from 'date-fns/locale' // Just in case layout needs it later
+import { Sliders, ShieldCheck, UserPlus, Fingerprint, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -97,6 +99,51 @@ export default async function SystemSettingsPage() {
                     <SelectItem value="ADMIN">ADMIN</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <hr className="my-2 border-white/5" />
+
+              {/* Rate Limiting Section */}
+              <div className="space-y-4 p-5 border border-white/10 rounded-md bg-black/20">
+                <h3 className="text-sm font-semibold tracking-wide text-primary/80 flex items-center">
+                  <ShieldAlert className="w-4 h-4 mr-2" /> Security Defenses (Brute-Force Protection)
+                </h3>
+                
+                <div className="flex flex-row items-center space-x-4 mb-4">
+                  <Checkbox key={String(settings.rateLimitEnabled)} id="rateLimitEnabled" name="rateLimitEnabled" value="on" defaultChecked={settings.rateLimitEnabled} />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="rateLimitEnabled" className="text-sm font-medium cursor-pointer">
+                      Enable Authentication Rate Limiting
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground pt-1">
+                      Enforce strict lockout windows to prevent automated credential stuffing and TOTP brute-forcing.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-8">
+                  <div className="space-y-2">
+                    <Label htmlFor="rateLimitMaxAttempts" className="text-xs text-muted-foreground">Max Allowed Failures</Label>
+                    <Input 
+                      id="rateLimitMaxAttempts" 
+                      name="rateLimitMaxAttempts" 
+                      type="number" 
+                      defaultValue={settings.rateLimitMaxAttempts || 5} 
+                      className="bg-black/30 w-32 border-white/10 font-mono text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="rateLimitWindowMs" className="text-xs text-muted-foreground">Lockout Window (Milliseconds)</Label>
+                    <Input 
+                      id="rateLimitWindowMs" 
+                      name="rateLimitWindowMs" 
+                      type="number" 
+                      defaultValue={settings.rateLimitWindowMs || 900000} 
+                      className="bg-black/30 w-48 border-white/10 font-mono text-sm"
+                    />
+                    <p className="text-[10px] text-muted-foreground italic">900000ms = 15 minutes</p>
+                  </div>
+                </div>
               </div>
 
               <hr className="my-2 border-white/5" />

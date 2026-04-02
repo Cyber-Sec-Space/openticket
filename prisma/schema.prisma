@@ -94,7 +94,21 @@ model SystemSetting {
   slaMediumHours   Int @default(72)
   slaLowHours      Int @default(168)
 
+  // Rate Limiting Config
+  rateLimitEnabled     Boolean @default(true)
+  rateLimitWindowMs    Int     @default(900000) // 15 minutes default
+  rateLimitMaxAttempts Int     @default(5)
+
   updatedAt DateTime @updatedAt
+}
+
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  ip         String
+  identifier String
+  createdAt  DateTime @default(now())
+
+  @@index([ip, createdAt])
 }
 
 // -----------------------------------------------------------------------------
