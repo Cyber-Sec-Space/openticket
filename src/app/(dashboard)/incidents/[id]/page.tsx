@@ -286,7 +286,7 @@ export default async function IncidentDetailPage({
                     <Label className="text-primary/70 text-xs uppercase tracking-widest">Category</Label>
                     <div className="relative">
                       <Select key={`type-${(incident.type || "OTHER").replace(/_/g, ' ')}`} name="type" defaultValue={(incident.type || "OTHER").replace(/_/g, ' ')}>
-                        <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
+                        <SelectTrigger className="flex !h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                           <SelectValue placeholder="Category..." />
                         </SelectTrigger>
                         <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
@@ -500,7 +500,7 @@ export default async function IncidentDetailPage({
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Severity</Label>
                     <Select key={`severity-${incident.severity}`} name="severity" defaultValue={incident.severity}>
-                      <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
+                      <SelectTrigger className="flex !h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
@@ -515,7 +515,7 @@ export default async function IncidentDetailPage({
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Target Node (Asset)</Label>
                     <Select key={`asset-${incident.asset?.name || "UNLINKED"}`} name="assetName" defaultValue={incident.asset?.name || "UNLINKED"}>
-                      <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
+                      <SelectTrigger className="flex !h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                         <SelectValue placeholder="Associate Infrastructure (Optional)" />
                       </SelectTrigger>
                       <SelectContent className="bg-black/95 border-border/60 shadow-2xl backdrop-blur-md max-h-64">
@@ -530,7 +530,7 @@ export default async function IncidentDetailPage({
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Status</Label>
                     <Select key={`status-${incident.status.replace(/_/g, ' ')}`} name="status" defaultValue={incident.status.replace(/_/g, ' ')}>
-                      <SelectTrigger className="flex h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
+                      <SelectTrigger className="flex !h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">

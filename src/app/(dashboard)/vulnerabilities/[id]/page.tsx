@@ -113,20 +113,20 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
             </h2>
             <form action={updateVulnStatusAction} className="flex flex-col space-y-4">
                <input type="hidden" name="vulnId" value={vuln.id} />
-               <div className="flex gap-4">
+                 <div className="flex gap-4">
                  <div className="flex-1 space-y-2">
                    <label className="text-xs text-white/70 uppercase tracking-widest">Enforce SLA Date</label>
                    <Input 
                      type="datetime-local" 
                      name="targetSlaDate" 
                      defaultValue={vuln.targetSlaDate ? new Date(vuln.targetSlaDate.getTime() - vuln.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
-                     className="flex h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary transition-all [color-scheme:dark]"
+                     className="flex !h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary transition-all [color-scheme:dark]"
                    />
                  </div>
                  <div className="flex-1 space-y-2">
                    <label className="text-xs text-white/70 uppercase tracking-widest">Workflow State</label>
                    <Select key={`vuln-status-${vuln.status}`} name="status" defaultValue={vuln.status}>
-                      <SelectTrigger className="w-full bg-black/30 border-white/10 h-10">
+                      <SelectTrigger className="w-full bg-black/50 border-white/10 !h-10 rounded-md">
                          <SelectValue placeholder="Update Status" />
                       </SelectTrigger>
                       <SelectContent className="bg-black/95 shadow-2xl border-white/10">
