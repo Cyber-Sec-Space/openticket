@@ -128,11 +128,17 @@ body.dark-theme {
   padding: 0 2rem;
 }
 
+.logo { 
+  flex: 1; 
+  display: flex; 
+  justify-content: flex-start; 
+}
 .logo-img { height: 28px; }
 
 .nav-links {
   display: flex;
   gap: 2rem;
+  flex: none;
 }
 
 .nav-links a {
@@ -145,7 +151,13 @@ body.dark-theme {
 
 .nav-links a:hover { color: white; }
 
-.nav-actions { display: flex; gap: 1rem; align-items: center; }
+.nav-actions { 
+  display: flex; 
+  gap: 1rem; 
+  align-items: center; 
+  flex: 1; 
+  justify-content: flex-end; 
+}
 
 .github-star-btn {
   display: flex;
@@ -250,7 +262,6 @@ body.dark-theme {
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: auto auto;
   gap: 1.5rem;
 }
 
@@ -268,6 +279,7 @@ body.dark-theme {
 
 .item-1 { grid-column: span 2; }
 .item-4 { grid-column: span 2; }
+.item-5 { grid-column: span 2; }
 
 .bento-icon {
   width: 48px; height: 48px;
