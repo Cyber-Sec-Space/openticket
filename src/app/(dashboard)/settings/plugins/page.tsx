@@ -24,7 +24,7 @@ export default async function PluginManagementPage() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 animate-fade-in-up pb-20">
+    <div className="p-8 max-w-5xl mx-auto space-y-12 animate-fade-in-up pb-20">
       <div className="flex flex-col gap-2">
         <h2 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
           <Shield className="w-8 h-8 text-primary shadow-[0_0_20px_currentColor] rounded-full" /> 

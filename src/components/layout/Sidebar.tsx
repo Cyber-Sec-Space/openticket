@@ -43,7 +43,7 @@ export function Sidebar({ userRoles }: { userRoles?: string[] }) {
       
       <nav className="flex-1 py-8 px-4 space-y-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !(item.href === "/settings" && pathname.startsWith("/settings/plugins")))
           return (
             <Link
               key={item.href}
