@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { updateProfile } from "./actions"
 import { TwoFactorPanel } from "./two-factor-panel"
+import { NotificationPanel } from "./notification-panel"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -91,6 +92,7 @@ export default async function SettingsPage() {
 
           <div className="pt-4">
             <TwoFactorPanel isEnabled={user.isTwoFactorEnabled} />
+            <NotificationPanel user={user} />
           </div>
         </div>
       </div>

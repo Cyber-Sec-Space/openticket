@@ -84,3 +84,32 @@ export async function disable2FA() {
   revalidatePath("/settings")
   return { success: true }
 }
+
+export async function updateNotificationPreferences(prevState: any, formData: FormData) {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error("Unauthorized")
+
+  const browserNotificationsEnabled = formData.get("browserNotificationsEnabled") === "true";
+  const notifyOnCritical = formData.get("notifyOnCritical") === "on";
+  const notifyOnHigh = formData.get("notifyOnHigh") === "on";
+  const notifyOnAssign = formData.get("notifyOnAssign") === "on";
+  const notifyOnResolution = formData.get("notifyOnResolution") === "on";
+  const notifyOnAssetCompromise = formData.get("notifyOnAssetCompromise") === "on";
+  const notifyOnUnassigned = formData.get("notifyOnUnassigned") === "on";
+
+  await db.user.update({
+    where: { id: session.user.id },
+    data: {
+      browserNotificationsEnabled,
+      notifyOnCritical,
+      notifyOnHigh,
+      notifyOnAssign,
+      notifyOnResolution,
+      notifyOnAssetCompromise,
+      notifyOnUnassigned
+    }
+  })
+
+  revalidatePath("/settings")
+  return { success: true }
+}

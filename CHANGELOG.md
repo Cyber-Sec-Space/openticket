@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## 0.2.0
 ### Added
+- Notifications (Web): Engineered a global HTML5 Browser Notification polling architecture capable of pushing OS-level desktop alerts (Critical Incidents, Asset Compromise, Assignments, and Resolutions) to active operators across background tabs.
+- Preferences: Deployed a granular Notification Matrix in the `/settings` user panel allowing operators to strictly configure which telemetry events trigger desktop-level popups.
 - Identity Verification: Deployed an impenetrable Registration Wall demanding cryptographic link verification (`VerificationToken`) dispatched directly via SMTP before granting UI access, effectively destroying phantom account generation vectors.
 - Self-Service Recovery: Engineered an out-of-band `PasswordResetToken` pipeline permitting operators to rescue lost credentials independently. Includes robust Anti-Enumeration protections on the `/forgot-password` schema to mask valid topological targets.
 - Notification (SMTP): Expanded Notification triggers adding 4 specific system-defined conditionals: `Asset Compromise`, `New Vulnerability`, `Ticket Resolution`, and `Operator Joined`, enabling fully configurable global delivery streams.

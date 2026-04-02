@@ -57,6 +57,15 @@ model User {
   twoFactorSecret    String?
   isDisabled         Boolean   @default(false) // Phase 5 Suspension Support
 
+  // Browser Notification Preferences
+  browserNotificationsEnabled Boolean @default(false)
+  notifyOnCritical            Boolean @default(true)
+  notifyOnHigh                Boolean @default(false)
+  notifyOnAssign              Boolean @default(true)
+  notifyOnResolution          Boolean @default(true)
+  notifyOnAssetCompromise     Boolean @default(true)
+  notifyOnUnassigned          Boolean @default(false)
+
   accounts  Account[]
   sessions  Session[]
   apiTokens ApiToken[]
@@ -67,6 +76,20 @@ model User {
   comments          Comment[]
   auditLogs         AuditLog[]
   attachments       Attachment[]
+  notifications     UserNotification[]
+}
+
+model UserNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  body        String
+  link        String?
+  isRead      Boolean  @default(false)
+  isPushed    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {

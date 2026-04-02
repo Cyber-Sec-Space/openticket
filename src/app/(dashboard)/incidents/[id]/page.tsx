@@ -7,6 +7,7 @@ import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { dispatchWebhook } from "@/lib/webhook"
 import { sendIncidentAssignmentEmail, sendResolutionEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
+import { dispatchAlert, dispatchMassAlert } from "@/lib/notifier"
 import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
 import { FileUploadBox } from "@/components/file-upload-box"
 import { Label } from "@/components/ui/label"
@@ -138,26 +139,33 @@ export default async function IncidentDetailPage({
     const previousAssigneeIds = incident!.assignees.map(a => a.id)
     const newlyAssignedIds = validAssigneeIds.filter(id => !previousAssigneeIds.includes(id))
 
-    if (newlyAssignedIds.length > 0 && settings?.smtpTriggerOnAssign) {
-      const newlyAssignedUsers = await db.user.findMany({
-        where: { id: { in: newlyAssignedIds }, email: { not: null } },
-        select: { email: true, name: true }
-      })
-      
-      for (const a of newlyAssignedUsers) {
-        if (a.email) {
-          await sendIncidentAssignmentEmail(incident!.id, incident!.title, a.email, a.name || 'Operator')
+    if (newlyAssignedIds.length > 0) {
+      // Browser Native Alerts
+      await dispatchMassAlert(newlyAssignedIds, "ASSIGN", `Incident Assigned`, `INC-${incident!.id.substring(0, 8)} has been structurally assigned to your identity.`, `/incidents/${incident!.id}`)
+
+      if (settings?.smtpTriggerOnAssign) {
+        const newlyAssignedUsers = await db.user.findMany({
+          where: { id: { in: newlyAssignedIds }, email: { not: null } },
+          select: { email: true, name: true }
+        })
+        
+        for (const a of newlyAssignedUsers) {
+          if (a.email) {
+            await sendIncidentAssignmentEmail(incident!.id, incident!.title, a.email, a.name || 'Operator')
+          }
         }
       }
     }
 
     if (
-      settings?.smtpTriggerOnResolution && 
       (newStatus === 'RESOLVED' || newStatus === 'CLOSED') && 
       !['RESOLVED', 'CLOSED'].includes(incident!.status) && 
-      incident!.reporter?.email
+      incident!.reporter
     ) {
-      await sendResolutionEmail(incident!.id, incident!.title, incident!.reporter.email, incident!.reporter.name || 'Reporter')
+      await dispatchAlert(incident!.reporter.id, "RESOLUTION", "Incident Resolved", `INC-${incident!.id.substring(0, 8)} has achieved resolution telemetry.`, `/incidents/${incident!.id}`)
+      if (settings?.smtpTriggerOnResolution && incident!.reporter.email) {
+        await sendResolutionEmail(incident!.id, incident!.title, incident!.reporter.email, incident!.reporter.name || 'Reporter')
+      }
     }
 
     // Phase 7: Dynamic Triage Auto-Isolation rules
@@ -167,9 +175,11 @@ export default async function IncidentDetailPage({
         data: { status: 'COMPROMISED' }
       })
 
+      const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] } }, select: { id: true, email: true } })
+      await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${resolvedAssetId}`)
+
       if (settings?.smtpTriggerOnAssetCompromise) {
-        const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { email: true } })
-        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
+        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.filter(a => a.email).map(a => a.email as string))
       }
 
       await db.auditLog.create({

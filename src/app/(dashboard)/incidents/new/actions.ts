@@ -3,8 +3,10 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
+import { revalidatePath } from "next/cache"
 import { dispatchWebhook } from "@/lib/webhook"
 import { sendCriticalAlertEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
+import { dispatchMassAlert } from "@/lib/notifier"
 
 export async function createIncident(prevState: any, formData: FormData) {
   const session = await auth()
@@ -61,8 +63,9 @@ export async function createIncident(prevState: any, formData: FormData) {
     })
     
     if (settings?.smtpTriggerOnAssetCompromise) {
-      const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { email: true } })
+      const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { id: true, email: true } })
       await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
+      await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${assetId}`)
     }
     
     await db.auditLog.create({
@@ -86,15 +89,35 @@ export async function createIncident(prevState: any, formData: FormData) {
     }
   })
 
-  // Phase 9: Webhook Dispatch
+  // Phase 10: Native Notification for UNASSIGNED
+  const unassignedAlertUsers = await db.user.findMany({ select: { id: true } })
+  await dispatchMassAlert(
+     unassignedAlertUsers.map(u => u.id), 
+     "UNASSIGNED", 
+     "New Unassigned Incident", 
+     `INC-${newIncident.id.substring(0, 8)} has been created and requires an assignee.`,
+     `/incidents/${newIncident.id}`
+  )
+
+  // Phase 9 & 10: Webhook & Native Notifications Dispatch
   if (severity === 'CRITICAL' || severity === 'HIGH') {
+    const alertedUsers = await db.user.findMany({
+      where: { roles: { hasSome: ['SECOPS', 'ADMIN'] } },
+      select: { id: true, email: true }
+    })
+    
+    // Browser Notifications (Native)
+    await dispatchMassAlert(
+       alertedUsers.map(u => u.id), 
+       severity, 
+       `${severity} Incident Declared`, 
+       `Incident ${title} requires immediate triage.`,
+       `/incidents/${newIncident.id}`
+    )
+
     const shouldSendEmail = (severity === 'CRITICAL' && settings?.smtpTriggerOnCritical) || (severity === 'HIGH' && settings?.smtpTriggerOnHigh)
     if (shouldSendEmail) {
-      const alertedUsers = await db.user.findMany({
-        where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } },
-        select: { email: true }
-      })
-      const targetEmails = alertedUsers.map(u => u.email as string)
+      const targetEmails = alertedUsers.filter(u => u.email).map(u => u.email as string)
       await sendCriticalAlertEmail(newIncident, targetEmails)
     }
 
