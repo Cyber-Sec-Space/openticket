@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenTicket | Open Source Security Operations Platform</title>
+  <meta name="description"
+    content="An enterprise-grade, open-source security operations platform with real-time incident tracking, machine-to-machine plugins, and automated SLAs.">
+
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800;900&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="dark-theme">
+  <!-- Glowing Background Orbs -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <div class="glow-orb orb-3"></div>
+
+  <!-- Navigation -->
+  <nav class="navbar glass">
+    <div class="nav-container">
+      <div class="logo">
+        <img src="assets/openticket_banner_trans.png" alt="OpenTicket Logo" class="logo-img">
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#plugins">Plugins</a>
+      </div>
+      <div class="nav-actions">
+        <a href="https://github.com/Cyber-Sec-Space/openticket" target="_blank" class="btn btn-secondary">
+          <i data-lucide="github"></i> GitHub
+        </a>
+        <a href="https://github.com/Cyber-Sec-Space/openticket" target="_blank" class="btn btn-primary">
+          Get Started <i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero content-wrapper">
+    <div class="hero-content reveal">
+      <div class="badge glass">Open Source SecOps</div>
+      <h1 class="hero-title">Cybersecurity Operations.<br><span class="text-gradient">Elevated.</span></h1>
+      <p class="hero-subtitle">
+        An enterprise-grade platform unifying incident tracking, machine-to-machine integrations, and real-time
+        collaboration. Automate responses, track SLAs, and take control of your SOC.
+      </p>
+      <div class="hero-actions">
+        <a href="https://github.com/Cyber-Sec-Space/openticket" class="btn btn-primary btn-lg shadow-glow">
+          Deploy Now
+        </a>
+      </div>
+    </div>
+
+    <!-- Hero Image Placeholder -->
+    <div class="hero-image-wrapper glass reveal delay-1">
+      <div class="mac-window-controls">
+        <span></span><span></span><span></span>
+      </div>
+      <img src="assets/hero-dashboard.png" alt="OpenTicket Dashboard Overview" class="hero-img">
+    </div>
+  </section>
+
+  <!-- Features / Bento Grid Section -->
+  <section id="features" class="features content-wrapper section-padding">
+    <div class="section-header reveal">
+      <h2 class="section-title">Designed for Modern <span class="text-gradient">Defenders</span></h2>
+      <p class="section-subtitle">Everything you need to orchestrate security workflows in one highly customizable
+        platform.</p>
+    </div>
+
+    <div class="bento-grid">
+      <!-- Bento Item 1: Threat Vector (Large) -->
+      <div class="bento-card glass reveal item-1">
+        <div class="bento-icon"><i data-lucide="radar"></i></div>
+        <h3>Threat Vector Intelligence</h3>
+        <p>Visually assess your organizational risk through dynamic, real-time radar charting of active vulnerabilities
+          spanning CRITICAL to LOW severities.</p>
+        <div class="img-placeholder relative-overflow">
+          <img src="assets/incident-management.png" alt="Incident Management" class="bento-img">
+        </div>
+      </div>
+
+      <!-- Bento Item 2: SLA Tracking -->
+      <div class="bento-card glass reveal delay-1 item-2">
+        <div class="bento-icon"><i data-lucide="clock"></i></div>
+        <h3>Strict SLA Monitoring</h3>
+        <p>Configurable resolution timelines ensure high-priority incidents never slip through the cracks, complete with
+          automated escalation.</p>
+      </div>
+
+      <!-- Bento Item 3: Extensible Hooks -->
+      <div class="bento-card glass reveal delay-2 item-3">
+        <div class="bento-icon"><i data-lucide="webhook"></i></div>
+        <h3>Hook Engine</h3>
+        <p>A decoupled event-bus architecture routing <code>onIncidentCreated</code> and <code>onAssetCompromise</code>
+          logic across your entire SOC perimeter.</p>
+      </div>
+
+      <!-- Bento Item 4: Plug & Play (Large) -->
+      <div class="bento-card glass reveal item-4">
+        <div class="bento-icon"><i data-lucide="blocks"></i></div>
+        <h3>Plug & Play Ecosystem</h3>
+        <p>Install and configure native integrations seamlessly. Whether it's Slack, PagerDuty, Jira, or Teams—manage
+          all SOAR extensions in a visual store without managing ENV variables.</p>
+        <div class="img-placeholder relative-overflow border-top">
+          <img src="assets/plugin-store.gif" alt="Plugin Store Grid" class="bento-img">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section id="architecture" class="architecture content-wrapper section-padding">
+    <div class="reveal">
+      <h2 class="section-title">Headless <span class="text-gradient">Machine-to-Machine</span> Integrations</h2>
+      <p class="section-subtitle">Power your automation flawlessly with our anti-enumeration ApiToken engine generating
+        secure SHA-256 Bearer authentications for SOAR/SIEM integration logic.</p>
+
+      <div class="terminal glass cursor-pointer">
+        <div class="mac-window-controls"><span></span><span></span><span></span></div>
+        <pre><code><span class="keyword">curl</span> -X POST https://soc.openticket.local/api/incidents \
+  -H <span class="string">"Authorization: Bearer ot_secv2_ab12c3"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d '{
+    <span class="property">"title"</span>: <span class="string">"Suspicious SSH Login"</span>,
+    <span class="property">"severity"</span>: <span class="string">"HIGH"</span>,
+    <span class="property">"type"</span>: <span class="string">"UNAUTHORIZED_ACCESS"</span>
+  }'</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section section-padding">
+    <div class="cta-container glass reveal">
+      <h2 class="section-title">Ready to Centralize Your SOC?</h2>
+      <p class="section-subtitle">Join the open-source movement redefining security response.</p>
+      <a href="https://github.com/Cyber-Sec-Space/openticket" class="btn btn-primary btn-lg shadow-glow mt-4">
+        View on GitHub
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="glass border-t">
+    <div class="content-wrapper footer-content">
+      <div class="footer-logo">
+        <img src="assets/openticket_banner_trans.png" alt="OpenTicket" style="height: 32px;">
+      </div>
+      <p class="text-muted">© 2026 Cyber-Sec-Space. Open source under MIT License.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
