@@ -96,7 +96,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token.id) {
         const dbUser = await db.user.findUnique({ where: { id: token.id as string }, select: { isDisabled: true, role: true } })
         if (!dbUser || dbUser.isDisabled) {
-           token.disabled = true; // Signal ban
+           return null // Returning null instantly destroys the JWT token and logs the user out
         } else {
            token.role = dbUser.role // Sync RBAC
         }
@@ -104,10 +104,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      if (token.disabled) {
-        // Purposely corrupt session to force unauthentication
-        return null as any 
-      }
+      if (!token) return session;
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as any
