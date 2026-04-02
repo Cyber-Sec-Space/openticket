@@ -1,13 +1,16 @@
-import { auth } from "@/auth"
+import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 
 export async function GET(req: Request) {
-  const session = await auth()
+  const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
-  // Reporters should generally be able to list assets so they can tie incidents to them.
-  // Optionally restrict this entirely to SecOps/Admins. MVP: all users can view assets.
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPrivilege) {
+     return new NextResponse("Forbidden: Access to systemic assets is strictly restricted to SECOPS & ADMIN roles.", { status: 403 })
+  }
+
   const { searchParams } = new URL(req.url)
   const takeParam = searchParams.get("take");
   const skipParam = searchParams.get("skip");
@@ -24,11 +27,11 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await auth()
+  const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
   
-  // Only Admins and SecOps can add assets to inventory.
-  if (session.user.role === 'REPORTER') {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPrivilege) {
     return new NextResponse("Forbidden", { status: 403 })
   }
 

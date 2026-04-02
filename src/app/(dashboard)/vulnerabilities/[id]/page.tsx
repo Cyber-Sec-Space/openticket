@@ -20,7 +20,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
   const { id } = await params
   const session = await auth()
   
-  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SECOPS')) {
+  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
     return notFound()
   }
 
@@ -69,7 +69,7 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
         
         {/* Admin Controls */}
         <div className="flex space-x-4 items-center">
-           {session.user.role === 'ADMIN' && (
+           {session.user.roles.includes('ADMIN') && (
              <form action={deleteVulnerabilityAction}>
                 <input type="hidden" name="vulnId" value={vuln.id} />
                 <Button variant="destructive" size="sm" type="submit" className="opacity-70 hover:opacity-100 flex items-center">

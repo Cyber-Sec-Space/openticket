@@ -1,8 +1,9 @@
-# OpenTicket (MVP)
+# OpenTicket (Beta)
 
 <p align="center">
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
 </p>
+
 [🌐 Read in English](../README.md) | [🏗️ 架構設計書 (Architecture Specs)](docs/ARCHITECTURE.zh-TW.md)
 
 專為資安維運 (SecOps) 與 IT 團隊打造的次世代資安事件與資產集中管理系統。作為 Jira 或 ServiceNow 等企業級 IT 工單系統的輕量化、視覺化替代方案而生。
@@ -12,7 +13,9 @@
 - **事件與漏洞雙軌追蹤：** 具備端對端的事件分流管道，能將複雜的資安事件與 CVE 漏洞直接映射到內部受害資產上。
 - **雙因子驗證 (2FA) 安全機制：** 內建基於 TOTP 演算法的 2FA 模組，可完美整合各種標準驗證器應用程式 (如 Google Authenticator, Authy)。更支援系統管理員「一鍵強制全域啟用 2FA」的鎖定功能。
 - **高密度 SOC 配置 (High-Density Layout)：** 重新設計的單行 8 指標 KPI 網格，讓維運人員能一眼看清資安戰場全貌，並將重點應變面板 (Command Actions) 移至上方，極速縮短反應遲滯時間。
-- **模組化角色存取控制 (RBAC)：** 原生的多租戶隔離機制，清楚劃分 `ADMIN` (全域基建覆寫權限), `SECOPS` (事件處置與指派), 以及 `REPORTER` (終端使用者通報) 權限。
+- **陣列化多角色存取控制 (Multi-Role RBAC)：** 原生的多層次權限隔離機制，支援同時為特定維運人員疊加 `ADMIN` (全域基建覆蓋), `SECOPS` (事件處置), `REPORTER` (通報) 與 `API_ACCESS` (開放機器介接) 等複數權限標籤，帶來極大的組織架構彈性。
+- **可插拔的擴展架構 (Plug-and-Play Architecture)：** 具備獨立的資料庫 Hook Engine (事件總線)，所有延伸功能與第三方依賴皆被收斂至 Settings -> Plugins 進行熱插拔與設定，不再讓 Dashboard 塞滿複雜無關的配置。
+- **全方位硬派通知中心 (Omni-channel Notifications)：** 原生支援基於 SMTP 的事件與註冊身份驗證，並提供能夠根據危險等級 (Critical, High) 自訂過濾，且直接推播至桌面作業系統的 HTML5 Web Notifications 背景通知機制。
 - **企業級現代介面 (Enterprise UI)：** 以 TailwindCSS 打造高質感 Blur / Backdrop-filter 動態特效，結合深度互動的 Shadcn 元件、透過 Portal 防裁切與支援手動輸入的客製化 `react-datepicker`，以及視覺化的 Recharts 圖表庫。
 
 ---
@@ -31,6 +34,18 @@
 - 前往 **"Log Vulnerability (登錄漏洞)"**。
 - 輸入該漏洞正式的 `CVE-ID` 以便立案，並選定其 CVSS 嚴重程度。
 - 將該漏洞指派給具體的系統節點 (Asset)。送出後，主控台的 *Vulnerability Heatmap (漏洞嚴重性熱圖)* 會立刻動態更新。
+
+### 3. 機器自動化介接 (Machine-to-Machine API Tokens)
+您可以將 OpenTicket 直接與 CI/CD 管道或企業內部的 SOAR 自動化劇本串接。
+- 前往 **"Identity Preferences (身分設定) -> API Tokens"** (帳戶需具備 `API_ACCESS` 或 `ADMIN` 標籤)。
+- 生成一組受密碼學保護的自動化金鑰 (例如命名為：*GitHub Actions Push*)。
+- 在外部腳本呼叫 `/api/incidents` 或 `/api/assets` 端點時，將其帶入 Header：`Authorization: Bearer <token>`。該呼叫將自動繼承生成該金鑰者的既有伺服器權限。
+
+### API 與系統整合
+- **Hook Engine 攔截網**：將系統切分為去中心化的事件匯流排架構 (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`)，在不侵入並影響主伺服器穩定性的情況下，獨立發出外部調用。
+- **內建即時外掛 (Plugins)**：平台原生提供諸如 `Slack Critical Notifier`、`PagerDuty Escalator`、`Jira Cloud Synchronization` 以及 `Microsoft Teams Webhook` 等預載官方外掛，實現立即上線。
+- **M2M 自動化金鑰**：具有防禦爆破與反列舉機制的 `ApiToken` 引擎，以 `SHA-256` 生成高安全度 Bearer token，提供 SOAR 與外部 SIEM 完美的無人值守串接環境。
+- **Headless 路由限流器**：防堵惡意或失控自動化腳本的全球 REST 端點門檻，確保資料庫層抽象介面不會崩潰。在不阻塞核心行程的情況下，於毫秒級被推送至您的指定頻道。
 
 ---
 

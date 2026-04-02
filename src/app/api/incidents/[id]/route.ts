@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 
@@ -7,29 +7,35 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const session = await auth()
+  const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
-  const incident = await db.incident.findUnique({
-    where: { id },
-    include: {
-      reporter: { select: { id: true, name: true, email: true } },
-      assignees: { select: { id: true, name: true, email: true } },
-      asset: true,
-      comments: {
-        include: { author: { select: { name: true, role: true } } },
-        orderBy: { createdAt: 'asc' }
+  try {
+    const incident = await db.incident.findUnique({
+      where: { id },
+      include: {
+        reporter: { select: { name: true, email: true } },
+        assignees: { select: { name: true, email: true, id: true } },
+        asset: { select: { name: true, type: true } },
+        comments: { include: { author: { select: { name: true, roles: true } } } },
+        attachments: true
       }
+    })
+
+    if (!incident) return new NextResponse("Not Found", { status: 404 })
+
+    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    
+    // Strict isolation enforcement
+    if (!hasPrivilege && incident.reporterId !== session.user.id) {
+      return new NextResponse("Forbidden", { status: 403 })
     }
-  })
 
-  if (!incident) return new NextResponse("Not Found", { status: 404 })
-
-  if (session.user.role === 'REPORTER' && incident.reporterId !== session.user.id) {
-    return new NextResponse("Forbidden", { status: 403 })
+    return NextResponse.json(incident)
+  } catch (error) {
+    console.error("[GET /api/incidents/[id]", error)
+    return new NextResponse("Internal Error", { status: 500 })
   }
-
-  return NextResponse.json(incident)
 }
 
 export async function PATCH(
@@ -37,10 +43,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const session = await auth()
+  const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
-  if (session.user.role === 'REPORTER') {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPrivilege) {
     return new NextResponse("Forbidden", { status: 403 })
   }
 

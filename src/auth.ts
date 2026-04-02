@@ -7,7 +7,7 @@ import { CredentialsSignin } from "next-auth"
 
 declare module "next-auth" {
   interface User {
-    role?: string
+    roles?: string[]
   }
 }
 
@@ -29,6 +29,13 @@ class Global2FAEnforcedError extends Error {
   constructor() {
     super("Global2FAEnforced");
     this.name = "Global2FAEnforcedError";
+  }
+}
+
+class EmailNotVerifiedError extends Error {
+  constructor() {
+    super("EmailNotVerified");
+    this.name = "EmailNotVerifiedError";
   }
 }
 
@@ -57,6 +64,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
         const requireGlobal2FA = settings?.requireGlobal2FA ?? false
 
+        if (settings?.requireEmailVerification && settings?.smtpEnabled && !user.emailVerified) {
+          throw new EmailNotVerifiedError()
+        }
+
         // Determine effective 2FA status (either enforced globally or opted-in personally)
         if (requireGlobal2FA || user.isTwoFactorEnabled) {
           if (!user.isTwoFactorEnabled || !user.twoFactorSecret) {
@@ -81,7 +92,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role
+          roles: user.roles
         }
       },
     }),
@@ -90,15 +101,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = user.role
+        token.roles = user.roles
       }
       // Force database check for real-time ban enforcement and Role syncing
       if (token.id) {
-        const dbUser = await db.user.findUnique({ where: { id: token.id as string }, select: { isDisabled: true, role: true } })
+        const dbUser = await db.user.findUnique({ where: { id: token.id as string }, select: { isDisabled: true, roles: true } })
         if (!dbUser || dbUser.isDisabled) {
            return null // Returning null instantly destroys the JWT token and logs the user out
         } else {
-           token.role = dbUser.role // Sync RBAC
+           token.roles = dbUser.roles // Sync RBAC
         }
       }
       return token
@@ -107,7 +118,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!token) return session;
       if (session.user) {
         session.user.id = token.id as string
-        session.user.role = token.role as any
+        session.user.roles = token.roles as any
       }
       return session
     }

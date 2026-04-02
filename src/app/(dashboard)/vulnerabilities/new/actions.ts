@@ -5,11 +5,12 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { Severity } from "@prisma/client"
+import { sendNewVulnerabilityAlertEmail } from "@/lib/mailer"
 
 export async function createVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'SECOPS')) {
+  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -51,6 +52,12 @@ export async function createVulnerabilityAction(formData: FormData) {
       changes: `Minted Threat metrics ${cveId || newVuln.title} logging local CVSS:[${cvssScore}]`
     }
   })
+
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  if (settings?.smtpTriggerOnNewVulnerability) {
+    const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { email: true } })
+    await sendNewVulnerabilityAlertEmail(newVuln.title, newVuln.severity, admins.map(a => a.email as string))
+  }
 
   revalidatePath("/vulnerabilities")
   redirect("/vulnerabilities")

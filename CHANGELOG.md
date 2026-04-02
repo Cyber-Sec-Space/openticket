@@ -2,8 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## main
+## 0.2.0
 ### Added
+- Plugin Management: Expanded Plugin Store ecosystem by introducing native `PagerDuty Escalator`, `Jira Cloud Synchronization`, and `Microsoft Teams Webhook` extensions, powering dynamic M2M response mechanisms and SOC collaboration.
+- Plugin Management: Deployed a `/settings/plugins` interface linking the static Plugin Registry directly to a dynamic PostgreSQL `PluginState` table. Administrators can now visually Install, Uninstall, and Configure Slack credentials via UI without committing ENV variables.
+- Extensibility (Server/Client): Engineered a static-registry Plugin Architecture (`src/lib/plugins/hook-engine`) capable of isolating logic using an automated EventBus (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`).
+- Integrations: Rolled out the first-party `slack-notifier` plugin as a live pilot demonstrating hook interception and Dashboard Web-Widget injection.
+- Notifications (Web): Engineered a global HTML5 Browser Notification polling architecture capable of pushing OS-level desktop alerts (Critical Incidents, Asset Compromise, Assignments, and Resolutions) to active operators across background tabs.
+- Preferences: Deployed a granular Notification Matrix in the `/settings` user panel allowing operators to strictly configure which telemetry events trigger desktop-level popups.
+- Identity Verification: Deployed an impenetrable Registration Wall demanding cryptographic link verification (`VerificationToken`) dispatched directly via SMTP before granting UI access, effectively destroying phantom account generation vectors.
+- Self-Service Recovery: Engineered an out-of-band `PasswordResetToken` pipeline permitting operators to rescue lost credentials independently. Includes robust Anti-Enumeration protections on the `/forgot-password` schema to mask valid topological targets.
+- Notification (SMTP): Expanded Notification triggers adding 4 specific system-defined conditionals: `Asset Compromise`, `New Vulnerability`, `Ticket Resolution`, and `Operator Joined`, enabling fully configurable global delivery streams.
+- Security: Migrated from single-role RBAC to Array-based Multi-Role Access Control supporting blended organizational privileges (e.g., users can be `SECOPS` and `ADMIN` simultaneously).
+- Identity Mapping: Introduced new `API_ACCESS` privilege tier allowing entities to mint non-interactive automation tokens.
+- M2M Authentication: Built Machine-to-Machine API token infrastructure with cryptographic `SHA-256` storage handling Native Bearer authentications across SOAR/CI-CD interfaces.
+- UI: Reconstructed User Management Dashboard allowing checkbox-based matrix selections for multi-role alignments and integrated a dedicated Token management panel (`/settings/tokens`).
 - Analytics: Enriched Main Dashboard with advanced SecOps KPI metrics including 14-days Mean Time To Resolve (MTTR), SLA Compliance tracking cards, and dynamic `incBreached` lines projected on the generic 14-day Detection Trend chart.
 - Analytics: Instantiated 7-day retrospective snapshot tracking across top-level Metric Cards dynamically visualizing `Delta %` (▲/▼) volume drifts for active incidents and vulnerabilities.
 - Dashboard: Refactored generic "Recent Declarations" into a highly personalized, RBAC-filtered "Personal Case Board" with Server-Side Pagination supporting dynamic active-ticket triaging workflows.
@@ -23,6 +36,10 @@ All notable changes to this project will be documented in this file.
 - IAM Governance: Deployed `isDisabled` real-time JWT interceptors terminating active attacker sessions instantly upon Account Suspension.
 
 ### Fixed
+- Remediated Broken Object Level Authorization (BOLA) in `api/assets` by proactively isolating `REPORTER` users from horizontal enterprise topology scanning, terminating internal threat visibility vectors.
+- Corrected logic desync within `api/incidents` where Zero-Day `CRITICAL` payloads failed to trigger synchronous SOAR Auto-Quarantine heuristics via direct API creation.
+- Fortified backend generic physical deletion nodes inside `incidents/[id]` and `upload.ts` with extreme native `path.resolve` boundary lockdowns, completely sealing `.env` and DB Path Traversal vulnerabilities from compromised uploads.
+- Introduced a hard Prisma-driven rate-limiting matrix within `System Settings` mitigating automated credential stuffing, infinite logic looping, and TOTP traversal attempts natively within `login` Server Actions.
 - Fortified public Registration API with generic return codes preventing `Enmueration Attacks` and implemented constant-time logic blocking to massively throttle App-level Database DoS injections.
 - Enforced hard `take: 100` ceiling bounds globally across naked Prisma REST endpoints (`/api/incidents`, `/api/assets`) sealing Out of Memory (OOM) API crashing vulnerabilities under massive scalability.
 - Enforced strict cryptographic MIME / Extension Allowlist (.png, .json, .log, etc) inside `uploadAttachment` entirely mitigating Stored XSS payloads (.html, .svg) delivered through fake evidence files.

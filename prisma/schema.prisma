@@ -15,6 +15,7 @@ enum Role {
   ADMIN
   SECOPS
   REPORTER
+  API_ACCESS
 }
 
 model Account {
@@ -51,13 +52,23 @@ model User {
   emailVerified      DateTime?
   image              String?
   passwordHash       String? // Added for Credentials provider MVP
-  role               Role      @default(REPORTER)
+  roles              Role[]    @default([REPORTER])
   isTwoFactorEnabled Boolean   @default(false)
   twoFactorSecret    String?
   isDisabled         Boolean   @default(false) // Phase 5 Suspension Support
 
-  accounts Account[]
-  sessions Session[]
+  // Browser Notification Preferences
+  browserNotificationsEnabled Boolean @default(false)
+  notifyOnCritical            Boolean @default(true)
+  notifyOnHigh                Boolean @default(false)
+  notifyOnAssign              Boolean @default(true)
+  notifyOnResolution          Boolean @default(true)
+  notifyOnAssetCompromise     Boolean @default(true)
+  notifyOnUnassigned          Boolean @default(false)
+
+  accounts  Account[]
+  sessions  Session[]
+  apiTokens ApiToken[]
 
   // Relations for OpenTicket
   reportedIncidents Incident[]   @relation("Reporter")
@@ -65,6 +76,20 @@ model User {
   comments          Comment[]
   auditLogs         AuditLog[]
   attachments       Attachment[]
+  notifications     UserNotification[]
+}
+
+model UserNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  body        String
+  link        String?
+  isRead      Boolean  @default(false)
+  isPushed    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -75,6 +100,15 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
 // -----------------------------------------------------------------------------
 // Global Configuration (Singleton Model)
 // -----------------------------------------------------------------------------
@@ -83,7 +117,7 @@ model SystemSetting {
   id                String  @id @default("global") // Enforce singleton
   allowRegistration Boolean @default(true)
   requireGlobal2FA  Boolean @default(false)
-  defaultUserRole   Role    @default(REPORTER)
+  defaultUserRoles  Role[]  @default([REPORTER])
 
   webhookUrl     String?
   webhookEnabled Boolean @default(false)
@@ -94,7 +128,42 @@ model SystemSetting {
   slaMediumHours   Int @default(72)
   slaLowHours      Int @default(168)
 
+  // Rate Limiting Config
+  rateLimitEnabled     Boolean @default(true)
+  rateLimitWindowMs    Int     @default(900000) // 15 minutes default
+  rateLimitMaxAttempts Int     @default(5)
+
+  // SMTP Configuration
+  smtpEnabled          Boolean @default(false)
+  smtpHost             String?
+  smtpPort             Int?
+  smtpUser             String?
+  smtpPassword         String?
+  smtpFrom             String?
+
+  // SMTP Event Triggers
+  smtpTriggerOnCritical         Boolean @default(true)
+  smtpTriggerOnHigh             Boolean @default(false)
+  smtpTriggerOnAssign           Boolean @default(true)
+  smtpTriggerOnResolution       Boolean @default(true)
+  smtpTriggerOnAssetCompromise  Boolean @default(true)
+  smtpTriggerOnNewUser          Boolean @default(false)
+  smtpTriggerOnNewVulnerability Boolean @default(true)
+
+  // Auth Enforcements
+  requireEmailVerification      Boolean @default(false)
+  systemPlatformUrl             String  @default("http://localhost:3000")
+
   updatedAt DateTime @updatedAt
+}
+
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  ip         String
+  identifier String
+  createdAt  DateTime @default(now())
+
+  @@index([ip, createdAt])
 }
 
 // -----------------------------------------------------------------------------
@@ -188,6 +257,8 @@ model Incident {
   reporterId String?
   reporter   User?   @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
 
+  tags        String[]       @default([])
+
   assignees User[] @relation("IncidentAssignees")
 
   assetId String?
@@ -238,4 +309,32 @@ model Attachment {
 
   uploaderId String?
   uploader   User?   @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+}
+// -----------------------------------------------------------------------------
+// Machine-to-Machine Authenticators
+// -----------------------------------------------------------------------------
+
+model ApiToken {
+  id          String    @id @default(cuid())
+  name        String
+  tokenHash   String    @unique
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+
+  @@index([tokenHash])
+}
+
+// -----------------------------------------------------------------------------
+// Plugin Management
+// -----------------------------------------------------------------------------
+
+model PluginState {
+  id          String   @id // Corresponds to OpenTicketPlugin.manifest.id
+  isActive    Boolean  @default(false)
+  configJson  String?  @db.Text
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

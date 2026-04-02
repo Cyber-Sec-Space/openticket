@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default async function NewAssetPage() {
   const session = await auth()
-  if (!session?.user || session.user.role === 'REPORTER') {
+  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
     return notFound()
   }
 

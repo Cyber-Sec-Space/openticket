@@ -4,13 +4,13 @@ import { ShieldAlert, UserPlus, Key, Mail, Fingerprint } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { createUserAction } from "./actions"
 
 export default async function NewUserPage() {
   const session = await auth()
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     return notFound()
   }
 
@@ -73,16 +73,24 @@ export default async function NewUserPage() {
 
           <div className="space-y-3">
             <Label className="uppercase text-xs tracking-widest text-muted-foreground">Privilege Tier Selection</Label>
-            <Select name="role" defaultValue="REPORTER">
-              <SelectTrigger className="bg-black/30 border-white/10">
-                <SelectValue placeholder="Assign Role" />
-              </SelectTrigger>
-              <SelectContent className="bg-black/95 shadow-2xl">
-                <SelectItem value="REPORTER">REPORTER</SelectItem>
-                <SelectItem value="SECOPS" className="text-blue-400 font-medium">SECOPS</SelectItem>
-                <SelectItem value="ADMIN" className="text-primary font-bold">ADMIN</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
+                <Checkbox id="role-reporter" name="roles" value="REPORTER" defaultChecked />
+                <Label htmlFor="role-reporter" className="cursor-pointer text-sm">REPORTER</Label>
+              </div>
+              <div className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
+                <Checkbox id="role-secops" name="roles" value="SECOPS" />
+                <Label htmlFor="role-secops" className="cursor-pointer text-sm text-blue-400">SECOPS</Label>
+              </div>
+              <div className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
+                <Checkbox id="role-admin" name="roles" value="ADMIN" />
+                <Label htmlFor="role-admin" className="cursor-pointer text-sm text-primary">ADMIN</Label>
+              </div>
+              <div className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
+                <Checkbox id="role-api" name="roles" value="API_ACCESS" />
+                <Label htmlFor="role-api" className="cursor-pointer text-sm text-purple-400">API_ACCESS</Label>
+              </div>
+            </div>
           </div>
 
           <div className="pt-6 border-t border-white/10 flex justify-end">

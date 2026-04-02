@@ -29,7 +29,7 @@ export async function initializeInstance(formData: FormData) {
         name,
         email,
         passwordHash,
-        role: "ADMIN"
+        roles: ["ADMIN"]
       }
     }),
     db.systemSetting.upsert({

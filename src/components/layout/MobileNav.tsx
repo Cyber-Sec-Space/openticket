@@ -4,12 +4,14 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, Menu, X } from "lucide-react"
+import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, Menu, X, LayoutDashboard, ToyBrick } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function MobileNav({ userRole }: { userRole?: string }) {
+export function MobileNav({ userRoles }: { userRoles?: string[] }) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+
+  const hasPrivilege = userRoles?.includes('ADMIN') || userRoles?.includes('SECOPS')
 
   // Close menu when route changes
   useEffect(() => {
@@ -31,17 +33,18 @@ export function MobileNav({ userRole }: { userRole?: string }) {
   const navItems = [
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Incidents", href: "/incidents", icon: ShieldAlert },
-    { name: "Assets", href: "/assets", icon: Server },
   ]
 
-  if (userRole === 'ADMIN' || userRole === 'SECOPS') {
+  if (hasPrivilege) {
+    navItems.push({ name: "Assets", href: "/assets", icon: Server })
     navItems.push({ name: "Vulnerabilities", href: "/vulnerabilities", icon: Bug })
     navItems.push({ name: "Audit Logs", href: "/audit", icon: FileText })
   }
   
-  if (userRole === 'ADMIN') {
+  if (userRoles?.includes('ADMIN')) {
     navItems.push({ name: "Users", href: "/users", icon: Users })
     navItems.push({ name: "System Config", href: "/system", icon: Sliders })
+    navItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })
   }
 
   navItems.push({ name: "Settings", href: "/settings", icon: Settings })
@@ -84,7 +87,7 @@ export function MobileNav({ userRole }: { userRole?: string }) {
             
             <nav className="flex-1 py-6 px-4 space-y-2 overflow-y-auto custom-scrollbar">
               {navItems.map((item) => {
-                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !(item.href === "/settings" && pathname.startsWith("/settings/plugins")))
                 return (
                   <Link
                     key={item.href}

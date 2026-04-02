@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 
 export async function createAsset(formData: FormData) {
   const session = await auth()
-  if (!session?.user || session.user.role === 'REPORTER') {
+  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
     throw new Error("Forbidden")
   }
 

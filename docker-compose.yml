@@ -34,8 +34,7 @@ services:
       db:
         condition: service_healthy
     # We override the CMD to run migrations first before booting the standalone server
-    # Since npx might not be globally exposed, we use the local node_modules binary
-    command: /bin/sh -c "node ./node_modules/prisma/build/index.js migrate deploy && node server.js"
+    command: /bin/sh -c "npx prisma migrate deploy && node server.js"
 
 volumes:
   openticket_data:

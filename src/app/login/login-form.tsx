@@ -4,6 +4,7 @@ import { useActionState, useState, useEffect } from "react"
 import { authenticate } from "./actions"
 import { ScanFace } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -12,6 +13,10 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
   const [showTwoFactor, setShowTwoFactor] = useState(false)
   const [persistedEmail, setPersistedEmail] = useState("")
   const [persistedPass, setPersistedPass] = useState("")
+  
+  const searchParams = useSearchParams()
+  const registeredStatus = searchParams.get("registered")
+  const errorStatus = searchParams.get("error")
 
   useEffect(() => {
     if (errorMessage === "REQUIRES_2FA" || errorMessage === "INVALID_2FA") {
@@ -78,14 +83,42 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
                 required 
                 autoFocus
               />
-           </div>
+            </div>
         </div>
       )}
       
+      {registeredStatus === "verify" && (
+        <div className="text-sm font-medium text-emerald-400 bg-emerald-400/10 p-3 rounded-md border border-emerald-400/20 animate-in fade-in zoom-in-95 leading-relaxed text-center">
+          Identity created successfully. Please check your email inbox to verify your account before logging in.
+        </div>
+      )}
+      
+      {registeredStatus === "verified" && (
+        <div className="text-sm font-medium text-emerald-400 bg-emerald-400/10 p-3 rounded-md border border-emerald-400/20 animate-in fade-in zoom-in-95 leading-relaxed text-center">
+          Identity verified successfully. You may now log into the portal.
+        </div>
+      )}
+      
+      {registeredStatus === "true" && (
+        <div className="text-sm font-medium text-emerald-400 bg-emerald-400/10 p-3 rounded-md border border-emerald-400/20 animate-in fade-in zoom-in-95 leading-relaxed text-center">
+          Identity created successfully. You may now log in.
+        </div>
+      )}
+
+      {errorStatus && (
+        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in-95 leading-relaxed text-center">
+          {errorStatus === "InvalidVerificationLink" ? "Verification failed: Malformed token payload." :
+           errorStatus === "InvalidVerificationToken" ? "Verification failed: Token mismatches." :
+           errorStatus === "TokenExpired" ? "Verification failed: The crypto token has expired." : errorStatus}
+        </div>
+      )}
+
       {errorMessage && errorMessage !== "REQUIRES_2FA" && (
-        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in-95 leading-relaxed">
+        <div className="text-sm font-medium text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20 animate-in fade-in zoom-in-95 leading-relaxed text-center">
           {errorMessage === "INVALID_2FA" ? "Invalid Two-Factor Code provided." : 
            errorMessage === "GLOBAL_LOCKED" ? "Administrator Enforcement: This endpoint is structurally clamped pending TOTP interlock. Contact SecOps." : 
+           errorMessage === "RATE_LIMIT_EXCEEDED" ? "Access Denied: Too many failed network authentication drops. Firewall lockout enabled." :
+           errorMessage === "EMAIL_NOT_VERIFIED" ? "Access Denied: Identity verification pending. Check your email for the activation link." :
            errorMessage}
         </div>
       )}

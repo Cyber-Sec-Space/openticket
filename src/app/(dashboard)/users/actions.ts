@@ -9,23 +9,23 @@ export async function updateUserRole(formData: FormData) {
   const session = await auth()
   
   // Security boundary: Only ADMIN can modify RBAC.
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
   const targetUserId = formData.get("userId") as string
-  const newRole = formData.get("role") as Role
+  const newRoles = formData.getAll("roles") as Role[]
 
-  if (!targetUserId || !newRole) return
+  if (!targetUserId || !newRoles || newRoles.length === 0) return
 
   // Prevent admin from demoting themselves by accident, optional but safe.
-  if (targetUserId === session.user.id && newRole !== 'ADMIN') {
+  if (targetUserId === session.user.id && !newRoles.includes('ADMIN')) {
      throw new Error("Operation blocked: Administrators cannot revoke their own root privileges directly.");
   }
 
   const updatedUser = await db.user.update({
     where: { id: targetUserId },
-    data: { role: newRole }
+    data: { roles: newRoles }
   })
 
   // Log to global audit
@@ -35,7 +35,7 @@ export async function updateUserRole(formData: FormData) {
       entityType: "User",
       entityId: targetUserId,
       userId: session.user.id,
-      changes: `Role of ${updatedUser.name || updatedUser.email} escalated/de-escalated to [${newRole}]`
+      changes: `Roles of ${updatedUser.name || updatedUser.email} adjusted to [${newRoles.join(', ')}]`
     }
   })
 
@@ -45,7 +45,7 @@ export async function updateUserRole(formData: FormData) {
 export async function deleteUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -78,7 +78,7 @@ export async function deleteUserAction(formData: FormData) {
 export async function toggleUserStatusAction(userId: string, isDisabled: boolean) {
   const session = await auth()
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -113,7 +113,7 @@ export async function toggleUserStatusAction(userId: string, isDisabled: boolean
 export async function bulkDeleteUsersAction(userIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -138,21 +138,21 @@ export async function bulkDeleteUsersAction(userIds: string[]) {
   revalidatePath("/users")
 }
 
-export async function bulkUpdateRoleAction(userIds: string[], role: Role) {
+export async function bulkUpdateRolesAction(userIds: string[], roles: Role[]) {
   const session = await auth()
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
   // Prevent admin from demoting themselves via bulk
-  const finalUserIds = role === 'ADMIN' ? userIds : userIds.filter(id => id !== session.user.id)
+  const finalUserIds = roles.includes('ADMIN') ? userIds : userIds.filter(id => id !== session.user.id)
   
   if (finalUserIds.length === 0) return
 
   await db.user.updateMany({
     where: { id: { in: finalUserIds } },
-    data: { role }
+    data: { roles }
   })
 
   await db.auditLog.create({
@@ -161,7 +161,7 @@ export async function bulkUpdateRoleAction(userIds: string[], role: Role) {
       entityType: "User",
       entityId: "BULK",
       userId: session.user.id,
-      changes: `Bulk escalated/demoted ${finalUserIds.length} users to role ${role}.`
+      changes: `Bulk assigned roles [${roles.join(', ')}] to ${finalUserIds.length} users.`
     }
   })
 

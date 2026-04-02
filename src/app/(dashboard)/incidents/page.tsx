@@ -18,7 +18,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   const filterParams: any = {}
 
   // Hard RBAC rule: reporters only see their own tickets
-  if (session.user.role === 'REPORTER') {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPrivilege) {
     filterParams.reporterId = session.user.id
   }
 
@@ -30,7 +31,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
     filterParams.OR = [
       { title: { contains: resolvedParams.q, mode: "insensitive" } },
       { description: { contains: resolvedParams.q, mode: "insensitive" } },
-      { id: { contains: resolvedParams.q, mode: "insensitive" } }
+      { id: { contains: resolvedParams.q, mode: "insensitive" } },
+      { tags: { hasSome: [resolvedParams.q, `#${resolvedParams.q}`] } }
     ]
   }
 
@@ -181,8 +183,16 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                   <Link href={`/incidents/${incident.id}`} className="absolute inset-0" aria-label={`View ${incident.title}`} />
                   INC-{incident.id.substring(0, 6).toUpperCase()}
                 </TableCell>
-                <TableCell className="font-medium text-foreground flex items-center h-[52px]">
+                <TableCell className="font-medium text-foreground flex flex-col justify-center gap-1 min-h-[64px] py-2">
                   <span className="truncate max-w-[200px] xl:max-w-[300px]">{incident.title}</span>
+                  {incident.tags && incident.tags.length > 0 && (
+                    <div className="flex gap-1 overflow-hidden max-w-[250px]">
+                       {incident.tags.slice(0, 2).map((t, idx) => (
+                         <span key={idx} className="bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] font-mono whitespace-nowrap">{t}</span>
+                       ))}
+                       {incident.tags.length > 2 && <span className="text-[9px] text-muted-foreground self-center">+{incident.tags.length - 2}</span>}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge className={`bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_10px_rgba(255,50,50,0.2)] animate-pulse' : 'border-primary text-primary'}`}>

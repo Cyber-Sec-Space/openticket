@@ -3,27 +3,30 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders } from "lucide-react"
+import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, LayoutDashboard, ToyBrick } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function Sidebar({ userRole }: { userRole?: string }) {
+export function Sidebar({ userRoles }: { userRoles?: string[] }) {
   const pathname = usePathname()
+  
+  const hasPrivilege = userRoles?.includes('ADMIN') || userRoles?.includes('SECOPS')
 
   const navItems = [
-    { name: "Dashboard", href: "/", icon: Home },
+    { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Incidents", href: "/incidents", icon: ShieldAlert },
-    { name: "Assets", href: "/assets", icon: Server },
   ]
 
   // Conditionally inject SECOPS/ADMIN modules
-  if (userRole === 'ADMIN' || userRole === 'SECOPS') {
+  if (hasPrivilege) {
+    navItems.push({ name: "Assets", href: "/assets", icon: Server })
     navItems.push({ name: "Vulnerabilities", href: "/vulnerabilities", icon: Bug })
     navItems.push({ name: "Audit Logs", href: "/audit", icon: FileText })
   }
   
-  if (userRole === 'ADMIN') {
+  if (userRoles?.includes('ADMIN')) {
     navItems.push({ name: "Users", href: "/users", icon: Users })
     navItems.push({ name: "System Config", href: "/system", icon: Sliders })
+    navItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })
   }
 
   // Everyone can manage their own profile
@@ -40,7 +43,7 @@ export function Sidebar({ userRole }: { userRole?: string }) {
       
       <nav className="flex-1 py-8 px-4 space-y-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !(item.href === "/settings" && pathname.startsWith("/settings/plugins")))
           return (
             <Link
               key={item.href}

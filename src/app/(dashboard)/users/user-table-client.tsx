@@ -5,16 +5,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ShieldCheck, Mail, Plus, Trash2, Ban, CheckCircle2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useRouter } from "next/navigation"
-import { bulkDeleteUsersAction, bulkUpdateRoleAction, toggleUserStatusAction } from "./actions"
+import { bulkDeleteUsersAction, bulkUpdateRolesAction, toggleUserStatusAction } from "./actions"
 
 export function UserTableClient({ users, sessionUserId }: { users: any[], sessionUserId: string }) {
   const router = useRouter()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [bulkRole, setBulkRole] = useState<string>("REPORTER")
+  const [bulkRoles, setBulkRoles] = useState<string[]>(["REPORTER"])
   const [isProcessing, setIsProcessing] = useState(false)
 
   const toggleAll = () => {
@@ -42,9 +42,9 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
   }
 
   const handleBulkRoleUpdate = async () => {
-    if (!confirm(`Update Role to ${bulkRole} for selected users?`)) return
+    if (!confirm(`Update Roles to [${bulkRoles.join(', ')}] for selected users?`)) return
     setIsProcessing(true)
-    await bulkUpdateRoleAction(Array.from(selectedIds), bulkRole as any)
+    await bulkUpdateRolesAction(Array.from(selectedIds), bulkRoles as any)
     setSelectedIds(new Set())
     setIsProcessing(false)
   }
@@ -68,18 +68,32 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
              </Badge>
           </div>
           <div className="flex items-center gap-2">
-            <Select value={bulkRole} onValueChange={(val) => val && setBulkRole(val)}>
-              <SelectTrigger className="h-8 w-[120px] bg-black/50 text-xs text-foreground">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="REPORTER">REPORTER</SelectItem>
-                <SelectItem value="SECOPS">SECOPS</SelectItem>
-                <SelectItem value="ADMIN">ADMIN</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" className="h-8 border-primary/30 text-primary bg-primary/10 hover:bg-primary/20 text-xs" onClick={handleBulkRoleUpdate} disabled={isProcessing}>
-               Set Role
+            <Popover>
+              <PopoverTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs border-white/20">
+                  {bulkRoles.length > 0 ? bulkRoles.join(', ') : "Select Roles"}
+              </PopoverTrigger>
+              <PopoverContent className="w-56 bg-black/95 shadow-2xl border border-white/10 p-4 space-y-3">
+                <div className="font-semibold text-xs tracking-wider text-muted-foreground uppercase mb-2">Set Privilege Tiers</div>
+                {['REPORTER', 'SECOPS', 'ADMIN', 'API_ACCESS'].map(role => (
+                  <div key={role} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`bulk-${role}`}
+                      checked={bulkRoles.includes(role)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setBulkRoles(prev => [...prev, role])
+                        } else {
+                          setBulkRoles(prev => prev.filter(r => r !== role))
+                        }
+                      }}
+                    />
+                    <label htmlFor={`bulk-${role}`} className="text-sm text-white/80 cursor-pointer">{role}</label>
+                  </div>
+                ))}
+              </PopoverContent>
+            </Popover>
+            <Button size="sm" variant="outline" className="h-8 border-primary/30 text-primary bg-primary/10 hover:bg-primary/20 text-xs" onClick={handleBulkRoleUpdate} disabled={isProcessing || bulkRoles.length === 0}>
+               Set Roles
             </Button>
             <Button size="sm" variant="destructive" className="h-8 text-xs bg-destructive/20 border border-destructive/50 text-destructive hover:bg-destructive/40" onClick={handleBulkDelete} disabled={isProcessing}>
                <Trash2 className="w-3 h-3 mr-2" /> Expunge Selected
@@ -158,12 +172,12 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
 
                   <TableCell className="text-center">
                      <Badge variant="outline" className={`bg-transparent border ${
-                       user.role === 'ADMIN' ? 'border-primary/50 text-primary bg-primary/10' :
-                       user.role === 'SECOPS' ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
+                       user.roles.includes('ADMIN') ? 'border-primary/50 text-primary bg-primary/10' :
+                       user.roles.includes('SECOPS') ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
                        'border-muted-foreground/30 text-muted-foreground bg-black/20'
                      }`}>
-                       {user.role}
-                       {user.role === 'ADMIN' && <ShieldCheck className="w-3 h-3 ml-1" />}
+                       {user.roles.join(', ')}
+                       {user.roles.includes('ADMIN') && <ShieldCheck className="w-3 h-3 ml-1" />}
                      </Badge>
                   </TableCell>
 

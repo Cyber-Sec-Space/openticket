@@ -8,14 +8,17 @@ import { ShieldAlert, ArrowLeft, Activity } from "lucide-react"
 import { createIncident } from "./actions"
 import Link from "next/link"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { TagInput } from "@/components/ui/tag-input"
 
 export default async function NewIncidentPage() {
   const session = await auth()
   if (!session?.user) return null
 
-  const assets = await db.asset.findMany({
-    orderBy: { name: 'asc' }
-  })
+  let assets: any[] = []
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (hasPrivilege) {
+    assets = await db.asset.findMany({ select: { id: true, name: true } })
+  }
 
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-6 animate-fade-in-up">
@@ -99,22 +102,30 @@ export default async function NewIncidentPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="assetId" className="text-sm tracking-wide font-semibold text-primary">Correlated Asset</Label>
-                <div className="relative">
-                  <Select name="assetName" defaultValue="">
-                     <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
-                       <SelectValue placeholder="Associate Infrastructure (Optional)" />
-                     </SelectTrigger>
-                     <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
-                       <SelectItem value="" className="text-muted-foreground italic">None Selected</SelectItem>
-                       {assets.map(asset => (
-                         <SelectItem key={asset.id} value={asset.name} className="font-mono">{asset.name}</SelectItem>
-                       ))}
-                     </SelectContent>
-                  </Select>
+              {hasPrivilege && (
+                <div className="space-y-2">
+                  <Label htmlFor="assetId" className="text-sm tracking-wide font-semibold text-primary">Correlated Asset</Label>
+                  <div className="relative">
+                    <Select name="assetName" defaultValue="">
+                       <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+                         <SelectValue placeholder="Associate Infrastructure (Optional)" />
+                       </SelectTrigger>
+                       <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
+                         <SelectItem value="" className="text-muted-foreground italic">None Selected</SelectItem>
+                         {assets.map(asset => (
+                           <SelectItem key={asset.id} value={asset.name} className="font-mono">{asset.name}</SelectItem>
+                         ))}
+                       </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tags" className="text-sm tracking-wide font-semibold text-primary">Custom Tags</Label>
+              <TagInput name="tags" placeholder="Add custom topology or markers (press Enter)..." />
+              <p className="text-[10px] text-muted-foreground mt-1">Use tags to freely associate incidents with threat actors (e.g. #APT29) or vectors (e.g. #Ransomware).</p>
             </div>
 
             <div className="space-y-2">

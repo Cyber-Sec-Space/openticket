@@ -10,7 +10,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
   const session = await auth()
   
   // Security Perimeter: Reporters cannot view system audits.
-  if (!session?.user || session.user.role === 'REPORTER') {
+  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
      return notFound()
   }
 
@@ -36,7 +36,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
     where: filterParams,
     include: {
       user: {
-        select: { name: true, email: true, role: true }
+        select: { name: true, email: true, roles: true }
       }
     },
     orderBy: { createdAt: 'desc' },
@@ -125,7 +125,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
                     <span className="font-medium text-foreground text-sm flex items-center gap-1.5">
                       {log.user?.name || log.user?.email || "System/Unknown"}
                     </span>
-                    <span className="text-[10px] text-muted-foreground uppercase opacity-80">{log.user?.role || "AUTO"}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase opacity-80">{log.user?.roles?.join(', ') || "AUTO"}</span>
                   </div>
                 </TableCell>
                 

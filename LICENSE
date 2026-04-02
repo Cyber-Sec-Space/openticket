@@ -1,4 +1,4 @@
-Cyber-Sec-Space OpenTicket License
+Cyber Sec Space OpenTicket License
 
 This repository contains two distinct categories of source code, which are licensed differently:
 
@@ -13,7 +13,7 @@ Unless explicitly noted otherwise (for example, by a header in the file or by re
 
 ### MIT License
 
-Copyright (c) 2026 Cyber-Sec-Space
+Copyright (c) 2026 Cyber Sec Space
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,17 +37,17 @@ SOFTWARE.
 
 ## 2. Enterprise / Commercial Features (Premium)
 
-Any files located in a designated Enterprise directory (such as `ee/`, `premium/`, or `pro/`), or files explicitly carrying the "Cyber-Sec-Space Enterprise License" header, are NOT licensed under the MIT License. 
+Any files located in a designated Enterprise directory (such as `ee/`, `premium/`, or `pro/`), or files explicitly carrying the "Cyber Sec Space Enterprise License" header, are NOT licensed under the MIT License. 
 
 These premium features require a valid commercial License Key to activate and utilize in any environment. 
 
-### Cyber-Sec-Space Enterprise License (Proprietary)
+### Cyber Sec Space Enterprise License (Proprietary)
 
-Copyright (c) 2026 Cyber-Sec-Space. All rights reserved.
+Copyright (c) 2026 Cyber Sec Space. All rights reserved.
 
-1. You may only use the Enterprise Features if you possess a valid, active commercial license key acquired directly from Cyber-Sec-Space or its authorized resellers.
+1. You may only use the Enterprise Features if you possess a valid, active commercial license key acquired directly from Cyber Sec Space or its authorized resellers.
 2. You may view and modify the Enterprise source code strictly for internal deployment and evaluation purposes associated with your valid license key.
 3. You may NOT distribute, sublicense, sell, or publicly share the Enterprise Features, modified or unmodified, to any third party.
 4. If your license key expires or is revoked, you must immediately cease all use of the Enterprise Features.
 
-For inquiries regarding commercial licensing or to obtain a license key, please contact Cyber-Sec-Space.
+For inquiries regarding commercial licensing or to obtain a license key, please contact Cyber Sec Space.

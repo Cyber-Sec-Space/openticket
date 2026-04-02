@@ -19,7 +19,7 @@ export default async function UserDetailPage({
   const resolvedSearchParams = await searchParams
   const session = await auth()
   
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || !session.user.roles.includes('ADMIN')) {
     return notFound()
   }
 
@@ -62,7 +62,7 @@ export default async function UserDetailPage({
             </h1>
             <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono">
               <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {user.email}</span>
-              <span className="flex items-center gap-1 text-primary"><ShieldCheck className="w-3 h-3" /> {user.role}</span>
+              <span className="flex items-center gap-1 text-primary"><ShieldCheck className="w-3 h-3" /> {user.roles.join(', ')}</span>
               {user.isTwoFactorEnabled && <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px]">2FA ENFORCED</Badge>}
             </div>
             <p className="text-[10px] text-muted-foreground font-mono opacity-50 pt-2">UID: {user.id}</p>

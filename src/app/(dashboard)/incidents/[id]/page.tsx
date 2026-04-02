@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { dispatchWebhook } from "@/lib/webhook"
+import { sendIncidentAssignmentEmail, sendResolutionEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
+import { dispatchAlert, dispatchMassAlert } from "@/lib/notifier"
+import { fireHook } from "@/lib/plugins/hook-engine"
 import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
 import { FileUploadBox } from "@/components/file-upload-box"
 import { Label } from "@/components/ui/label"
@@ -15,7 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
-import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload } from "lucide-react"
+import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload, Tag as TagIcon } from "lucide-react"
+import { TagInput } from "@/components/ui/tag-input"
 
 export default async function IncidentDetailPage({
   params,
@@ -52,7 +56,9 @@ export default async function IncidentDetailPage({
     orderBy: { createdAt: 'desc' }
   })
 
-  if (!incident || (session.user.role === 'REPORTER' && incident.reporterId !== session.user.id)) {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  
+  if (!incident || (!hasPrivilege && incident.reporterId !== session.user.id)) {
     notFound()
   }
 
@@ -64,10 +70,10 @@ export default async function IncidentDetailPage({
 
   // Only SECOPS/ADMIN can assign tickets.
   let eligibleAssignees: any[] = []
-  if (session.user.role !== 'REPORTER') {
+  if (hasPrivilege) {
     eligibleAssignees = await db.user.findMany({
-      where: { role: { in: ['ADMIN', 'SECOPS'] } },
-      select: { id: true, name: true, role: true }
+      where: { roles: { hasSome: ['SECOPS'] } },
+      select: { id: true, name: true, roles: true }
     })
   }
 
@@ -77,8 +83,11 @@ export default async function IncidentDetailPage({
   async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || sessionUrl.user.role === 'REPORTER') throw new Error("Forbidden")
+    const hasPostPrivilege = sessionUrl?.user?.roles?.includes('ADMIN') || sessionUrl?.user?.roles?.includes('SECOPS')
+    if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
+    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
     const newAssetName = formData.get("assetName") as string
@@ -93,7 +102,6 @@ export default async function IncidentDetailPage({
       const isManualDateOverride = targetSlaDateRaw !== currentIsoSlice;
 
       if (!isManualDateOverride) {
-        const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
         let autoDate = new Date();
         switch (newSeverity) {
           case 'CRITICAL': autoDate.setHours(autoDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
@@ -128,12 +136,56 @@ export default async function IncidentDetailPage({
       }
     })
 
+    // Phase 10: Email Dispatch for newly assigned operators
+    const previousAssigneeIds = incident!.assignees.map(a => a.id)
+    const newlyAssignedIds = validAssigneeIds.filter(id => !previousAssigneeIds.includes(id))
+
+    if (newlyAssignedIds.length > 0) {
+      // Browser Native Alerts
+      await dispatchMassAlert(newlyAssignedIds, "ASSIGN", `Incident Assigned`, `INC-${incident!.id.substring(0, 8)} has been structurally assigned to your identity.`, `/incidents/${incident!.id}`)
+
+      if (settings?.smtpTriggerOnAssign) {
+        const newlyAssignedUsers = await db.user.findMany({
+          where: { id: { in: newlyAssignedIds }, email: { not: null } },
+          select: { email: true, name: true }
+        })
+        
+        for (const a of newlyAssignedUsers) {
+          if (a.email) {
+            await sendIncidentAssignmentEmail(incident!.id, incident!.title, a.email, a.name || 'Operator')
+          }
+        }
+      }
+    }
+
+    if (
+      (newStatus === 'RESOLVED' || newStatus === 'CLOSED') && 
+      !['RESOLVED', 'CLOSED'].includes(incident!.status) && 
+      incident!.reporter
+    ) {
+      await fireHook("onIncidentResolved", incident as any)
+      
+      await dispatchAlert(incident!.reporter.id, "RESOLUTION", "Incident Resolved", `INC-${incident!.id.substring(0, 8)} has achieved resolution telemetry.`, `/incidents/${incident!.id}`)
+      if (settings?.smtpTriggerOnResolution && incident!.reporter.email) {
+        await sendResolutionEmail(incident!.id, incident!.title, incident!.reporter.email, incident!.reporter.name || 'Reporter')
+      }
+    }
+
     // Phase 7: Dynamic Triage Auto-Isolation rules
     if (newSeverity === 'CRITICAL' && resolvedAssetId && resolvedAssetId !== 'UNLINKED') {
-      await db.asset.update({
+      const affectedAsset = await db.asset.update({
         where: { id: resolvedAssetId },
         data: { status: 'COMPROMISED' }
       })
+
+      await fireHook("onAssetCompromise", affectedAsset)
+
+      const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] } }, select: { id: true, email: true } })
+      await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${resolvedAssetId}`)
+
+      if (settings?.smtpTriggerOnAssetCompromise) {
+        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.filter(a => a.email).map(a => a.email as string))
+      }
 
       await db.auditLog.create({
         data: {
@@ -172,15 +224,22 @@ export default async function IncidentDetailPage({
   async function editDetailsAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || sessionUrl.user.role === 'REPORTER') throw new Error("Forbidden")
+    const hasPostPrivilege = sessionUrl?.user?.roles?.includes('ADMIN') || sessionUrl?.user?.roles?.includes('SECOPS')
+    if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const newTitle = formData.get("title") as string
     const newType = formData.get("type") as string
     const newDesc = formData.get("description") as string
+    
+    const rawTags = formData.getAll("tags") as string[]
+    const tags = rawTags
+      .map(t => t.trim())
+      .filter(t => t !== '')
+      .map(t => t.startsWith('#') ? t : `#${t}`)
 
     await db.incident.update({
       where: { id: incident!.id },
-      data: { title: newTitle, type: newType.replace(/ /g, '_') as any, description: newDesc }
+      data: { title: newTitle, type: newType.replace(/ /g, '_') as any, description: newDesc, tags }
     })
 
     await db.auditLog.create({
@@ -198,16 +257,23 @@ export default async function IncidentDetailPage({
   async function deleteIncidentAction() {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || sessionUrl.user.role !== 'ADMIN') throw new Error("Forbidden")
+    if (!sessionUrl || !sessionUrl.user.roles.includes('ADMIN')) throw new Error("Forbidden")
 
     // Scrub physical orphan files before Prisma cascade sweeps the metadata
     try {
       const fs = await import('fs')
       const path = await import('path')
+      const safeBase = path.resolve(process.cwd(), 'public', 'uploads')
+      
       for (const att of incident!.attachments || []) {
         if (att.fileUrl) {
-          const filepath = path.join(process.cwd(), 'public', att.fileUrl.replace(/^\//, ''))
-          if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
+          // Extract just the filename, ignoring any injected paths
+          const filename = path.basename(att.fileUrl)
+          const targetPath = path.resolve(safeBase, filename)
+          
+          if (targetPath.startsWith(safeBase) && fs.existsSync(targetPath)) {
+             fs.unlinkSync(targetPath)
+          }
         }
       }
     } catch (error) {
@@ -231,7 +297,7 @@ export default async function IncidentDetailPage({
         </Link>
 
         <div className="flex items-center gap-3">
-          {session.user.role !== 'REPORTER' && !isEditing && (
+          {hasPrivilege && !isEditing && (
             <Link href={`/incidents/${incident.id}?edit=true`}>
               <Button variant="outline" size="sm" className="bg-black/20 text-blue-400 border-blue-400/30 hover:bg-blue-400/10">
                 <Edit3 className="w-4 h-4 mr-2" /> Edit Details
@@ -239,7 +305,7 @@ export default async function IncidentDetailPage({
             </Link>
           )}
 
-          {session.user.role === 'ADMIN' && (
+          {session.user.roles.includes('ADMIN') && (
             <ConfirmForm action={deleteIncidentAction} promptMessage="Are you absolutely sure you want to PERMANENTLY terminate this incident? All associated intelligence and operational timelines will be destroyed. This cannot be undone.">
               <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" /> Terminate Incident
@@ -303,6 +369,11 @@ export default async function IncidentDetailPage({
                   </div>
 
                   <div className="space-y-2">
+                    <Label className="text-primary/70 text-xs uppercase tracking-widest">Custom Tags</Label>
+                    <TagInput name="tags" initialTags={incident.tags || []} placeholder="Add associated tags (e.g. #APT29)" />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label className="text-primary/70 text-xs uppercase tracking-widest">Tactical Overview</Label>
                     <Textarea name="description" rows={8} defaultValue={incident.description} className="bg-black/50 border-white/10 resize-none text-sm font-mono leading-relaxed" required />
                   </div>
@@ -332,6 +403,20 @@ export default async function IncidentDetailPage({
                       {(incident.type || 'OTHER').replace(/_/g, ' ')}
                     </Badge>
                   </div>
+
+                  {incident.tags && incident.tags.length > 0 && (
+                    <div>
+                      <h4 className="text-xs uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                        <TagIcon className="w-3 h-3 text-purple-400" />
+                        Custom Tags
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {incident.tags.map(tag => (
+                           <Badge key={tag} variant="secondary" className="bg-purple-500/10 text-purple-300 border-purple-500/20 font-mono text-xs tracking-wide">{tag}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <h4 className="text-xs uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
@@ -482,7 +567,7 @@ export default async function IncidentDetailPage({
             </div>
           </div>
 
-          {session.user.role !== 'REPORTER' && !isEditing && (
+          {hasPrivilege && !isEditing && (
             <div className="glass-card rounded-xl overflow-hidden shadow-2xl border border-primary/30">
               <CardHeader className="border-b border-border/50 bg-primary/10 p-5">
                 <CardTitle className="text-primary text-sm font-semibold tracking-wide">Execution Policy & Triage</CardTitle>
@@ -560,7 +645,7 @@ export default async function IncidentDetailPage({
             </div>
           )}
 
-          {session.user.role === 'REPORTER' && (
+          {!hasPrivilege && (
             <div className="glass-card rounded-xl p-6 shadow-2xl">
               <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Assigned Handlers</strong>
               {incident.assignees.length > 0 ? (

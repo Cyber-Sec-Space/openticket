@@ -1,15 +1,16 @@
-import { auth } from "@/auth"
+import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 
 export async function GET(req: Request) {
-  const session = await auth()
+  const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const filterParams: any = {}
   
-  if (session.user.role === 'REPORTER') {
+  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPrivilege) {
     filterParams.reporterId = session.user.id
   }
 
@@ -34,15 +35,20 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await auth()
+  const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
   try {
     const body = await req.json()
-    const { title, description, severity, assetId } = body
+    const { title, description, severity, assetId, tags = [] } = body
 
     if (!title || !description) {
       return new NextResponse("Title and Description are required", { status: 400 })
+    }
+    
+    let processedTags: string[] = []
+    if (Array.isArray(tags)) {
+      processedTags = tags.map(t => String(t).trim()).filter(t => t !== '').map(t => t.startsWith('#') ? t : `#${t}`)
     }
 
     const newIncident = await db.incident.create({
@@ -52,7 +58,8 @@ export async function POST(req: Request) {
         severity: severity || 'LOW',
         reporterId: session.user.id,
         assetId: assetId || null,
-        status: 'NEW'
+        status: 'NEW',
+        tags: processedTags
       }
     })
 
@@ -66,6 +73,24 @@ export async function POST(req: Request) {
         changes: { title, severity }
       }
     })
+
+    // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation
+    if (newIncident.severity === 'CRITICAL' && newIncident.assetId) {
+      await db.asset.update({
+        where: { id: newIncident.assetId },
+        data: { status: 'COMPROMISED' }
+      })
+
+      await db.auditLog.create({
+        data: {
+          action: "SOAR_AUTO_QUARANTINE",
+          entityType: "Asset",
+          entityId: newIncident.assetId,
+          userId: session.user.id,
+          changes: `Asset automatically marked as COMPROMISED due to CRITICAL Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
+        }
+      })
+    }
 
     return NextResponse.json(newIncident, { status: 201 })
   } catch (error) {

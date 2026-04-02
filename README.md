@@ -13,7 +13,9 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 - **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
 - **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
-- **Role-Based Access Control (RBAC):** Native multi-tenant segregation distinguishing `ADMIN` (Infrastructure overrides), `SECOPS` (Triage), and `REPORTER` (End-User) roles.
+- **Array-based Multi-Role Control (RBAC):** Native multi-tenant segregation distinguishing `ADMIN` (Infrastructure overrides), `SECOPS` (Triage), `REPORTER` (End-User), and `API_ACCESS` (Machine Integration) roles. Users can be assigned multiple roles simultaneously for maximum operational flexibility.
+- **Plug-and-Play Architecture:** Equipped with an isolated database-backed Hook Engine (EventBus). All third-party dependencies and extensions are gracefully managed natively under the Settings -> Plugins section for hot-swapping and configurations.
+- **Omni-channel Notifications:** Natively handles email transmission via configurable SMTP configurations (Authentication & Reset checks), accompanied by an HTML5 Desktop Push Notification center operating persistently in background tabs filtering specifically for Critical/High system incidents.
 - **Enterprise-Grade UI Components:** Built on TailwindCSS utilizing modern blur/backdrop-filter dynamics, combined with deeply interactive BaseUI/Shadcn components, fully portaled `react-datepicker` forms, and Recharts.
 
 ---
@@ -32,6 +34,18 @@ Vulnerability components mirror the system's asset inventory:
 - Navigate to **"Log Vulnerability"**.
 - Input the official `CVE-ID` and select its inherent CVSS severity scale.
 - Assign the Node it affects. The Dashboard's *Vulnerability Heatmap* updates immediately in real-time.
+
+### 3. Machine-to-Machine Automation (API Tokens)
+You can directly bridge OpenTicket to your CI/CD pipelines or SOAR orchestrators.
+- Navigate to **"Identity Preferences -> API Tokens"** (Requires `API_ACCESS` or `ADMIN` roles).
+- Mint a new cryptographic automation token (e.g., *GitHub Actions Push*).
+- Provide the generated raw token payload in the Header: `Authorization: Bearer <token>` when directly calling the `/api/incidents` or `/api/assets` endpoints. Your automated integration inherently assumes your exact privilege tier.
+
+### API & Integrations
+- **Hook Engine**: Isolated event-bus architecture (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`) allowing external execution without degrading system stability.
+- **Out-of-the-Box Plugins**: Includes native interceptors such as `Slack Critical Notifier`, `PagerDuty Escalator`, `Jira Cloud Synchronization`, and `Microsoft Teams Webhook` ready for instant deployment.
+- **Machine-to-Machine (M2M) Keys**: Hardened, anti-enumeration `ApiToken` models generating `SHA-256` Bearer authentications for SOAR/SIEM integration logic.
+- **Headless Rate Limiting**: Global REST boundaries throttling aggressive automation scripts to protect structural integrity natively mapping constraints down to the Prisma abstraction. All captured events will rapidly pipe over the Hook Engine concurrently in the background without locking primary server threads.
 
 ---
 

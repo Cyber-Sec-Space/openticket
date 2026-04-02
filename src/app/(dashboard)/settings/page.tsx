@@ -2,12 +2,14 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { ShieldCheck, UserCog, Mail } from "lucide-react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { updateProfile } from "./actions"
 import { TwoFactorPanel } from "./two-factor-panel"
+import { NotificationPanel } from "./notification-panel"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -33,6 +35,15 @@ export default async function SettingsPage() {
             <UserCog className="w-8 h-8 mr-3 text-blue-400" /> Identity Preferences
           </h1>
           <p className="text-muted-foreground mt-2">Manage your personal identification matrix mapping across the perimeter.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {(user.roles.includes('API_ACCESS') || user.roles.includes('ADMIN')) && (
+             <Link href="/settings/tokens">
+                <Button className="bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)]">
+                  API Tokens
+                </Button>
+             </Link>
+          )}
         </div>
       </header>
 
@@ -68,8 +79,8 @@ export default async function SettingsPage() {
             <div className="space-y-3">
               <Label className="uppercase text-xs tracking-widest text-muted-foreground">Operational Privilege Tier</Label>
               <div className="p-3 bg-black/20 rounded-lg border border-white/5 font-mono text-xs flex justify-between items-center text-muted-foreground">
-                <span>{user.role}</span>
-                {user.role === 'ADMIN' && <ShieldCheck className="w-4 h-4 text-primary" />}
+                <span>{user.roles.join(', ')}</span>
+                {user.roles.includes('ADMIN') && <ShieldCheck className="w-4 h-4 text-primary" />}
               </div>
             </div>
 
@@ -81,6 +92,7 @@ export default async function SettingsPage() {
 
           <div className="pt-4">
             <TwoFactorPanel isEnabled={user.isTwoFactorEnabled} />
+            <NotificationPanel user={user} />
           </div>
         </div>
       </div>
