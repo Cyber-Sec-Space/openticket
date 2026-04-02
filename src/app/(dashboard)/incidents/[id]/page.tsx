@@ -11,8 +11,8 @@ import { FileUploadBox } from "@/components/file-upload-box"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { DateTimePicker } from "@/components/ui/datetime-picker"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload } from "lucide-react"
@@ -546,9 +546,9 @@ export default async function IncidentDetailPage({
 
                   <div className="space-y-2">
                     <Label className="text-xs text-white/70">Target SLA Date</Label>
-                    <DateTimePicker 
+                    <DateTimePicker
                       name="targetSlaDate"
-                      defaultValue={incident.targetSlaDate ? new Date(incident.targetSlaDate.getTime() - incident.targetSlaDate.getTimezoneOffset() * 60000) : undefined}
+                      defaultValue={incident.targetSlaDate}
                     />
                   </div>
 
