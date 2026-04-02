@@ -261,7 +261,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       </header>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass-card p-4 flex flex-col justify-between rounded-xl relative overflow-hidden group border-emerald-500/20">
           <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><Clock size={60} className="text-emerald-500" /></div>
           <div className="flex z-10 flex-col h-full justify-between">
