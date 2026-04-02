@@ -4,8 +4,7 @@
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
 </p>
 <p align="center">
-  <img src="./public/plugins.png" alt="Plugin Architecture" width="48%">
-  <img src="./public/notifications.png" alt="Notification Center" width="48%">
+  <img src="./public/system_screenshot.png" alt="System Screenshot" width="100%">
 </p>
 
 [🌐 Read in English](../README.md) | [🏗️ 架構設計書 (Architecture Specs)](docs/ARCHITECTURE.zh-TW.md)
