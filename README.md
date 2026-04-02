@@ -45,20 +45,6 @@ Vulnerability components mirror the system's asset inventory:
 
 ---
 
-## 💻 Development Setup
-
-1. **Database Containerization:** Bring up the local Postgres DB via Docker.
-   ```bash
-   docker compose up -d
-   ```
-
-2. **Environment Configuration:** Ensure `.env` contains the required credentials:
-   ```env
-   DATABASE_URL="postgresql://openticket_user:openticket_password@localhost:5432/openticket_dev?schema=public"
-   NEXTAUTH_URL="http://localhost:3000"
-   NEXTAUTH_SECRET="REPLACE_WITH_YOUR_STRONG_SECRET_HASH"
-   ```
-
 ## 🚀 Quick Start (Installation)
 
 OpenTicket provides two frictionless ways to deploy the platform: **Full Containerization** (Recommended for Production) or a **Bare-metal Setup Script** (Recommended for Development).
@@ -85,19 +71,3 @@ npm run dev
 
 ### 🪄 First-Time Bootstrap Workflow
 No matter which method you choose, visiting `http://localhost:3000` for the first time will automatically intercept and route you to the **Setup Wizard (`/setup`)**. This securely provisions your first Global System Administrator account.
-
-## 🔐 Default Test Accounts
-
-The MVP is automatically seeded with accounts spanning each RBAC group upon running the seed script:
-
-- **Admin Account (Unrestricted Setup & 2FA Enforcement):**
-  - **Email:** `admin@openticket.local`
-  - **Password:** `Admin@123`
-
-- **SecOps Engineer (Incident Resolution & Editing):**
-  - **Email:** `secops@openticket.local`
-  - **Password:** `Secops@123`
-
-- **Standard Reporter (Creation & View-Only):**
-  - **Email:** `reporter@openticket.local`
-  - **Password:** `Reporter@123`

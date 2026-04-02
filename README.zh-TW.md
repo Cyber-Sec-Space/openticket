@@ -44,27 +44,29 @@
 
 ---
 
-   npx prisma migrate dev --name init
-   npx tsx prisma/seed.ts
-   ```
+## 🚀 快速啟動 (安裝說明)
 
-4. **啟動 Turbopack 前端專案：**
-   ```bash
-   npm run dev
-   ```
+OpenTicket 提供了兩種無痛部屬平台的方式：**完全容器化** (建議用於生產環境) 或是**快速啟動腳本** (建議用於本地開發)。
 
-## 🔐 預設測試帳號
+### 選項 A: 完全容器化部署 (Docker 企業方案)
+這是運行 OpenTicket 最簡單的方式，透過 Docker Compose 將會自動為您配置最新的 PostgreSQL 資料庫、執行關聯遷移，並啟動極度最佳化的 Next.js 獨立容器 (Standalone)。
 
-當您執行上述的 Seed 指令後，MVP 版本會自動為每個權限群組產生測試帳號：
+```bash
+docker-compose up -d
+```
+*您的應用程式將會啟動在 `http://localhost:3000`。任何時候都可以透過 `docker-compose down` 來將其關閉。*
 
-- **系統管理員 (可進行所有設定與全域 2FA 強制鎖定)：**
-  - **Email:** `admin@openticket.local`
-  - **Password:** `Admin@123`
+### 選項 B: 本地開發腳本 (Bare-Metal)
+如果您偏好直接在本地主機執行 Node.js，只需執行這隻啟動腳本。它會以互動式的方式為您配對 `.env` 環境變數、安裝依賴套件並執行 Prisma 遷移。
 
-- **資安維運工程師 (負責處理事件與更新進度)：**
-  - **Email:** `secops@openticket.local`
-  - **Password:** `Secops@123`
+```bash
+# 請確保您的本機已經有空的 PostgreSQL 實例在運行
+chmod +x setup.sh
+./setup.sh
 
-- **標準通報者 (僅能建立通報與檢視唯讀資料)：**
-  - **Email:** `reporter@openticket.local`
-  - **Password:** `Reporter@123`
+# 啟動開發伺服器
+npm run dev
+```
+
+### 🪄 首次啟動引導精靈
+無論您選擇上述哪一種部屬方式，當您首次進入 `http://localhost:3000` 時，系統會自動將您重新導向至**系統初始化精靈 (`/setup`)**。這將引導您安全地註冊全系統第一位最高權限管理員 (Global System Administrator)。
