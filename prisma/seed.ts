@@ -21,7 +21,8 @@ async function main() {
   })
 
   if (!admin) {
-    const passwordHash = await bcrypt.hash('Admin@123', 10)
+    const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || require('crypto').randomBytes(8).toString('hex')
+    const passwordHash = await bcrypt.hash(rawPassword, 10)
     admin = await prisma.user.create({
       data: {
         name: 'System Admin',
@@ -30,7 +31,7 @@ async function main() {
         roles: [Role.ADMIN, Role.SECOPS],
       }
     })
-    console.log(`Created admin account: ${adminEmail} (password: Admin@123)`)
+    console.log(`Created admin account: ${adminEmail} (password: ${rawPassword})`)
   } else {
     console.log(`Admin account ${adminEmail} already exists.`)
   }

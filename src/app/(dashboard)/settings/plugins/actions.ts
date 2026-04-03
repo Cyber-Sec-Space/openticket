@@ -46,6 +46,9 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
 
   for (const [key, value] of formData.entries()) {
     if (typeof value === "string" && !key.startsWith("$ACTION")) {
+        // Prevent Prototype Pollution
+        if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
+        
         // @ts-ignore
         config[key] = value;
     }
@@ -68,12 +71,28 @@ export async function installExternalPlugin(pluginId: string, version: string, s
   }
 
   if (sourceType === "registry") {
+    // Prevent Path Traversal
+    if (!/^[a-zA-Z0-9\-]+$/.test(pluginId)) {
+      throw new Error("Invalid plugin ID format. Only alphanumeric characters and hyphens are permitted.");
+    }
+    
+    // Ensure version only contains safe characters as well
+    if (!/^[a-zA-Z0-9\.\-\^]+$/.test(version)) {
+      throw new Error("Invalid version string format.");
+    }
+
     const res = await fetch(`https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/plugins/${pluginId}/${version}/index.tsx`);
     if (!res.ok) throw new Error(`Failed to download plugin source code from registry (HTTP ${res.status}).`);
     const code = await res.text();
     
     const pluginsDir = path.join(process.cwd(), "src/plugins");
     const pluginFile = path.join(pluginsDir, `external-${pluginId}.tsx`);
+    
+    // Additional boundary check to ensure the file resolves securely inside the plugins directory
+    if (!pluginFile.startsWith(pluginsDir)) {
+      throw new Error("Path traversal boundaries violated.");
+    }
+
     fs.writeFileSync(pluginFile, code, "utf-8");
     
     // Inject into index.ts

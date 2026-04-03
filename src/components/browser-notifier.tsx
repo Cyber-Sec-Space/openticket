@@ -55,9 +55,12 @@ export function BrowserNotifier({ isEnabled }: { isEnabled?: boolean }) {
          })
 
          if (alert.link) {
-            notification.onclick = () => {
-               window.focus()
-               window.location.href = alert.link
+            notification.onclick = function () {
+              window.focus();
+              if (typeof alert.link === "string" && alert.link.startsWith('/')) {
+                 window.location.pathname = alert.link;
+              }
+              this.close();
             }
          }
        }

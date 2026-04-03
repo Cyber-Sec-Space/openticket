@@ -16,8 +16,14 @@ export async function GET(req: Request) {
 
   const takeParam = searchParams.get("take");
   const skipParam = searchParams.get("skip");
-  const take = Math.min(parseInt(takeParam || "100", 10), 100);
-  const skip = parseInt(skipParam || "0", 10);
+  
+  let take = parseInt(takeParam || "100", 10);
+  let skip = parseInt(skipParam || "0", 10);
+  
+  if (Number.isNaN(take)) take = 100;
+  if (Number.isNaN(skip)) skip = 0;
+  
+  take = Math.min(take, 100);
 
   const incidents = await db.incident.findMany({
     where: filterParams,
