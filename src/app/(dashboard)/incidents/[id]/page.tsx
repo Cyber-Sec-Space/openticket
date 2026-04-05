@@ -263,7 +263,7 @@ export default async function IncidentDetailPage({
     try {
       const fs = await import('fs')
       const path = await import('path')
-      const safeBase = path.resolve(process.cwd(), 'public', 'uploads')
+      const safeBase = path.resolve(process.cwd(), 'private', 'uploads')
       
       for (const att of incident!.attachments || []) {
         if (att.fileUrl) {

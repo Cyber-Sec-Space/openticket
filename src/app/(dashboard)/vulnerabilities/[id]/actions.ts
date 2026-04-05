@@ -67,7 +67,8 @@ export async function deleteVulnerabilityAction(formData: FormData) {
       const path = await import('path')
       for (const att of vuln.attachments) {
         if (att.fileUrl) {
-          const filepath = path.join(process.cwd(), 'public', att.fileUrl.replace(/^\//, ''))
+          const filename = path.basename(att.fileUrl)
+          const filepath = path.join(process.cwd(), 'private', 'uploads', filename)
           if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
         }
       }

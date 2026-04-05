@@ -67,8 +67,8 @@ export async function uploadAttachment(formData: FormData) {
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
 
-  // Make sure upload dir exists
-  const uploadsDir = path.join(process.cwd(), "public", "uploads")
+  // Make sure upload dir exists (in private so it is NOT served statically)
+  const uploadsDir = path.join(process.cwd(), "private", "uploads")
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true })
   }
@@ -81,7 +81,7 @@ export async function uploadAttachment(formData: FormData) {
   const createdFile = await db.attachment.create({
     data: {
       filename: file.name,
-      fileUrl: `/uploads/${safeFilename}`,
+      fileUrl: `/api/files/${safeFilename}`,
       uploaderId: session.user.id,
       incidentId: incidentId || null,
       vulnId: vulnId || null
@@ -134,7 +134,7 @@ export async function deleteAttachment(attachmentId: string) {
 
   // Delete from filesystem securely
   try {
-     const safeBase = path.resolve(process.cwd(), 'public', 'uploads')
+     const safeBase = path.resolve(process.cwd(), 'private', 'uploads')
      const filename = path.basename(attachment.fileUrl)
      const filePath = path.resolve(safeBase, filename)
      

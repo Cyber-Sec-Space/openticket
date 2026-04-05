@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 - Added strict in-memory Brute Force Rate Limiting to `authorize()` NextAuth backend thwarting credential stuffing attacks targeting `/login`.
 - Solidified Comment Creation via extreme Inline BOLA verification checking ensuring that malicious actors cannot forge Server Action payloads pushing discussions to unowned tickets.
 - Upgraded `nodemailer` to `^8.0.4` to remediate a known CRLF Injection vulnerability (CWE-93 / SNYK-JS-NODEMAILER-15790064) through the `envelope.size` parameter.
+- Closed a Critical Cloud Storage Insecure Direct Object Reference (IDOR) by forcibly evicting all evidence attachments out of `public/uploads` into a hidden `private` volume, protected by a zero-trust BOLA `/api/files` streaming gateway blocking unauthorized traversal attempts.
+- Remediated Broken Object Level Authorization (BOLA) and Application Logic DoS within `/api/export`, enforcing strict `take: 5000` memory ceilings and restricting generic `REPORTER`s to dumping only natively-owned entity graphs rather than the entire enterprise index.
 
 ### Changed
 - Concurrency Optimization: Upgraded HTML5 Desktop Notification layer shifting away from overlapping `HTTP Polling` streams towards highly-efficient `Server-Sent Events (SSE)`.
