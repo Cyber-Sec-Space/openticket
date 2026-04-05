@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 0.3.1
+## 0.3.0
 ### Security
 - Fixed a massive Privilege Escalation (PrivEsc) vector inside `/api/incidents` where `REPORTER`s could illegally inject arbitrary `assetId` values to force system-wide SOAR automated quarantines across unowned macro infrastructure.
 - Added strict in-memory Brute Force Rate Limiting to `authorize()` NextAuth backend thwarting credential stuffing attacks targeting `/login`.
