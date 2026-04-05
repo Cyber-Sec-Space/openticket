@@ -11,6 +11,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const type = searchParams.get('type') || 'incident'
   const statusFilter = searchParams.get('status')
+  const skipParam = parseInt(searchParams.get('skip') || '0', 10)
+  const skip = isNaN(skipParam) ? 0 : skipParam
+
   
   const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
   
@@ -27,12 +30,13 @@ export async function GET(req: Request) {
        whereClause.reporterId = session.user.id
     }
     
-    // Resource Constraint Enforcement (OOM Prevention)
+    // Resource Constraint Enforcement (OOM Prevention) w/ Safe Paging
     const incidents = await db.incident.findMany({
       where: whereClause,
       include: { asset: true, reporter: true, assignees: true },
       orderBy: { createdAt: 'desc' },
-      take: 5000
+      take: 5000,
+      skip: skip
     })
 
     const headers = ["ID", "Title", "Type", "Severity", "Status", "Asset", "Reporter", "Assignees", "SLA Target Date", "Created At"]
@@ -70,7 +74,8 @@ export async function GET(req: Request) {
       where: whereClause,
       include: { affectedAssets: true },
       orderBy: { createdAt: 'desc' },
-      take: 5000
+      take: 5000,
+      skip: skip
     })
 
     const headers = ["ID", "CVE ID", "Title", "CVSS", "Severity", "Status", "Affected Assets", "SLA Target Date", "Created At"]

@@ -10,6 +10,8 @@ import { generate2FA, verifyAndEnable2FA, disable2FA } from "./actions"
 
 export function TwoFactorPanel({ isEnabled }: { isEnabled: boolean }) {
   const [setupStep, setSetupStep] = useState<"IDLE" | "SCANNING">("IDLE")
+  const [disableStep, setDisableStep] = useState<"IDLE" | "CONFIRMING">("IDLE")
+  const [password, setPassword] = useState("")
   const [qrSrc, setQrSrc] = useState<string>("")
   const [errorMsg, setErrorMsg] = useState<string>("")
   const [code, setCode] = useState("")
@@ -55,19 +57,23 @@ export function TwoFactorPanel({ isEnabled }: { isEnabled: boolean }) {
   }
 
   const handleDisable = async () => {
-    if (!confirm("WARNING: Disabling Two-Factor Authentication severely drops your endpoint perimeter defense score. Confirm disconnect?")) return;
+    if (!password) {
+       setErrorMsg("Password is strictly required for downgrade protocols.")
+       return
+    }
     setIsPending(true)
     setErrorMsg("")
     try {
-       const res = await disable2FA()
+       const res = await disable2FA(password)
        if (res.error) throw new Error(res.error)
+       setDisableStep("IDLE")
+       setPassword("")
     } catch (e: any) {
       setErrorMsg(e.message)
     } finally {
       setIsPending(false)
     }
   }
-
   return (
     <div className="space-y-6">
        <hr className="my-8 border-white/10" />
@@ -86,9 +92,29 @@ export function TwoFactorPanel({ isEnabled }: { isEnabled: boolean }) {
                   <div className="flex items-center text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.2)]">
                      <ShieldCheck className="w-4 h-4 mr-2" /> Active
                   </div>
-                  <Button disabled={isPending} onClick={handleDisable} variant="destructive" size="sm" className="h-8 uppercase text-[10px] tracking-widest">
-                     Disable
-                  </Button>
+                  {!isPending && disableStep === "IDLE" ? (
+                     <Button disabled={isPending} onClick={() => { setDisableStep("CONFIRMING"); setErrorMsg(""); }} variant="destructive" size="sm" className="h-8 uppercase text-[10px] tracking-widest transition-all">
+                        Disable
+                     </Button>
+                  ) : null}
+                  
+                  {disableStep === "CONFIRMING" && (
+                    <div className="flex items-center gap-2 animate-in slide-in-from-right-4">
+                       <Input 
+                         type="password" 
+                         value={password}
+                         onChange={(e) => setPassword(e.target.value)}
+                         placeholder="Root Password" 
+                         className="h-8 w-40 text-xs bg-black/60 border-destructive/50 focus-visible:ring-destructive" 
+                       />
+                       <Button disabled={isPending} onClick={handleDisable} variant="destructive" size="sm" className="h-8 uppercase text-[10px]">
+                          Verify & Drop
+                       </Button>
+                       <Button disabled={isPending} onClick={() => { setDisableStep("IDLE"); setErrorMsg(""); }} variant="ghost" size="sm" className="h-8 uppercase text-[10px] text-muted-foreground hover:text-white">
+                          Abort
+                       </Button>
+                    </div>
+                  )}
                </div>
             ) : (
                <div className="flex items-center space-x-3">

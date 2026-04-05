@@ -5,6 +5,8 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import * as OTPAuth from "otpauth"
 import { revalidatePath } from "next/cache"
+import bcrypt from "bcrypt"
+
 
 export async function updateProfile(formData: FormData) {
   const session = await auth()
@@ -72,9 +74,15 @@ export async function verifyAndEnable2FA(token: string) {
   return { success: true }
 }
 
-export async function disable2FA() {
+export async function disable2FA(password: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
+
+  const user = await db.user.findUnique({ where: { id: session.user.id } })
+  if (!user || !user.passwordHash) return { error: "Identity core missing." }
+
+  const isPasswordValid = await bcrypt.compare(password, user.passwordHash)
+  if (!isPasswordValid) return { error: "Authentication Thwarted: Cannot disable 2FA without strict origin confirmation." }
 
   await db.user.update({
     where: { id: session.user.id },

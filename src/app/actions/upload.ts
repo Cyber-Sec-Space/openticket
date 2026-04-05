@@ -5,6 +5,8 @@ import { db } from "@/lib/db"
 import fs from "fs"
 import path from "path"
 import { z } from "zod"
+import crypto from "crypto"
+
 
 export async function uploadAttachment(formData: FormData) {
   const session = await auth()
@@ -73,8 +75,9 @@ export async function uploadAttachment(formData: FormData) {
     fs.mkdirSync(uploadsDir, { recursive: true })
   }
 
-  const safeFilename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
+  const safeFilename = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
   const filePath = path.join(uploadsDir, safeFilename)
+
 
   fs.writeFileSync(filePath, buffer)
 
