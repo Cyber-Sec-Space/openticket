@@ -39,6 +39,16 @@ class EmailNotVerifiedError extends Error {
   }
 }
 
+// Global in-memory rate limit store for brute force protection
+const loginAttempts = new Map<string, { count: number, resetAt: number }>();
+
+class AuthenticationThrottledError extends Error {
+  constructor() {
+    super("AuthenticationThrottled");
+    this.name = "AuthenticationThrottledError";
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
@@ -51,14 +61,45 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!credentials?.email || !credentials?.password) {
           return null
         }
+        
+        const email = credentials.email as string;
+        
+        // --- Rate Limiting Strategy (Brute Force Protection) ---
+        const now = Date.now();
+        const record = loginAttempts.get(email);
+        
+        if (record && now < record.resetAt) {
+           if (record.count >= 5) {
+               throw new AuthenticationThrottledError();
+           }
+        } else if (record && now >= record.resetAt) {
+           // Reset window
+           loginAttempts.delete(email);
+        }
+
         const user = await db.user.findUnique({
-          where: { email: credentials.email as string }
+          where: { email }
         })
+        
         if (!user || (!user.passwordHash)) {
+          // Record failure for invalid user
+          const updatedRecord = loginAttempts.get(email) || { count: 0, resetAt: now + 5 * 60 * 1000 };
+          updatedRecord.count += 1;
+          loginAttempts.set(email, updatedRecord);
           return null
         }
+        
         const isValid = await bcrypt.compare(credentials.password as string, user.passwordHash)
-        if (!isValid) return null
+        if (!isValid) {
+          // Record failure for valid user
+          const updatedRecord = loginAttempts.get(email) || { count: 0, resetAt: now + 5 * 60 * 1000 };
+          updatedRecord.count += 1;
+          loginAttempts.set(email, updatedRecord);
+          return null
+        }
+        
+        // Successful login, clear failures
+        loginAttempts.delete(email);
 
         // Fetch global directives
         const settings = await db.systemSetting.findUnique({ where: { id: "global" } })

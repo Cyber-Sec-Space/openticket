@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.3.1
+### Security
+- Fixed a massive Privilege Escalation (PrivEsc) vector inside `/api/incidents` where `REPORTER`s could illegally inject arbitrary `assetId` values to force system-wide SOAR automated quarantines across unowned macro infrastructure.
+- Added strict in-memory Brute Force Rate Limiting to `authorize()` NextAuth backend thwarting credential stuffing attacks targeting `/login`.
+- Solidified Comment Creation via extreme Inline BOLA verification checking ensuring that malicious actors cannot forge Server Action payloads pushing discussions to unowned tickets.
+
+### Changed
+- Concurrency Optimization: Upgraded HTML5 Desktop Notification layer shifting away from overlapping `HTTP Polling` streams towards highly-efficient `Server-Sent Events (SSE)`.
+
 ## 0.2.0
 ### Added
 - Plugin Management: Expanded Plugin Store ecosystem by introducing native `PagerDuty Escalator`, `Jira Cloud Synchronization`, and `Microsoft Teams Webhook` extensions, powering dynamic M2M response mechanisms and SOC collaboration.

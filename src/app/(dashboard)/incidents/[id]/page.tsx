@@ -446,6 +446,13 @@ export default async function IncidentDetailPage({
                 const sessionUrl = await auth()
                 const content = formData.get("content") as string
                 if (!content || !sessionUrl) return;
+                
+                // Strict BOLA Enforcement within the action scope
+                const hasPrivilege = sessionUrl.user.roles.includes('ADMIN') || sessionUrl.user.roles.includes('SECOPS');
+                if (!hasPrivilege && incident!.reporterId !== sessionUrl.user.id) {
+                   throw new Error("Forbidden: Strict BOLA isolation. You cannot comment on an incident you do not own.");
+                }
+
                 await db.comment.create({
                   data: { content, incidentId: incident!.id, authorId: sessionUrl.user.id }
                 })

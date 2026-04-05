@@ -57,13 +57,19 @@ export async function POST(req: Request) {
       processedTags = tags.map(t => String(t).trim()).filter(t => t !== '').map(t => t.startsWith('#') ? t : `#${t}`)
     }
 
+    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    
+    // Prevent Privilege Escalation
+    const finalAssetId = hasPrivilege ? (assetId || null) : null;
+    const finalSeverity = hasPrivilege ? (severity || 'LOW') : 'LOW';
+
     const newIncident = await db.incident.create({
       data: {
         title,
         description,
-        severity: severity || 'LOW',
+        severity: finalSeverity,
         reporterId: session.user.id,
-        assetId: assetId || null,
+        assetId: finalAssetId,
         status: 'NEW',
         tags: processedTags
       }
