@@ -21,7 +21,7 @@ async function main() {
   })
 
   if (!admin) {
-    const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || require('crypto').randomBytes(8).toString('hex')
+    const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || require('crypto').randomUUID()
     const passwordHash = await bcrypt.hash(rawPassword, 10)
     admin = await prisma.user.create({
       data: {

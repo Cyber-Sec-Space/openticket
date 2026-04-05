@@ -68,6 +68,7 @@ body.dark-theme {
 
 .text-gradient {
   background: linear-gradient(to right, #818cf8, #38bdf8);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
