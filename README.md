@@ -43,7 +43,7 @@ You can directly bridge OpenTicket to your CI/CD pipelines or SOAR orchestrators
 
 ### API & Integrations
 - **Hook Engine**: Isolated event-bus architecture (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`) allowing external execution without degrading system stability.
-- **Out-of-the-Box Plugins**: Includes native interceptors such as `Slack Critical Notifier`, `PagerDuty Escalator`, `Jira Cloud Synchronization`, and `Microsoft Teams Webhook` ready for instant deployment.
+- **External Plugin Engine**: Easily connect independent third-party modules—such as external SOC listeners, Jira sync nodes, or Slack/Teams webhooks—directly via the UI-driven Plugin Store to instantly bridge external CI/CD/SOAR architectures.
 - **Machine-to-Machine (M2M) Keys**: Hardened, anti-enumeration `ApiToken` models generating `SHA-256` Bearer authentications for SOAR/SIEM integration logic.
 - **Headless Rate Limiting**: Global REST boundaries throttling aggressive automation scripts to protect structural integrity natively mapping constraints down to the Prisma abstraction. All captured events will rapidly pipe over the Hook Engine concurrently in the background without locking primary server threads.
 

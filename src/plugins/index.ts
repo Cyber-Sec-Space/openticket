@@ -1,10 +1,8 @@
 import { OpenTicketPlugin } from "../lib/plugins/types"
 
-import { slackIntegration } from "./slack-notifier"
+// Core framework execution target point.
+// Plugins should not be bundled in this core repository. The activePlugins array must remain strictly unoccupied
+// prior to dynamic external injections via the PluginState Engine or separate distribution architectures.
 
-// To activate a plugin, merely import it and inject it into this static execution array.
-// This design inherently prevents dynamic Webpack unbundling breakages on Next.js Edge topologies.
+export const activePlugins: OpenTicketPlugin[] = [];
 
-export const activePlugins: OpenTicketPlugin[] = [
-  slackIntegration
-];

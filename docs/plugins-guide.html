@@ -75,18 +75,13 @@
 
       <div class="bento-card glass" style="margin-bottom: 2rem;">
         <h3>The Plugin Architecture</h3>
-        <p>OpenTicket plugins are natively built into the Next.js runtime. Since this is an edge-compatible application,
-          plugins are compiled at build-time to ensure maximum performance and security.</p>
-        <p class="mt-4"><strong>Plugin Repository:</strong> All plugins are located in the source code under
-          <code>src/plugins/</code>.
-        </p>
+        <p>OpenTicket plugins operate as dynamic external modules. Since this is an edge-compatible application, plugins interact purely with the centralized Hook Engine and EventBus rather than polluting core logic.</p>
+        <p class="mt-4"><strong>Plugin Isolation:</strong> The core application does NOT bundle third-party plugins. All community or custom-built plugins must be installed via the Plugin Registry or injected externally.</p>
       </div>
 
       <div class="bento-card glass" style="margin-bottom: 2rem;">
         <h3>How to Develop a Plugin</h3>
-        <p>A plugin is simply a TypeScript object that implements the <code>OpenTicketPlugin</code> interface. You can
-          tap into the Hook Engine's events to trigger external systems (e.g., Slack Webhooks, Jira, or custom APIs).
-        </p>
+        <p>A plugin is simply a TypeScript object conforming to the <code>OpenTicketPlugin</code> interface. You can tap into the Hook Engine's events to trigger your external IT systems asynchronously.</p>
         <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
           <pre><code><span class="keyword">import</span> { OpenTicketPlugin } <span class="keyword">from</span> <span class="string">'@/types/plugin'</span>;
 

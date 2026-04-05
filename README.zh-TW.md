@@ -43,7 +43,7 @@
 
 ### API 與系統整合
 - **Hook Engine 攔截網**：將系統切分為去中心化的事件匯流排架構 (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`)，在不侵入並影響主伺服器穩定性的情況下，獨立發出外部調用。
-- **內建即時外掛 (Plugins)**：平台原生提供諸如 `Slack Critical Notifier`、`PagerDuty Escalator`、`Jira Cloud Synchronization` 以及 `Microsoft Teams Webhook` 等預載官方外掛，實現立即上線。
+- **外部外掛引擎 (External Plugin Engine)**：允許您透過網頁介面的外掛商城系統，輕鬆掛載獨立開發的第三方延伸模組（例如外部 SOC 監聽節點、Jira 同步模組或 Slack/Teams Webhooks），快速橋接外部的 CI/CD 或 SOAR 架構。
 - **M2M 自動化金鑰**：具有防禦爆破與反列舉機制的 `ApiToken` 引擎，以 `SHA-256` 生成高安全度 Bearer token，提供 SOAR 與外部 SIEM 完美的無人值守串接環境。
 - **Headless 路由限流器**：防堵惡意或失控自動化腳本的全球 REST 端點門檻，確保資料庫層抽象介面不會崩潰。在不阻塞核心行程的情況下，於毫秒級被推送至您的指定頻道。
 
