@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## 0.3.0
 ### Security
 - Fixed a massive Privilege Escalation (PrivEsc) vector inside `/api/incidents` where `REPORTER`s could illegally inject arbitrary `assetId` values to force system-wide SOAR automated quarantines across unowned macro infrastructure.
-- Added strict in-memory Brute Force Rate Limiting to `authorize()` NextAuth backend thwarting credential stuffing attacks targeting `/login`.
+- Re-architected Brute Force Rate Limiting inside `authorize()` NextAuth backend, shifting from a volatile In-Memory map constraint to a `schema.prisma` DB-synchronized state loop. This totally eradicates Stateless Dissonance, enforcing uniform authentication throttling limits seamlessly across scaled horizontal Kubernetes clusters and multi-threaded environments.
 - Solidified Comment Creation via extreme Inline BOLA verification checking ensuring that malicious actors cannot forge Server Action payloads pushing discussions to unowned tickets.
 - Upgraded `nodemailer` to `^8.0.4` to remediate a known CRLF Injection vulnerability (CWE-93 / SNYK-JS-NODEMAILER-15790064) through the `envelope.size` parameter.
 - Closed a Critical Cloud Storage Insecure Direct Object Reference (IDOR) by forcibly evicting all evidence attachments out of `public/uploads` into a hidden `private` volume, protected by a zero-trust BOLA `/api/files` streaming gateway blocking unauthorized traversal attempts.
