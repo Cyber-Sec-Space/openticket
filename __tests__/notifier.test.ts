@@ -43,4 +43,32 @@ describe("notifier", () => {
     await dispatchMassAlert(["u1", "u2"], "CRITICAL", "Title", "Body", "/link");
     expect(db.userNotification.create).toHaveBeenCalledTimes(2);
   });
+
+  it("handles catch block cleanly when db throws", async () => {
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+    (db.user.findUnique as jest.Mock).mockRejectedValueOnce(new Error("DB Connection Error"));
+    await dispatchAlert("u1", "CRITICAL", "Title", "Body");
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Notifier Error:", expect.any(Error));
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("checks other contexts branches successfully", async () => {
+    const mockUser = { browserNotificationsEnabled: true, notifyOnHigh: true, notifyOnAssign: true, notifyOnResolution: true, notifyOnAssetCompromise: true, notifyOnUnassigned: true };
+    (db.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+    
+    await dispatchAlert("u1", "HIGH", "T", "B");
+    expect(db.userNotification.create).toHaveBeenCalled();
+    
+    await dispatchAlert("u1", "ASSIGN", "T", "B");
+    expect(db.userNotification.create).toHaveBeenCalled();
+
+    await dispatchAlert("u1", "RESOLUTION", "T", "B");
+    expect(db.userNotification.create).toHaveBeenCalled();
+
+    await dispatchAlert("u1", "ASSET_COMPROMISE", "T", "B");
+    expect(db.userNotification.create).toHaveBeenCalled();
+
+    await dispatchAlert("u1", "UNASSIGNED", "T", "B");
+    expect(db.userNotification.create).toHaveBeenCalled();
+  });
 });

@@ -44,7 +44,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
       email,
       name,
       passwordHash,
-      roles: settings?.defaultUserRoles?.length ? settings.defaultUserRoles : ["REPORTER"]
+      roles: (settings && settings.defaultUserRoles && settings.defaultUserRoles.length > 0) ? settings.defaultUserRoles : ["REPORTER"]
     }
   })
 

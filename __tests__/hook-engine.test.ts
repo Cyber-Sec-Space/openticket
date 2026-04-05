@@ -11,6 +11,8 @@ jest.mock("../src/lib/db", () => ({
         { id: "good", isActive: true },
         { id: "test2", isActive: true },
         { id: "test3", isActive: true },
+        { id: "testConfig", isActive: true, configJson: `{"key":"value"}` },
+        { id: "testConfigBad", isActive: true, configJson: `"{bad}` },
       ])
     }
   }
@@ -100,5 +102,49 @@ describe("Hook Engine", () => {
     activePlugins.push(testPlugin);
 
     await expect(fireHook("onIncidentCreated", {} as any)).resolves.not.toThrow();
+  });
+
+  it("should successfully parse valid config and gracefully catch malformed JSON configs", async () => {
+    const mockOnIncidentCreatedGood = jest.fn().mockResolvedValue(undefined);
+    const mockOnIncidentCreatedBadJSON = jest.fn().mockResolvedValue(undefined);
+
+    activePlugins.push({
+      manifest: { id: "testConfig", name: "test", description: "", version: "" },
+      hooks: { onIncidentCreated: mockOnIncidentCreatedGood }
+    });
+    activePlugins.push({
+      manifest: { id: "testConfigBad", name: "badjson", description: "", version: "" },
+      hooks: { onIncidentCreated: mockOnIncidentCreatedBadJSON }
+    });
+
+    await fireHook("onIncidentCreated", {} as any);
+
+    expect(mockOnIncidentCreatedGood).toHaveBeenCalledWith({}, { key: "value" });
+    expect(mockOnIncidentCreatedBadJSON).toHaveBeenCalledWith({}, {});
+  });
+
+  it("should catch db.pluginState findMany errors natively without explosive disruption", async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { db } = require("../src/lib/db");
+    
+    // Simulate DB offline
+    (db.pluginState.findMany as jest.Mock).mockRejectedValueOnce(new Error("DB Connection Lost"));
+
+    const mockOnIncidentCreated = jest.fn().mockResolvedValue(undefined);
+    activePlugins.push({
+      manifest: { id: "test", name: "test", description: "", version: "" },
+      hooks: { onIncidentCreated: mockOnIncidentCreated }
+    });
+
+    await fireHook("onIncidentCreated", {} as any);
+    
+    // Engine will continue but uses empty dbState array
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[Plugin Core] Failed to query PluginState from DB."),
+      expect.any(Error)
+    );
+    expect(mockOnIncidentCreated).not.toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
   });
 });
