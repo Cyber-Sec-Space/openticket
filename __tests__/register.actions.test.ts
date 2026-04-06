@@ -69,8 +69,37 @@ describe("attemptRegistration", () => {
     fd.append("email", "test@example.com");
     fd.append("password", "longpassword");
     
+    
     const result = await attemptRegistration(undefined, fd);
     expect(result).toBe("REGISTRATION_FAILED");
+  });
+
+  it("returns REGISTRATION_FAILED if DB throws P2002 (TOCTOU Race Condition) during create", async () => {
+    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null); // Looks available
+    (db.user.create as jest.Mock).mockRejectedValueOnce({ code: 'P2002' }); // Fails at write time
+    
+    const fd = new FormData();
+    fd.append("name", "Test User");
+    fd.append("email", "test@example.com");
+    fd.append("password", "longpassword");
+    
+    const result = await attemptRegistration(undefined, fd);
+    expect(result).toBe("REGISTRATION_FAILED");
+  });
+
+  it("throws exception if DB throws non-P2002 error during create", async () => {
+    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
+    const dbError = new Error("DB DOWN");
+    (db.user.create as jest.Mock).mockRejectedValueOnce(dbError);
+    
+    const fd = new FormData();
+    fd.append("name", "Test User");
+    fd.append("email", "test@example.com");
+    fd.append("password", "longpassword");
+    
+    await expect(attemptRegistration(undefined, fd)).rejects.toThrow("DB DOWN");
   });
 
   it("creates user with explicit default roles from settings", async () => {

@@ -39,14 +39,21 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
 
   const passwordHash = await bcrypt.hash(password, 10)
   
-  await db.user.create({
-    data: {
-      email,
-      name,
-      passwordHash,
-      roles: (settings && settings.defaultUserRoles && settings.defaultUserRoles.length > 0) ? settings.defaultUserRoles : ["REPORTER"]
+  try {
+    await db.user.create({
+      data: {
+        email,
+        name,
+        passwordHash,
+        roles: (settings && settings.defaultUserRoles && settings.defaultUserRoles.length > 0) ? settings.defaultUserRoles : ["REPORTER"]
+      }
+    })
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return "REGISTRATION_FAILED"
     }
-  })
+    throw error // Re-throw unrecognized structural database errors
+  }
 
   // Phase 10: Email Alert on New Registration
   if (settings?.smtpTriggerOnNewUser) {
