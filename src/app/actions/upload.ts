@@ -153,7 +153,7 @@ export async function deleteAttachment(attachmentId: string) {
      console.error("Failed deleting file", e)
   }
 
-  await db.attachment.delete({ where: { id: attachmentId }})
+  await db.attachment.deleteMany({ where: { id: attachmentId }})
 
   if (attachment.incidentId) {
     await db.auditLog.create({

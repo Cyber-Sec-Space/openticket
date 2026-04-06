@@ -57,7 +57,10 @@ export async function deleteUserAction(formData: FormData) {
     throw new Error("Operation blocked: Administrators cannot surgically excise their own root credentials.")
   }
 
-  const deletedUser = await db.user.delete({
+  const userToDelete = await db.user.findUnique({ where: { id: targetUserId } })
+  if (!userToDelete) return;
+
+  await db.user.deleteMany({
     where: { id: targetUserId }
   })
 
@@ -68,7 +71,7 @@ export async function deleteUserAction(formData: FormData) {
       entityType: "User",
       entityId: targetUserId,
       userId: session.user.id,
-      changes: `Identity profile ${deletedUser.email} officially revoked and destroyed.`
+      changes: `Identity profile ${userToDelete.email} officially revoked and destroyed.`
     }
   })
 

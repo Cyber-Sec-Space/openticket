@@ -77,7 +77,7 @@ export default async function AssetDetailPage({
     if (!sessionUrl || !sessionUrl.user.roles.includes('ADMIN')) throw new Error("Forbidden")
     
     // Deleting Asset sets incident.assetId = NULL by Prisma definition.
-    await db.asset.delete({ where: { id: asset!.id } })
+    await db.asset.deleteMany({ where: { id: asset!.id } })
     redirect(`/assets`)
   }
 

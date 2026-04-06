@@ -295,7 +295,7 @@ export default async function IncidentDetailPage({
     }
 
     // Prisma cascading handles Comment/AuditLog deletions seamlessly
-    await db.incident.delete({ where: { id: incident!.id } })
+    await db.incident.deleteMany({ where: { id: incident!.id } })
     redirect(`/incidents`)
   }
 

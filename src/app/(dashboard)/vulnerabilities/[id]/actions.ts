@@ -81,7 +81,7 @@ export async function deleteVulnerabilityAction(formData: FormData) {
     console.error("Failed to un-link physical files during vulnerability deletion", error)
   }
 
-  await db.vulnerability.delete({ where: { id: vulnId } })
+  await db.vulnerability.deleteMany({ where: { id: vulnId } })
   revalidatePath("/vulnerabilities")
   redirect("/vulnerabilities")
 }
