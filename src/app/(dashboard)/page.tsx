@@ -92,13 +92,26 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const now = new Date();
   const startDate = new Date();
   startDate.setDate(now.getDate() - trendDays);
+  startDate.setHours(0, 0, 0, 0);
 
   const allIncsForTrend = await db.incident.findMany({
-    where: filterParams,
+    where: {
+      ...filterParams,
+      OR: [
+        { status: { notIn: ['CLOSED', 'RESOLVED'] } },
+        { updatedAt: { gte: startDate } }
+      ]
+    },
     select: { createdAt: true, updatedAt: true, status: true, targetSlaDate: true, severity: true }
   });
 
   const allVulnsForTrend = await db.vulnerability.findMany({
+    where: {
+      OR: [
+        { status: { notIn: ['MITIGATED', 'RESOLVED'] } }, 
+        { updatedAt: { gte: startDate } }
+      ]
+    },
     select: { createdAt: true, updatedAt: true, status: true, severity: true }
   });
 
