@@ -44,6 +44,14 @@ describe("updateSystemSettings Action", () => {
     fd.append("defaultUserRoles", "SECOPS");
     fd.append("smtpPort", "587");
     fd.append("smtpPassword", "secretpassword");
+    
+    // Pass valid numbers to test the 'false' branch of isNaN
+    fd.append("slaCriticalHours", "2");
+    fd.append("slaHighHours", "12");
+    fd.append("slaMediumHours", "48");
+    fd.append("slaLowHours", "80");
+    fd.append("rateLimitWindowMs", "60000");
+    fd.append("rateLimitMaxAttempts", "10");
 
     await updateSystemSettings(fd);
 
@@ -64,12 +72,43 @@ describe("updateSystemSettings Action", () => {
     await updateSystemSettings(fd);
 
     expect(db.systemSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({
-      update: expect.objectContaining({
-        defaultUserRoles: ["REPORTER"],
-        smtpPort: null
+      create: expect.objectContaining({ defaultUserRoles: ["REPORTER"] }),
+      update: expect.objectContaining({ defaultUserRoles: ["REPORTER"] })
+    }));
+  });
+
+  it("handles NaN string injections seamlessly by reverting to logical defaults", async () => {
+    (auth as jest.Mock).mockResolvedValueOnce({ user: { roles: ["ADMIN"] } });
+    const fd = new FormData();
+    fd.append("slaCriticalHours", "invalid string");
+    fd.append("slaHighHours", "blabla");
+    fd.append("slaMediumHours", "");
+    fd.append("slaLowHours", "broken");
+    fd.append("rateLimitWindowMs", "hack");
+    fd.append("rateLimitMaxAttempts", "nan");
+    fd.append("smtpPort", "notanumber");
+    
+    await updateSystemSettings(fd);
+
+    expect(db.systemSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({ 
+         slaCriticalHours: 4,
+         slaHighHours: 24,
+         slaMediumHours: 72,
+         slaLowHours: 168,
+         rateLimitWindowMs: 900000,
+         rateLimitMaxAttempts: 5,
+         smtpPort: null
+      }),
+      update: expect.objectContaining({ 
+         slaCriticalHours: 4,
+         slaHighHours: 24,
+         slaMediumHours: 72,
+         slaLowHours: 168,
+         rateLimitWindowMs: 900000,
+         rateLimitMaxAttempts: 5,
+         smtpPort: null
       })
     }));
-    // Cannot directly match a property missing in update object easily with expect.objectContaining 
-    // unless we check the calls, but guaranteeing this branch executes is enough for coverage constraints.
   });
 });
