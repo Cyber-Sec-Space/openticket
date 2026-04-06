@@ -5,13 +5,11 @@ import fs from "fs"
 import path from "path"
 import { ReadableOptions } from "stream"
 
-function bufferToReadableStream(buffer: Buffer) {
-  return new ReadableStream({
-    start(controller) {
-      controller.enqueue(buffer);
-      controller.close();
-    }
-  });
+import { Readable } from "stream"
+
+function bufferToReadableStream(nodeStream: fs.ReadStream) {
+  // Convert Node.js optimized stream directly into Web standard ReadableStream chunk stream
+  return Readable.toWeb(nodeStream) as any;
 }
 
 function getContentType(filename: string) {
@@ -87,8 +85,9 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
   }
 
   try {
-    const fileBuffer = await fs.promises.readFile(filePath)
-    const stream = bufferToReadableStream(fileBuffer)
+    // Mitigate O(N) Memory Exhaustion by allocating native micro-buffers (Chunk Streaming)
+    const nodeStream = fs.createReadStream(filePath)
+    const stream = bufferToReadableStream(nodeStream)
     const contentType = getContentType(filename)
 
     return new NextResponse(stream, {
