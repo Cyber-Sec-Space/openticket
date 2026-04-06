@@ -43,9 +43,10 @@ export default async function IncidentDetailPage({
       asset: true,
       comments: {
         include: { author: true },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 100
       },
-      attachments: true
+      attachments: { take: 100 }
     }
   })
 

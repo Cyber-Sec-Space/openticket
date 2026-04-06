@@ -30,7 +30,8 @@ export default async function AssetDetailPage({
     where: { id },
     include: {
       incidents: {
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 100
       }
     }
   })

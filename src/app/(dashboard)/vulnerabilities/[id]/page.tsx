@@ -27,8 +27,8 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
   const vuln = await db.vulnerability.findUnique({
     where: { id },
     include: {
-      affectedAssets: true,
-      attachments: { orderBy: { createdAt: 'desc' } }
+      affectedAssets: { take: 100 },
+      attachments: { orderBy: { createdAt: 'desc' }, take: 100 }
     }
   })
 
