@@ -71,15 +71,16 @@ export async function uploadAttachment(formData: FormData) {
 
   // Make sure upload dir exists (in private so it is NOT served statically)
   const uploadsDir = path.join(process.cwd(), "private", "uploads")
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true })
+  try {
+    await fs.promises.mkdir(uploadsDir, { recursive: true })
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
   }
 
   const safeFilename = `${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`
   const filePath = path.join(uploadsDir, safeFilename)
 
-
-  fs.writeFileSync(filePath, buffer)
+  await fs.promises.writeFile(filePath, buffer)
 
   const createdFile = await db.attachment.create({
     data: {
@@ -141,8 +142,12 @@ export async function deleteAttachment(attachmentId: string) {
      const filename = path.basename(attachment.fileUrl)
      const filePath = path.resolve(safeBase, filename)
      
-     if (filePath.startsWith(safeBase) && fs.existsSync(filePath)) {
-       fs.unlinkSync(filePath)
+     if (filePath.startsWith(safeBase)) {
+       try {
+         await fs.promises.unlink(filePath)
+       } catch (e) {
+         if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e;
+       }
      }
   } catch(e) {
      console.error("Failed deleting file", e)

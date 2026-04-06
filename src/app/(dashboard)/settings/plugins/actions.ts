@@ -93,11 +93,11 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       throw new Error("Path traversal boundaries violated.");
     }
 
-    fs.writeFileSync(pluginFile, code, "utf-8");
+    await fs.promises.writeFile(pluginFile, code, "utf-8");
     
     // Inject into index.ts
     const indexPath = path.join(pluginsDir, "index.ts");
-    let indexCode = fs.readFileSync(indexPath, "utf-8");
+    let indexCode = await fs.promises.readFile(indexPath, "utf-8");
     
     const importName = "external" + pluginId.replace(/[-_@/]/g, "") + "Plugin";
     if (!indexCode.includes(`from "./external-${pluginId}"`)) {
@@ -108,7 +108,7 @@ export async function installExternalPlugin(pluginId: string, version: string, s
         /export const activePlugins: OpenTicketPlugin\[\] = \[/, 
         `export const activePlugins: OpenTicketPlugin[] = [\n  ${importName},`
       );
-      fs.writeFileSync(indexPath, indexCode, "utf-8");
+      await fs.promises.writeFile(indexPath, indexCode, "utf-8");
     }
   } else if (sourceType === "npm" && packageName) {
     throw new Error("NPM dynamic installation via UI is currently restricted. Please use CLI.");

@@ -82,12 +82,12 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
   const safeBase = path.resolve(process.cwd(), 'private', 'uploads')
   const filePath = path.resolve(safeBase, filename)
 
-  if (!filePath.startsWith(safeBase) || !fs.existsSync(filePath)) {
+  if (!filePath.startsWith(safeBase)) {
     return new NextResponse("Physical file missing", { status: 404 })
   }
 
   try {
-    const fileBuffer = fs.readFileSync(filePath)
+    const fileBuffer = await fs.promises.readFile(filePath)
     const stream = bufferToReadableStream(fileBuffer)
     const contentType = getContentType(filename)
 
@@ -98,7 +98,10 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
         'Content-Disposition': `inline; filename="${attachment.filename}"`
       }
     })
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return new NextResponse("Physical file missing", { status: 404 })
+    }
     console.error("Error reading file:", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
