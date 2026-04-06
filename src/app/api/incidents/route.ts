@@ -20,8 +20,8 @@ export async function GET(req: Request) {
   let take = parseInt(takeParam || "100", 10);
   let skip = parseInt(skipParam || "0", 10);
   
-  if (Number.isNaN(take)) take = 100;
-  if (Number.isNaN(skip)) skip = 0;
+  if (Number.isNaN(take) || take < 0) take = 100;
+  if (Number.isNaN(skip) || skip < 0) skip = 0;
   
   take = Math.min(take, 100);
 

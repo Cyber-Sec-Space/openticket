@@ -17,7 +17,9 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
   if (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS')) return notFound()
 
   const resolvedParams = await searchParams;
-  const page = parseInt(resolvedParams.page || "1", 10);
+  let page = parseInt(resolvedParams.page || "1", 10);
+  if (Number.isNaN(page) || page < 1) page = 1;
+  
   const TAKE = 10;
 
   const filterParams: any = {}

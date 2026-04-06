@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plugins Guide | OpenTicket</title>
+  <title>OpenTicket | Security Plugin Development Guide</title>
   <meta name="description"
-    content="Learn how to build and integrate custom native plugins for the OpenTicket security operations platform within the Next.js runtime.">
+    content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions for the OpenTicket SecOps platform.">
   <meta name="keywords" content="OpenTicket Plugins, SOAR Integrations, Security Automation, Webhooks, API">
   <meta name="author" content="Cyber Sec Space">
 
@@ -33,6 +33,7 @@
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="canonical" href="https://openticket.cyber-sec.space/plugins-guide.html" />
 </head>
 
 <body class="dark-theme">
@@ -74,21 +75,24 @@
       </p>
 
       <div class="bento-card glass" style="margin-bottom: 2rem;">
-        <h3>The Plugin Architecture</h3>
+        <h3>The Hybrid Plugin Architecture</h3>
         <p>OpenTicket plugins operate as dynamic external modules. Since this is an edge-compatible application, plugins interact purely with the centralized Hook Engine and EventBus rather than polluting core logic.</p>
-        <p class="mt-4"><strong>Plugin Isolation:</strong> The core application does NOT bundle third-party plugins. All community or custom-built plugins must be installed via the Plugin Registry or injected externally.</p>
+        <p class="mt-4"><strong>Hybrid Orchestration:</strong> You no longer need to write code to install plugins! Administrators can browse the <strong>Plugin Store</strong> inside their dashboard and install remote capabilities directly via our Server-Side Registry Orchestration logic.</p>
       </div>
 
       <div class="bento-card glass" style="margin-bottom: 2rem;">
         <h3>How to Develop a Plugin</h3>
         <p>A plugin is simply a TypeScript object conforming to the <code>OpenTicketPlugin</code> interface. You can tap into the Hook Engine's events to trigger your external IT systems asynchronously.</p>
         <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
-          <pre><code><span class="keyword">import</span> { OpenTicketPlugin } <span class="keyword">from</span> <span class="string">'@/types/plugin'</span>;
+          <pre><code><span class="keyword">import</span> { OpenTicketPlugin } <span class="keyword">from</span> <span class="string">'@openticket/core'</span>;
 
 <span class="keyword">export const</span> myCustomPlugin: OpenTicketPlugin = {
-  id: <span class="string">'my-custom-plugin'</span>,
-  name: <span class="string">'Custom Integration'</span>,
-  description: <span class="string">'Sends alerts to my custom API.'</span>,
+  manifest: {
+    id: <span class="string">'my-custom-plugin'</span>,
+    name: <span class="string">'Custom Integration'</span>,
+    description: <span class="string">'Sends alerts to my custom API.'</span>,
+    version: <span class="string">'1.0.0'</span>
+  },
   hooks: {
     <span class="keyword">onIncidentCreated</span>: <span class="keyword">async</span> (incident, config) => {
       <span class="keyword">await</span> fetch(<span class="string">'https://api.mycorp.com/alerts'</span>, {
@@ -102,8 +106,8 @@
       </div>
 
       <div class="bento-card glass">
-        <h3>How to Register a Plugin</h3>
-        <p>Once your plugin is written, you must statically register it into the system's active runtime. Open
+        <h3>How to Register Custom Plugins Manually</h3>
+        <p>If you prefer not to use the OpenTicket Registry and want to deploy a highly-sensitive internal air-gapped integration, you can still statically register it. Open
           <code>src/plugins/index.ts</code> and add your plugin to the <code>activePlugins</code> array.
         </p>
         <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
@@ -115,7 +119,7 @@
 ];</code></pre>
         </div>
         <p class="mt-4 text-sm text-muted">Rebuild the application via `npm run build` or `docker-compose build` to
-          apply your changes.</p>
+          apply your changes manually.</p>
       </div>
     </div>
   </main>

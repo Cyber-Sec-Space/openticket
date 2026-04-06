@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Installation | OpenTicket</title>
+  <title>OpenTicket | Docker SOC Deployment Guide</title>
   <meta name="description"
-    content="Step-by-step guide to deploying the OpenTicket security operations platform locally or via Docker Compose.">
+    content="Deploy your own enterprise-grade SecOps platform. Learn how to install OpenTicket via Docker Compose or Bare-Metal locally in under 5 minutes.">
   <meta name="keywords" content="OpenTicket Installation, Deploy SOC, Docker Security, Setup SOAR, SecOps">
   <meta name="author" content="Cyber Sec Space">
 
@@ -33,6 +33,28 @@
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="canonical" href="https://openticket.cyber-sec.space/installation.html" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "HowTo",
+    "name": "How to Deploy OpenTicket via Docker",
+    "description": "Step-by-step guide to run the OpenTicket Security Operations Center via Docker Compose.",
+    "step": [
+      {
+        "@type": "HowToStep",
+        "name": "Clone the Repository",
+        "text": "Clone the OpenTicket codebase using Git."
+      },
+      {
+        "@type": "HowToStep",
+        "name": "Run Docker Compose",
+        "text": "Execute docker-compose up -d --build to spin up Next.js and PostgreSQL."
+      }
+    ]
+  }
+  </script>
 </head>
 
 <body class="dark-theme">
