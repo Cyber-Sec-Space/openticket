@@ -46,6 +46,9 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
 
   for (const [key, value] of formData.entries()) {
     if (typeof value === "string" && !key.startsWith("$ACTION")) {
+        // Prevent Prototype Pollution
+        if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
+        
         // @ts-ignore
         config[key] = value;
     }
@@ -68,17 +71,33 @@ export async function installExternalPlugin(pluginId: string, version: string, s
   }
 
   if (sourceType === "registry") {
+    // Prevent Path Traversal
+    if (!/^[a-zA-Z0-9\-]+$/.test(pluginId)) {
+      throw new Error("Invalid plugin ID format. Only alphanumeric characters and hyphens are permitted.");
+    }
+    
+    // Ensure version only contains safe characters as well
+    if (!/^[a-zA-Z0-9\.\-\^]+$/.test(version)) {
+      throw new Error("Invalid version string format.");
+    }
+
     const res = await fetch(`https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/plugins/${pluginId}/${version}/index.tsx`);
     if (!res.ok) throw new Error(`Failed to download plugin source code from registry (HTTP ${res.status}).`);
     const code = await res.text();
     
     const pluginsDir = path.join(process.cwd(), "src/plugins");
     const pluginFile = path.join(pluginsDir, `external-${pluginId}.tsx`);
-    fs.writeFileSync(pluginFile, code, "utf-8");
+    
+    // Additional boundary check to ensure the file resolves securely inside the plugins directory
+    if (!pluginFile.startsWith(pluginsDir)) {
+      throw new Error("Path traversal boundaries violated.");
+    }
+
+    await fs.promises.writeFile(pluginFile, code, "utf-8");
     
     // Inject into index.ts
     const indexPath = path.join(pluginsDir, "index.ts");
-    let indexCode = fs.readFileSync(indexPath, "utf-8");
+    let indexCode = await fs.promises.readFile(indexPath, "utf-8");
     
     const importName = "external" + pluginId.replace(/[-_@/]/g, "") + "Plugin";
     if (!indexCode.includes(`from "./external-${pluginId}"`)) {
@@ -89,7 +108,7 @@ export async function installExternalPlugin(pluginId: string, version: string, s
         /export const activePlugins: OpenTicketPlugin\[\] = \[/, 
         `export const activePlugins: OpenTicketPlugin[] = [\n  ${importName},`
       );
-      fs.writeFileSync(indexPath, indexCode, "utf-8");
+      await fs.promises.writeFile(indexPath, indexCode, "utf-8");
     }
   } else if (sourceType === "npm" && packageName) {
     throw new Error("NPM dynamic installation via UI is currently restricted. Please use CLI.");

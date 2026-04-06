@@ -26,9 +26,9 @@ export default async function DashboardLayout({
       <div className="block md:hidden">
         <MobileNav userRoles={session?.user?.roles} />
       </div>
-      <div className="flex flex-col md:flex-row">
+      <div className="flex w-full min-h-screen">
         <Sidebar userRoles={session?.user?.roles} />
-        <main className="flex-1 w-full md:ml-64 relative min-h-screen animate-fade-in-up md:p-0">
+        <main className="flex-1 w-full min-w-0 md:pl-64 flex flex-col relative animate-fade-in-up">
           {children}
         </main>
       </div>

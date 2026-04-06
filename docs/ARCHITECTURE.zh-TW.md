@@ -118,17 +118,21 @@ erDiagram
 ### 2.3 機器自動化介接 (Machine-to-Machine API Integration)
 系統內建支援純服務互動 (Headless Execution) 的 REST 端點 (如 `/api/incidents`, `/api/assets`)。為了確保隔離性與權限可追溯性，外部整合會被要求夾帶 `Authorization: Bearer <token>` 標頭。這些金鑰在建立期會**自動繼承發放此金鑰的帳號權限** (陣列形式存放)，藉此讓自動化機器人與呼叫者維持對等的資安授權邊界。
 
-### 2.4 外掛架構與事件總線 (Plugin Architecture EventBus)
-為避免核心後端路由被各種第三方工具或擴充功能 (如 Slack 推播、Teams、Jira 雙向同步) 阻塞，本系統採用非同步的 **Hook Engine**。所有的核心事件 (建立事件/資產覆滅等) 皆會被派發至 EventBus，交由資料庫 `PluginState` 檢核是否已安裝該功能，隨後才會排程執行於外掛空間中。
+### 2.4 混合式外掛市集與事件總線 (Hybrid Plugin Architecture)
+為避免核心後端路由被各種獨立開發的外部擴充功能 (如遠端推播、雙向同步腳本) 阻塞，本系統採用非同步的 **Hook Engine**。所有的核心事件 (建立事件/資產覆滅等) 皆會被派發至 EventBus，進而觸發完全脫離於主機體之外的外掛邏輯。
 
+不僅如此，OpenTicket 導入了 **混合分發模式 (Hybrid Registry)**，賦予管理員直接透過 UI 瀏覽並安裝遠端 Github Registry 外掛的特權。
 ```mermaid
 graph LR
     SystemEvents[事件建立 / 資產異動] --> HookEngine((Hook Engine EventBus))
-    HookEngine --> DBCheck{檢查 DB `PluginState` 啟動狀態}
-    DBCheck -- "Activated (安裝)" --> Plugins[執行各實體外掛 (如 Slack Notifier)]
-    DBCheck -- "Disabled (未啟用)" --> Skip[忽略派送]
-    Plugins --> Success[背景傳遞完成]
-    Plugins -- "Error" --> Isolated[隔離錯誤, 保障主線程不崩潰]
+    HookEngine --> DBCheck{檢查 DB `PluginState`}
+    DBCheck -- "Activated (安裝)" --> Plugins[執行隔離之外掛腳本]
+
+    subgraph Registry [遠端外掛市集機制]
+        RemoteRepo[GitHub Raw JSON] -->|Server Action| Download[伺服器端下載並解析 .tsx]
+        Download --> Build[背景執行 webpack production build]
+        Build --> Restart[無縫觸發 Node.js 熱重載重生]
+    end
 ```
 
 ### 2.5 全方位通知中心 (Omni-channel Notifications)
@@ -136,10 +140,10 @@ graph LR
 
 ```mermaid
 graph TD
-    SystemEvent[嚴峻資安系統事件] --> NotificationRouter{用戶設定 (UserPreference)}
-    NotificationRouter -- "Enable Web Notifications" --> PollingQueue[HTML5 Browser Polling]
+    SystemEvent[嚴峻資安系統事件] --> NotificationRouter{"用戶設定 (UserPreference)"}
+    NotificationRouter -- "Enable Web Notifications" --> SSEQueue[伺服器發送事件 (SSE)]
     NotificationRouter -- "Enable Email" --> SMTP[SMTP Mailer Service]
-    PollingQueue --> DesktopAlerts[作業系統桌面底層推播]
+    SSEQueue --> DesktopAlerts[作業系統桌面底層推播]
     SMTP --> AlertEmail[警報信件與註冊重置驗證信]
 ```
 
@@ -155,4 +159,7 @@ graph TD
    - 透過 `Auth.js` 強制實施零次設定即可啟用的安全 Cookie 策略。
    - 移除了存在偽隨機數漏洞與已棄用的依賴項（如 `bcryptjs`），全面升級為經過 C++ 編譯驗證的 `bcrypt` 套件。
    - 系統後台包含一鍵切換的全域強制開啟 2FA 開關 (`SystemSetting`)，一旦開啟，任何未綁定 OTP 二階段驗證的使用者都會被限制執行高風險動作（拋出 `Global2FAEnforcedError`），實現徹底的安全隔離。
+   - **防禦撞庫攻擊 (Brute Force Defense)**：實作無狀態的 in-memory 頻率限制 (Rate Limiting) 與登入端點綁定，有效壓制分散式帳號爆破。
+   - **防禦越權存取 (Strict BOLA Adherence)**：對於評論 (Comments) 與事件編輯，於後台強行評估該物件擁有者的連帶防護，拒絕越權竄改 (Direct Object Reference) 繞過預設的授權信任環。
 * **層級與溢位管理策略 (Z-Index & Overflow Hierarchy)：** 為了實現高密度的集中化儀表板，我們在玻璃擬態卡片中大量使用了 `overflow-hidden` 強制邊界。為避免底層選單與第三方覆蓋元件（如 `react-datepicker`）因此遭到截斷裁切，我們積極引入 React Portals 架構與手動提權的 Z-Index ，使彈出式浮層能夠脫離原有的 DOM 封裝樹，直接渲染在最頂層。
+* **伺服器端外掛熱重載 (Server-Side Registry Orchestration)**：利用 Node.js 原生的 `child_process.exec` 功能，在安全範圍內接受指令後觸發編譯器的重組 (`next build`)。並於最終回傳 `process.exit(0)`，將高可用性的重啟任務委託給背景守護進程 (如 PM2, Kubernetes) 處理。此架構達成幾乎零停機的外掛發布流程。

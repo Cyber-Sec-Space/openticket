@@ -338,3 +338,21 @@ model PluginState {
   installedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// -----------------------------------------------------------------------------
+// Time-Series Data Snapshots (Dashboard Cache)
+// -----------------------------------------------------------------------------
+
+model MetricSnapshot {
+  id          String   @id @default(cuid())
+  timestamp   DateTime // Defines the 30-min window
+  scopeType   String   // 'GLOBAL' or 'USER'
+  scopeId     String   // 'ALL' or user_id
+  
+  payload     String   @db.Text // JSON with detailed active counts and rates
+  
+  createdAt   DateTime @default(now())
+
+  @@unique([timestamp, scopeType, scopeId])
+  @@index([timestamp])
+}

@@ -50,7 +50,7 @@ export async function deleteApiTokenAction(tokenId: string) {
   const token = await db.apiToken.findUnique({ where: { id: tokenId } })
   if (!token || token.userId !== session.user.id) throw new Error("Forbidden or Not Found")
 
-  await db.apiToken.delete({ where: { id: tokenId } })
+  await db.apiToken.deleteMany({ where: { id: tokenId } })
 
   await db.auditLog.create({
     data: {

@@ -10,27 +10,40 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { updateVulnStatusAction, deleteVulnerabilityAction } from "./actions"
+import { linkAssetToVulnerability, unlinkAssetFromVulnerability } from "@/app/actions/vuln-assets"
 import Link from "next/link"
 
 interface MatchProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ assetPage?: string, filePage?: string }>
 }
 
-export default async function VulnerabilityDetailPage({ params }: MatchProps) {
+export default async function VulnerabilityDetailPage({ params, searchParams }: MatchProps) {
   const { id } = await params
+  const resolvedSearchParams = await searchParams;
   const session = await auth()
   
   if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
     return notFound()
   }
 
-  const vuln = await db.vulnerability.findUnique({
-    where: { id },
-    include: {
-      affectedAssets: true,
-      attachments: { orderBy: { createdAt: 'desc' } }
-    }
-  })
+  let assetPage = parseInt(resolvedSearchParams.assetPage as string) || 1;
+  if (Number.isNaN(assetPage) || assetPage < 1) assetPage = 1;
+  
+  let filePage = parseInt(resolvedSearchParams.filePage as string) || 1;
+  if (Number.isNaN(filePage) || filePage < 1) filePage = 1;
+
+  const TAKE_ASSET = 10;
+  const TAKE_FILE = 8;
+
+  const [vuln, affectedAssets, totalAssets, attachments, totalAttachments, allAssets] = await Promise.all([
+    db.vulnerability.findUnique({ where: { id } }),
+    db.asset.findMany({ where: { vulnerabilities: { some: { id } } }, take: TAKE_ASSET, skip: (assetPage - 1) * TAKE_ASSET }),
+    db.asset.count({ where: { vulnerabilities: { some: { id } } } }),
+    db.attachment.findMany({ where: { vulnId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
+    db.attachment.count({ where: { vulnId: id } }),
+    db.asset.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, type: true } })
+  ])
 
   if (!vuln) {
     return notFound()
@@ -149,29 +162,76 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
           <div className="glass-card rounded-xl border border-border shadow-2xl flex flex-col items-center">
             <div className="w-full text-left p-6 border-b border-white/5 flex items-center bg-black/20">
                <Server className="w-5 h-5 mr-3 text-red-400" /> 
-               <h2 className="font-bold tracking-tight text-red-500">Infected Infrastructure</h2>
+               <h2 className="font-bold tracking-tight text-red-500 flex-1">Infected Infrastructure</h2>
             </div>
             
-            <div className="w-full p-4 space-y-3 flex-1">
-               {vuln.affectedAssets.length === 0 ? (
+            {session.user.roles.includes('ADMIN') && (
+              <form action={linkAssetToVulnerability} className="w-full p-4 border-b border-white/5 bg-black/40 flex gap-2">
+                 <input type="hidden" name="vulnId" value={vuln.id} />
+                 <Select name="assetId" required>
+                    <SelectTrigger className="w-full bg-black/50 border-white/10 !h-8 text-xs rounded-md">
+                       <SelectValue placeholder="Correlate New Asset..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/95 shadow-2xl border-white/10 max-h-64">
+                       {allAssets.map(a => (
+                         <SelectItem key={a.id} value={a.id} className="text-xs font-mono">{a.name}</SelectItem>
+                       ))}
+                    </SelectContent>
+                 </Select>
+                 <Button type="submit" size="sm" variant="secondary" className="h-8 text-xs shrink-0 bg-red-950/40 text-red-400 hover:bg-red-900/60 border border-red-900/50">Link Asset</Button>
+              </form>
+            )}
+            
+            <div className="w-full p-4 space-y-3 flex-1 flex flex-col justify-between">
+               {totalAssets === 0 ? (
                  <div className="h-full flex flex-col items-center justify-center p-6 opacity-50 space-y-2">
                     <ShieldCheck className="w-8 h-8 text-green-500" />
                     <p className="text-muted-foreground text-sm font-mono text-center">Zero Assets Currently Mapping to this Vulnerability Vector.</p>
                  </div>
                ) : (
-                 <ul className="space-y-2">
-                    {vuln.affectedAssets.map(asset => (
-                      <li key={asset.id} className="bg-black/40 border border-red-500/20 rounded-lg p-3 hover:bg-black/60 transition-colors">
-                        <Link href={`/assets`} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group">
-                          <div>
-                            <p className="font-bold font-mono text-sm text-red-400 group-hover:text-red-300 transition-colors">{asset.name}</p>
-                            <span className="text-[10px] text-muted-foreground uppercase">{asset.type.replace(/_/g, ' ')} • {asset.status.replace(/_/g, ' ')}</span>
-                          </div>
-                          {asset.ipAddress && <span className="text-xs bg-red-950/50 text-red-300 px-2 py-1 flex items-center rounded border border-red-900/50 font-mono tracking-tighter">{asset.ipAddress}</span>}
-                        </Link>
-                      </li>
-                    ))}
-                 </ul>
+                 <>
+                   <ul className="space-y-2">
+                      {affectedAssets.map(asset => (
+                        <li key={asset.id} className="bg-black/40 border border-red-500/20 rounded-lg p-3 hover:bg-black/60 transition-colors flex justify-between items-center group">
+                          <Link href={`/assets/${asset.id}`} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-1">
+                            <div>
+                              <p className="font-bold font-mono text-sm text-red-400 group-hover:text-red-300 transition-colors">{asset.name}</p>
+                              <span className="text-[10px] text-muted-foreground uppercase">{asset.type.replace(/_/g, ' ')} • {asset.status.replace(/_/g, ' ')}</span>
+                            </div>
+                            {asset.ipAddress && <span className="text-xs bg-red-950/50 text-red-300 px-2 py-1 flex items-center rounded border border-red-900/50 font-mono tracking-tighter">{asset.ipAddress}</span>}
+                          </Link>
+                          {session.user.roles.includes('ADMIN') && (
+                             <form action={unlinkAssetFromVulnerability}>
+                                <input type="hidden" name="vulnId" value={vuln.id} />
+                                <input type="hidden" name="assetId" value={asset.id} />
+                                <button type="submit" className="p-2 ml-2 hover:bg-red-500/20 text-red-400/50 hover:text-red-400 rounded transition-colors" title="Unlink Asset">
+                                   <Trash2 className="w-4 h-4" />
+                                </button>
+                             </form>
+                          )}
+                        </li>
+                      ))}
+                   </ul>
+                   {totalAssets > TAKE_ASSET && (
+                      <div className="flex justify-between items-center pt-2 mt-auto border-t border-white/5">
+                         {assetPage <= 1 ? (
+                            <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">← Prev</Button>
+                         ) : (
+                            <Link href={`/vulnerabilities/${vuln.id}?assetPage=${assetPage - 1}&filePage=${filePage}`} scroll={false}>
+                               <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">← Prev</Button>
+                            </Link>
+                         )}
+                         <span className="text-[10px] font-mono text-muted-foreground">Pg {assetPage}/{Math.ceil(totalAssets / TAKE_ASSET)}</span>
+                         {assetPage >= Math.ceil(totalAssets / TAKE_ASSET) ? (
+                            <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">Next →</Button>
+                         ) : (
+                            <Link href={`/vulnerabilities/${vuln.id}?assetPage=${assetPage + 1}&filePage=${filePage}`} scroll={false}>
+                               <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">Next →</Button>
+                            </Link>
+                         )}
+                      </div>
+                   )}
+                 </>
                )}
             </div>
           </div>
@@ -194,9 +254,9 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
                 </Button>
               </form>
 
-              {vuln.attachments.length > 0 ? (
-                <div className="flex flex-col gap-2 pt-1 max-h-[220px] overflow-y-auto pr-1">
-                  {vuln.attachments.map(att => (
+              {attachments.length > 0 ? (
+                <div className="flex flex-col gap-2 pt-1">
+                  {attachments.map(att => (
                     <div key={att.id} className="relative flex items-center p-2 rounded-lg border border-indigo-500/10 bg-indigo-500/5 hover:border-indigo-400/40 transition-colors group">
                       <a href={att.fileUrl} target="_blank" rel="noreferrer" className="flex flex-1 min-w-0 items-center">
                         <Paperclip className="w-3 h-3 mr-2 text-indigo-400/70 group-hover:text-indigo-400 flex-shrink-0" />
@@ -215,6 +275,26 @@ export default async function VulnerabilityDetailPage({ params }: MatchProps) {
                       </form>
                     </div>
                   ))}
+                  
+                  {totalAttachments > TAKE_FILE && (
+                     <div className="flex justify-between items-center pt-3 mt-1 border-t border-white/5">
+                        {filePage <= 1 ? (
+                           <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">← Prev</Button>
+                        ) : (
+                           <Link href={`/vulnerabilities/${vuln.id}?assetPage=${assetPage}&filePage=${filePage - 1}`} scroll={false}>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">← Prev</Button>
+                           </Link>
+                        )}
+                        <span className="text-[10px] font-mono text-muted-foreground">Pg {filePage}/{Math.ceil(totalAttachments / TAKE_FILE)}</span>
+                        {filePage >= Math.ceil(totalAttachments / TAKE_FILE) ? (
+                           <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">Next →</Button>
+                        ) : (
+                           <Link href={`/vulnerabilities/${vuln.id}?assetPage=${assetPage}&filePage=${filePage + 1}`} scroll={false}>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">Next →</Button>
+                           </Link>
+                        )}
+                     </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-center text-[10px] text-muted-foreground/50 py-2 italic font-mono uppercase tracking-widest">No evidence uploaded</p>

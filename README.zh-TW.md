@@ -14,8 +14,9 @@
 - **雙因子驗證 (2FA) 安全機制：** 內建基於 TOTP 演算法的 2FA 模組，可完美整合各種標準驗證器應用程式 (如 Google Authenticator, Authy)。更支援系統管理員「一鍵強制全域啟用 2FA」的鎖定功能。
 - **高密度 SOC 配置 (High-Density Layout)：** 重新設計的單行 8 指標 KPI 網格，讓維運人員能一眼看清資安戰場全貌，並將重點應變面板 (Command Actions) 移至上方，極速縮短反應遲滯時間。
 - **陣列化多角色存取控制 (Multi-Role RBAC)：** 原生的多層次權限隔離機制，支援同時為特定維運人員疊加 `ADMIN` (全域基建覆蓋), `SECOPS` (事件處置), `REPORTER` (通報) 與 `API_ACCESS` (開放機器介接) 等複數權限標籤，帶來極大的組織架構彈性。
-- **可插拔的擴展架構 (Plug-and-Play Architecture)：** 具備獨立的資料庫 Hook Engine (事件總線)，所有延伸功能與第三方依賴皆被收斂至 Settings -> Plugins 進行熱插拔與設定，不再讓 Dashboard 塞滿複雜無關的配置。
-- **全方位硬派通知中心 (Omni-channel Notifications)：** 原生支援基於 SMTP 的事件與註冊身份驗證，並提供能夠根據危險等級 (Critical, High) 自訂過濾，且直接推播至桌面作業系統的 HTML5 Web Notifications 背景通知機制。
+- **混合式外掛生態 (Hybrid Plugin Architecture)：** 具備隔離的資料庫驅動 Hook 引擎 (EventBus)。管理員可以直接在「外掛市集 (Plugin Store)」中一鍵安裝來自 Github Registry 的遠端擴充模組，系統會在後台非同步重新編譯，實現接近零停機的熱重載 (Hot-Reload) 部署。
+- **全方位通知中心 (Omni-channel Notifications)：** 原生支援藉由可配置的 SMTP 設定發送 Email（適用於驗證與密碼重置），同時具備基於「伺服器發送事件 (SSE, Server-Sent Events)」的高效能 HTML5 桌面推播通知中心，持續在背景過濾並提醒重大資安威脅。
+- **資安優先防禦 (Security-First Paradigm)：** 針對認證管道實施 in-memory 防暴力破解 (Brute Force Rate Limiting) 壓制撞庫攻擊；並且在事件評論與關鍵操作上導入無死角的越權存取防禦 (BOLA, Broken Object Level Authorization) 阻攔未授權編輯。
 - **企業級現代介面 (Enterprise UI)：** 以 TailwindCSS 打造高質感 Blur / Backdrop-filter 動態特效，結合深度互動的 Shadcn 元件、透過 Portal 防裁切與支援手動輸入的客製化 `react-datepicker`，以及視覺化的 Recharts 圖表庫。
 
 ---
@@ -42,10 +43,10 @@
 - 在外部腳本呼叫 `/api/incidents` 或 `/api/assets` 端點時，將其帶入 Header：`Authorization: Bearer <token>`。該呼叫將自動繼承生成該金鑰者的既有伺服器權限。
 
 ### API 與系統整合
-- **Hook Engine 攔截網**：將系統切分為去中心化的事件匯流排架構 (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`)，在不侵入並影響主伺服器穩定性的情況下，獨立發出外部調用。
-- **內建即時外掛 (Plugins)**：平台原生提供諸如 `Slack Critical Notifier`、`PagerDuty Escalator`、`Jira Cloud Synchronization` 以及 `Microsoft Teams Webhook` 等預載官方外掛，實現立即上線。
-- **M2M 自動化金鑰**：具有防禦爆破與反列舉機制的 `ApiToken` 引擎，以 `SHA-256` 生成高安全度 Bearer token，提供 SOAR 與外部 SIEM 完美的無人值守串接環境。
-- **Headless 路由限流器**：防堵惡意或失控自動化腳本的全球 REST 端點門檻，確保資料庫層抽象介面不會崩潰。在不阻塞核心行程的情況下，於毫秒級被推送至您的指定頻道。
+- **Hook 引擎 (Hook Engine)**：獨立的事件總線架構 (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`)，能在背景安全執行外部程式碼，不損害主系統穩定性。
+- **整合遠端外掛市集 (External Plugin Orchestration)**：直接透過 UI 驅動的外掛市集，一鍵橋接 Jira 雙向同步、外部 SOC 監聽器或 Slack/Teams Webhooks。系統會執行強大的伺服器端子程序編譯，近乎無縫地為您的正式環境注入新能力。
+- **自動化機器金鑰 (M2M Keys)**：高度強固的抗枚舉 `ApiToken` 模型，產出搭載 `SHA-256` Bearer 驗證的實體 token，為您的 SOAR/SIEM 整合邏輯把關。
+- **登入限流與撞庫防禦 (Brute Force & Rate Limiting)**：透過後台對存取源的精準頻率限制，防止分散式密碼噴灑 (Password Spraying) 耗盡您的核心伺服器資源。
 
 ---
 

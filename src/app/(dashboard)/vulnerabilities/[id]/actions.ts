@@ -67,8 +67,13 @@ export async function deleteVulnerabilityAction(formData: FormData) {
       const path = await import('path')
       for (const att of vuln.attachments) {
         if (att.fileUrl) {
-          const filepath = path.join(process.cwd(), 'public', att.fileUrl.replace(/^\//, ''))
-          if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
+          const filename = path.basename(att.fileUrl)
+          const filepath = path.join(process.cwd(), 'private', 'uploads', filename)
+          try {
+            await fs.promises.unlink(filepath)
+          } catch (e: any) {
+            if (e.code !== 'ENOENT') console.error('Failed to unlink attachment:', e)
+          }
         }
       }
     }
@@ -76,7 +81,7 @@ export async function deleteVulnerabilityAction(formData: FormData) {
     console.error("Failed to un-link physical files during vulnerability deletion", error)
   }
 
-  await db.vulnerability.delete({ where: { id: vulnId } })
+  await db.vulnerability.deleteMany({ where: { id: vulnId } })
   revalidatePath("/vulnerabilities")
   redirect("/vulnerabilities")
 }

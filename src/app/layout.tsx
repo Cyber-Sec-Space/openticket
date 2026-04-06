@@ -22,8 +22,9 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${interFont.variable} dark antialiased text-foreground bg-background selection:bg-primary selection:text-primary-foreground`}
+      suppressHydrationWarning
     >
-      <body className="min-h-screen flex flex-col font-sans">
+      <body className="min-h-screen flex flex-col font-sans" suppressHydrationWarning>
         {/* Render child pages/layouts directly, enabling different layouts per route group */}
         {children}
       </body>

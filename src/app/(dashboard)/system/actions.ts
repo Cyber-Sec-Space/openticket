@@ -22,21 +22,33 @@ export async function updateSystemSettings(formData: FormData) {
   const webhookEnabled = formData.get("webhookEnabled") === "on"
   const webhookUrl = formData.get("webhookUrl") as string || ""
 
-  const slaCriticalHours = parseInt(formData.get("slaCriticalHours") as string || "4", 10)
-  const slaHighHours = parseInt(formData.get("slaHighHours") as string || "24", 10)
-  const slaMediumHours = parseInt(formData.get("slaMediumHours") as string || "72", 10)
-  const slaLowHours = parseInt(formData.get("slaLowHours") as string || "168", 10)
+  const ptCrit = parseInt(formData.get("slaCriticalHours") as string, 10)
+  const slaCriticalHours = isNaN(ptCrit) ? 4 : ptCrit
+  
+  const ptHigh = parseInt(formData.get("slaHighHours") as string, 10)
+  const slaHighHours = isNaN(ptHigh) ? 24 : ptHigh
+  
+  const ptMed = parseInt(formData.get("slaMediumHours") as string, 10)
+  const slaMediumHours = isNaN(ptMed) ? 72 : ptMed
+  
+  const ptLow = parseInt(formData.get("slaLowHours") as string, 10)
+  const slaLowHours = isNaN(ptLow) ? 168 : ptLow
 
   // Rate Limiting Config
   const rateLimitEnabled = formData.get("rateLimitEnabled") === "on"
-  const rateLimitWindowMs = parseInt(formData.get("rateLimitWindowMs") as string || "900000", 10)
-  const rateLimitMaxAttempts = parseInt(formData.get("rateLimitMaxAttempts") as string || "5", 10)
+  
+  const ptWindow = parseInt(formData.get("rateLimitWindowMs") as string, 10)
+  const rateLimitWindowMs = isNaN(ptWindow) ? 900000 : ptWindow
+  
+  const ptMax = parseInt(formData.get("rateLimitMaxAttempts") as string, 10)
+  const rateLimitMaxAttempts = isNaN(ptMax) ? 5 : ptMax
 
   // SMTP Settings
   const smtpEnabled = formData.get("smtpEnabled") === "on"
   const smtpHost = formData.get("smtpHost") as string || null
   const smtpPortStr = formData.get("smtpPort") as string
-  const smtpPort = smtpPortStr ? parseInt(smtpPortStr, 10) : null
+  const parsedPort = parseInt(smtpPortStr, 10)
+  const smtpPort = smtpPortStr && !isNaN(parsedPort) ? parsedPort : null
   const smtpUser = formData.get("smtpUser") as string || null
   const smtpPasswordRaw = formData.get("smtpPassword") as string || null
   const smtpFrom = formData.get("smtpFrom") as string || null
@@ -111,6 +123,37 @@ export async function updateSystemSettings(formData: FormData) {
       smtpTriggerOnNewVulnerability
     }
   })
+
+  // Retroactively patch SLA dates for unresolved incidents and vulnerabilities
+  try {
+    await db.$executeRawUnsafe(`
+      UPDATE "Incident"
+      SET "targetSlaDate" = "createdAt" + (
+        CASE "severity"::text
+          WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
+          WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
+          WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
+          WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
+        END
+      )
+      WHERE "status"::text IN ('NEW', 'IN_PROGRESS', 'PENDING_INFO')
+    `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours)
+    
+    await db.$executeRawUnsafe(`
+      UPDATE "Vulnerability"
+      SET "targetSlaDate" = "createdAt" + (
+        CASE "severity"::text
+          WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
+          WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
+          WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
+          WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
+        END
+      )
+      WHERE "status"::text IN ('OPEN', 'MITIGATED')
+    `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours)
+  } catch (e) {
+    console.error("Failed to retroactively update SLA dates:", e)
+  }
 
   revalidatePath("/system")
 }

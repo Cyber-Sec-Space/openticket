@@ -15,7 +15,8 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
   }
 
   const resolvedParams = await searchParams;
-  const page = parseInt(resolvedParams.page || "1", 10);
+  let page = parseInt(resolvedParams.page || "1", 10);
+  if (Number.isNaN(page) || page < 1) page = 1;
   const TAKE = 15;
 
   const filterParams: any = {}

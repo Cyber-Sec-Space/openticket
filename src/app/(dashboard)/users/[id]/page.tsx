@@ -23,9 +23,13 @@ export default async function UserDetailPage({
     return notFound()
   }
 
-  const auditPage = parseInt(resolvedSearchParams.auditPage as string) || 1
-  const filePage = parseInt(resolvedSearchParams.filePage as string) || 1
-  const incPage = parseInt(resolvedSearchParams.incPage as string) || 1
+  let auditPage = parseInt(resolvedSearchParams.auditPage as string) || 1
+  let filePage = parseInt(resolvedSearchParams.filePage as string) || 1
+  let incPage = parseInt(resolvedSearchParams.incPage as string) || 1
+
+  if (Number.isNaN(auditPage) || auditPage < 1) auditPage = 1;
+  if (Number.isNaN(filePage) || filePage < 1) filePage = 1;
+  if (Number.isNaN(incPage) || incPage < 1) incPage = 1;
 
   const TAKE_AUDIT = 15
   const TAKE_FILE = 8

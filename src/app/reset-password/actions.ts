@@ -50,7 +50,7 @@ export async function executeReset(prevState: any, formData: FormData) {
       where: { id: user.id },
       data: { passwordHash }
     }),
-    db.passwordResetToken.delete({
+    db.passwordResetToken.deleteMany({
       where: { id: resetData.id }
     }),
     // Create an audit trail strictly for SOC

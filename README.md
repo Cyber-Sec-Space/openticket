@@ -14,8 +14,9 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
 - **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
 - **Array-based Multi-Role Control (RBAC):** Native multi-tenant segregation distinguishing `ADMIN` (Infrastructure overrides), `SECOPS` (Triage), `REPORTER` (End-User), and `API_ACCESS` (Machine Integration) roles. Users can be assigned multiple roles simultaneously for maximum operational flexibility.
-- **Plug-and-Play Architecture:** Equipped with an isolated database-backed Hook Engine (EventBus). All third-party dependencies and extensions are gracefully managed natively under the Settings -> Plugins section for hot-swapping and configurations.
-- **Omni-channel Notifications:** Natively handles email transmission via configurable SMTP configurations (Authentication & Reset checks), accompanied by an HTML5 Desktop Push Notification center operating persistently in background tabs filtering specifically for Critical/High system incidents.
+- **Hybrid Plugin Architecture:** Equipped with an isolated database-backed Hook Engine (EventBus). Third-party dependencies and extensions are gracefully managed natively under the Settings -> Plugins section for hot-swapping and configurations. Administrators can browse the built-in Plugin Store to install remote GitHub extensions asynchronously with Zero-Downtime Hot Reload capabilities.
+- **Omni-channel Notifications:** Natively handles email transmission via configurable SMTP configurations, accompanied by an HTML5 Desktop Push Notification center operating persistently in background tabs via highly-efficient Server-Sent Events (SSE) filtering specifically for Critical/High system incidents.
+- **Security-First Paradigm:** Defends against credential stuffing with in-memory Brute Force Rate Limiting across authentication pipelines. Ensures strict BOLA (Broken Object Level Authorization) evaluations actively rejecting unauthorized object-level manipulation.
 - **Enterprise-Grade UI Components:** Built on TailwindCSS utilizing modern blur/backdrop-filter dynamics, combined with deeply interactive BaseUI/Shadcn components, fully portaled `react-datepicker` forms, and Recharts.
 
 ---
@@ -43,9 +44,9 @@ You can directly bridge OpenTicket to your CI/CD pipelines or SOAR orchestrators
 
 ### API & Integrations
 - **Hook Engine**: Isolated event-bus architecture (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`) allowing external execution without degrading system stability.
-- **Out-of-the-Box Plugins**: Includes native interceptors such as `Slack Critical Notifier`, `PagerDuty Escalator`, `Jira Cloud Synchronization`, and `Microsoft Teams Webhook` ready for instant deployment.
+- **External Plugin Orchestration**: Easily connect independent third-party modules—such as external SOC listeners, Jira sync nodes, or Slack/Teams webhooks—directly via the UI-driven Plugin Store. OpenTicket spawns isolated production builds asynchronously to hot-reload functionalities dynamically over the Network Registry.
 - **Machine-to-Machine (M2M) Keys**: Hardened, anti-enumeration `ApiToken` models generating `SHA-256` Bearer authentications for SOAR/SIEM integration logic.
-- **Headless Rate Limiting**: Global REST boundaries throttling aggressive automation scripts to protect structural integrity natively mapping constraints down to the Prisma abstraction. All captured events will rapidly pipe over the Hook Engine concurrently in the background without locking primary server threads.
+- **Brute Force & Rate Limiting**: Global backend constraints throttling aggressive login scripts to protect structural integrity natively, preventing server-crashing enumeration loops.
 
 ---
 

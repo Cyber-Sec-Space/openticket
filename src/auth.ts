@@ -39,6 +39,15 @@ class EmailNotVerifiedError extends Error {
   }
 }
 
+// Database-backed distributed rate limit tracking replaces volatile in-memory strategies
+
+class AuthenticationThrottledError extends Error {
+  constructor() {
+    super("AuthenticationThrottled");
+    this.name = "AuthenticationThrottledError";
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
@@ -51,17 +60,63 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!credentials?.email || !credentials?.password) {
           return null
         }
+        
+        const email = credentials.email as string;
+        
+        // Fetch global directives (Moved up for early evaluation)
+        const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+        
+        // --- Distributed Rate Limiting Strategy (Brute Force Protection) ---
+        const rateLimitEnabled = settings?.rateLimitEnabled ?? true;
+        const windowMs = settings?.rateLimitWindowMs ?? 900000; // default 15 min
+        const maxAttempts = settings?.rateLimitMaxAttempts ?? 5;
+        
+        if (rateLimitEnabled) {
+           const limitThresholdTime = new Date(Date.now() - windowMs);
+           
+           // Cross-Cluster State Synchronization
+           const attemptCount = await db.loginAttempt.count({
+              where: {
+                 identifier: email,
+                 createdAt: { gte: limitThresholdTime }
+              }
+           });
+           
+           if (attemptCount >= maxAttempts) {
+               throw new AuthenticationThrottledError();
+           }
+        }
+
         const user = await db.user.findUnique({
-          where: { email: credentials.email as string }
+          where: { email }
         })
+        
+        // In Server Actions/NextAuth backend context, true client IP is often decoupled/proxied. 
+        // We track via `identifier` isolated boundaries to preserve standard lockouts payload structure.
+        const mockIp = "127.0.0.1"; 
+
         if (!user || (!user.passwordHash)) {
+          // Record failure for invalid user asynchronously
+          if (rateLimitEnabled) {
+              await db.loginAttempt.create({ data: { identifier: email, ip: mockIp } });
+          }
           return null
         }
+        
         const isValid = await bcrypt.compare(credentials.password as string, user.passwordHash)
-        if (!isValid) return null
+        if (!isValid) {
+          // Record failure for valid user asynchronously
+          if (rateLimitEnabled) {
+              await db.loginAttempt.create({ data: { identifier: email, ip: mockIp } });
+          }
+          return null
+        }
+        
+        // Successful login, clear failures distributed globally across all pods
+        if (rateLimitEnabled) {
+            await db.loginAttempt.deleteMany({ where: { identifier: email } });
+        }
 
-        // Fetch global directives
-        const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
         const requireGlobal2FA = settings?.requireGlobal2FA ?? false
 
         if (settings?.requireEmailVerification && settings?.smtpEnabled && !user.emailVerified) {

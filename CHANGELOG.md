@@ -2,12 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.3.0
+### Security
+- Fixed a massive Privilege Escalation (PrivEsc) vector inside `/api/incidents` where `REPORTER`s could illegally inject arbitrary `assetId` values to force system-wide SOAR automated quarantines across unowned macro infrastructure.
+- Re-architected Brute Force Rate Limiting inside `authorize()` NextAuth backend, shifting from a volatile In-Memory map constraint to a `schema.prisma` DB-synchronized state loop. This totally eradicates Stateless Dissonance, enforcing uniform authentication throttling limits seamlessly across scaled horizontal Kubernetes clusters and multi-threaded environments.
+- Patched a Multi-User Concurrency Write Defect within `/api/upload` by replacing temporal `Date.now()` filenames with cryptographically absolute `crypto.randomUUID()` identifiers, stopping identical-millisecond file stream collisions forever.
+- Rectified an egregious Privilege Downgrade Vulnerability inside `src/app/(dashboard)/settings` where malicious actors or CSRF intercepts could instantly dismantle Two-Factor Authentication boundaries on an active session. The `disable2FA` pipeline now mandates strict root `<input type="password">` origin re-authentication validations.
+- Enhanced BOLA & OOM `take: 5000` memory caps on `/api/export` payload streaming by embedding URL parameter `&skip=` index tracking, unlocking infinite pagination extraction flows for global enterprises without triggering memory crashes.
+- Solidified Comment Creation via extreme Inline BOLA verification checking ensuring that malicious actors cannot forge Server Action payloads pushing discussions to unowned tickets.
+- Upgraded `nodemailer` to `^8.0.4` to remediate a known CRLF Injection vulnerability (CWE-93 / SNYK-JS-NODEMAILER-15790064) through the `envelope.size` parameter.
+- Patched a critical Assignee Lockout BOLA where legitimate Engineers assigned to incidents were completely severed from `page.tsx` summaries, list views, and APIs because of hardcoded `reporterId` isolation limits. Access logic now encapsulates Assignees globally.
+- Sealed a massive `MetricSnapshot` DB Memory Bloat (OOM) defect within `getDashboardTrendData` where individual tracking of basic `USER` traffic produced millions of unfiltered metric rows; restricted historical persistence entirely to `GLOBAL` state frames while pushing `USER` queries to in-memory rendering execution.
+- Addressed Application-level DoS vulnerability in `/api/cron/metrics` by restricting endpoint with strict `CRON_SECRET` authorization.
+
+### Changed
+- Concurrency Optimization: Upgraded HTML5 Desktop Notification layer shifting away from overlapping `HTTP Polling` streams towards highly-efficient `Server-Sent Events (SSE)`.
+
 ## 0.2.0
 ### Added
-- Plugin Management: Expanded Plugin Store ecosystem by introducing native `PagerDuty Escalator`, `Jira Cloud Synchronization`, and `Microsoft Teams Webhook` extensions, powering dynamic M2M response mechanisms and SOC collaboration.
-- Plugin Management: Deployed a `/settings/plugins` interface linking the static Plugin Registry directly to a dynamic PostgreSQL `PluginState` table. Administrators can now visually Install, Uninstall, and Configure Slack credentials via UI without committing ENV variables.
-- Extensibility (Server/Client): Engineered a static-registry Plugin Architecture (`src/lib/plugins/hook-engine`) capable of isolating logic using an automated EventBus (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`).
-- Integrations: Rolled out the first-party `slack-notifier` plugin as a live pilot demonstrating hook interception and Dashboard Web-Widget injection.
+- Plugin Management: Deployed a `/settings/plugins` interface linking the static Plugin Registry directly to a dynamic PostgreSQL `PluginState` table. Administrators can now visually Install, Uninstall, and Configure registry module credentials via UI without committing ENV variables.
+- Extensibility (Server/Client): Engineered a dynamic external-registry Plugin Architecture (`src/lib/plugins/hook-engine`) capable of isolating logic using an automated EventBus (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`).
 - Notifications (Web): Engineered a global HTML5 Browser Notification polling architecture capable of pushing OS-level desktop alerts (Critical Incidents, Asset Compromise, Assignments, and Resolutions) to active operators across background tabs.
 - Preferences: Deployed a granular Notification Matrix in the `/settings` user panel allowing operators to strictly configure which telemetry events trigger desktop-level popups.
 - Identity Verification: Deployed an impenetrable Registration Wall demanding cryptographic link verification (`VerificationToken`) dispatched directly via SMTP before granting UI access, effectively destroying phantom account generation vectors.

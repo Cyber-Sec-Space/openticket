@@ -31,22 +31,30 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
   await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
 
   const existingUser = await db.user.findUnique({ where: { email } })
+  
+  // Enforce constant-time execution to prevent timing-based Account Enumeration
+  const passwordHash = await bcrypt.hash(password, 10)
+
   if (existingUser) {
-    // SECURITY: To prevent Account Enumeration, we pretend it succeeded,
-    // or return a generic error. Standard best practice: Return generic error.
+    // SECURITY: We pretend it failed normally AFTER spending the bcrypt CPU cycles
     return "REGISTRATION_FAILED"
   }
-
-  const passwordHash = await bcrypt.hash(password, 10)
   
-  await db.user.create({
-    data: {
-      email,
-      name,
-      passwordHash,
-      roles: settings?.defaultUserRoles?.length ? settings.defaultUserRoles : ["REPORTER"]
+  try {
+    await db.user.create({
+      data: {
+        email,
+        name,
+        passwordHash,
+        roles: (settings && settings.defaultUserRoles && settings.defaultUserRoles.length > 0) ? settings.defaultUserRoles : ["REPORTER"]
+      }
+    })
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return "REGISTRATION_FAILED"
     }
-  })
+    throw error // Re-throw unrecognized structural database errors
+  }
 
   // Phase 10: Email Alert on New Registration
   if (settings?.smtpTriggerOnNewUser) {

@@ -17,7 +17,9 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
   if (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS')) return notFound()
 
   const resolvedParams = await searchParams;
-  const page = parseInt(resolvedParams.page || "1", 10);
+  let page = parseInt(resolvedParams.page || "1", 10);
+  if (Number.isNaN(page) || page < 1) page = 1;
+  
   const TAKE = 10;
 
   const filterParams: any = {}
@@ -134,15 +136,15 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-              <TableHead className="font-semibold text-primary pl-6">Asset Key</TableHead>
-              <TableHead className="font-semibold text-primary">Name</TableHead>
-              <TableHead className="font-semibold text-primary">Type</TableHead>
-              <TableHead className="font-semibold text-primary">IP Address</TableHead>
-              <TableHead className="font-semibold text-primary">Status</TableHead>
-              <TableHead className="font-semibold text-primary text-right pr-6">Cataloged On</TableHead>
+              <TableHead className="font-semibold text-primary pl-6 w-[15%]">Asset Key</TableHead>
+              <TableHead className="font-semibold text-primary w-[35%]">Name</TableHead>
+              <TableHead className="font-semibold text-primary w-[10%]">Type</TableHead>
+              <TableHead className="font-semibold text-primary w-[15%]">IP Address</TableHead>
+              <TableHead className="font-semibold text-primary w-[10%]">Status</TableHead>
+              <TableHead className="font-semibold text-primary text-right pr-6 w-[15%]">Cataloged On</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -184,13 +186,13 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
             Showing <span className="font-medium text-white">{assets.length > 0 ? (page - 1) * TAKE + 1 : 0}</span> to <span className="font-medium text-white">{Math.min(page * TAKE, totalCount)}</span> of <span className="font-medium text-white">{totalCount}</span> assets
           </p>
           <div className="flex gap-2">
-            <Link href={page > 1 ? buildPageUrl(page - 1) : "#"} className={page <= 1 ? "pointer-events-none opacity-50" : ""}>
+            <Link href={page > 1 ? buildPageUrl(page - 1) : "#"} className={page <= 1 ? "pointer-events-none opacity-50" : ""} scroll={false}>
               <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
             </Link>
             <div className="flex items-center justify-center px-4 font-mono text-sm border-x border-border/50">
               Pg {page} / {totalPages}
             </div>
-            <Link href={page < totalPages ? buildPageUrl(page + 1) : "#"} className={page >= totalPages ? "pointer-events-none opacity-50" : ""}>
+            <Link href={page < totalPages ? buildPageUrl(page + 1) : "#"} className={page >= totalPages ? "pointer-events-none opacity-50" : ""} scroll={false}>
               <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
             </Link>
           </div>

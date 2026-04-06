@@ -25,11 +25,23 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
   }, [errorMessage])
 
   const onSubmitCapture = (e: React.FormEvent<HTMLFormElement>) => {
+     e.preventDefault()
+     
+     const formData = new FormData(e.currentTarget)
+     
      if (!showTwoFactor) {
-        const formData = new FormData(e.currentTarget);
-        setPersistedEmail(formData.get("email") as string)
-        setPersistedPass(formData.get("password") as string)
+         setPersistedEmail(formData.get("email") as string)
+         setPersistedPass(formData.get("password") as string)
+     } else {
+         // Prevent Credential DOM Bleeding: Re-append memory state directly into the submission payload
+         formData.set("email", persistedEmail)
+         formData.set("password", persistedPass)
      }
+     
+     // React 19 Action Dispatch
+     import("react").then(r => r.startTransition(() => {
+        dispatch(formData)
+     }))
   }
 
   return (
@@ -60,9 +72,7 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
         </div>
       ) : (
         <div className="space-y-6 animate-in slide-in-from-left-4 fade-in duration-300">
-           {/* Hidden credentials required to re-transmit via NextAction POST */}
-           <input type="hidden" name="email" value={persistedEmail} />
-           <input type="hidden" name="password" value={persistedPass} />
+           {/* Security: Credentials strictly retained in React JS Memory layer, eliminating DOM-based credential exposure. */}
            
            <div className="space-y-3 bg-primary/5 p-6 rounded-xl border border-primary/20 flex flex-col items-center">
               <ScanFace className="w-12 h-12 text-primary mb-2 shadow-[0_0_20px_rgba(0,255,150,0.5)] border rounded-full p-2 border-primary/30" />

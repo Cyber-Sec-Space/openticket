@@ -26,45 +26,50 @@ export default async function IncidentDetailPage({
   searchParams
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ edit?: string }>
+  searchParams: Promise<{ edit?: string, commentPage?: string, filePage?: string }>
 }) {
   const { id } = await params;
-  const { edit } = await searchParams;
-  const isEditing = edit === "true";
+  const resolvedSearchParams = await searchParams;
+  const isEditing = resolvedSearchParams.edit === "true";
 
   const session = await auth()
   if (!session?.user) return null
 
-  const incident = await db.incident.findUnique({
-    where: { id },
-    include: {
-      reporter: true,
-      assignees: true,
-      asset: true,
-      comments: {
-        include: { author: true },
-        orderBy: { createdAt: 'desc' }
-      },
-      attachments: true
-    }
-  })
+  let commentPage = parseInt(resolvedSearchParams.commentPage as string) || 1;
+  if (Number.isNaN(commentPage) || commentPage < 1) commentPage = 1;
 
-  // Fetch loosely coupled AuditLogs
-  const auditLogs = await db.auditLog.findMany({
-    where: { entityType: 'Incident', entityId: id },
-    include: { user: true },
-    orderBy: { createdAt: 'desc' }
-  })
+  let filePage = parseInt(resolvedSearchParams.filePage as string) || 1;
+  if (Number.isNaN(filePage) || filePage < 1) filePage = 1;
+
+  const TAKE_COMMENT = 10;
+  const TAKE_FILE = 8;
+
+  const [incident, comments, totalComments, attachments, totalAttachments, auditLogs] = await Promise.all([
+    db.incident.findUnique({
+      where: { id },
+      include: {
+        reporter: true,
+        assignees: true,
+        asset: true
+      }
+    }),
+    db.comment.findMany({ where: { incidentId: id }, include: { author: true }, orderBy: { createdAt: 'desc' }, take: TAKE_COMMENT, skip: (commentPage - 1) * TAKE_COMMENT }),
+    db.comment.count({ where: { incidentId: id } }),
+    db.attachment.findMany({ where: { incidentId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
+    db.attachment.count({ where: { incidentId: id } }),
+    db.auditLog.findMany({ where: { entityType: 'Incident', entityId: id }, include: { user: true }, orderBy: { createdAt: 'desc' }, take: 50 })
+  ])
 
   const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
   
-  if (!incident || (!hasPrivilege && incident.reporterId !== session.user.id)) {
+  const isAuthorized = hasPrivilege || incident?.reporterId === session.user.id || incident?.assignees.some(a => a.id === session.user.id)
+  if (!incident || !isAuthorized) {
     notFound()
   }
 
   // Construct Unified Timeline
   const timeline: any[] = [
-    ...incident.comments.map(c => ({ ...c, type: 'COMMENT' })),
+    ...comments.map(c => ({ ...c, type: 'COMMENT' })),
     ...auditLogs.map(l => ({ ...l, type: 'AUDIT', author: l.user, content: `${l.action} -> ${l.changes}` }))
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
@@ -88,6 +93,16 @@ export default async function IncidentDetailPage({
 
     const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
     
+    // IMPORTANT: Defeating Next.js Stale Closure State
+    // We must fetch the current structural truth directly from the database here 
+    // to calculate SLA deltas and Assignee diffs accurately.
+    const currentIncident = await db.incident.findUnique({ 
+      where: { id: incident!.id },
+      include: { assignees: true, reporter: true }
+    })
+    
+    if (!currentIncident) throw new Error("Synchronization Error: Incident record lost or expunged.")
+
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
     const newAssetName = formData.get("assetName") as string
@@ -95,9 +110,9 @@ export default async function IncidentDetailPage({
     let targetSlaDate = targetSlaDateRaw && targetSlaDateRaw.trim() !== "" ? new Date(targetSlaDateRaw) : null
     
     // Automatic SLA Recalculation on Severity changes
-    if (newSeverity !== incident!.severity) {
-      const currentIsoSlice = incident!.targetSlaDate 
-        ? new Date(incident!.targetSlaDate.getTime() - incident!.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) 
+    if (newSeverity !== currentIncident.severity) {
+      const currentIsoSlice = currentIncident.targetSlaDate 
+        ? new Date(currentIncident.targetSlaDate.getTime() - currentIncident.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) 
         : "";
       const isManualDateOverride = targetSlaDateRaw !== currentIsoSlice;
 
@@ -124,7 +139,7 @@ export default async function IncidentDetailPage({
     const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, SLA: ${targetSlaDate ? targetSlaDate.toLocaleString() : 'Removed'}`
 
     await db.incident.update({
-      where: { id: incident!.id },
+      where: { id: currentIncident.id },
       data: {
         status: newStatus.replace(/ /g, '_'),
         severity: newSeverity,
@@ -137,12 +152,12 @@ export default async function IncidentDetailPage({
     })
 
     // Phase 10: Email Dispatch for newly assigned operators
-    const previousAssigneeIds = incident!.assignees.map(a => a.id)
+    const previousAssigneeIds = currentIncident.assignees.map(a => a.id)
     const newlyAssignedIds = validAssigneeIds.filter(id => !previousAssigneeIds.includes(id))
 
     if (newlyAssignedIds.length > 0) {
       // Browser Native Alerts
-      await dispatchMassAlert(newlyAssignedIds, "ASSIGN", `Incident Assigned`, `INC-${incident!.id.substring(0, 8)} has been structurally assigned to your identity.`, `/incidents/${incident!.id}`)
+      await dispatchMassAlert(newlyAssignedIds, "ASSIGN", `Incident Assigned`, `INC-${currentIncident.id.substring(0, 8)} has been structurally assigned to your identity.`, `/incidents/${currentIncident.id}`)
 
       if (settings?.smtpTriggerOnAssign) {
         const newlyAssignedUsers = await db.user.findMany({
@@ -152,7 +167,7 @@ export default async function IncidentDetailPage({
         
         for (const a of newlyAssignedUsers) {
           if (a.email) {
-            await sendIncidentAssignmentEmail(incident!.id, incident!.title, a.email, a.name || 'Operator')
+            await sendIncidentAssignmentEmail(currentIncident.id, currentIncident.title, a.email, a.name || 'Operator')
           }
         }
       }
@@ -160,14 +175,14 @@ export default async function IncidentDetailPage({
 
     if (
       (newStatus === 'RESOLVED' || newStatus === 'CLOSED') && 
-      !['RESOLVED', 'CLOSED'].includes(incident!.status) && 
-      incident!.reporter
+      !['RESOLVED', 'CLOSED'].includes(currentIncident.status) && 
+      currentIncident.reporter
     ) {
-      await fireHook("onIncidentResolved", incident as any)
+      await fireHook("onIncidentResolved", currentIncident as any)
       
-      await dispatchAlert(incident!.reporter.id, "RESOLUTION", "Incident Resolved", `INC-${incident!.id.substring(0, 8)} has achieved resolution telemetry.`, `/incidents/${incident!.id}`)
-      if (settings?.smtpTriggerOnResolution && incident!.reporter.email) {
-        await sendResolutionEmail(incident!.id, incident!.title, incident!.reporter.email, incident!.reporter.name || 'Reporter')
+      await dispatchAlert(currentIncident.reporter.id, "RESOLUTION", "Incident Resolved", `INC-${currentIncident.id.substring(0, 8)} has achieved resolution telemetry.`, `/incidents/${currentIncident.id}`)
+      if (settings?.smtpTriggerOnResolution && currentIncident.reporter.email) {
+        await sendResolutionEmail(currentIncident.id, currentIncident.title, currentIncident.reporter.email, currentIncident.reporter.name || 'Reporter')
       }
     }
 
@@ -193,7 +208,7 @@ export default async function IncidentDetailPage({
           entityType: "Asset",
           entityId: resolvedAssetId,
           userId: sessionUrl.user.id,
-          changes: `Asset automatically marked as COMPROMISED due to escalating Incident INC-${incident!.id.substring(0, 8).toUpperCase()} to CRITICAL.`
+          changes: `Asset automatically marked as COMPROMISED due to escalating Incident INC-${currentIncident.id.substring(0, 8).toUpperCase()} to CRITICAL.`
         }
       })
     }
@@ -202,7 +217,7 @@ export default async function IncidentDetailPage({
       data: {
         action: "TRIAGE_POLICY_CHANGED",
         entityType: "Incident",
-        entityId: incident!.id,
+        entityId: currentIncident.id,
         userId: sessionUrl.user.id,
         changes: changesText
       }
@@ -211,14 +226,14 @@ export default async function IncidentDetailPage({
     // Phase 9: Webhook Dispatch for Escalations
     if (newSeverity === 'CRITICAL' || newStatus === 'RESOLVED') {
       await dispatchWebhook({
-        title: `Incident Update: ${incident!.title}`,
+        title: `Incident Update: ${currentIncident.title}`,
         description: `Status changed to ${newStatus}, Severity: ${newSeverity}`,
         severity: newSeverity,
-        url: `${process.env.NEXTAUTH_URL}/incidents/${incident!.id}`
+        url: `${process.env.NEXTAUTH_URL}/incidents/${currentIncident.id}`
       })
     }
 
-    redirect(`/incidents/${incident!.id}`)
+    redirect(`/incidents/${currentIncident.id}`)
   }
 
   async function editDetailsAction(formData: FormData) {
@@ -263,16 +278,20 @@ export default async function IncidentDetailPage({
     try {
       const fs = await import('fs')
       const path = await import('path')
-      const safeBase = path.resolve(process.cwd(), 'public', 'uploads')
+      const safeBase = path.resolve(process.cwd(), 'private', 'uploads')
       
-      for (const att of incident!.attachments || []) {
+      for (const att of attachments || []) {
         if (att.fileUrl) {
           // Extract just the filename, ignoring any injected paths
           const filename = path.basename(att.fileUrl)
           const targetPath = path.resolve(safeBase, filename)
           
-          if (targetPath.startsWith(safeBase) && fs.existsSync(targetPath)) {
-             fs.unlinkSync(targetPath)
+          if (targetPath.startsWith(safeBase)) {
+             try {
+                await fs.promises.unlink(targetPath)
+             } catch (e: any) {
+                if (e.code !== 'ENOENT') console.error('Failed to unlink attachment:', e)
+             }
           }
         }
       }
@@ -281,7 +300,7 @@ export default async function IncidentDetailPage({
     }
 
     // Prisma cascading handles Comment/AuditLog deletions seamlessly
-    await db.incident.delete({ where: { id: incident!.id } })
+    await db.incident.deleteMany({ where: { id: incident!.id } })
     redirect(`/incidents`)
   }
 
@@ -446,6 +465,14 @@ export default async function IncidentDetailPage({
                 const sessionUrl = await auth()
                 const content = formData.get("content") as string
                 if (!content || !sessionUrl) return;
+                
+                // Strict BOLA Enforcement within the action scope
+                const hasPrivilege = sessionUrl.user.roles.includes('ADMIN') || sessionUrl.user.roles.includes('SECOPS');
+                const isAuthorized = hasPrivilege || incident!.reporterId === sessionUrl.user.id || incident!.assignees.some(a => a.id === sessionUrl.user.id);
+                if (!isAuthorized) {
+                   throw new Error("Forbidden: Strict BOLA isolation. You cannot comment on an incident you do not own.");
+                }
+
                 await db.comment.create({
                   data: { content, incidentId: incident!.id, authorId: sessionUrl.user.id }
                 })
@@ -479,6 +506,26 @@ export default async function IncidentDetailPage({
                   </div>
                 ))}
               </div>
+              
+              {totalComments > TAKE_COMMENT && (
+                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
+                    {commentPage <= 1 ? (
+                       <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">← Prev Comments</Button>
+                    ) : (
+                       <Link href={`/incidents/${incident.id}?commentPage=${commentPage - 1}&filePage=${filePage}`} scroll={false}>
+                          <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">← Prev Comments</Button>
+                       </Link>
+                    )}
+                    <span className="text-[10px] font-mono text-muted-foreground">Pg {commentPage}/{Math.ceil(totalComments / TAKE_COMMENT)}</span>
+                    {commentPage >= Math.ceil(totalComments / TAKE_COMMENT) ? (
+                       <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">Next Comments →</Button>
+                    ) : (
+                       <Link href={`/incidents/${incident.id}?commentPage=${commentPage + 1}&filePage=${filePage}`} scroll={false}>
+                          <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">Next Comments →</Button>
+                       </Link>
+                    )}
+                 </div>
+              )}
             </div>
           </div>
         </div>
@@ -538,9 +585,9 @@ export default async function IncidentDetailPage({
                 </Button>
               </form>
 
-              {incident.attachments.length > 0 ? (
-                <div className="flex flex-col gap-2 pt-1 max-h-[220px] overflow-y-auto pr-1">
-                  {incident.attachments.map(att => (
+              {attachments.length > 0 ? (
+                <div className="flex flex-col gap-2 pt-1">
+                  {attachments.map(att => (
                     <div key={att.id} className="relative flex items-center p-2 rounded-lg border border-indigo-500/10 bg-indigo-500/5 hover:border-indigo-400/40 transition-colors group">
                       <a href={att.fileUrl} target="_blank" rel="noreferrer" className="flex items-center flex-1 min-w-0">
                         <Paperclip className="w-3 h-3 mr-2 text-indigo-400/70 group-hover:text-indigo-400 flex-shrink-0" />
@@ -552,7 +599,7 @@ export default async function IncidentDetailPage({
                       <form action={async () => {
                         "use server"
                         await deleteAttachment(att.id)
-                        redirect(`/incidents/${incident!.id}`)
+                        redirect(`/incidents/${incident!.id}?commentPage=${commentPage}&filePage=${filePage}`)
                       }}>
                         <button type="submit" className="p-1.5 rounded-md hover:bg-red-500/20 text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all absolute right-2 top-1/2 -translate-y-1/2" title="Delete evidence">
                            <Trash2 className="w-3.5 h-3.5" />
@@ -560,6 +607,26 @@ export default async function IncidentDetailPage({
                       </form>
                     </div>
                   ))}
+                  
+                  {totalAttachments > TAKE_FILE && (
+                     <div className="flex justify-between items-center pt-3 mt-1 border-t border-white/5">
+                        {filePage <= 1 ? (
+                           <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">← Prev</Button>
+                        ) : (
+                           <Link href={`/incidents/${incident.id}?commentPage=${commentPage}&filePage=${filePage - 1}`} scroll={false}>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">← Prev</Button>
+                           </Link>
+                        )}
+                        <span className="text-[10px] font-mono text-muted-foreground">Pg {filePage}/{Math.ceil(totalAttachments / TAKE_FILE)}</span>
+                        {filePage >= Math.ceil(totalAttachments / TAKE_FILE) ? (
+                           <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">Next →</Button>
+                        ) : (
+                           <Link href={`/incidents/${incident.id}?commentPage=${commentPage}&filePage=${filePage + 1}`} scroll={false}>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">Next →</Button>
+                           </Link>
+                        )}
+                     </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-center text-[10px] text-muted-foreground/50 py-2 italic font-mono uppercase tracking-widest">No evidence uploaded</p>

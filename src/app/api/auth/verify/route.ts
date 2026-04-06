@@ -36,13 +36,11 @@ export async function GET(request: Request) {
     })
   }
 
-  // Wipe the token
-  await db.verificationToken.delete({
+  // Wipe the token securely preventing TOCTOU unhandled rejections
+  await db.verificationToken.deleteMany({
     where: {
-      identifier_token: {
-        identifier: email,
-        token: token
-      }
+      identifier: email,
+      token: token
     }
   })
 
