@@ -88,6 +88,16 @@ export default async function IncidentDetailPage({
 
     const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
     
+    // IMPORTANT: Defeating Next.js Stale Closure State
+    // We must fetch the current structural truth directly from the database here 
+    // to calculate SLA deltas and Assignee diffs accurately.
+    const currentIncident = await db.incident.findUnique({ 
+      where: { id: incident!.id },
+      include: { assignees: true, reporter: true }
+    })
+    
+    if (!currentIncident) throw new Error("Synchronization Error: Incident record lost or expunged.")
+
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
     const newAssetName = formData.get("assetName") as string
@@ -95,9 +105,9 @@ export default async function IncidentDetailPage({
     let targetSlaDate = targetSlaDateRaw && targetSlaDateRaw.trim() !== "" ? new Date(targetSlaDateRaw) : null
     
     // Automatic SLA Recalculation on Severity changes
-    if (newSeverity !== incident!.severity) {
-      const currentIsoSlice = incident!.targetSlaDate 
-        ? new Date(incident!.targetSlaDate.getTime() - incident!.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) 
+    if (newSeverity !== currentIncident.severity) {
+      const currentIsoSlice = currentIncident.targetSlaDate 
+        ? new Date(currentIncident.targetSlaDate.getTime() - currentIncident.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) 
         : "";
       const isManualDateOverride = targetSlaDateRaw !== currentIsoSlice;
 
@@ -124,7 +134,7 @@ export default async function IncidentDetailPage({
     const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, SLA: ${targetSlaDate ? targetSlaDate.toLocaleString() : 'Removed'}`
 
     await db.incident.update({
-      where: { id: incident!.id },
+      where: { id: currentIncident.id },
       data: {
         status: newStatus.replace(/ /g, '_'),
         severity: newSeverity,
@@ -137,12 +147,12 @@ export default async function IncidentDetailPage({
     })
 
     // Phase 10: Email Dispatch for newly assigned operators
-    const previousAssigneeIds = incident!.assignees.map(a => a.id)
+    const previousAssigneeIds = currentIncident.assignees.map(a => a.id)
     const newlyAssignedIds = validAssigneeIds.filter(id => !previousAssigneeIds.includes(id))
 
     if (newlyAssignedIds.length > 0) {
       // Browser Native Alerts
-      await dispatchMassAlert(newlyAssignedIds, "ASSIGN", `Incident Assigned`, `INC-${incident!.id.substring(0, 8)} has been structurally assigned to your identity.`, `/incidents/${incident!.id}`)
+      await dispatchMassAlert(newlyAssignedIds, "ASSIGN", `Incident Assigned`, `INC-${currentIncident.id.substring(0, 8)} has been structurally assigned to your identity.`, `/incidents/${currentIncident.id}`)
 
       if (settings?.smtpTriggerOnAssign) {
         const newlyAssignedUsers = await db.user.findMany({
@@ -152,7 +162,7 @@ export default async function IncidentDetailPage({
         
         for (const a of newlyAssignedUsers) {
           if (a.email) {
-            await sendIncidentAssignmentEmail(incident!.id, incident!.title, a.email, a.name || 'Operator')
+            await sendIncidentAssignmentEmail(currentIncident.id, currentIncident.title, a.email, a.name || 'Operator')
           }
         }
       }
@@ -160,14 +170,14 @@ export default async function IncidentDetailPage({
 
     if (
       (newStatus === 'RESOLVED' || newStatus === 'CLOSED') && 
-      !['RESOLVED', 'CLOSED'].includes(incident!.status) && 
-      incident!.reporter
+      !['RESOLVED', 'CLOSED'].includes(currentIncident.status) && 
+      currentIncident.reporter
     ) {
-      await fireHook("onIncidentResolved", incident as any)
+      await fireHook("onIncidentResolved", currentIncident as any)
       
-      await dispatchAlert(incident!.reporter.id, "RESOLUTION", "Incident Resolved", `INC-${incident!.id.substring(0, 8)} has achieved resolution telemetry.`, `/incidents/${incident!.id}`)
-      if (settings?.smtpTriggerOnResolution && incident!.reporter.email) {
-        await sendResolutionEmail(incident!.id, incident!.title, incident!.reporter.email, incident!.reporter.name || 'Reporter')
+      await dispatchAlert(currentIncident.reporter.id, "RESOLUTION", "Incident Resolved", `INC-${currentIncident.id.substring(0, 8)} has achieved resolution telemetry.`, `/incidents/${currentIncident.id}`)
+      if (settings?.smtpTriggerOnResolution && currentIncident.reporter.email) {
+        await sendResolutionEmail(currentIncident.id, currentIncident.title, currentIncident.reporter.email, currentIncident.reporter.name || 'Reporter')
       }
     }
 
@@ -193,7 +203,7 @@ export default async function IncidentDetailPage({
           entityType: "Asset",
           entityId: resolvedAssetId,
           userId: sessionUrl.user.id,
-          changes: `Asset automatically marked as COMPROMISED due to escalating Incident INC-${incident!.id.substring(0, 8).toUpperCase()} to CRITICAL.`
+          changes: `Asset automatically marked as COMPROMISED due to escalating Incident INC-${currentIncident.id.substring(0, 8).toUpperCase()} to CRITICAL.`
         }
       })
     }
@@ -202,7 +212,7 @@ export default async function IncidentDetailPage({
       data: {
         action: "TRIAGE_POLICY_CHANGED",
         entityType: "Incident",
-        entityId: incident!.id,
+        entityId: currentIncident.id,
         userId: sessionUrl.user.id,
         changes: changesText
       }
@@ -211,14 +221,14 @@ export default async function IncidentDetailPage({
     // Phase 9: Webhook Dispatch for Escalations
     if (newSeverity === 'CRITICAL' || newStatus === 'RESOLVED') {
       await dispatchWebhook({
-        title: `Incident Update: ${incident!.title}`,
+        title: `Incident Update: ${currentIncident.title}`,
         description: `Status changed to ${newStatus}, Severity: ${newSeverity}`,
         severity: newSeverity,
-        url: `${process.env.NEXTAUTH_URL}/incidents/${incident!.id}`
+        url: `${process.env.NEXTAUTH_URL}/incidents/${currentIncident.id}`
       })
     }
 
-    redirect(`/incidents/${incident!.id}`)
+    redirect(`/incidents/${currentIncident.id}`)
   }
 
   async function editDetailsAction(formData: FormData) {
