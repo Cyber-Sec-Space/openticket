@@ -27,7 +27,8 @@ export async function GET(
     const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
     
     // Strict isolation enforcement
-    if (!hasPrivilege && incident.reporterId !== session.user.id) {
+    const isAuthorized = hasPrivilege || incident.reporterId === session.user.id || incident.assignees.some(a => a.id === session.user.id)
+    if (!isAuthorized) {
       return new NextResponse("Forbidden", { status: 403 })
     }
 
@@ -46,17 +47,25 @@ export async function PATCH(
   const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
-  if (!hasPrivilege) {
-    return new NextResponse("Forbidden", { status: 403 })
-  }
-
   try {
+    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
     const body = await req.json()
     const { status, assigneeId, severity, assetId } = body
 
-    const existingIncident = await db.incident.findUnique({ where: { id } })
+    const existingIncident = await db.incident.findUnique({ 
+      where: { id },
+      include: { assignees: true }
+    })
     if (!existingIncident) return new NextResponse("Not Found", { status: 404 })
+
+    const isAuthorizedToUpdate = hasPrivilege || existingIncident.assignees.some(a => a.id === session.user.id)
+    if (!isAuthorizedToUpdate) {
+      return new NextResponse("Forbidden (Only ADMIN/SECOPS or Assigned Engineers can update)", { status: 403 })
+    }
+
+    if ((assigneeId !== undefined || severity !== undefined || assetId !== undefined) && !hasPrivilege) {
+       return new NextResponse("Forbidden: Setting assignees, severities or assets requires Admin/Secops", { status: 403 })
+    }
 
     const updateData: any = {}
     if (status) updateData.status = status

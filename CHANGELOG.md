@@ -11,8 +11,9 @@ All notable changes to this project will be documented in this file.
 - Enhanced BOLA & OOM `take: 5000` memory caps on `/api/export` payload streaming by embedding URL parameter `&skip=` index tracking, unlocking infinite pagination extraction flows for global enterprises without triggering memory crashes.
 - Solidified Comment Creation via extreme Inline BOLA verification checking ensuring that malicious actors cannot forge Server Action payloads pushing discussions to unowned tickets.
 - Upgraded `nodemailer` to `^8.0.4` to remediate a known CRLF Injection vulnerability (CWE-93 / SNYK-JS-NODEMAILER-15790064) through the `envelope.size` parameter.
-- Closed a Critical Cloud Storage Insecure Direct Object Reference (IDOR) by forcibly evicting all evidence attachments out of `public/uploads` into a hidden `private` volume, protected by a zero-trust BOLA `/api/files` streaming gateway blocking unauthorized traversal attempts.
-- Remediated Broken Object Level Authorization (BOLA) and Application Logic DoS within `/api/export`, enforcing strict `take: 5000` memory ceilings and restricting generic `REPORTER`s to dumping only natively-owned entity graphs rather than the entire enterprise index.
+- Patched a critical Assignee Lockout BOLA where legitimate Engineers assigned to incidents were completely severed from `page.tsx` summaries, list views, and APIs because of hardcoded `reporterId` isolation limits. Access logic now encapsulates Assignees globally.
+- Sealed a massive `MetricSnapshot` DB Memory Bloat (OOM) defect within `getDashboardTrendData` where individual tracking of basic `USER` traffic produced millions of unfiltered metric rows; restricted historical persistence entirely to `GLOBAL` state frames while pushing `USER` queries to in-memory rendering execution.
+- Addressed Application-level DoS vulnerability in `/api/cron/metrics` by restricting endpoint with strict `CRON_SECRET` authorization.
 
 ### Changed
 - Concurrency Optimization: Upgraded HTML5 Desktop Notification layer shifting away from overlapping `HTTP Polling` streams towards highly-efficient `Server-Sent Events (SSE)`.

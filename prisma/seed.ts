@@ -13,213 +13,232 @@ const randomDate = (daysAgo: number) => {
 }
 
 async function main() {
-  const adminEmail = 'admin@openticket.local'
+  console.log("Starting massive database wipe to prepare pristine demo environment...")
+  // Wipe everything safely in reverse cascade priority
+  await prisma.auditLog.deleteMany({})
+  await prisma.attachment.deleteMany({})
+  await prisma.comment.deleteMany({})
+  await prisma.incident.deleteMany({})
+  await prisma.vulnerability.deleteMany({})
+  await prisma.asset.deleteMany({})
+  await prisma.user.deleteMany({})
 
-  // Check if admin exists
-  let admin = await prisma.user.findUnique({
-    where: { email: adminEmail }
-  })
+  console.log("Database wiped perfectly. Injecting enterprise-scale data...")
 
-  if (!admin) {
-    const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || require('crypto').randomUUID()
-    const passwordHash = await bcrypt.hash(rawPassword, 10)
-    admin = await prisma.user.create({
-      data: {
-        name: 'System Admin',
-        email: adminEmail,
-        passwordHash,
-        roles: [Role.ADMIN, Role.SECOPS],
-      }
-    })
-    console.log(`Created admin account: ${adminEmail} (password: ${rawPassword})`)
-  } else {
-    console.log(`Admin account ${adminEmail} already exists.`)
+  // 1. Create Users
+  const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || "admin123";
+  const passwordHash = await bcrypt.hash(rawPassword, 10)
+
+  console.log('Creating diverse user roster...')
+
+  const adminUser = await prisma.user.create({
+    data: {
+      name: 'System Admin', email: 'admin@openticket.local', passwordHash, roles: [Role.ADMIN, Role.SECOPS]
+    }
+  });
+
+  const secopsLead = await prisma.user.create({
+    data: { name: 'Sarah Connor (Lead)', email: 'sarah@openticket.local', passwordHash, roles: [Role.SECOPS] }
+  });
+
+  const analyst1 = await prisma.user.create({
+    data: { name: 'John Doe (Analyst)', email: 'john@openticket.local', passwordHash, roles: [Role.REPORTER] }
+  });
+
+  const analyst2 = await prisma.user.create({
+    data: { name: 'Jane Smith (Analyst)', email: 'jane@openticket.local', passwordHash, roles: [Role.REPORTER] }
+  });
+
+  const auditor = await prisma.user.create({
+    data: { name: 'Compliance Auditor', email: 'audit@openticket.local', passwordHash, roles: [Role.REPORTER] }
+  });
+
+  const allUsers = [adminUser, secopsLead, analyst1, analyst2, auditor];
+
+  // 2. Create Assets
+  console.log('Provisioning global asset infrastructure...')
+  const assetData: Array<{ name: string, type: AssetType, ipAddress: string, status: AssetStatus }> = [
+    { name: 'SRV-WEB-01', type: AssetType.SERVER, ipAddress: '192.168.1.10', status: AssetStatus.ACTIVE },
+    { name: 'SRV-WEB-02', type: AssetType.SERVER, ipAddress: '192.168.1.11', status: AssetStatus.ACTIVE },
+    { name: 'SRV-DB-01', type: AssetType.SERVER, ipAddress: '192.168.1.20', status: AssetStatus.ACTIVE },
+    { name: 'SRV-DB-02', type: AssetType.SERVER, ipAddress: '192.168.1.21', status: AssetStatus.MAINTENANCE },
+    { name: 'SW-CORE-900', type: AssetType.NETWORK, ipAddress: '10.0.0.1', status: AssetStatus.ACTIVE },
+    { name: 'FW-EDGE-01', type: AssetType.NETWORK, ipAddress: '10.0.0.2', status: AssetStatus.ACTIVE },
+    { name: 'FW-INT-02', type: AssetType.NETWORK, ipAddress: '10.0.0.3', status: AssetStatus.ACTIVE },
+    { name: 'K8S-CLUSTER-PROD', type: AssetType.OTHER, ipAddress: '10.10.0.50', status: AssetStatus.ACTIVE },
+    { name: 'K8S-CLUSTER-DEV', type: AssetType.OTHER, ipAddress: '10.10.0.51', status: AssetStatus.INACTIVE },
+    { name: 'GITLAB-CI', type: AssetType.SOFTWARE, ipAddress: '10.10.0.100', status: AssetStatus.ACTIVE },
+    { name: 'JIRA-TRACKER', type: AssetType.SOFTWARE, ipAddress: '10.10.0.101', status: AssetStatus.ACTIVE },
+    { name: 'AZURE-AD-SYNC', type: AssetType.SERVER, ipAddress: '172.16.5.10', status: AssetStatus.ACTIVE },
+    { name: 'AWS-BASTION-01', type: AssetType.SERVER, ipAddress: '172.16.10.5', status: AssetStatus.ACTIVE },
+    { name: 'AWS-S3-BUCKET-DATA', type: AssetType.OTHER, ipAddress: '', status: AssetStatus.ACTIVE },
+  ];
+
+  // Sprinkle 25 endpoints dynamically
+  for (let i = 1; i <= 25; i++) {
+    const status = Math.random() < 0.1 ? AssetStatus.COMPROMISED : (Math.random() < 0.2 ? AssetStatus.INACTIVE : AssetStatus.ACTIVE);
+    assetData.push({
+      name: `EMPLOYEE-${Math.random() > 0.5 ? 'WIN' : 'MAC'}-${i.toString().padStart(3, '0')}`,
+      type: AssetType.ENDPOINT,
+      ipAddress: `192.168.2.${100 + i}`,
+      status: status
+    });
   }
 
-  // Create Assets
-  const assetCount = await prisma.asset.count()
-  if (assetCount === 0) {
-    await prisma.asset.createMany({
-      data: [
-        { name: 'SRV-WEB-01', type: AssetType.SERVER, ipAddress: '192.168.1.10', status: AssetStatus.ACTIVE },
-        { name: 'SRV-WEB-02', type: AssetType.SERVER, ipAddress: '192.168.1.11', status: AssetStatus.ACTIVE },
-        { name: 'SRV-DB-01', type: AssetType.SERVER, ipAddress: '192.168.1.20', status: AssetStatus.ACTIVE },
-        { name: 'SRV-DB-02', type: AssetType.SERVER, ipAddress: '192.168.1.21', status: AssetStatus.MAINTENANCE },
-        { name: 'EMPLOYEE-MAC-042', type: AssetType.ENDPOINT, ipAddress: '192.168.2.14', status: AssetStatus.COMPROMISED },
-        { name: 'EMPLOYEE-WIN-105', type: AssetType.ENDPOINT, ipAddress: '192.168.2.55', status: AssetStatus.ACTIVE },
-        { name: 'SW-CORE-900', type: AssetType.NETWORK, ipAddress: '10.0.0.1', status: AssetStatus.ACTIVE },
-        { name: 'FW-EDGE-01', type: AssetType.NETWORK, ipAddress: '10.0.0.2', status: AssetStatus.ACTIVE },
-        { name: 'K8S-CLUSTER-PROD', type: AssetType.OTHER, ipAddress: '10.10.0.50', status: AssetStatus.ACTIVE },
-        { name: 'GITLAB-CI', type: AssetType.SOFTWARE, ipAddress: '10.10.0.100', status: AssetStatus.ACTIVE },
-      ]
-    })
-    console.log(`Created demo assets.`)
-  }
-
+  await prisma.asset.createMany({ data: assetData });
   const assets = await prisma.asset.findMany();
 
-  // Create Vulnerabilities
-  const vulnCount = await prisma.vulnerability.count()
-  if (vulnCount === 0 && assets.length > 0) {
-    const srvWeb01 = assets.find(a => a.name === 'SRV-WEB-01');
-    const srvWeb02 = assets.find(a => a.name === 'SRV-WEB-02');
-    const gitlab = assets.find(a => a.name === 'GITLAB-CI');
-    const fw = assets.find(a => a.name === 'FW-EDGE-01');
+  // 3. Create Vulnerabilities
+  console.log('Injecting Vulnerabilities and mapping topologies...')
+  const vulnBlueprints = [
+    { title: 'Log4Shell RCE', cveId: 'CVE-2021-44228', score: 10.0, severity: Severity.CRITICAL, desc: 'Log4j2 JNDI exploit mapping.' },
+    { title: 'GitLab CE/EE RCE', cveId: 'CVE-2021-22205', score: 10.0, severity: Severity.CRITICAL, desc: 'GitLab unauth RCE issue.' },
+    { title: 'FortiOS SSL-VPN BOF', cveId: 'CVE-2022-42475', score: 9.3, severity: Severity.HIGH, desc: 'Heap-based buffer overflow.' },
+    { title: 'Nginx weak ciphers', cveId: '', score: 5.3, severity: Severity.MEDIUM, desc: 'Server accepts TLS 1.0/1.1 connections.' },
+    { title: 'OpenSSH Username Enum', cveId: 'CVE-2018-15473', score: 5.0, severity: Severity.MEDIUM, desc: 'OpenSSH through 7.7 is prone to user enum.' },
+    { title: 'Windows Print Spooler LPE', cveId: 'CVE-2021-34527', score: 8.8, severity: Severity.HIGH, desc: 'PrintNightmare LPE exploit.' },
+    { title: 'S3 Bucket Public Read', cveId: '', score: 7.5, severity: Severity.HIGH, desc: 'AWS S3 configuration exposed publicly.' },
+    { title: 'Jenkins Unauth XSS', cveId: 'CVE-2022-43401', score: 6.1, severity: Severity.MEDIUM, desc: 'Jenkins Plugin vulnerability.' },
+    { title: 'Spring4Shell RCE', cveId: 'CVE-2022-22965', score: 9.8, severity: Severity.CRITICAL, desc: 'Spring Framework RCE via data binding.' },
+    { title: 'Server Info Disclosure', cveId: '', score: 3.1, severity: Severity.LOW, desc: 'Exposing Server details.' },
+    { title: 'Kubelet Unauth Access', cveId: 'CVE-2018-1002105', score: 9.8, severity: Severity.CRITICAL, desc: 'K8S unauth privilege escalation.' },
+    { title: 'Confluence OGNL Injection', cveId: 'CVE-2022-26134', score: 9.8, severity: Severity.CRITICAL, desc: 'Confluence Server arbitrary code exec.' },
+    { title: 'SQL Injection in Legacy App', cveId: '', score: 8.5, severity: Severity.HIGH, desc: 'Legacy endpoint missing input sanitization.' },
+    { title: 'Default Admin Passwords', cveId: '', score: 9.0, severity: Severity.CRITICAL, desc: 'Hardcoded admin/admin found on switches.' },
+    { title: 'Outdated jQuery Library', cveId: '', score: 4.3, severity: Severity.LOW, desc: 'jQuery version is vulnerable to XSS.' },
+  ];
+
+  for (const bp of vulnBlueprints) {
+    // Pick random assets
+    const affected = assets.filter(() => Math.random() > 0.85); // 15% chance to link any given asset
+
+    const statusRoll = Math.random();
+    const status = statusRoll < 0.5 ? VulnStatus.OPEN : (statusRoll < 0.8 ? VulnStatus.MITIGATED : VulnStatus.RESOLVED);
 
     await prisma.vulnerability.create({
       data: {
-        title: 'Log4Shell remote code execution',
-        cveId: 'CVE-2021-44228',
-        cvssScore: 10.0,
-        description: 'Apache Log4j2 JNDI features do not protect against attacker controlled LDAP and other JNDI related endpoints.',
-        severity: Severity.CRITICAL,
-        status: VulnStatus.OPEN,
-        affectedAssets: { connect: [{ id: srvWeb01?.id }, { id: srvWeb02?.id }] }
+        title: bp.title,
+        cveId: bp.cveId || null,
+        cvssScore: bp.score,
+        description: bp.desc + '\n\nAutomatically generated for demo purposes to simulate diverse structural mappings.',
+        severity: bp.severity,
+        status: status,
+        affectedAssets: { connect: affected.map(a => ({ id: a.id })) }
       }
-    })
-
-    await prisma.vulnerability.create({
-      data: {
-        title: 'GitLab CE/EE unauthenticated RCE',
-        cveId: 'CVE-2021-22205',
-        cvssScore: 10.0,
-        description: 'An issue has been discovered in GitLab CE/EE affecting all versions starting from 11.9.',
-        severity: Severity.CRITICAL,
-        status: VulnStatus.MITIGATED,
-        affectedAssets: { connect: [{ id: gitlab?.id }] }
-      }
-    })
-
-    await prisma.vulnerability.create({
-      data: {
-        title: 'FortiOS SSL-VPN Heap Buffer Overflow',
-        cveId: 'CVE-2022-42475',
-        cvssScore: 9.3,
-        description: 'A heap-based buffer overflow vulnerability in FortiOS SSL-VPN may allow a remote unauthenticated attacker to execute code.',
-        severity: Severity.HIGH,
-        status: VulnStatus.OPEN,
-        affectedAssets: { connect: [{ id: fw?.id }] }
-      }
-    })
-
-    await prisma.vulnerability.create({
-      data: {
-        title: 'Nginx weak ciphers configured',
-        cvssScore: 5.3,
-        description: 'Server is currently accepting connections using weak TLS ciphers.',
-        severity: Severity.MEDIUM,
-        status: VulnStatus.OPEN,
-        affectedAssets: { connect: [{ id: srvWeb01?.id }, { id: srvWeb02?.id }] }
-      }
-    })
-    
-    await prisma.vulnerability.create({
-      data: {
-        title: 'Internal Server Information Disclosure',
-        cvssScore: 3.1,
-        description: 'Web server is exposing its precise version number in HTTP headers.',
-        severity: Severity.LOW,
-        status: VulnStatus.OPEN,
-        affectedAssets: { connect: [{ id: srvWeb02?.id }] }
-      }
-    })
-    
-    console.log(`Created demo vulnerabilities.`)
+    });
   }
 
-  // Create Incidents (14 days history)
-  const incidentCount = await prisma.incident.count()
-  if (incidentCount === 0 && assets.length > 0) {
-    console.log("Seeding timeline incidents...");
+  // 4. Create Incidents
+  console.log("Generating 150 incidents over 30 days of telemetry...")
 
-    const incidentTemplates = [
-      { title: 'Suspicious East-West DB Traffic', type: IncidentType.DATA_BREACH, severity: Severity.CRITICAL },
-      { title: 'Ransomware indicator on Endpoint', type: IncidentType.MALWARE, severity: Severity.HIGH },
-      { title: 'Repeated SSH Brute Force Attempts', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.MEDIUM },
-      { title: 'Reported Phishing Campaign', type: IncidentType.PHISHING, severity: Severity.LOW },
-      { title: 'DDoS Attack on Edge Firewall', type: IncidentType.NETWORK_ANOMALY, severity: Severity.HIGH },
-      { title: 'Unauthorized API Access Token Used', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.CRITICAL },
-      { title: 'Malicious PDF Execution Blocked', type: IncidentType.MALWARE, severity: Severity.MEDIUM },
-      { title: 'C2 Beaconing Detected', type: IncidentType.NETWORK_ANOMALY, severity: Severity.HIGH },
-      { title: 'Excessive Login Failures for Admin', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.MEDIUM },
-      { title: 'Data Exfiltration via DNS Tunneling', type: IncidentType.DATA_BREACH, severity: Severity.CRITICAL },
-      { title: 'Suspicious Powershell Execution', type: IncidentType.MALWARE, severity: Severity.HIGH },
-      { title: 'Spear Phishing targeting Executive', type: IncidentType.PHISHING, severity: Severity.HIGH },
-      { title: 'Spike in 500 Internal Server Errors', type: IncidentType.NETWORK_ANOMALY, severity: Severity.LOW },
-      { title: 'Misconfigured S3 Bucket Alert', type: IncidentType.OTHER, severity: Severity.MEDIUM },
-      { title: 'Crypto Miner activity on Web Node', type: IncidentType.MALWARE, severity: Severity.HIGH },
-      { title: 'Unusual VPN Login from New Country', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.LOW },
-      { title: 'XSS Attack Blocked by WAF', type: IncidentType.NETWORK_ANOMALY, severity: Severity.LOW },
-      { title: 'Database Backup Failure', type: IncidentType.OTHER, severity: Severity.MEDIUM },
-      { title: 'Privilege Escalation attempt on Core', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.CRITICAL },
-      { title: 'Mass Email Forwarding Rule Created', type: IncidentType.DATA_BREACH, severity: Severity.HIGH },
-    ]
+  const incidentTemplates = [
+    { title: 'Suspicious East-West DB Traffic', type: IncidentType.DATA_BREACH, severity: Severity.CRITICAL },
+    { title: 'Ransomware indicator on Endpoint', type: IncidentType.MALWARE, severity: Severity.HIGH },
+    { title: 'Repeated SSH Brute Force Attempts', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.MEDIUM },
+    { title: 'Reported Phishing Campaign', type: IncidentType.PHISHING, severity: Severity.LOW },
+    { title: 'DDoS Attack on Edge Firewall', type: IncidentType.NETWORK_ANOMALY, severity: Severity.HIGH },
+    { title: 'Unauthorized API Access Token Used', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.CRITICAL },
+    { title: 'Malicious PDF Execution Blocked', type: IncidentType.MALWARE, severity: Severity.MEDIUM },
+    { title: 'C2 Beaconing Detected', type: IncidentType.NETWORK_ANOMALY, severity: Severity.HIGH },
+    { title: 'Excessive Login Failures for Admin', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.MEDIUM },
+    { title: 'Data Exfiltration via DNS Tunneling', type: IncidentType.DATA_BREACH, severity: Severity.CRITICAL },
+    { title: 'Suspicious Powershell Execution', type: IncidentType.MALWARE, severity: Severity.HIGH },
+    { title: 'Spear Phishing targeting Executive', type: IncidentType.PHISHING, severity: Severity.HIGH },
+    { title: 'Spike in 500 Internal Server Errors', type: IncidentType.NETWORK_ANOMALY, severity: Severity.LOW },
+    { title: 'Misconfigured S3 Bucket Alert', type: IncidentType.OTHER, severity: Severity.MEDIUM },
+    { title: 'Crypto Miner activity on Web Node', type: IncidentType.MALWARE, severity: Severity.HIGH },
+    { title: 'Unusual VPN Login from New Country', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.LOW },
+    { title: 'XSS Attack Blocked by WAF', type: IncidentType.NETWORK_ANOMALY, severity: Severity.LOW },
+    { title: 'Database Backup Failure', type: IncidentType.OTHER, severity: Severity.MEDIUM },
+    { title: 'Privilege Escalation attempt on Core', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.CRITICAL },
+    { title: 'Mass Email Forwarding Rule Created', type: IncidentType.DATA_BREACH, severity: Severity.HIGH },
+    { title: 'Off-hours Remote Desktop Login', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.MEDIUM },
+    { title: 'Unexpected Domain Admin Grouper Change', type: IncidentType.UNAUTHORIZED_ACCESS, severity: Severity.CRITICAL },
+    { title: 'Port Scan originating from Internal VIP', type: IncidentType.NETWORK_ANOMALY, severity: Severity.HIGH },
+  ]
 
-    const statuses = [IncidentStatus.NEW, IncidentStatus.IN_PROGRESS, IncidentStatus.PENDING_INFO, IncidentStatus.RESOLVED, IncidentStatus.CLOSED]
+  const statuses = [IncidentStatus.NEW, IncidentStatus.IN_PROGRESS, IncidentStatus.PENDING_INFO, IncidentStatus.RESOLVED, IncidentStatus.CLOSED]
 
-    // Create 25 incidents distributed over the last 14 days
-    for (let i = 0; i < 25; i++) {
-      const template = incidentTemplates[i % incidentTemplates.length]
-      const asset = assets[Math.floor(Math.random() * assets.length)]
-      const status = statuses[Math.floor(Math.random() * statuses.length)]
-      
-      const createdDate = randomDate(14)
-      let updatedDate = new Date(createdDate)
-      
-      // If resolved or closed, it should be updated later
-      if (status === IncidentStatus.RESOLVED || status === IncidentStatus.CLOSED || status === IncidentStatus.IN_PROGRESS) {
-        updatedDate.setDate(updatedDate.getDate() + Math.random() * 3) // updated up to 3 days later
-        if (updatedDate > new Date()) { updatedDate = new Date() } // clip to now
+  for (let i = 0; i < 150; i++) {
+    const template = incidentTemplates[Math.floor(Math.random() * incidentTemplates.length)]
+    const asset = assets[Math.floor(Math.random() * assets.length)]
+    const status = statuses[Math.floor(Math.random() * statuses.length)]
+
+    const createdDate = randomDate(30)
+    let updatedDate = new Date(createdDate.getTime() + Math.random() * 86400000 * 5) // Up to 5 days later
+    if (updatedDate > new Date()) updatedDate = new Date()
+
+    const reporter = allUsers[Math.floor(Math.random() * allUsers.length)]
+    let assignedUsers = allUsers.filter(() => Math.random() > 0.7)
+    if (status !== IncidentStatus.NEW && assignedUsers.length === 0) assignedUsers = [secopsLead]
+
+    const tags = [template.type.toLowerCase(), Math.random() > 0.5 ? 'soc-alert' : 'heuristics', `severity-${template.severity.toLowerCase()}`]
+
+    const incident = await prisma.incident.create({
+      data: {
+        title: template.title,
+        description: `Automated telemetry engine generated this incident pattern related to ${template.title}. Behavioral deviations spotted on node: ${asset.name}. Investigation mandatory.`,
+        type: template.type,
+        severity: template.severity,
+        status: status,
+        assetId: asset.id,
+        reporterId: reporter.id,
+        tags: tags,
+        createdAt: createdDate,
+        updatedAt: updatedDate,
+        assignees: status !== IncidentStatus.NEW && assignedUsers.length > 0 ? { connect: assignedUsers.map(u => ({ id: u.id })) } : undefined
       }
+    })
 
-      const tags = [template.type.toLowerCase(), 'soc-alert', Math.random() > 0.5 ? 'auto-generated' : 'manual']
+    // Creation Log
+    await prisma.auditLog.create({
+      data: { action: 'INCIDENT_CREATED', entityType: 'Incident', entityId: incident.id, userId: reporter.id, createdAt: createdDate }
+    })
 
-      const incident = await prisma.incident.create({
-        data: {
-          title: template.title,
-          description: `Automatically generated demo incident for ${template.title}. Activity observed on ${asset.name}.`,
-          type: template.type,
-          severity: template.severity,
-          status: status,
-          assetId: asset.id,
-          reporterId: admin.id,
-          tags: tags,
-          createdAt: createdDate,
-          updatedAt: updatedDate,
-          assignees: status !== IncidentStatus.NEW ? { connect: [{ id: admin.id }] } : undefined
-        }
-      })
-
-      // Generate some AuditLogs for each incident to populate activity graphs
-      // Add a creation audit log
-      await prisma.auditLog.create({
-        data: {
-          action: 'INCIDENT_CREATED',
-          entityType: 'Incident',
-          entityId: incident.id,
-          userId: admin.id,
-          createdAt: createdDate
-        }
-      })
-
-      if (status !== IncidentStatus.NEW) {
-        // Add a random status update log somewhere between start and updatedDate
-        const logDate = new Date(createdDate.getTime() + (updatedDate.getTime() - createdDate.getTime()) / 2)
+    // Status / Assignment changes if applicable
+    if (status !== IncidentStatus.NEW) {
+      const logDate = new Date(createdDate.getTime() + 1000 * 60 * 60) // 1 hr later
+      if (logDate < updatedDate) {
         await prisma.auditLog.create({
-          data: {
-            action: 'STATUS_CHANGED',
-            entityType: 'Incident',
-            entityId: incident.id,
-            userId: admin.id,
-            changes: JSON.stringify({ from: 'NEW', to: status }),
-            createdAt: logDate
-          }
+          data: { action: 'STATUS_CHANGED', entityType: 'Incident', entityId: incident.id, userId: secopsLead.id, changes: JSON.stringify({ from: 'NEW', to: status }), createdAt: logDate }
         })
       }
     }
 
-    console.log(`Generated 25 incidents spanning 14 days of history.`);
+    // Add 0-4 random comments to make the timeline feel alive!
+    const numComments = Math.floor(Math.random() * 5);
+    for (let c = 0; c < numComments; c++) {
+      const commenter = allUsers[Math.floor(Math.random() * allUsers.length)]
+      const commentDate = new Date(createdDate.getTime() + Math.random() * (updatedDate.getTime() - createdDate.getTime() || 1000));
+
+      const commentPool = [
+        "I'm claiming this one for initial triage.",
+        "Looking at the firewall logs now, seeing outbound traffic to known bad IPs.",
+        "False positive maybe? The user claims they authorized the VPN session.",
+        "Escalating to SecOps tier 2.",
+        "Remediation playbook initiated. System isolated.",
+        "Please check the EDR alerts connected to this.",
+        "I've contacted the system owner. Awaiting their response.",
+        "Patching the affected node soon. Downtime scheduled.",
+        "Closing this as dup alert.",
+        "Payload extracted and sent to sandbox."
+      ];
+
+      const commentText = commentPool[Math.floor(Math.random() * commentPool.length)];
+
+      await prisma.comment.create({
+        data: {
+          content: commentText,
+          incidentId: incident.id,
+          authorId: commenter.id,
+          createdAt: commentDate,
+          updatedAt: commentDate
+        }
+      })
+    }
   }
+
+  console.log(`Massive DB Injection Completed Fully! 150 incidents generated.`)
 }
 
 main()

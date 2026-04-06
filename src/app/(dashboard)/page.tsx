@@ -7,13 +7,15 @@ import { TrendChart } from "@/components/trend-chart"
 import { IncidentRadarChart } from "@/components/incident-radar-chart"
 import { VulnStatusChart } from "@/components/vuln-status-chart"
 import { VulnSeverityChart } from "@/components/vuln-severity-chart"
+import { getDashboardTrendData } from "@/lib/metrics-service"
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string; filter?: string }> }) {
-  const { page, filter } = await (searchParams || {});
+export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string; filter?: string; range?: string }> }) {
+  const { page, filter, range } = await (searchParams || {});
   let currentPage = parseInt(page || "1", 10);
   if (Number.isNaN(currentPage) || currentPage < 1) currentPage = 1;
   const currentFilter = filter || "all";
-  const TAKE = 5;
+  const currentRange = range || "14d";
+  const TAKE = 12;
   const skip = (currentPage - 1) * TAKE;
 
   const session = await auth()
@@ -24,7 +26,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   // Metric computations for the dashboard
   const filterParams: any = {}
-  if (!hasPrivilege) filterParams.reporterId = session.user.id
+  if (!hasPrivilege) {
+    filterParams.OR = [
+      { reporterId: session.user.id },
+      { assignees: { some: { id: session.user.id } } }
+    ]
+  }
 
   const activeIncidents = await db.incident.count({ where: { ...filterParams, status: { notIn: ['CLOSED', 'RESOLVED'] } } })
   const criticalIncidents = await db.incident.count({
@@ -87,87 +94,45 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   ]);
   const totalPages = Math.ceil(boardTotal / TAKE);
 
-  // 14 Days Trend Calculation
-  const trendDays = 14;
-  const now = new Date();
-  const startDate = new Date();
-  startDate.setDate(now.getDate() - trendDays);
-  startDate.setHours(0, 0, 0, 0);
+  // Trend Calculation with Dynamic Range and Smart Downsampling
+  const rawTrendData = await getDashboardTrendData(currentRange, filterParams);
+  const trendData = rawTrendData.map((d: any) => {
+    const incResolveRate = (d.activeIncidents + d.resolvedIncidentsDelta) > 0 
+      ? (d.resolvedIncidentsDelta / (d.activeIncidents + d.resolvedIncidentsDelta)) * 100 : 0;
+    const vulnResolveRate = (d.activeVulns + d.resolvedVulnsDelta) > 0 
+      ? (d.resolvedVulnsDelta / (d.activeVulns + d.resolvedVulnsDelta)) * 100 : 0;
 
-  const allIncsForTrend = await db.incident.findMany({
-    where: {
-      ...filterParams,
-      OR: [
-        { status: { notIn: ['CLOSED', 'RESOLVED'] } },
-        { updatedAt: { gte: startDate } }
-      ]
-    },
-    select: { createdAt: true, updatedAt: true, status: true, targetSlaDate: true, severity: true }
-  });
+    // Based on range, format the date string properly
+    let formattedDate = '';
+    if (currentRange === '24h' || currentRange === '7d') {
+      formattedDate = d.date.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', month: 'short', day: 'numeric' });
+    } else {
+      formattedDate = d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
 
-  const allVulnsForTrend = await db.vulnerability.findMany({
-    where: {
-      OR: [
-        { status: { notIn: ['MITIGATED', 'RESOLVED'] } }, 
-        { updatedAt: { gte: startDate } }
-      ]
-    },
-    select: { createdAt: true, updatedAt: true, status: true, severity: true }
-  });
-
-  const trendData = [];
-  for (let i = trendDays - 1; i >= 0; i--) {
-    const dStart = new Date(now);
-    dStart.setDate(dStart.getDate() - i);
-    dStart.setHours(0, 0, 0, 0);
-
-    const dEnd = new Date(dStart);
-    dEnd.setHours(23, 59, 59, 999);
-
-    const dateStr = dStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-    // Active at the end of the day
-    const activeInc = allIncsForTrend.filter(inc =>
-      inc.createdAt <= dEnd &&
-      (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > dEnd)
-    );
-
-    const activeVuln = allVulnsForTrend.filter(v =>
-      v.createdAt <= dEnd &&
-      (!['RESOLVED', 'MITIGATED'].includes(v.status) || v.updatedAt > dEnd)
-    );
-
-    const breachedInc = activeInc.filter(inc => inc.targetSlaDate && inc.targetSlaDate < dEnd).length;
-
-    // Resolved ON this day
-    const resolvedInc = allIncsForTrend.filter(inc =>
-      ['RESOLVED', 'CLOSED'].includes(inc.status) &&
-      inc.updatedAt >= dStart && inc.updatedAt <= dEnd
-    ).length;
-
-    const resolvedVuln = allVulnsForTrend.filter(v =>
-      ['RESOLVED', 'MITIGATED'].includes(v.status) &&
-      v.updatedAt >= dStart && v.updatedAt <= dEnd
-    ).length;
-
-    const incResolveRate = (activeInc.length + resolvedInc) > 0 ? (resolvedInc / (activeInc.length + resolvedInc)) * 100 : 0;
-    const vulnResolveRate = (activeVuln.length + resolvedVuln) > 0 ? (resolvedVuln / (activeVuln.length + resolvedVuln)) * 100 : 0;
-
-    trendData.push({
-      date: dateStr,
-      incidents: activeInc.length,
-      vulnerabilities: activeVuln.length,
+    return {
+      date: formattedDate,
+      incidents: d.activeIncidents,
+      vulnerabilities: d.activeVulns,
       incResolveRate: parseFloat(incResolveRate.toFixed(1)),
       vulnResolveRate: parseFloat(vulnResolveRate.toFixed(1)),
-      incBreached: breachedInc
-    });
-  }
+      incBreached: d.slaBreached
+    }
+  });
+
+  const startDate = new Date();
+  startDate.setDate(new Date().getDate() - 14);
 
   // Advanced Analytics
-  const resolvedLast14Days = allIncsForTrend.filter(inc =>
-    ['RESOLVED', 'CLOSED'].includes(inc.status) &&
-    inc.updatedAt >= startDate
-  );
+  // We need to fetch basic resolve data for the next section if needed, or query again.
+  // We'll just run a quick DB query since it's cheap now.
+  const resolvedLast14Days = await db.incident.findMany({
+    where: { 
+      status: { in: ['RESOLVED', 'CLOSED'] },
+      updatedAt: { gte: startDate } 
+    },
+    select: { createdAt: true, updatedAt: true }
+  });
 
   let mttr = "N/A";
   if (resolvedLast14Days.length > 0) {
@@ -177,32 +142,47 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     mttr = (totalHours / resolvedLast14Days.length).toFixed(1) + "h";
   }
 
-  const complianceBase = allIncsForTrend.filter(inc => inc.targetSlaDate);
-  const breachedCount = complianceBase.filter(inc =>
-    (inc.targetSlaDate! < now && !['RESOLVED', 'CLOSED'].includes(inc.status)) ||
-    (['RESOLVED', 'CLOSED'].includes(inc.status) && inc.updatedAt > inc.targetSlaDate!)
-  ).length;
-  const complianceRate = complianceBase.length > 0 ? (((complianceBase.length - breachedCount) / complianceBase.length) * 100).toFixed(1) + "%" : "100%";
+  const now = new Date();
+  
+  const complianceBaseCount = await db.incident.count({ where: { ...filterParams, targetSlaDate: { not: null } } });
+  const breachedActive = await db.incident.count({ 
+    where: { 
+      ...filterParams, 
+      targetSlaDate: { not: null, lt: now }, 
+      status: { notIn: ['RESOLVED', 'CLOSED'] } 
+    }
+  });
+  
+  // For resolved tickets, we fetch a minimal subset to check if they breached SLA before closing
+  const breachedResolvedRaw = await db.incident.findMany({ 
+    where: { ...filterParams, status: { in: ['RESOLVED', 'CLOSED'] }, targetSlaDate: { not: null } },
+    select: { targetSlaDate: true, updatedAt: true }
+  });
+  const breachedResolvedCount = breachedResolvedRaw.filter(i => i.updatedAt > i.targetSlaDate!).length;
+  
+  const totalBreached = breachedActive + breachedResolvedCount;
+  const complianceRate = complianceBaseCount > 0 
+    ? (((complianceBaseCount - totalBreached) / complianceBaseCount) * 100).toFixed(1) + "%" 
+    : "100%";
 
-  const d7DaysAgoEnd = new Date(now);
-  d7DaysAgoEnd.setDate(d7DaysAgoEnd.getDate() - 7);
-  d7DaysAgoEnd.setHours(23, 59, 59, 999);
+  // Use MetricSnapshot for 7 days ago comparison (Time-Travel Delta)
+  const d7DaysAgo = new Date();
+  d7DaysAgo.setDate(d7DaysAgo.getDate() - 7);
+  
+  // Find the closest snapshot from 7 days ago
+  let activeInc7DaysAgo = activeIncidents;
+  let openVulns7DaysAgo = openVulns;
+  let criticalInc7DaysAgo = criticalIncidents;
+  let criticalVulns7DaysAgo = criticalVulns;
 
-  const activeInc7DaysAgo = allIncsForTrend.filter(inc =>
-    inc.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > d7DaysAgoEnd)
-  ).length;
-
-  const criticalInc7DaysAgo = allIncsForTrend.filter(inc =>
-    inc.severity === 'CRITICAL' && inc.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'CLOSED'].includes(inc.status) || inc.updatedAt > d7DaysAgoEnd)
-  ).length;
-
-  const openVulns7DaysAgo = allVulnsForTrend.filter(v =>
-    v.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'MITIGATED'].includes(v.status) || v.updatedAt > d7DaysAgoEnd)
-  ).length;
-
-  const criticalVulns7DaysAgo = allVulnsForTrend.filter(v =>
-    v.severity === 'CRITICAL' && v.createdAt <= d7DaysAgoEnd && (!['RESOLVED', 'MITIGATED'].includes(v.status) || v.updatedAt > d7DaysAgoEnd)
-  ).length;
+  const snap7Days = rawTrendData.find((d: any) => d.date.getTime() >= d7DaysAgo.getTime());
+  if (snap7Days) {
+    activeInc7DaysAgo = snap7Days.activeIncidents;
+    openVulns7DaysAgo = snap7Days.activeVulns;
+    // Approximating critical proportionally for 7 days ago as it's just a UI delta
+    criticalInc7DaysAgo = Math.floor(activeInc7DaysAgo * (criticalIncidents / (activeIncidents || 1)));
+    criticalVulns7DaysAgo = Math.floor(openVulns7DaysAgo * (criticalVulns / (openVulns || 1)));
+  }
 
   const calcDelta = (current: number, past: number) => {
     if (past === 0) return current > 0 ? 100 : 0;
@@ -377,7 +357,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 <BarChart3 className="w-5 h-5 text-indigo-400" />
                 Detection Trend
               </h3>
-              <span className="text-xs font-mono text-muted-foreground px-2 py-1 bg-white/5 rounded-md border border-white/10">Past 14 Days</span>
+              <div className="flex bg-black/40 p-1 rounded-lg border border-white/5 shadow-inner">
+                {[ '24h', '7d', '14d', '30d' ].map(r => (
+                  <Link key={r} href={`/?range=${r}&filter=${currentFilter}`} scroll={false}
+                        className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                          currentRange === r 
+                            ? 'bg-indigo-500/20 text-indigo-300 shadow-[0_0_10px_rgba(99,102,241,0.2)]'
+                            : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                        }`}>
+                    {r === '24h' ? '24H' : r.toUpperCase()}
+                  </Link>
+                ))}
+              </div>
             </div>
             <div className="p-6 flex-1 flex flex-col justify-center min-h-[320px]">
               <TrendChart data={trendData} />
@@ -480,11 +471,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-mono">{boardTotal} Active</span>
               </div>
               <div className="flex flex-wrap gap-2 text-[10px] uppercase font-bold tracking-wider">
-                <Link href={`?filter=all`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'all' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>All</Link>
-                <Link href={`?filter=assigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'assigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Assigned to me</Link>
-                <Link href={`?filter=reported`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'reported' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Reported by me</Link>
+                <Link scroll={false} href={`?filter=all`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'all' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>All</Link>
+                <Link scroll={false} href={`?filter=assigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'assigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Assigned to me</Link>
+                <Link scroll={false} href={`?filter=reported`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'reported' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Reported by me</Link>
                 {hasPrivilege && (
-                  <Link href={`?filter=unassigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'unassigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Unassigned</Link>
+                  <Link scroll={false} href={`?filter=unassigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'unassigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Unassigned</Link>
                 )}
               </div>
             </div>
@@ -492,7 +483,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
               {boardIncidents.length === 0 ? (
                 <div className="p-6 text-center text-muted-foreground text-sm font-medium flex-1 flex items-center justify-center">No active tasks in your queue.</div>
               ) : (
-                <div className="flex-1">
+                <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
                   {boardIncidents.map(inc => {
                     const isOverdue = inc.targetSlaDate &&
                       new Date() > inc.targetSlaDate &&
@@ -545,6 +536,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                   <Link
                     href={currentPage <= 1 ? '#' : `?page=${currentPage - 1}&filter=${currentFilter}`}
                     className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
+                    scroll={false}
                   >
                     <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                   </Link>
@@ -552,6 +544,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                   <Link
                     href={currentPage >= totalPages ? '#' : `?page=${currentPage + 1}&filter=${currentFilter}`}
                     className={`flex items-center text-xs px-3 py-1.5 rounded-md border border-white/10 transition-colors ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 hover:border-white/20'}`}
+                    scroll={false}
                   >
                     Next <ChevronRight className="w-4 h-4 ml-1" />
                   </Link>

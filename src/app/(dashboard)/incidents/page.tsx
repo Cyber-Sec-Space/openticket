@@ -18,10 +18,17 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
 
   const filterParams: any = {}
 
-  // Hard RBAC rule: reporters only see their own tickets
+  // Hard RBAC rule: reporters and assignees can see their tickets
   const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
   if (!hasPrivilege) {
-    filterParams.reporterId = session.user.id
+    filterParams.AND = [
+      {
+        OR: [
+          { reporterId: session.user.id },
+          { assignees: { some: { id: session.user.id } } }
+        ]
+      }
+    ]
   }
 
   // URL Filters
@@ -29,12 +36,17 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.severity = resolvedParams.severity;
 
   if (resolvedParams.q) {
-    filterParams.OR = [
+    const searchOr = [
       { title: { contains: resolvedParams.q, mode: "insensitive" } },
       { description: { contains: resolvedParams.q, mode: "insensitive" } },
       { id: { contains: resolvedParams.q, mode: "insensitive" } },
       { tags: { hasSome: [resolvedParams.q, `#${resolvedParams.q}`] } }
     ]
+    if (filterParams.AND) {
+      filterParams.AND.push({ OR: searchOr })
+    } else {
+      filterParams.OR = searchOr
+    }
   }
 
   const totalCount = await db.incident.count({ where: filterParams })
@@ -147,17 +159,17 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-              <TableHead className="font-semibold text-primary pl-6">Key</TableHead>
-              <TableHead className="font-semibold text-primary">Title</TableHead>
-              <TableHead className="font-semibold text-primary">Severity</TableHead>
-              <TableHead className="font-semibold text-primary">Status</TableHead>
-              <TableHead className="font-semibold text-primary">Reporter</TableHead>
-              <TableHead className="font-semibold text-primary border-r border-border/20">Assignee</TableHead>
-              <TableHead className="font-semibold text-primary border-r border-border/20">Target SLA</TableHead>
-              <TableHead className="font-semibold text-primary text-right pr-6">Created</TableHead>
+              <TableHead className="font-semibold text-primary pl-6 w-[12%]">Key</TableHead>
+              <TableHead className="font-semibold text-primary w-[25%] lg:w-[30%]">Title</TableHead>
+              <TableHead className="font-semibold text-primary w-[10%]">Severity</TableHead>
+              <TableHead className="font-semibold text-primary w-[12%]">Status</TableHead>
+              <TableHead className="font-semibold text-primary hidden xl:table-cell w-[10%]">Reporter</TableHead>
+              <TableHead className="font-semibold text-primary border-r border-border/20 w-[16%]">Assignee</TableHead>
+              <TableHead className="font-semibold text-primary border-r border-border/20 hidden xl:table-cell w-[10%]">Target SLA</TableHead>
+              <TableHead className="font-semibold text-primary text-right pr-6 w-[10%]">Created</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -205,13 +217,13 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                     {incident.status.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{incident.reporter?.name || "Unknown"}</TableCell>
+                <TableCell className="text-muted-foreground hidden xl:table-cell">{incident.reporter?.name || "Unknown"}</TableCell>
                 <TableCell className="text-muted-foreground font-medium border-r border-border/20">
                   {incident.assignees.length > 0
                     ? incident.assignees.map(a => a.name).join(', ')
                     : <span className="text-muted-foreground/50 italic">Unassigned</span>}
                 </TableCell>
-                <TableCell className={`font-mono text-sm border-r border-border/20 ${isOverdue ? 'text-red-500 font-bold' : incident.targetSlaDate ? 'text-muted-foreground' : 'text-muted-foreground/40 italic'}`}>
+                <TableCell className={`font-mono text-sm border-r border-border/20 hidden xl:table-cell ${isOverdue ? 'text-red-500 font-bold' : incident.targetSlaDate ? 'text-muted-foreground' : 'text-muted-foreground/40 italic'}`}>
                   {incident.targetSlaDate ? incident.targetSlaDate.toLocaleDateString() : '-'}
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground text-sm font-mono pr-6">
@@ -228,13 +240,13 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
             Showing <span className="font-medium text-white">{incidents.length > 0 ? (page - 1) * TAKE + 1 : 0}</span> to <span className="font-medium text-white">{Math.min(page * TAKE, totalCount)}</span> of <span className="font-medium text-white">{totalCount}</span> results
           </p>
           <div className="flex gap-2">
-            <Link href={page > 1 ? buildPageUrl(page - 1) : "#"} className={page <= 1 ? "pointer-events-none opacity-50" : ""}>
+            <Link href={page > 1 ? buildPageUrl(page - 1) : "#"} className={page <= 1 ? "pointer-events-none opacity-50" : ""} scroll={false}>
               <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
             </Link>
             <div className="flex items-center justify-center px-4 font-mono text-sm border-x border-border/50">
               Pg {page} / {totalPages}
             </div>
-            <Link href={page < totalPages ? buildPageUrl(page + 1) : "#"} className={page >= totalPages ? "pointer-events-none opacity-50" : ""}>
+            <Link href={page < totalPages ? buildPageUrl(page + 1) : "#"} className={page >= totalPages ? "pointer-events-none opacity-50" : ""} scroll={false}>
               <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
             </Link>
           </div>

@@ -124,5 +124,36 @@ export async function updateSystemSettings(formData: FormData) {
     }
   })
 
+  // Retroactively patch SLA dates for unresolved incidents and vulnerabilities
+  try {
+    await db.$executeRawUnsafe(`
+      UPDATE "Incident"
+      SET "targetSlaDate" = "createdAt" + (
+        CASE "severity"::text
+          WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
+          WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
+          WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
+          WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
+        END
+      )
+      WHERE "status"::text IN ('NEW', 'IN_PROGRESS', 'PENDING_INFO')
+    `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours)
+    
+    await db.$executeRawUnsafe(`
+      UPDATE "Vulnerability"
+      SET "targetSlaDate" = "createdAt" + (
+        CASE "severity"::text
+          WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
+          WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
+          WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
+          WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
+        END
+      )
+      WHERE "status"::text IN ('OPEN', 'MITIGATED')
+    `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours)
+  } catch (e) {
+    console.error("Failed to retroactively update SLA dates:", e)
+  }
+
   revalidatePath("/system")
 }

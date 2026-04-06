@@ -26,46 +26,50 @@ export default async function IncidentDetailPage({
   searchParams
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ edit?: string }>
+  searchParams: Promise<{ edit?: string, commentPage?: string, filePage?: string }>
 }) {
   const { id } = await params;
-  const { edit } = await searchParams;
-  const isEditing = edit === "true";
+  const resolvedSearchParams = await searchParams;
+  const isEditing = resolvedSearchParams.edit === "true";
 
   const session = await auth()
   if (!session?.user) return null
 
-  const incident = await db.incident.findUnique({
-    where: { id },
-    include: {
-      reporter: true,
-      assignees: true,
-      asset: true,
-      comments: {
-        include: { author: true },
-        orderBy: { createdAt: 'desc' },
-        take: 100
-      },
-      attachments: { take: 100 }
-    }
-  })
+  let commentPage = parseInt(resolvedSearchParams.commentPage as string) || 1;
+  if (Number.isNaN(commentPage) || commentPage < 1) commentPage = 1;
 
-  // Fetch loosely coupled AuditLogs
-  const auditLogs = await db.auditLog.findMany({
-    where: { entityType: 'Incident', entityId: id },
-    include: { user: true },
-    orderBy: { createdAt: 'desc' }
-  })
+  let filePage = parseInt(resolvedSearchParams.filePage as string) || 1;
+  if (Number.isNaN(filePage) || filePage < 1) filePage = 1;
+
+  const TAKE_COMMENT = 10;
+  const TAKE_FILE = 8;
+
+  const [incident, comments, totalComments, attachments, totalAttachments, auditLogs] = await Promise.all([
+    db.incident.findUnique({
+      where: { id },
+      include: {
+        reporter: true,
+        assignees: true,
+        asset: true
+      }
+    }),
+    db.comment.findMany({ where: { incidentId: id }, include: { author: true }, orderBy: { createdAt: 'desc' }, take: TAKE_COMMENT, skip: (commentPage - 1) * TAKE_COMMENT }),
+    db.comment.count({ where: { incidentId: id } }),
+    db.attachment.findMany({ where: { incidentId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
+    db.attachment.count({ where: { incidentId: id } }),
+    db.auditLog.findMany({ where: { entityType: 'Incident', entityId: id }, include: { user: true }, orderBy: { createdAt: 'desc' }, take: 50 })
+  ])
 
   const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
   
-  if (!incident || (!hasPrivilege && incident.reporterId !== session.user.id)) {
+  const isAuthorized = hasPrivilege || incident?.reporterId === session.user.id || incident?.assignees.some(a => a.id === session.user.id)
+  if (!incident || !isAuthorized) {
     notFound()
   }
 
   // Construct Unified Timeline
   const timeline: any[] = [
-    ...incident.comments.map(c => ({ ...c, type: 'COMMENT' })),
+    ...comments.map(c => ({ ...c, type: 'COMMENT' })),
     ...auditLogs.map(l => ({ ...l, type: 'AUDIT', author: l.user, content: `${l.action} -> ${l.changes}` }))
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
@@ -276,7 +280,7 @@ export default async function IncidentDetailPage({
       const path = await import('path')
       const safeBase = path.resolve(process.cwd(), 'private', 'uploads')
       
-      for (const att of incident!.attachments || []) {
+      for (const att of attachments || []) {
         if (att.fileUrl) {
           // Extract just the filename, ignoring any injected paths
           const filename = path.basename(att.fileUrl)
@@ -464,7 +468,8 @@ export default async function IncidentDetailPage({
                 
                 // Strict BOLA Enforcement within the action scope
                 const hasPrivilege = sessionUrl.user.roles.includes('ADMIN') || sessionUrl.user.roles.includes('SECOPS');
-                if (!hasPrivilege && incident!.reporterId !== sessionUrl.user.id) {
+                const isAuthorized = hasPrivilege || incident!.reporterId === sessionUrl.user.id || incident!.assignees.some(a => a.id === sessionUrl.user.id);
+                if (!isAuthorized) {
                    throw new Error("Forbidden: Strict BOLA isolation. You cannot comment on an incident you do not own.");
                 }
 
@@ -501,6 +506,26 @@ export default async function IncidentDetailPage({
                   </div>
                 ))}
               </div>
+              
+              {totalComments > TAKE_COMMENT && (
+                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
+                    {commentPage <= 1 ? (
+                       <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">← Prev Comments</Button>
+                    ) : (
+                       <Link href={`/incidents/${incident.id}?commentPage=${commentPage - 1}&filePage=${filePage}`} scroll={false}>
+                          <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">← Prev Comments</Button>
+                       </Link>
+                    )}
+                    <span className="text-[10px] font-mono text-muted-foreground">Pg {commentPage}/{Math.ceil(totalComments / TAKE_COMMENT)}</span>
+                    {commentPage >= Math.ceil(totalComments / TAKE_COMMENT) ? (
+                       <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">Next Comments →</Button>
+                    ) : (
+                       <Link href={`/incidents/${incident.id}?commentPage=${commentPage + 1}&filePage=${filePage}`} scroll={false}>
+                          <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">Next Comments →</Button>
+                       </Link>
+                    )}
+                 </div>
+              )}
             </div>
           </div>
         </div>
@@ -560,9 +585,9 @@ export default async function IncidentDetailPage({
                 </Button>
               </form>
 
-              {incident.attachments.length > 0 ? (
-                <div className="flex flex-col gap-2 pt-1 max-h-[220px] overflow-y-auto pr-1">
-                  {incident.attachments.map(att => (
+              {attachments.length > 0 ? (
+                <div className="flex flex-col gap-2 pt-1">
+                  {attachments.map(att => (
                     <div key={att.id} className="relative flex items-center p-2 rounded-lg border border-indigo-500/10 bg-indigo-500/5 hover:border-indigo-400/40 transition-colors group">
                       <a href={att.fileUrl} target="_blank" rel="noreferrer" className="flex items-center flex-1 min-w-0">
                         <Paperclip className="w-3 h-3 mr-2 text-indigo-400/70 group-hover:text-indigo-400 flex-shrink-0" />
@@ -574,7 +599,7 @@ export default async function IncidentDetailPage({
                       <form action={async () => {
                         "use server"
                         await deleteAttachment(att.id)
-                        redirect(`/incidents/${incident!.id}`)
+                        redirect(`/incidents/${incident!.id}?commentPage=${commentPage}&filePage=${filePage}`)
                       }}>
                         <button type="submit" className="p-1.5 rounded-md hover:bg-red-500/20 text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all absolute right-2 top-1/2 -translate-y-1/2" title="Delete evidence">
                            <Trash2 className="w-3.5 h-3.5" />
@@ -582,6 +607,26 @@ export default async function IncidentDetailPage({
                       </form>
                     </div>
                   ))}
+                  
+                  {totalAttachments > TAKE_FILE && (
+                     <div className="flex justify-between items-center pt-3 mt-1 border-t border-white/5">
+                        {filePage <= 1 ? (
+                           <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">← Prev</Button>
+                        ) : (
+                           <Link href={`/incidents/${incident.id}?commentPage=${commentPage}&filePage=${filePage - 1}`} scroll={false}>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">← Prev</Button>
+                           </Link>
+                        )}
+                        <span className="text-[10px] font-mono text-muted-foreground">Pg {filePage}/{Math.ceil(totalAttachments / TAKE_FILE)}</span>
+                        {filePage >= Math.ceil(totalAttachments / TAKE_FILE) ? (
+                           <Button variant="ghost" size="sm" disabled className="h-6 text-[10px] disabled:opacity-30 p-0 hover:bg-transparent">Next →</Button>
+                        ) : (
+                           <Link href={`/incidents/${incident.id}?commentPage=${commentPage}&filePage=${filePage + 1}`} scroll={false}>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] p-0 hover:bg-transparent text-primary">Next →</Button>
+                           </Link>
+                        )}
+                     </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-center text-[10px] text-muted-foreground/50 py-2 italic font-mono uppercase tracking-widest">No evidence uploaded</p>

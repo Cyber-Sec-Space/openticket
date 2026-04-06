@@ -71,6 +71,7 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             tickLine={false} 
             axisLine={false} 
             tick={{ fontSize: 11, fontWeight: 700, fill: '#a1a1aa', letterSpacing: '0.5px' }}
+            minTickGap={30}
             dy={10}
           />
           <YAxis 
@@ -131,7 +132,7 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             dataKey="incResolveRate" 
             stroke="#10b981" 
             strokeWidth={2}
-            dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
+            dot={false}
             activeDot={{ r: 5, fill: '#fff' }}
             animationDuration={2000}
           />
@@ -142,7 +143,7 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             dataKey="vulnResolveRate" 
             stroke="#f59e0b" 
             strokeWidth={2}
-            dot={{ r: 3, fill: '#f59e0b', strokeWidth: 0 }}
+            dot={false}
             activeDot={{ r: 5, fill: '#fff' }}
             animationDuration={2000}
           />
@@ -154,7 +155,7 @@ export function TrendChart({ data }: { data: TrendData[] }) {
             stroke="#ec4899" 
             strokeWidth={3}
             strokeDasharray="5 5"
-            dot={{ r: 4, fill: '#ec4899', strokeWidth: 0 }}
+            dot={false}
             activeDot={{ r: 6, fill: '#fff', stroke: '#ec4899', strokeWidth: 2 }}
             animationDuration={2000}
           />

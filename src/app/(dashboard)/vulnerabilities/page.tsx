@@ -153,14 +153,14 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border mb-8 shadow-2xl">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-               <TableHead className="font-semibold text-primary pl-6 w-[350px]">Threat Signature (CVE)</TableHead>
-               <TableHead className="font-semibold text-primary text-center">Base Score</TableHead>
-               <TableHead className="font-semibold text-primary text-center">Threat Level</TableHead>
-               <TableHead className="font-semibold text-primary text-center">Mitigation Scope</TableHead>
-               <TableHead className="font-semibold text-primary text-right pr-6">Remediation Status</TableHead>
+               <TableHead className="font-semibold text-primary pl-6 w-[35%]">Threat Signature (CVE)</TableHead>
+               <TableHead className="font-semibold text-primary text-center w-[15%]">Base Score</TableHead>
+               <TableHead className="font-semibold text-primary text-center w-[15%]">Threat Level</TableHead>
+               <TableHead className="font-semibold text-primary text-center w-[20%]">Mitigation Scope</TableHead>
+               <TableHead className="font-semibold text-primary text-right pr-6 w-[15%]">Remediation Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -232,13 +232,13 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
             Showing <span className="font-medium text-white">{vulnerabilities.length > 0 ? (page - 1) * TAKE + 1 : 0}</span> to <span className="font-medium text-white">{Math.min(page * TAKE, totalCount)}</span> of <span className="font-medium text-white">{totalCount}</span> results
           </p>
           <div className="flex gap-2">
-            <Link href={page > 1 ? buildPageUrl(page - 1) : "#"} className={page <= 1 ? "pointer-events-none opacity-50" : ""}>
+            <Link href={page > 1 ? buildPageUrl(page - 1) : "#"} className={page <= 1 ? "pointer-events-none opacity-50" : ""} scroll={false}>
               <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10"><ChevronLeft className="w-4 h-4 mr-1" /> Prev</Button>
             </Link>
             <div className="flex items-center justify-center px-4 font-mono text-sm border-x border-border/50">
               Pg {page} / {totalPages}
             </div>
-            <Link href={page < totalPages ? buildPageUrl(page + 1) : "#"} className={page >= totalPages ? "pointer-events-none opacity-50" : ""}>
+            <Link href={page < totalPages ? buildPageUrl(page + 1) : "#"} className={page >= totalPages ? "pointer-events-none opacity-50" : ""} scroll={false}>
               <Button variant="outline" size="sm" className="bg-black/30 border-white/10 hover:bg-white/10">Next <ChevronRight className="w-4 h-4 ml-1" /></Button>
             </Link>
           </div>

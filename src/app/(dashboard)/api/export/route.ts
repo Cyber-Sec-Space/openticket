@@ -25,9 +25,12 @@ export async function GET(req: Request) {
       whereClause.status = statusFilter
     }
     
-    // BOLA Enforcement: Restrict non-privileged members to their owned tickets
+    // BOLA Enforcement: Restrict non-privileged members to their owned tickets AND assigned tickets
     if (!hasPrivilege) {
-       whereClause.reporterId = session.user.id
+       whereClause.OR = [
+         { reporterId: session.user.id },
+         { assignees: { some: { id: session.user.id } } }
+       ]
     }
     
     // Resource Constraint Enforcement (OOM Prevention) w/ Safe Paging
