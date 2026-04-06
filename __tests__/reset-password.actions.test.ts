@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 
 jest.mock("../src/lib/db", () => ({
   db: {
-    passwordResetToken: { findUnique: jest.fn(), delete: jest.fn() },
+    passwordResetToken: { findUnique: jest.fn(), delete: jest.fn(), deleteMany: jest.fn() },
     user: { findUnique: jest.fn(), update: jest.fn() },
     auditLog: { create: jest.fn() },
     $transaction: jest.fn()
