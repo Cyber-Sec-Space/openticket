@@ -140,7 +140,7 @@ graph LR
 
 ```mermaid
 graph TD
-    SystemEvent[嚴峻資安系統事件] --> NotificationRouter{用戶設定 (UserPreference)}
+    SystemEvent[嚴峻資安系統事件] --> NotificationRouter{"用戶設定 (UserPreference)"}
     NotificationRouter -- "Enable Web Notifications" --> SSEQueue[伺服器發送事件 (SSE)]
     NotificationRouter -- "Enable Email" --> SMTP[SMTP Mailer Service]
     SSEQueue --> DesktopAlerts[作業系統桌面底層推播]

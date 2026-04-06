@@ -139,7 +139,7 @@ Administrators can broadcast critical telemetry across multiple communication la
 
 ```mermaid
 graph TD
-    SystemEvent[Significant SecOps Event] --> NotificationRouter{Check UserPreferences}
+    SystemEvent[Significant SecOps Event] --> NotificationRouter{"Check UserPreferences"}
     NotificationRouter -- "Enable Web Notifications" --> SSEQueue[Server-Sent Events Stream]
     NotificationRouter -- "Enable Email" --> SMTP[SMTP Originator Service]
     SSEQueue --> DesktopAlerts[OS-Native Desktop Alerts]
