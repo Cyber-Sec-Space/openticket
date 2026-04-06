@@ -10,7 +10,8 @@ import { VulnSeverityChart } from "@/components/vuln-severity-chart"
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string; filter?: string }> }) {
   const { page, filter } = await (searchParams || {});
-  const currentPage = parseInt(page || "1", 10);
+  let currentPage = parseInt(page || "1", 10);
+  if (Number.isNaN(currentPage) || currentPage < 1) currentPage = 1;
   const currentFilter = filter || "all";
   const TAKE = 5;
   const skip = (currentPage - 1) * TAKE;
