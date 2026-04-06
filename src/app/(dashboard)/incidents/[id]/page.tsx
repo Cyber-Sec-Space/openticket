@@ -281,8 +281,12 @@ export default async function IncidentDetailPage({
           const filename = path.basename(att.fileUrl)
           const targetPath = path.resolve(safeBase, filename)
           
-          if (targetPath.startsWith(safeBase) && fs.existsSync(targetPath)) {
-             fs.unlinkSync(targetPath)
+          if (targetPath.startsWith(safeBase)) {
+             try {
+                await fs.promises.unlink(targetPath)
+             } catch (e: any) {
+                if (e.code !== 'ENOENT') console.error('Failed to unlink attachment:', e)
+             }
           }
         }
       }

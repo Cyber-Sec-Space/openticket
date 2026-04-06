@@ -31,13 +31,14 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
   await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
 
   const existingUser = await db.user.findUnique({ where: { email } })
+  
+  // Enforce constant-time execution to prevent timing-based Account Enumeration
+  const passwordHash = await bcrypt.hash(password, 10)
+
   if (existingUser) {
-    // SECURITY: To prevent Account Enumeration, we pretend it succeeded,
-    // or return a generic error. Standard best practice: Return generic error.
+    // SECURITY: We pretend it failed normally AFTER spending the bcrypt CPU cycles
     return "REGISTRATION_FAILED"
   }
-
-  const passwordHash = await bcrypt.hash(password, 10)
   
   try {
     await db.user.create({

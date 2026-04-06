@@ -69,7 +69,11 @@ export async function deleteVulnerabilityAction(formData: FormData) {
         if (att.fileUrl) {
           const filename = path.basename(att.fileUrl)
           const filepath = path.join(process.cwd(), 'private', 'uploads', filename)
-          if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
+          try {
+            await fs.promises.unlink(filepath)
+          } catch (e: any) {
+            if (e.code !== 'ENOENT') console.error('Failed to unlink attachment:', e)
+          }
         }
       }
     }
