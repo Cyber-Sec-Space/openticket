@@ -54,11 +54,11 @@ export default async function IncidentDetailPage({
         asset: true
       }
     }),
-    db.comment.findMany({ where: { incidentId: id }, include: { author: true }, orderBy: { createdAt: 'desc' }, take: TAKE_COMMENT, skip: (commentPage - 1) * TAKE_COMMENT }),
+    db.comment.findMany({ where: { incidentId: id }, include: { author: { include: { customRoles: true } } }, orderBy: { createdAt: 'desc' }, take: TAKE_COMMENT, skip: (commentPage - 1) * TAKE_COMMENT }),
     db.comment.count({ where: { incidentId: id } }),
     db.attachment.findMany({ where: { incidentId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
     db.attachment.count({ where: { incidentId: id } }),
-    db.auditLog.findMany({ where: { entityType: 'Incident', entityId: id }, include: { user: true }, orderBy: { createdAt: 'desc' }, take: 50 })
+    db.auditLog.findMany({ where: { entityType: 'Incident', entityId: id }, include: { user: { include: { customRoles: true } } }, orderBy: { createdAt: 'desc' }, take: 50 })
   ])
 
   const hasPrivilege = hasPermission(session as any, 'MANAGE_INCIDENT_STATUS') || hasPermission(session as any, 'ASSIGN_INCIDENTS')
@@ -74,12 +74,12 @@ export default async function IncidentDetailPage({
     ...auditLogs.map(l => ({ ...l, type: 'AUDIT', author: l.user, content: `${l.action} -> ${l.changes}` }))
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
-  // Only SECOPS/ADMIN can assign tickets.
+  // Only authorized operators can assign tickets.
   let eligibleAssignees: any[] = []
   if (hasPrivilege) {
     eligibleAssignees = await db.user.findMany({
       where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_INCIDENT_STATUS', 'ASSIGN_INCIDENTS'] } } } },
-      select: { id: true, name: true }
+      select: { id: true, name: true, customRoles: true }
     })
   }
 
@@ -496,7 +496,7 @@ export default async function IncidentDetailPage({
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs text-muted-foreground mb-3">
                       <span className={`font-semibold ${item.type === 'AUDIT' ? 'text-primary' : 'text-white/90'}`}>
                         {item.author?.name || 'System'}
-                        <span className="opacity-50 text-[10px] font-normal ml-1">({item.type === 'AUDIT' ? 'SYSTEM EVENT' : item.author?.role})</span>
+                        <span className="opacity-50 text-[10px] font-normal ml-1">({item.type === 'AUDIT' ? 'SYSTEM EVENT' : (item.author?.customRoles?.length ? item.author.customRoles.map((r:any) => r.name).join(', ') : 'OPERATOR')})</span>
                       </span>
                       <span className="font-mono text-[10px] opacity-70">{item.createdAt.toLocaleString()}</span>
                     </div>
