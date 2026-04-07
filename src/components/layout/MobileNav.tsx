@@ -7,11 +7,11 @@ import { signOut } from "next-auth/react"
 import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, Menu, X, LayoutDashboard, ToyBrick } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function MobileNav({ userRoles }: { userRoles?: string[] }) {
+export function MobileNav({ userPermissions }: { userPermissions?: string[] }) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
 
-  const hasPrivilege = userRoles?.includes('ADMIN') || userRoles?.includes('SECOPS')
+  const hasPrivilege = userPermissions?.some(p => ['VIEW_ASSETS', 'MANAGE_ASSETS', 'SYSTEM_SETTINGS'].includes(p))
 
   // Close menu when route changes
   useEffect(() => {
@@ -41,7 +41,7 @@ export function MobileNav({ userRoles }: { userRoles?: string[] }) {
     navItems.push({ name: "Audit Logs", href: "/audit", icon: FileText })
   }
   
-  if (userRoles?.includes('ADMIN')) {
+  if (userPermissions?.includes('SYSTEM_SETTINGS')) {
     navItems.push({ name: "Users", href: "/users", icon: Users })
     navItems.push({ name: "System Config", href: "/system", icon: Sliders })
     navItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })

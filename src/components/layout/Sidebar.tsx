@@ -6,10 +6,10 @@ import { signOut } from "next-auth/react"
 import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, LayoutDashboard, ToyBrick } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function Sidebar({ userRoles }: { userRoles?: string[] }) {
+export function Sidebar({ userPermissions }: { userPermissions?: string[] }) {
   const pathname = usePathname()
   
-  const hasPrivilege = userRoles?.includes('ADMIN') || userRoles?.includes('SECOPS')
+  const hasPrivilege = userPermissions?.some(p => ['VIEW_ASSETS', 'MANAGE_ASSETS', 'SYSTEM_SETTINGS'].includes(p))
 
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -23,7 +23,7 @@ export function Sidebar({ userRoles }: { userRoles?: string[] }) {
     navItems.push({ name: "Audit Logs", href: "/audit", icon: FileText })
   }
   
-  if (userRoles?.includes('ADMIN')) {
+  if (userPermissions?.includes('SYSTEM_SETTINGS')) {
     navItems.push({ name: "Users", href: "/users", icon: Users })
     navItems.push({ name: "System Config", href: "/system", icon: Sliders })
     navItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })

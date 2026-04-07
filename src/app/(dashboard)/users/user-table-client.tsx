@@ -140,18 +140,21 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
                   <TableCell className="pl-6" onClick={(e) => e.stopPropagation()}>
                     <Checkbox 
                        checked={isSelected}
-                       disabled={isSelf}
+                       disabled={isSelf || user.isBot}
                        onClick={(e) => toggleOne(user.id, e as any)}
                        className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
                     />
                   </TableCell>
                   <TableCell className="font-medium text-foreground py-4">
                     <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full bg-gradient-to-br flex items-center justify-center border border-white/5 ${user.isDisabled ? 'from-red-500/20 to-red-900/40 text-red-500' : 'from-emerald-400/20 to-primary/20 text-emerald-400'}`}>
-                         <span className="text-xs font-mono font-bold">{user.name?.charAt(0).toUpperCase() || "U"}</span>
+                      <div className={`h-8 w-8 rounded-full bg-gradient-to-br flex items-center justify-center border border-white/5 ${user.isDisabled ? 'from-red-500/20 to-red-900/40 text-red-500' : user.isBot ? 'from-blue-500/20 to-purple-500/20 text-purple-400' : 'from-emerald-400/20 to-primary/20 text-emerald-400'}`}>
+                         <span className="text-xs font-mono font-bold">{user.isBot ? "BOT" : (user.name?.charAt(0).toUpperCase() || "U")}</span>
                       </div>
                       <div>
-                        <span className="block text-sm leading-none mb-1">{user.name || "Default Originator"}</span>
+                        <span className="block text-sm leading-none mb-1 flex items-center gap-2">
+                           {user.isBot && <Badge variant="outline" className="text-[9px] h-4 bg-primary/10 border-primary/30 text-primary px-1">BOT</Badge>}
+                           {user.name || "Default Originator"}
+                        </span>
                         <span className="text-[10px] font-mono text-muted-foreground opacity-50 block leading-none">ID-{user.id.substring(0,8).toUpperCase()}</span>
                       </div>
                     </div>
@@ -182,9 +185,11 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
                   </TableCell>
 
                   <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
-                     {/* Admins shouldn't casually alter themselves through this module to prevent locking out of root keys */}
+                     {/* Admins shouldn't casually alter themselves or System bots through this module */}
                      {isSelf ? (
-                       <span className="text-[10px] text-primary/50 font-mono tracking-widest">[ SELF MODULE ]</span>
+                       <span className="text-[10px] text-primary/50 font-mono tracking-widest">[ SELF ]</span>
+                     ) : user.isBot ? (
+                       <span className="text-[10px] text-purple-400/50 font-mono tracking-widest">[ SYSTEM BOT ]</span>
                      ) : (
                      <div className="flex justify-end items-center gap-1">
                        <Button 

@@ -24,10 +24,10 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-background text-foreground">
       <BrowserNotifier isEnabled={userConfig?.browserNotificationsEnabled || false} />
       <div className="block md:hidden">
-        <MobileNav userRoles={session?.user?.roles} />
+        <MobileNav userPermissions={session?.user?.permissions as string[]} />
       </div>
       <div className="flex w-full min-h-screen">
-        <Sidebar userRoles={session?.user?.roles} />
+        <Sidebar userPermissions={session?.user?.permissions as string[]} />
         <main className="flex-1 w-full min-w-0 md:pl-64 flex flex-col relative animate-fade-in-up">
           {children}
         </main>
