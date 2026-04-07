@@ -5,14 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { db } from "@/lib/db"
 import { createUserAction } from "./actions"
+import { hasPermission } from "@/lib/auth-utils"
 
 export default async function NewUserPage() {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
     return notFound()
   }
+
+  const allCustomRoles = await db.customRole.findMany({ orderBy: { name: 'asc' } })
 
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-8 animate-fade-in-up">
@@ -74,22 +78,19 @@ export default async function NewUserPage() {
           <div className="space-y-3">
             <Label className="uppercase text-xs tracking-widest text-muted-foreground">Privilege Tier Selection</Label>
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
-                <Checkbox id="role-reporter" name="roles" value="REPORTER" defaultChecked />
-                <Label htmlFor="role-reporter" className="cursor-pointer text-sm">REPORTER</Label>
-              </div>
-              <div className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
-                <Checkbox id="role-secops" name="roles" value="SECOPS" />
-                <Label htmlFor="role-secops" className="cursor-pointer text-sm text-blue-400">SECOPS</Label>
-              </div>
-              <div className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
-                <Checkbox id="role-admin" name="roles" value="ADMIN" />
-                <Label htmlFor="role-admin" className="cursor-pointer text-sm text-primary">ADMIN</Label>
-              </div>
-              <div className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
-                <Checkbox id="role-api" name="roles" value="API_ACCESS" />
-                <Label htmlFor="role-api" className="cursor-pointer text-sm text-purple-400">API_ACCESS</Label>
-              </div>
+              {allCustomRoles.map(role => (
+                <div key={role.id} className="flex items-center space-x-3 bg-black/20 p-4 rounded-md border border-white/10">
+                  <Checkbox 
+                    id={`role-${role.id}`} 
+                    name="customRoleIds" 
+                    value={role.id} 
+                    defaultChecked={role.name === 'Standard Reporter'} 
+                  />
+                  <Label htmlFor={`role-${role.id}`} className="cursor-pointer text-sm">
+                    {role.name} {role.isSystem ? ' (Sys)' : ''}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -2,7 +2,7 @@ import NextAuth, { type DefaultSession } from "next-auth"
 
 export type ExtendedUser = DefaultSession["user"] & {
   id: string
-  roles: Array<"ADMIN" | "SECOPS" | "REPORTER" | "API_ACCESS">
+  permissions: string[]
 }
 
 declare module "next-auth" {

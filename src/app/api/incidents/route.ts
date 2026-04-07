@@ -1,6 +1,7 @@
 import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function GET(req: Request) {
   const session = await apiAuth()
@@ -9,7 +10,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const filterParams: any = {}
   
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
   if (!hasPrivilege) {
     filterParams.reporterId = session.user.id
   }
@@ -43,6 +44,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+  if (!hasPermission(session as any, 'CREATE_INCIDENTS')) return new NextResponse("Forbidden", { status: 403 })
 
   try {
     const body = await req.json()
@@ -57,7 +59,7 @@ export async function POST(req: Request) {
       processedTags = tags.map(t => String(t).trim()).filter(t => t !== '').map(t => t.startsWith('#') ? t : `#${t}`)
     }
 
-    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    const hasPrivilege = hasPermission(session as any, 'MANAGE_INCIDENT_STATUS')
     
     // Prevent Privilege Escalation
     const finalAssetId = hasPrivilege ? (assetId || null) : null;

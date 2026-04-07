@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
+import { hasPermission } from "@/lib/auth-utils"
 import { ShieldCheck, UserCog, Mail } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,7 @@ export default async function SettingsPage() {
   const session = await auth()
   if (!session?.user?.id) return null
 
-  const user = await db.user.findUnique({ where: { id: session.user.id } })
+  const user = await db.user.findUnique({ where: { id: session.user.id }, include: { customRoles: { select: { name: true } } } })
   if (!user) {
     return (
       <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in-up">
@@ -37,7 +38,7 @@ export default async function SettingsPage() {
           <p className="text-muted-foreground mt-2">Manage your personal identification matrix mapping across the perimeter.</p>
         </div>
         <div className="flex items-center gap-3">
-          {(user.roles.includes('API_ACCESS') || user.roles.includes('ADMIN')) && (
+          {hasPermission(session as any, 'API_ISSUE_TOKEN') && (
              <Link href="/settings/tokens">
                 <Button className="bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)]">
                   API Tokens
@@ -79,8 +80,8 @@ export default async function SettingsPage() {
             <div className="space-y-3">
               <Label className="uppercase text-xs tracking-widest text-muted-foreground">Operational Privilege Tier</Label>
               <div className="p-3 bg-black/20 rounded-lg border border-white/5 font-mono text-xs flex justify-between items-center text-muted-foreground">
-                <span>{user.roles.join(', ')}</span>
-                {user.roles.includes('ADMIN') && <ShieldCheck className="w-4 h-4 text-primary" />}
+                <span>{user.customRoles.map(r => r.name).join(', ')}</span>
+                {hasPermission(session as any, 'SYSTEM_SETTINGS') && <ShieldCheck className="w-4 h-4 text-primary" />}
               </div>
             </div>
 

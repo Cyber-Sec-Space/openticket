@@ -11,11 +11,29 @@ datasource db {
 // NextAuth / Auth.js (SSO reserved schema) & RBAC
 // -----------------------------------------------------------------------------
 
-enum Role {
-  ADMIN
-  SECOPS
-  REPORTER
-  API_ACCESS
+enum Permission {
+  VIEW_INCIDENTS
+  CREATE_INCIDENTS
+  MANAGE_INCIDENT_STATUS
+  ASSIGN_INCIDENTS
+  DELETE_INCIDENTS
+  VIEW_ASSETS
+  MANAGE_ASSETS
+  VIEW_USERS
+  MANAGE_USERS
+  SYSTEM_SETTINGS
+  API_ISSUE_TOKEN
+}
+
+model CustomRole {
+  id          String       @id @default(cuid())
+  name        String       @unique 
+  description String?
+  isSystem    Boolean      @default(false) 
+  permissions Permission[] 
+
+  users       User[]       @relation("UserCustomRoles")
+  systemRule  SystemSetting[] @relation("DefaultUserRoles")
 }
 
 model Account {
@@ -52,7 +70,7 @@ model User {
   emailVerified      DateTime?
   image              String?
   passwordHash       String? // Added for Credentials provider MVP
-  roles              Role[]    @default([REPORTER])
+  customRoles        CustomRole[] @relation("UserCustomRoles")
   isTwoFactorEnabled Boolean   @default(false)
   twoFactorSecret    String?
   isDisabled         Boolean   @default(false) // Phase 5 Suspension Support
@@ -117,7 +135,7 @@ model SystemSetting {
   id                String  @id @default("global") // Enforce singleton
   allowRegistration Boolean @default(true)
   requireGlobal2FA  Boolean @default(false)
-  defaultUserRoles  Role[]  @default([REPORTER])
+  defaultUserRoles  CustomRole[] @relation("DefaultUserRoles")
 
   webhookUrl     String?
   webhookEnabled Boolean @default(false)

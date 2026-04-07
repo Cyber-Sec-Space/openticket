@@ -1,14 +1,15 @@
 import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function GET(req: Request) {
   const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_ASSETS')
   if (!hasPrivilege) {
-     return new NextResponse("Forbidden: Access to systemic assets is strictly restricted to SECOPS & ADMIN roles.", { status: 403 })
+     return new NextResponse("Forbidden: Access to systemic assets is strictly restricted.", { status: 403 })
   }
 
   const { searchParams } = new URL(req.url)
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
   const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
   
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'MANAGE_ASSETS')
   if (!hasPrivilege) {
     return new NextResponse("Forbidden", { status: 403 })
   }

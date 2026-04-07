@@ -8,6 +8,7 @@ import { IncidentRadarChart } from "@/components/incident-radar-chart"
 import { VulnStatusChart } from "@/components/vuln-status-chart"
 import { VulnSeverityChart } from "@/components/vuln-severity-chart"
 import { getDashboardTrendData } from "@/lib/metrics-service"
+import { hasPermission } from "@/lib/auth-utils"
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string; filter?: string; range?: string }> }) {
   const { page, filter, range } = await (searchParams || {});
@@ -22,7 +23,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   if (!session?.user) return null
 
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
 
   // Metric computations for the dashboard
   const filterParams: any = {}
@@ -246,7 +247,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">System Status</h1>
           <p className="text-muted-foreground mt-2">
-            Welcome, <span className="text-primary font-medium">{session.user.name || session.user.email}</span> [{session.user.roles.join(', ')}]
+            Welcome, <span className="text-primary font-medium">{session.user.name || session.user.email}</span> [{session.user.permissions?.join(', ')}]
           </p>
         </div>
         <div className="flex gap-4">

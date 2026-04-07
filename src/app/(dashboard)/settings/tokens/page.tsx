@@ -5,12 +5,13 @@ import { KeyRound, ShieldAlert } from "lucide-react"
 import { TokensClient } from "./tokens-client"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { hasPermission } from "@/lib/auth-utils"
 
 export default async function ApiTokensPage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
   
-  if (!session.user.roles.includes('API_ACCESS') && !session.user.roles.includes('ADMIN')) {
+  if (!hasPermission(session as any, 'API_ISSUE_TOKEN')) {
     return (
       <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in-up">
         <div className="glass-card rounded-xl border border-destructive/50 p-8 shadow-2xl flex flex-col items-center justify-center text-center space-y-4">

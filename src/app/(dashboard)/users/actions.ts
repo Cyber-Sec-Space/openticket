@@ -3,29 +3,29 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { Role } from "@prisma/client"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function updateUserRole(formData: FormData) {
   const session = await auth()
   
-  // Security boundary: Only ADMIN can modify RBAC.
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  // Security boundary: Only MANAGE_USERS can modify RBAC.
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
   const targetUserId = formData.get("userId") as string
-  const newRoles = formData.getAll("roles") as Role[]
+  const customRoleIds = formData.getAll("customRoleIds") as string[]
 
-  if (!targetUserId || !newRoles || newRoles.length === 0) return
+  if (!targetUserId || !customRoleIds || customRoleIds.length === 0) return
 
   // Prevent admin from demoting themselves by accident, optional but safe.
-  if (targetUserId === session.user.id && !newRoles.includes('ADMIN')) {
-     throw new Error("Operation blocked: Administrators cannot revoke their own root privileges directly.");
+  if (targetUserId === session.user.id) {
+     throw new Error("Operation blocked: Administrators cannot modify their own privileges directly.");
   }
 
   const updatedUser = await db.user.update({
     where: { id: targetUserId },
-    data: { roles: newRoles }
+    data: { customRoles: { set: customRoleIds.map(id => ({ id })) } }
   })
 
   // Log to global audit
@@ -35,7 +35,7 @@ export async function updateUserRole(formData: FormData) {
       entityType: "User",
       entityId: targetUserId,
       userId: session.user.id,
-      changes: `Roles of ${updatedUser.name || updatedUser.email} adjusted to [${newRoles.join(', ')}]`
+      changes: `Roles of ${updatedUser.name || updatedUser.email} completely overwritten`
     }
   })
 
@@ -45,7 +45,7 @@ export async function updateUserRole(formData: FormData) {
 export async function deleteUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -81,7 +81,7 @@ export async function deleteUserAction(formData: FormData) {
 export async function toggleUserStatusAction(userId: string, isDisabled: boolean) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -116,7 +116,7 @@ export async function toggleUserStatusAction(userId: string, isDisabled: boolean
 export async function bulkDeleteUsersAction(userIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -141,22 +141,27 @@ export async function bulkDeleteUsersAction(userIds: string[]) {
   revalidatePath("/users")
 }
 
-export async function bulkUpdateRolesAction(userIds: string[], roles: Role[]) {
+export async function bulkUpdateRolesAction(userIds: string[], roleIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
-  // Prevent admin from demoting themselves via bulk
-  const finalUserIds = roles.includes('ADMIN') ? userIds : userIds.filter(id => id !== session.user.id)
+  // Prevent self modification
+  const finalUserIds = userIds.filter(id => id !== session.user.id)
   
   if (finalUserIds.length === 0) return
 
-  await db.user.updateMany({
-    where: { id: { in: finalUserIds } },
-    data: { roles }
-  })
+  // Prisma updateMany doesn't support relations. We must loop and execute sequentially or inside a transaction
+  await db.$transaction(
+    finalUserIds.map(id => 
+      db.user.update({
+        where: { id },
+        data: { customRoles: { set: roleIds.map(rId => ({ id: rId })) } }
+      })
+    )
+  )
 
   await db.auditLog.create({
     data: {
@@ -164,7 +169,7 @@ export async function bulkUpdateRolesAction(userIds: string[], roles: Role[]) {
       entityType: "User",
       entityId: "BULK",
       userId: session.user.id,
-      changes: `Bulk assigned roles [${roles.join(', ')}] to ${finalUserIds.length} users.`
+      changes: `Bulk assigned roles to ${finalUserIds.length} users.`
     }
   })
 

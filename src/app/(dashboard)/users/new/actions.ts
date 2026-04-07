@@ -5,20 +5,20 @@ import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import bcrypt from "bcrypt"
-import { Role } from "@prisma/client"
 import { sendNewRegistrationAlertEmail } from "@/lib/mailer"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function createUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
   const email = formData.get("email") as string
   const name = formData.get("name") as string
   const password = formData.get("password") as string
-  const newRoles = formData.getAll("roles") as Role[]
+  const customRoleIds = formData.getAll("customRoleIds") as string[]
 
   if (!email || !password || !name) {
     throw new Error("Validation structural error: missing foundational identity markers.")
@@ -41,7 +41,7 @@ export async function createUserAction(formData: FormData) {
       email,
       name,
       passwordHash,
-      roles: newRoles.length > 0 ? newRoles : ['REPORTER']
+      customRoles: customRoleIds.length > 0 ? { connect: customRoleIds.map(id => ({ id })) } : undefined
     }
   })
 
@@ -52,14 +52,14 @@ export async function createUserAction(formData: FormData) {
       entityType: "User",
       entityId: newUser.id,
       userId: session.user.id,
-      changes: `Minted new Identity Record [${email}] with roles [${newRoles.join(', ')}]`
+      changes: `Minted new Identity Record [${email}]`
     }
   })
 
   // Phase 10: Email Alert on New Registration
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   if (settings?.smtpTriggerOnNewUser) {
-    const admins = await db.user.findMany({ where: { roles: { hasSome: ['ADMIN'] }, email: { not: null }, id: { not: newUser.id } }, select: { email: true } })
+    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { has: 'SYSTEM_SETTINGS' } } }, email: { not: null }, id: { not: newUser.id } }, select: { email: true } })
     await sendNewRegistrationAlertEmail(email, name, admins.map(a => a.email as string))
   }
 

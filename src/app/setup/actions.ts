@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import bcrypt from "bcrypt"
 import { redirect } from "next/navigation"
+import { Permission } from "@prisma/client"
 
 export async function initializeInstance(formData: FormData) {
   // CRITICAL SECURITY FLIGHT CHECK: Is the database truly clean?
@@ -29,7 +30,17 @@ export async function initializeInstance(formData: FormData) {
         name,
         email,
         passwordHash,
-        roles: ["ADMIN"]
+        customRoles: {
+          connectOrCreate: {
+            where: { name: 'System Administrator' },
+            create: {
+              name: 'System Administrator',
+              description: 'God-mode administrative role',
+              isSystem: true,
+              permissions: Object.values(Permission)
+            }
+          }
+        }
       }
     }),
     db.systemSetting.upsert({

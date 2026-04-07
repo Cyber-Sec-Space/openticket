@@ -7,7 +7,7 @@ import { CredentialsSignin } from "next-auth"
 
 declare module "next-auth" {
   interface User {
-    roles?: string[]
+    permissions?: string[]
   }
 }
 
@@ -88,7 +88,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         const user = await db.user.findUnique({
-          where: { email }
+          where: { email },
+          include: { customRoles: { select: { permissions: true } } }
         })
         
         // In Server Actions/NextAuth backend context, true client IP is often decoupled/proxied. 
@@ -143,11 +144,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
         }
 
+        const perms = Array.from(new Set(user.customRoles.flatMap(r => r.permissions)))
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          roles: user.roles
+          permissions: perms
         }
       },
     }),
@@ -156,15 +159,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.roles = user.roles
+        token.permissions = user.permissions
       }
       // Force database check for real-time ban enforcement and Role syncing
       if (token.id) {
-        const dbUser = await db.user.findUnique({ where: { id: token.id as string }, select: { isDisabled: true, roles: true } })
+        const dbUser = await db.user.findUnique({ where: { id: token.id as string }, select: { isDisabled: true, customRoles: { select: { permissions: true } } } })
         if (!dbUser || dbUser.isDisabled) {
            return null // Returning null instantly destroys the JWT token and logs the user out
         } else {
-           token.roles = dbUser.roles // Sync RBAC
+           token.permissions = Array.from(new Set(dbUser.customRoles.flatMap(r => r.permissions))) // Sync RBAC
         }
       }
       return token
@@ -173,7 +176,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!token) return session;
       if (session.user) {
         session.user.id = token.id as string
-        session.user.roles = token.roles as any
+        session.user.permissions = token.permissions as string[]
       }
       return session
     }

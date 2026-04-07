@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient, Role, IncidentStatus, Severity, IncidentType, AssetStatus, AssetType, VulnStatus } from '@prisma/client'
+import { PrismaClient, Permission, IncidentStatus, Severity, IncidentType, AssetStatus, AssetType, VulnStatus } from '@prisma/client'
 import bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
@@ -22,6 +22,7 @@ async function main() {
   await prisma.vulnerability.deleteMany({})
   await prisma.asset.deleteMany({})
   await prisma.user.deleteMany({})
+  await prisma.customRole.deleteMany({})
 
   console.log("Database wiped perfectly. Injecting enterprise-scale data...")
 
@@ -31,29 +32,61 @@ async function main() {
 
   console.log('Creating diverse user roster...')
 
+  // Create Custom Roles
+  const adminRole = await prisma.customRole.create({
+    data: {
+      name: 'System Administrator',
+      isSystem: true,
+      permissions: Object.values(Permission)
+    }
+  });
+
+  const secopsRole = await prisma.customRole.create({
+    data: {
+      name: 'Security Operations',
+      isSystem: true,
+      permissions: [Permission.VIEW_INCIDENTS, Permission.CREATE_INCIDENTS, Permission.MANAGE_INCIDENT_STATUS, Permission.ASSIGN_INCIDENTS, Permission.VIEW_ASSETS, Permission.MANAGE_ASSETS, Permission.VIEW_USERS, Permission.API_ISSUE_TOKEN]
+    }
+  });
+
+  const reporterRole = await prisma.customRole.create({
+    data: {
+      name: 'Standard Reporter',
+      isSystem: true,
+      permissions: [Permission.VIEW_INCIDENTS, Permission.CREATE_INCIDENTS]
+    }
+  });
+
   const adminUser = await prisma.user.create({
     data: {
-      name: 'System Admin', email: 'admin@openticket.local', passwordHash, roles: [Role.ADMIN, Role.SECOPS]
+      name: 'System Admin', email: 'admin@openticket.local', passwordHash, customRoles: { connect: [{ id: adminRole.id }] }
     }
   });
 
   const secopsLead = await prisma.user.create({
-    data: { name: 'Sarah Connor (Lead)', email: 'sarah@openticket.local', passwordHash, roles: [Role.SECOPS] }
+    data: { name: 'Sarah Connor (Lead)', email: 'sarah@openticket.local', passwordHash, customRoles: { connect: [{ id: secopsRole.id }] } }
   });
 
   const analyst1 = await prisma.user.create({
-    data: { name: 'John Doe (Analyst)', email: 'john@openticket.local', passwordHash, roles: [Role.REPORTER] }
+    data: { name: 'John Doe (Analyst)', email: 'john@openticket.local', passwordHash, customRoles: { connect: [{ id: reporterRole.id }] } }
   });
 
   const analyst2 = await prisma.user.create({
-    data: { name: 'Jane Smith (Analyst)', email: 'jane@openticket.local', passwordHash, roles: [Role.REPORTER] }
+    data: { name: 'Jane Smith (Analyst)', email: 'jane@openticket.local', passwordHash, customRoles: { connect: [{ id: reporterRole.id }] } }
   });
 
   const auditor = await prisma.user.create({
-    data: { name: 'Compliance Auditor', email: 'audit@openticket.local', passwordHash, roles: [Role.REPORTER] }
+    data: { name: 'Compliance Auditor', email: 'audit@openticket.local', passwordHash, customRoles: { connect: [{ id: reporterRole.id }] } }
   });
 
   const allUsers = [adminUser, secopsLead, analyst1, analyst2, auditor];
+
+  // Map settings
+  await prisma.systemSetting.upsert({
+    where: { id: "global" },
+    update: { defaultUserRoles: { connect: [{ id: reporterRole.id }] } },
+    create: { id: "global", defaultUserRoles: { connect: [{ id: reporterRole.id }] } }
+  });
 
   // 2. Create Assets
   console.log('Provisioning global asset infrastructure...')

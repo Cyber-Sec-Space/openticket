@@ -60,5 +60,8 @@
   "overrides": {
     "effect": ">=3.20.0",
     "@auth/core": ">=0.41.1"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

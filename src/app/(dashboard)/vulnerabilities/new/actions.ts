@@ -6,12 +6,13 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { Severity } from "@prisma/client"
 import { sendNewVulnerabilityAlertEmail } from "@/lib/mailer"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function createVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
-    throw new Error("Forbidden: Strict Access Control")
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
+    throw new Error("Unauthorized")
   }
 
   const title = formData.get("title") as string
@@ -55,7 +56,7 @@ export async function createVulnerabilityAction(formData: FormData) {
 
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   if (settings?.smtpTriggerOnNewVulnerability) {
-    const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { email: true } })
+    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_ASSETS', 'SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { email: true } })
     await sendNewVulnerabilityAlertEmail(newVuln.title, newVuln.severity, admins.map(a => a.email as string))
   }
 

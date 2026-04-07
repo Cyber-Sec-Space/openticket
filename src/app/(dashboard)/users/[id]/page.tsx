@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { toggleUserStatusAction, deleteUserAction } from "../actions"
 import { UserPanels } from "./user-panels"
+import { hasPermission } from "@/lib/auth-utils"
 
 export default async function UserDetailPage({
   params,
@@ -19,7 +20,7 @@ export default async function UserDetailPage({
   const resolvedSearchParams = await searchParams
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
     return notFound()
   }
 
@@ -37,7 +38,7 @@ export default async function UserDetailPage({
 
   // Parallel data fetching for high performance
   const [user, auditLogs, totalAuditLogs, attachments, totalAttachments, assignedIncidents, totalIncidents] = await Promise.all([
-    db.user.findUnique({ where: { id } }),
+    db.user.findUnique({ where: { id }, include: { customRoles: { select: { name: true } } } }),
     db.auditLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_AUDIT, skip: (auditPage - 1) * TAKE_AUDIT }),
     db.auditLog.count({ where: { userId: id } }),
     db.attachment.findMany({ where: { uploaderId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
@@ -66,7 +67,7 @@ export default async function UserDetailPage({
             </h1>
             <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono">
               <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {user.email}</span>
-              <span className="flex items-center gap-1 text-primary"><ShieldCheck className="w-3 h-3" /> {user.roles.join(', ')}</span>
+              <span className="flex items-center gap-1 text-primary"><ShieldCheck className="w-3 h-3" /> {user.customRoles?.map(r => r.name).join(', ')}</span>
               {user.isTwoFactorEnabled && <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px]">2FA ENFORCED</Badge>}
             </div>
             <p className="text-[10px] text-muted-foreground font-mono opacity-50 pt-2">UID: {user.id}</p>

@@ -9,6 +9,7 @@ export async function GET(
   const { id } = await params
   const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+  if (!hasPermission(session as any, 'VIEW_INCIDENTS')) return new NextResponse("Forbidden", { status: 403 })
 
   try {
     const incident = await db.incident.findUnique({
@@ -17,14 +18,14 @@ export async function GET(
         reporter: { select: { name: true, email: true } },
         assignees: { select: { name: true, email: true, id: true } },
         asset: { select: { name: true, type: true } },
-        comments: { include: { author: { select: { name: true, roles: true } } } },
+        comments: { include: { author: { select: { name: true, customRoles: { select: { name: true } } } } } },
         attachments: true
       }
     })
 
     if (!incident) return new NextResponse("Not Found", { status: 404 })
 
-    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    const hasPrivilege = hasPermission(session as any, 'MANAGE_USERS')
     
     // Strict isolation enforcement
     const isAuthorized = hasPrivilege || incident.reporterId === session.user.id || incident.assignees.some(a => a.id === session.user.id)
@@ -39,6 +40,8 @@ export async function GET(
   }
 }
 
+import { hasPermission } from "@/lib/auth-utils"
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -48,7 +51,7 @@ export async function PATCH(
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
   try {
-    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    const hasPrivilege = hasPermission(session as any, 'ASSIGN_INCIDENTS') // Can assign or change severity
     const body = await req.json()
     const { status, assigneeId, severity, assetId } = body
 
@@ -58,7 +61,9 @@ export async function PATCH(
     })
     if (!existingIncident) return new NextResponse("Not Found", { status: 404 })
 
-    const isAuthorizedToUpdate = hasPrivilege || existingIncident.assignees.some(a => a.id === session.user.id)
+    // Check if user is either universally privileged, or assigned, or has generic status permission (if they are assigned)
+    const canManageStatus = hasPermission(session as any, 'MANAGE_INCIDENT_STATUS')
+    const isAuthorizedToUpdate = hasPrivilege || (existingIncident.assignees.some(a => a.id === session.user.id) && canManageStatus)
     if (!isAuthorizedToUpdate) {
       return new NextResponse("Forbidden (Only ADMIN/SECOPS or Assigned Engineers can update)", { status: 403 })
     }

@@ -67,7 +67,7 @@ export async function createIncident(prevState: any, formData: FormData) {
     await fireHook("onAssetCompromise", affectedAsset)
 
     if (settings?.smtpTriggerOnAssetCompromise) {
-      const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { id: true, email: true } })
+      const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_ASSETS', 'SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { id: true, email: true } })
       await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
       await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${assetId}`)
     }
@@ -109,7 +109,7 @@ export async function createIncident(prevState: any, formData: FormData) {
   // Phase 9 & 10: Webhook & Native Notifications Dispatch
   if (severity === 'CRITICAL' || severity === 'HIGH') {
     const alertedUsers = await db.user.findMany({
-      where: { roles: { hasSome: ['SECOPS', 'ADMIN'] } },
+      where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_INCIDENT_STATUS', 'SYSTEM_SETTINGS'] } } } },
       select: { id: true, email: true }
     })
     

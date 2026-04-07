@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function GET(req: Request) {
   const session = await auth()
@@ -15,7 +16,7 @@ export async function GET(req: Request) {
   const skip = isNaN(skipParam) ? 0 : skipParam
 
   
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS') // Can view all incidents if true
   
   let csvContent = ""
 
@@ -63,8 +64,9 @@ export async function GET(req: Request) {
     }
   } else if (type === 'vulnerability') {
     // BOLA Enforcement
-    if (!hasPrivilege) {
-       return new NextResponse("Forbidden: Comprehensive Threat intelligence extracts mandate explicit SECOPS or ADMIN clearance.", { status: 403 })
+    const hasVulnPrivilege = hasPermission(session as any, 'VIEW_ASSETS')
+    if (!hasVulnPrivilege) {
+       return new NextResponse("Forbidden: Comprehensive Threat intelligence extracts mandate explicit clearance.", { status: 403 })
     }
 
     const whereClause: any = {}

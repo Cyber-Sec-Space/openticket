@@ -9,6 +9,7 @@ import { dispatchWebhook } from "@/lib/webhook"
 import { sendIncidentAssignmentEmail, sendResolutionEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
 import { dispatchAlert, dispatchMassAlert } from "@/lib/notifier"
 import { fireHook } from "@/lib/plugins/hook-engine"
+import { hasPermission } from "@/lib/auth-utils"
 import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
 import { FileUploadBox } from "@/components/file-upload-box"
 import { Label } from "@/components/ui/label"
@@ -60,7 +61,7 @@ export default async function IncidentDetailPage({
     db.auditLog.findMany({ where: { entityType: 'Incident', entityId: id }, include: { user: true }, orderBy: { createdAt: 'desc' }, take: 50 })
   ])
 
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'MANAGE_INCIDENT_STATUS') || hasPermission(session as any, 'ASSIGN_INCIDENTS')
   
   const isAuthorized = hasPrivilege || incident?.reporterId === session.user.id || incident?.assignees.some(a => a.id === session.user.id)
   if (!incident || !isAuthorized) {
@@ -77,8 +78,8 @@ export default async function IncidentDetailPage({
   let eligibleAssignees: any[] = []
   if (hasPrivilege) {
     eligibleAssignees = await db.user.findMany({
-      where: { roles: { hasSome: ['SECOPS'] } },
-      select: { id: true, name: true, roles: true }
+      where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_INCIDENT_STATUS', 'ASSIGN_INCIDENTS'] } } } },
+      select: { id: true, name: true }
     })
   }
 
@@ -88,7 +89,7 @@ export default async function IncidentDetailPage({
   async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = sessionUrl?.user?.roles?.includes('ADMIN') || sessionUrl?.user?.roles?.includes('SECOPS')
+    const hasPostPrivilege = hasPermission(sessionUrl as any, 'MANAGE_INCIDENT_STATUS') || hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
@@ -195,7 +196,7 @@ export default async function IncidentDetailPage({
 
       await fireHook("onAssetCompromise", affectedAsset)
 
-      const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] } }, select: { id: true, email: true } })
+      const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_ASSETS', 'SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
       await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${resolvedAssetId}`)
 
       if (settings?.smtpTriggerOnAssetCompromise) {
@@ -239,7 +240,7 @@ export default async function IncidentDetailPage({
   async function editDetailsAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = sessionUrl?.user?.roles?.includes('ADMIN') || sessionUrl?.user?.roles?.includes('SECOPS')
+    const hasPostPrivilege = hasPermission(sessionUrl as any, 'MANAGE_INCIDENT_STATUS')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const newTitle = formData.get("title") as string
@@ -272,7 +273,8 @@ export default async function IncidentDetailPage({
   async function deleteIncidentAction() {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || !sessionUrl.user.roles.includes('ADMIN')) throw new Error("Forbidden")
+    const hasPostPrivilege = hasPermission(sessionUrl as any, 'DELETE_INCIDENTS')
+    if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     // Scrub physical orphan files before Prisma cascade sweeps the metadata
     try {
@@ -324,7 +326,7 @@ export default async function IncidentDetailPage({
             </Link>
           )}
 
-          {session.user.roles.includes('ADMIN') && (
+          {hasPermission(session as any, 'DELETE_INCIDENTS') && (
             <ConfirmForm action={deleteIncidentAction} promptMessage="Are you absolutely sure you want to PERMANENTLY terminate this incident? All associated intelligence and operational timelines will be destroyed. This cannot be undone.">
               <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" /> Terminate Incident
@@ -463,13 +465,13 @@ export default async function IncidentDetailPage({
               <form action={async (formData) => {
                 "use server"
                 const sessionUrl = await auth()
+                if (!sessionUrl) throw new Error("Unauthorized")
                 const content = formData.get("content") as string
-                if (!content || !sessionUrl) return;
+                if (!content) return;
                 
-                // Strict BOLA Enforcement within the action scope
-                const hasPrivilege = sessionUrl.user.roles.includes('ADMIN') || sessionUrl.user.roles.includes('SECOPS');
-                const isAuthorized = hasPrivilege || incident!.reporterId === sessionUrl.user.id || incident!.assignees.some(a => a.id === sessionUrl.user.id);
-                if (!isAuthorized) {
+                const hasPrivilege = hasPermission(sessionUrl as any, 'MANAGE_INCIDENT_STATUS') || hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS');
+                const isReporterOrAssignee = incident?.reporterId === sessionUrl.user.id || incident?.assignees.some((a: any) => a.id === sessionUrl.user.id);
+                if (!hasPrivilege && !isReporterOrAssignee) {
                    throw new Error("Forbidden: Strict BOLA isolation. You cannot comment on an incident you do not own.");
                 }
 

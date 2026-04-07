@@ -3,11 +3,11 @@
 import { db } from "@/lib/db"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
-import { Role } from "@prisma/client"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function updateSystemSettings(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'SYSTEM_SETTINGS')) {
     throw new Error("Unauthorized")
   }
 
@@ -16,8 +16,8 @@ export async function updateSystemSettings(formData: FormData) {
   const requireGlobal2FA = formData.get("requireGlobal2FA") === "on"
   const requireEmailVerification = formData.get("requireEmailVerification") === "on"
   const systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
-  const defaultUserRolesRaw = formData.getAll("defaultUserRoles") as any[]
-  const defaultUserRoles = defaultUserRolesRaw.length > 0 ? defaultUserRolesRaw : ["REPORTER"]
+  const defaultRoleId = formData.get("defaultRoleId") as string
+  const rolePayload = defaultRoleId && defaultRoleId !== "NONE" ? { set: [{ id: defaultRoleId }] } : undefined
 
   const webhookEnabled = formData.get("webhookEnabled") === "on"
   const webhookUrl = formData.get("webhookUrl") as string || ""
@@ -70,7 +70,7 @@ export async function updateSystemSettings(formData: FormData) {
       systemPlatformUrl,
       webhookEnabled,
       webhookUrl,
-      defaultUserRoles,
+      ...(rolePayload ? { defaultUserRoles: rolePayload } : {}),
       slaCriticalHours,
       slaHighHours,
       slaMediumHours,
@@ -100,7 +100,7 @@ export async function updateSystemSettings(formData: FormData) {
       systemPlatformUrl,
       webhookEnabled,
       webhookUrl,
-      defaultUserRoles,
+      ...(rolePayload ? { defaultUserRoles: { connect: rolePayload.set } } : {}),
       slaCriticalHours,
       slaHighHours,
       slaMediumHours,

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.4.0
+### Security
+- Migrated rigid static Role-Based Access Control (RBAC) strings to a **Dynamic Granular Permission Matrix**. Platform Administrators can now define Custom Privilege Tiers down to atomic actions (e.g., `CREATE_INCIDENTS`, `API_ISSUE_TOKEN`, `SYSTEM_SETTINGS`) empowering massive multi-layer SOC environments with zero-trust UI guarantees.
+- Refactored server-side `NextAuth` Identity mappings to strip antiquated Role lists in favor of synchronous Database `customRoles.permissions` evaluations, locking out unauthorized Server Actions implicitly.
+- Rectified a massive architectural "God-Mode Privilege Defect" within the Plugin Architecture (`hook-engine.ts`) where unsandboxed Server-Side Javascript could hijack global singletons (`@/lib/db`). We are migrating to a protected strictly-controlled SDK Execution Context (`context.api.createIncident`) forced exclusively under designated un-impersonable System Bot Identities.
+
 ## 0.3.0
 ### Security
 - Fixed a massive Privilege Escalation (PrivEsc) vector inside `/api/incidents` where `REPORTER`s could illegally inject arbitrary `assetId` values to force system-wide SOAR automated quarantines across unowned macro infrastructure.

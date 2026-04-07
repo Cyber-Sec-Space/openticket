@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useRouter } from "next/navigation"
 import { bulkDeleteUsersAction, bulkUpdateRolesAction, toggleUserStatusAction } from "./actions"
 
-export function UserTableClient({ users, sessionUserId }: { users: any[], sessionUserId: string }) {
+export function UserTableClient({ users, sessionUserId, allCustomRoles }: { users: any[], sessionUserId: string, allCustomRoles?: any[] }) {
   const router = useRouter()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkRoles, setBulkRoles] = useState<string[]>(["REPORTER"])
@@ -74,20 +74,20 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
               </PopoverTrigger>
               <PopoverContent className="w-56 bg-black/95 shadow-2xl border border-white/10 p-4 space-y-3">
                 <div className="font-semibold text-xs tracking-wider text-muted-foreground uppercase mb-2">Set Privilege Tiers</div>
-                {['REPORTER', 'SECOPS', 'ADMIN', 'API_ACCESS'].map(role => (
-                  <div key={role} className="flex items-center space-x-2">
+                {allCustomRoles?.map(role => (
+                  <div key={role.id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`bulk-${role}`}
-                      checked={bulkRoles.includes(role)}
+                      id={`bulk-${role.id}`}
+                      checked={bulkRoles.includes(role.id)}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setBulkRoles(prev => [...prev, role])
+                          setBulkRoles(prev => [...prev, role.id])
                         } else {
-                          setBulkRoles(prev => prev.filter(r => r !== role))
+                          setBulkRoles(prev => prev.filter(r => r !== role.id))
                         }
                       }}
                     />
-                    <label htmlFor={`bulk-${role}`} className="text-sm text-white/80 cursor-pointer">{role}</label>
+                    <label htmlFor={`bulk-${role.id}`} className="text-sm text-white/80 cursor-pointer">{role.name}</label>
                   </div>
                 ))}
               </PopoverContent>
@@ -170,14 +170,14 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
                     )}
                   </TableCell>
 
-                  <TableCell className="text-center">
+                   <TableCell className="text-center">
                      <Badge variant="outline" className={`bg-transparent border ${
-                       user.roles.includes('ADMIN') ? 'border-primary/50 text-primary bg-primary/10' :
-                       user.roles.includes('SECOPS') ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
+                       user.customRoles?.some((r:any) => r.name.includes('Admin') || r.isSystem) ? 'border-primary/50 text-primary bg-primary/10' :
+                       user.customRoles?.some((r:any) => r.name.includes('SecOps')) ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
                        'border-muted-foreground/30 text-muted-foreground bg-black/20'
                      }`}>
-                       {user.roles.join(', ')}
-                       {user.roles.includes('ADMIN') && <ShieldCheck className="w-3 h-3 ml-1" />}
+                       {user.customRoles?.map((r:any) => r.name).join(', ') || 'NONE'}
+                       {user.customRoles?.some((r:any) => r.name.includes('Admin')) && <ShieldCheck className="w-3 h-3 ml-1 inline" />}
                      </Badge>
                   </TableCell>
 

@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { sl } from 'date-fns/locale' // Just in case layout needs it later
+import { hasPermission } from "@/lib/auth-utils"
 import { Sliders, ShieldCheck, UserPlus, Fingerprint, ShieldAlert, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,18 +15,20 @@ import { SlaSettingsPanel } from "./sla-settings-panel"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'SYSTEM_SETTINGS')) {
     redirect("/login")
   }
 
+  const customRoles = await db.customRole.findMany()
+
   const settings = await db.systemSetting.upsert({
     where: { id: "global" },
+    include: { defaultUserRoles: true },
     update: {},
     create: {
       id: "global",
       allowRegistration: true,
       requireGlobal2FA: false,
-      defaultUserRoles: ["REPORTER"],
       slaCriticalHours: 4,
       slaHighHours: 24,
       slaMediumHours: 72,
@@ -116,14 +119,15 @@ export default async function SystemSettingsPage() {
                 <p className="text-[11px] text-muted-foreground pb-2">
                    Select the initial access tier granted to newly registered operators.
                 </p>
-                <Select key={settings.defaultUserRoles[0] || "REPORTER"} name="defaultUserRoles" defaultValue={settings.defaultUserRoles[0] || "REPORTER"}>
-                  <SelectTrigger className="w-[180px] bg-black/50 border-white/10">
+                <Select key={settings.defaultUserRoles?.[0]?.id || ""} name="defaultRoleId" defaultValue={settings.defaultUserRoles?.[0]?.id || ""}>
+                  <SelectTrigger className="w-[280px] bg-black/50 border-white/10">
                     <SelectValue placeholder="Select Tier" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="REPORTER">REPORTER</SelectItem>
-                    <SelectItem value="SECOPS">SECOPS</SelectItem>
-                    <SelectItem value="ADMIN">ADMIN</SelectItem>
+                    <SelectItem value="NONE" disabled>Select a default role</SelectItem>
+                    {customRoles.map(role => (
+                       <SelectItem key={role.id} value={role.id}>{role.name} {role.isSystem ? '(System)' : ''}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
