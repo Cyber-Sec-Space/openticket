@@ -65,11 +65,11 @@ export async function PATCH(
     const canManageStatus = hasPermission(session as any, 'MANAGE_INCIDENT_STATUS')
     const isAuthorizedToUpdate = hasPrivilege || (existingIncident.assignees.some(a => a.id === session.user.id) && canManageStatus)
     if (!isAuthorizedToUpdate) {
-      return new NextResponse("Forbidden (Only ADMIN/SECOPS or Assigned Engineers can update)", { status: 403 })
+      return new NextResponse("Forbidden (Insufficient Permissions)", { status: 403 })
     }
 
     if ((assigneeId !== undefined || severity !== undefined || assetId !== undefined) && !hasPrivilege) {
-       return new NextResponse("Forbidden: Setting assignees, severities or assets requires Admin/Secops", { status: 403 })
+       return new NextResponse("Forbidden: Setting assignees, severities or assets requires explicit ASSIGN_INCIDENTS privilege", { status: 403 })
     }
 
     const updateData: any = {}

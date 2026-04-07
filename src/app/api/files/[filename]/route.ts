@@ -72,7 +72,7 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
              return new NextResponse("Forbidden: Strict BOLA boundaries restrict access to this file.", { status: 403 })
           }
        } else {
-          // If it is detached or belongs to a vuln, and they are not ADMIN/SECOPS or uploader -> Deny
+          // If it is detached or belongs to a vuln, and they do not have sufficient generic VIEW permissions or are not the uploader -> Deny
           return new NextResponse("Forbidden: Access Denied.", { status: 403 })
        }
     }
