@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { db } from "./lib/db"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 import * as OTPAuth from "otpauth"
 import { CredentialsSignin } from "next-auth"
 

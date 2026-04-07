@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
 import { sendNewRegistrationAlertEmail, sendVerificationEmail } from "@/lib/mailer"
 import crypto from "crypto"

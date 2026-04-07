@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 import { sendNewRegistrationAlertEmail } from "@/lib/mailer"
 import { hasPermission } from "@/lib/auth-utils"
 
