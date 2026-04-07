@@ -75,6 +75,10 @@ model User {
   twoFactorSecret    String?
   isDisabled         Boolean   @default(false) // Phase 5 Suspension Support
 
+  // Plugin Identity Mapping
+  isBot               Boolean   @default(false)
+  botPluginIdentifier String?   @unique
+
   // Browser Notification Preferences
   browserNotificationsEnabled Boolean @default(false)
   notifyOnCritical            Boolean @default(true)

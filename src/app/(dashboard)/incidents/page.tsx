@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { db } from "@/lib/db"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -19,7 +20,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   const filterParams: any = {}
 
   // Hard RBAC rule: reporters and assignees can see their tickets
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
   if (!hasPrivilege) {
     filterParams.AND = [
       {
@@ -55,7 +56,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   const incidents = await db.incident.findMany({
     where: filterParams,
     include: {
-      reporter: { select: { name: true } },
+      reporter: { select: { name: true, isBot: true } },
       assignees: { select: { name: true } },
     },
     orderBy: { createdAt: 'desc' },
@@ -217,7 +218,15 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                     {incident.status.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground hidden xl:table-cell">{incident.reporter?.name || "Unknown"}</TableCell>
+                <TableCell className="text-muted-foreground hidden xl:table-cell">
+                  {incident.reporter ? (
+                    incident.reporter.isBot ? (
+                      <span className="flex items-center gap-1.5"><Badge variant="outline" className="text-[10px] bg-primary/10 border-primary/30 text-primary px-1 hover:bg-primary/20 transition-colors">BOT</Badge> {incident.reporter.name}</span>
+                    ) : (
+                      incident.reporter.name || "Unknown"
+                    )
+                  ) : "Unknown"}
+                </TableCell>
                 <TableCell className="text-muted-foreground font-medium border-r border-border/20">
                   {incident.assignees.length > 0
                     ? incident.assignees.map(a => a.name).join(', ')
