@@ -48,7 +48,10 @@ class AuthenticationThrottledError extends Error {
   }
 }
 
+import { authConfig } from "./auth.config"
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -162,7 +165,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.permissions = user.permissions
       }
       // Force database check for real-time ban enforcement and Role syncing
-      if (token.id) {
+      // ONLY run this in Node.js runtime to prevent Prisma crashing Edge Middleware
+      if (token.id && process.env.NEXT_RUNTIME === "nodejs") {
         const dbUser = await db.user.findUnique({ where: { id: token.id as string }, select: { isDisabled: true, customRoles: { select: { permissions: true } } } })
         if (!dbUser || dbUser.isDisabled) {
            return null // Returning null instantly destroys the JWT token and logs the user out
@@ -171,18 +175,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       }
       return token
-    },
-    async session({ session, token }) {
-      if (!token) return session;
-      if (session.user) {
-        session.user.id = token.id as string
-        session.user.permissions = token.permissions as string[]
-      }
-      return session
     }
-  },
-  pages: {
-    signIn: "/login",
   },
   session: { strategy: "jwt" }
 })
