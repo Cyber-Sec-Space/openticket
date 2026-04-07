@@ -36,12 +36,42 @@ export async function createUserAction(formData: FormData) {
   // Execute 10-round salted hash
   const passwordHash = await bcrypt.hash(password, 12)
 
+  // Phase 12: God-Mode Forging Mitigation
+  const settings = await db.systemSetting.findUnique({ 
+    where: { id: "global" },
+    include: { defaultUserRoles: true }
+  })
+  
+  let finalRoleIds: string[] = []
+  
+  if (customRoleIds.length > 0 && hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
+     const hasRoot = hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')
+     if (!hasRoot) {
+       // Validate Subset Integrity
+       const targetRoles = await db.customRole.findMany({ where: { id: { in: customRoleIds } } })
+       const callerPerms = new Set((session as any).user?.permissions || [])
+       let isSubset = true
+       for (const role of targetRoles) {
+         for (const perm of role.permissions) {
+           if (!callerPerms.has(perm)) isSubset = false
+         }
+       }
+       if (!isSubset) {
+         throw new Error("Forbidden: Cannot assign roles containing privileges beyond your own clearance.")
+       }
+     }
+     finalRoleIds = customRoleIds
+  } else {
+     // Fallback to System Defaults if they lack ASSIGN_USER_ROLES or didn't provide any map
+     finalRoleIds = settings?.defaultUserRoles?.map(r => r.id) || []
+  }
+
   const newUser = await db.user.create({
     data: {
       email,
       name,
       passwordHash,
-      customRoles: customRoleIds.length > 0 ? { connect: customRoleIds.map(id => ({ id })) } : undefined
+      customRoles: finalRoleIds.length > 0 ? { connect: finalRoleIds.map(id => ({ id })) } : undefined
     }
   })
 
@@ -57,7 +87,6 @@ export async function createUserAction(formData: FormData) {
   })
 
   // Phase 10: Email Alert on New Registration
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   if (settings?.smtpTriggerOnNewUser) {
     const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { has: 'UPDATE_SYSTEM_SETTINGS' } } }, email: { not: null }, id: { not: newUser.id } }, select: { email: true } })
     await sendNewRegistrationAlertEmail(email, name, admins.map(a => a.email as string))
