@@ -81,13 +81,12 @@ export async function deleteRole(formData: FormData) {
   if (existingRole.isSystem) throw new Error("System roles cannot be deleted")
 
   // The user requested: if a user loses all roles, fall back to "Standard Reporter (System)"
-  // Find the standard reporter role
-  const reporterRole = await db.customRole.findFirst({
-    where: {
-        isSystem: true,
-        permissions: { hasSome: ['VIEW_INCIDENTS_ALL'] }
-    }
+  // Fetch the authoritative fallback role defined in global System Settings
+  const settings = await db.systemSetting.findUnique({
+      where: { id: "global" },
+      include: { defaultUserRoles: true }
   })
+  const fallbackRole = settings?.defaultUserRoles?.[0] || null
 
   // We should do this in a transaction:
   await db.$transaction(async (tx) => {
@@ -100,12 +99,12 @@ export async function deleteRole(formData: FormData) {
      // 2. Disconnect role from users (done automatically by cascade / delete below)
      // 3. For any user who ONLY had this ONE role, grant them the fallback role
      for (const user of usersToCheck) {
-         if (user.customRoles.length === 1 && reporterRole) { // Note: 1 because it hasn't been deleted yet
+         if (user.customRoles.length === 1 && fallbackRole) { // Note: 1 because it hasn't been deleted yet
             await tx.user.update({
                 where: { id: user.id },
                 data: {
                     customRoles: {
-                        connect: { id: reporterRole.id }
+                        connect: { id: fallbackRole.id }
                     }
                 }
             })

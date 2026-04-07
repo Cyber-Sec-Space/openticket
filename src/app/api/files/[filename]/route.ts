@@ -59,23 +59,28 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
     return new NextResponse("File Not Found", { status: 404 })
   }
 
-  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS_ALL') || hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED') || hasPermission(session as any, 'VIEW_ASSETS')
+  const hasGlobalIncidents = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const hasGlobalVulns = hasPermission(session as any, 'VIEW_ASSETS') || hasPermission(session as any, 'VIEW_VULNERABILITIES')
 
   // Enforce Bound Object Level Authorization
-  if (!hasPrivilege) {
-    if (attachment.uploaderId !== session.user.id) {
-       // If it belongs to an incident
-       if (attachment.incident) {
-          const isReporter = attachment.incident.reporterId === session.user.id
-          const isAssigned = attachment.incident.assignees.some(a => a.id === session.user.id)
-          if (!isReporter && !isAssigned) {
-             return new NextResponse("Forbidden: Strict BOLA boundaries restrict access to this file.", { status: 403 })
-          }
-       } else {
-          // If it is detached or belongs to a vuln, and they do not have sufficient generic VIEW permissions or are not the uploader -> Deny
-          return new NextResponse("Forbidden: Access Denied.", { status: 403 })
-       }
-    }
+  let authorized = false;
+
+  if (attachment.uploaderId === session.user.id) {
+     authorized = true;
+  } else if (attachment.incident) {
+     if (hasGlobalIncidents) {
+        authorized = true;
+     } else {
+        const isReporter = attachment.incident.reporterId === session.user.id
+        const isAssigned = attachment.incident.assignees.some(a => a.id === session.user.id)
+        if (isReporter || isAssigned) authorized = true;
+     }
+  } else if (attachment.vuln && hasGlobalVulns) {
+     authorized = true;
+  }
+
+  if (!authorized) {
+    return new NextResponse("Forbidden: Strict BOLA boundaries restrict access to this file.", { status: 403 })
   }
 
   const safeBase = path.resolve(process.cwd(), 'private', 'uploads')
