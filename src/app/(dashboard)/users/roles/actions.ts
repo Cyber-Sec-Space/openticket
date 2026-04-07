@@ -16,7 +16,9 @@ async function verifyAdmin(action: 'CREATE_ROLES' | 'UPDATE_ROLES' | 'DELETE_ROL
 }
 
 function enforcePrivilegeSubset(session: any, requestedPermissions: Permission[]) {
-  const callerPerms = new Set(session.user.customRoles?.flatMap((r: any) => r.permissions) || []);
+  // Phase 13 Fix: NextAuth JWT adapter maps customRoles -> string[] 'permissions' at login.
+  // Using the original relation path (session.user.customRoles) evaluates to undefined, artificially blocking root.
+  const callerPerms = new Set(session.user?.permissions || []);
   
   // System Administrators bypass the constraint
   const isRoot = callerPerms.has('UPDATE_SYSTEM_SETTINGS');

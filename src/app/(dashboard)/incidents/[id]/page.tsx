@@ -114,57 +114,107 @@ export default async function IncidentDetailPage({
        throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.")
     }
 
-    const newStatus = formData.get("status") as any
-    const newSeverity = formData.get("severity") as any
+    const newStatusRaw = formData.get("status") as string
+    const newSeverityRaw = formData.get("severity") as string
     const newAssetName = formData.get("assetName") as string
+    const assigneeIdsRaw = formData.getAll("assigneeIds") as string[]
     const targetSlaDateRaw = formData.get("targetSlaDate") as string
-    let targetSlaDate = targetSlaDateRaw && targetSlaDateRaw.trim() !== "" ? new Date(targetSlaDateRaw) : null
-    
-    // Automatic SLA Recalculation on Severity changes
-    if (newSeverity !== currentIncident.severity) {
-      const currentIsoSlice = currentIncident.targetSlaDate 
-        ? new Date(currentIncident.targetSlaDate.getTime() - currentIncident.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) 
-        : "";
-      const isManualDateOverride = targetSlaDateRaw !== currentIsoSlice;
 
-      if (!isManualDateOverride) {
-        let autoDate = new Date();
-        switch (newSeverity) {
-          case 'CRITICAL': autoDate.setHours(autoDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
-          case 'HIGH':     autoDate.setHours(autoDate.getHours() + (settings?.slaHighHours ?? 24)); break;
-          case 'MEDIUM':   autoDate.setHours(autoDate.getHours() + (settings?.slaMediumHours ?? 72)); break;
-          case 'LOW':
-          default:         autoDate.setHours(autoDate.getHours() + (settings?.slaLowHours ?? 168)); break;
-        }
-        targetSlaDate = autoDate;
-      }
+    // Phase 13: BOLA Graceful Drop Enforcer
+    let finalStatus = currentIncident.status
+    let finalSeverity = currentIncident.severity
+    let finalAssetId = currentIncident.assetId
+    let finalAssignees = currentIncident.assignees.map(a => ({ id: a.id }))
+    let finalSlaDate = currentIncident.targetSlaDate
+
+    // 1. Status Mutation Checking
+    if (newStatusRaw && newStatusRaw.replace(/ /g, '_') !== currentIncident.status) {
+      const parsedStatus = newStatusRaw.replace(/ /g, '_') as any
+      if (parsedStatus === 'RESOLVED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENT_STATUS_RESOLVE')) finalStatus = parsedStatus
+      else if (parsedStatus === 'CLOSED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENT_STATUS_CLOSE')) finalStatus = parsedStatus
+      else if (parsedStatus !== 'RESOLVED' && parsedStatus !== 'CLOSED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) finalStatus = parsedStatus
     }
 
-    const resolvedAssetId = newAssetName === 'UNLINKED' 
-      ? null 
-      : assets.find(a => a.name === newAssetName)?.id || null
+    // 2. Severity & SLA Mutation Checking
+    if (newSeverityRaw && newSeverityRaw !== currentIncident.severity) {
+      if (hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) {
+        finalSeverity = newSeverityRaw as any
+        
+        // Automatic SLA Recalculation on Severity changes
+        const currentIsoSlice = currentIncident.targetSlaDate 
+          ? new Date(currentIncident.targetSlaDate.getTime() - currentIncident.targetSlaDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16) 
+          : "";
+        const isManualDateOverride = targetSlaDateRaw !== currentIsoSlice;
 
-    const assigneeIds = formData.getAll("assigneeIds") as string[]
-    const validAssigneeIds = assigneeIds.filter(id => id !== "UNASSIGNED")
+        if (!isManualDateOverride) {
+          let autoDate = new Date();
+          switch (finalSeverity) {
+            case 'CRITICAL': autoDate.setHours(autoDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
+            case 'HIGH':     autoDate.setHours(autoDate.getHours() + (settings?.slaHighHours ?? 24)); break;
+            case 'MEDIUM':   autoDate.setHours(autoDate.getHours() + (settings?.slaMediumHours ?? 72)); break;
+            case 'LOW':
+            default:         autoDate.setHours(autoDate.getHours() + (settings?.slaLowHours ?? 168)); break;
+          }
+          finalSlaDate = autoDate;
+        } else if (targetSlaDateRaw && targetSlaDateRaw.trim() !== "") {
+          finalSlaDate = new Date(targetSlaDateRaw)
+        }
+      }
+    } else if (targetSlaDateRaw && targetSlaDateRaw.trim() !== "" && hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) {
+       finalSlaDate = new Date(targetSlaDateRaw)
+    }
 
-    const changesText = `Status: ${newStatus}, Severity: ${newSeverity}, Assignees: ${validAssigneeIds.length} users, SLA: ${targetSlaDate ? targetSlaDate.toLocaleString() : 'Removed'}`
+    // 3. Asset Mapping Verification
+    const requestedAssetId = newAssetName === 'UNLINKED' ? null : assets.find(a => a.name === newAssetName)?.id || null
+    if (requestedAssetId !== currentIncident.assetId) {
+       if (hasPermission(sessionUrl as any, 'LINK_INCIDENT_TO_ASSET')) finalAssetId = requestedAssetId
+    }
+
+    // 4. Assignee Escalation Verification
+    const validAssigneeIds = assigneeIdsRaw.filter(id => id !== "UNASSIGNED")
+    const currentAssigneeIds = new Set(currentIncident.assignees.map(a => a.id))
+    const requestedAssigneeSet = new Set(validAssigneeIds)
+    
+    let assigneesChanged = validAssigneeIds.length !== currentAssigneeIds.size || validAssigneeIds.some(id => !currentAssigneeIds.has(id))
+    
+    if (assigneesChanged) {
+       let isAuthorizedToAssign = false
+       const hasSelf = hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS_SELF')
+       const hasOthers = hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS_OTHERS')
+       
+       if (hasOthers) {
+         isAuthorizedToAssign = true
+       } else if (hasSelf) {
+         let onlySelfMutated = true
+         validAssigneeIds.forEach(id => {
+            if (id !== sessionUrl!.user.id && !currentAssigneeIds.has(id)) onlySelfMutated = false
+         })
+         Array.from(currentAssigneeIds).forEach(id => {
+            if (id !== sessionUrl!.user.id && !requestedAssigneeSet.has(id)) onlySelfMutated = false
+         })
+         isAuthorizedToAssign = onlySelfMutated
+       }
+       if (isAuthorizedToAssign) finalAssignees = validAssigneeIds.map(id => ({ id }))
+    }
+
+    const changesText = `Status: ${finalStatus}, Severity: ${finalSeverity}, Assignees: ${finalAssignees.length} users, SLA: ${finalSlaDate ? finalSlaDate.toLocaleString() : 'Removed'}`
 
     await db.incident.update({
       where: { id: currentIncident.id },
       data: {
-        status: newStatus.replace(/ /g, '_'),
-        severity: newSeverity,
-        assetId: resolvedAssetId,
-        targetSlaDate,
+        status: finalStatus,
+        severity: finalSeverity,
+        assetId: finalAssetId,
+        targetSlaDate: finalSlaDate,
         assignees: {
-          set: validAssigneeIds.map(id => ({ id }))
+          set: finalAssignees
         }
       }
     })
 
     // Phase 10: Email Dispatch for newly assigned operators
     const previousAssigneeIds = currentIncident.assignees.map(a => a.id)
-    const newlyAssignedIds = validAssigneeIds.filter(id => !previousAssigneeIds.includes(id))
+    const newlyAssignedIds = finalAssignees.map(a => a.id).filter(id => !previousAssigneeIds.includes(id))
 
     if (newlyAssignedIds.length > 0) {
       // Browser Native Alerts
@@ -185,7 +235,7 @@ export default async function IncidentDetailPage({
     }
 
     if (
-      (newStatus === 'RESOLVED' || newStatus === 'CLOSED') && 
+      (finalStatus === 'RESOLVED' || finalStatus === 'CLOSED') && 
       !['RESOLVED', 'CLOSED'].includes(currentIncident.status) && 
       currentIncident.reporter
     ) {
@@ -198,35 +248,47 @@ export default async function IncidentDetailPage({
     }
 
     // Phase 7: Dynamic Triage Auto-Isolation rules
-    if (newSeverity === 'CRITICAL' && resolvedAssetId && resolvedAssetId !== 'UNLINKED') {
-      const affectedAsset = await db.asset.update({
-        where: { id: resolvedAssetId },
-        data: { status: 'COMPROMISED' }
-      })
+    if (finalSeverity === 'CRITICAL' && finalAssetId && currentIncident.severity !== 'CRITICAL') {
+      if (settings?.soarAutoQuarantineEnabled) {
+         // Telemetry SOAR mapping via system settings override threshold
+         let meetsThreshold = false;
+         if (settings.soarAutoQuarantineThreshold === 'CRITICAL' && finalSeverity === 'CRITICAL') meetsThreshold = true;
+         if (settings.soarAutoQuarantineThreshold === 'HIGH' && (finalSeverity === 'CRITICAL' || finalSeverity === 'HIGH')) meetsThreshold = true;
+         if (settings.soarAutoQuarantineThreshold === 'MEDIUM' && (finalSeverity === 'CRITICAL' || finalSeverity === 'HIGH' || finalSeverity === 'MEDIUM')) meetsThreshold = true;
+         
+         if (meetsThreshold) {
+           // BOLA Override protection: Ensure the SOAR Engine executor actively possesses ASSET mutation privileges
+           if (hasPermission(sessionUrl as any, 'UPDATE_ASSETS')) {
+              const affectedAsset = await db.asset.update({
+                where: { id: finalAssetId },
+                data: { status: 'COMPROMISED' }
+              })
+              await fireHook("onAssetCompromise", affectedAsset)
 
-      await fireHook("onAssetCompromise", affectedAsset)
+              const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_ASSETS', 'VIEW_SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
+              await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${finalAssetId}`)
 
-      const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_ASSETS', 'VIEW_SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
-      await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${resolvedAssetId}`)
+              if (settings?.smtpTriggerOnAssetCompromise) {
+                await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.filter(a => a.email).map(a => a.email as string))
+              }
 
-      if (settings?.smtpTriggerOnAssetCompromise) {
-        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.filter(a => a.email).map(a => a.email as string))
+              await db.auditLog.create({
+                data: {
+                  action: "SOAR_AUTO_QUARANTINE",
+                  entityType: "Asset",
+                  entityId: finalAssetId,
+                  userId: sessionUrl.user.id,
+                  changes: `Autonomous SIEM Triage -> Segmenting network node due to attached Priority Ticket.`
+                }
+              })
+           }
+         }
       }
-
-      await db.auditLog.create({
-        data: {
-          action: "SOAR_AUTO_QUARANTINE",
-          entityType: "Asset",
-          entityId: resolvedAssetId,
-          userId: sessionUrl.user.id,
-          changes: `Asset automatically marked as COMPROMISED due to escalating Incident INC-${currentIncident.id.substring(0, 8).toUpperCase()} to CRITICAL.`
-        }
-      })
     }
 
     await db.auditLog.create({
       data: {
-        action: "TRIAGE_POLICY_CHANGED",
+        action: "INCIDENT_STATUS_MODIFIED",
         entityType: "Incident",
         entityId: currentIncident.id,
         userId: sessionUrl.user.id,
@@ -235,11 +297,11 @@ export default async function IncidentDetailPage({
     })
 
     // Phase 9: Webhook Dispatch for Escalations
-    if (newSeverity === 'CRITICAL' || newStatus === 'RESOLVED') {
+    if (finalSeverity === 'CRITICAL' || finalStatus === 'RESOLVED') {
       await dispatchWebhook({
         title: `Incident Update: ${currentIncident.title}`,
-        description: `Status changed to ${newStatus}, Severity: ${newSeverity}`,
-        severity: newSeverity,
+        description: `Status changed to ${finalStatus}, Severity: ${finalSeverity}`,
+        severity: finalSeverity,
         url: `${process.env.NEXTAUTH_URL}/incidents/${currentIncident.id}`
       })
     }
