@@ -178,6 +178,43 @@ export default async function SystemSettingsPage() {
               </div>
 
               <hr className="my-2 border-white/5" />
+
+              {/* SOAR Automation Section */}
+              <div className="space-y-4 p-5 border border-white/10 rounded-md bg-black/20">
+                <h3 className="text-sm font-semibold tracking-wide text-primary/80 flex items-center">
+                  <ShieldAlert className="w-4 h-4 mr-2" /> SOAR Automation (Autonomous Responses)
+                </h3>
+                
+                <div className="flex flex-row items-center space-x-4 mb-4">
+                  <Checkbox key={String(settings.soarAutoQuarantineEnabled)} id="soarAutoQuarantineEnabled" name="soarAutoQuarantineEnabled" value="on" defaultChecked={settings.soarAutoQuarantineEnabled} />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="soarAutoQuarantineEnabled" className="text-sm font-medium cursor-pointer text-destructive">
+                      Enable Centralized Asset Auto-Quarantine (COMPROMISE mutation)
+                    </Label>
+                    <p className="text-[11px] text-muted-foreground pt-1 w-5/6">
+                      Allow operational incidents that exceed target severity to autonomously mutate attached asset states to COMPROMISED, unconditionally bypassing basic `UPDATE_ASSETS` boundary restrictions.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="ml-8 space-y-2 mt-4">
+                  <Label className="text-xs text-muted-foreground">SOAR Trigger Severity Threshold</Label>
+                  <Select key={`soar-thresh-${settings.soarAutoQuarantineThreshold}`} name="soarAutoQuarantineThreshold" defaultValue={settings.soarAutoQuarantineThreshold || 'CRITICAL'}>
+                    <SelectTrigger className="w-[280px] bg-black/50 border-white/10">
+                      <SelectValue placeholder="Select Trigger Level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOW">LOW</SelectItem>
+                      <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                      <SelectItem value="HIGH">HIGH</SelectItem>
+                      <SelectItem value="CRITICAL">CRITICAL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground italic pt-1">Any incidents minted equal to or above this severity will engage Auto-Quarantine.</p>
+                </div>
+              </div>
+
+              <hr className="my-2 border-white/5" />
               
               <div className="space-y-3 p-5 border border-white/10 rounded-md bg-black/20">
                 <SlaSettingsPanel defaultSla={{ 

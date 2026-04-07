@@ -225,6 +225,10 @@ model SystemSetting {
   requireEmailVerification      Boolean @default(false)
   systemPlatformUrl             String  @default("http://localhost:3000")
 
+  // SOAR Automations
+  soarAutoQuarantineEnabled     Boolean @default(true)
+  soarAutoQuarantineThreshold   Severity @default(CRITICAL)
+
   updatedAt DateTime @updatedAt
 }
 

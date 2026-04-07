@@ -67,6 +67,11 @@ export async function updateSystemSettings(formData: FormData) {
   const smtpTriggerOnNewUser = formData.get("smtpTriggerOnNewUser") === "on"
   const smtpTriggerOnNewVulnerability = formData.get("smtpTriggerOnNewVulnerability") === "on"
 
+  // SOAR Automations
+  const soarAutoQuarantineEnabled = formData.get("soarAutoQuarantineEnabled") === "on"
+  const soarAutoQuarantineThresholdRaw = formData.get("soarAutoQuarantineThreshold") as string
+  const soarAutoQuarantineThreshold = (soarAutoQuarantineThresholdRaw || "CRITICAL") as any
+
   await db.systemSetting.upsert({
     where: { id: "global" },
     update: {
@@ -96,7 +101,9 @@ export async function updateSystemSettings(formData: FormData) {
       smtpTriggerOnResolution,
       smtpTriggerOnAssetCompromise,
       smtpTriggerOnNewUser,
-      smtpTriggerOnNewVulnerability
+      smtpTriggerOnNewVulnerability,
+      soarAutoQuarantineEnabled,
+      soarAutoQuarantineThreshold
     },
     create: {
       id: "global",
@@ -126,7 +133,9 @@ export async function updateSystemSettings(formData: FormData) {
       smtpTriggerOnResolution,
       smtpTriggerOnAssetCompromise,
       smtpTriggerOnNewUser,
-      smtpTriggerOnNewVulnerability
+      smtpTriggerOnNewVulnerability,
+      soarAutoQuarantineEnabled,
+      soarAutoQuarantineThreshold
     }
   })
 

@@ -52,15 +52,19 @@ export async function createIncident(prevState: any, formData: FormData) {
       type: type as any,
       severity: effectiveSeverity,
       reporterId: session.user.id,
-      assetId: assetId || null,
+      assetId: hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null,
       status: 'NEW',
       targetSlaDate,
       tags
     }
   })
 
-  // Phase 7: SOAR Automations
-  if (severity === 'CRITICAL' && assetId) {
+  // Phase 7 & 11: SOAR Automations (Auto-Quarantine)
+  const sevRank = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 }
+  const currentRank = sevRank[effectiveSeverity as keyof typeof sevRank] || 0
+  const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
+
+  if (settings?.soarAutoQuarantineEnabled && assetId && currentRank >= thresholdRank) {
     const affectedAsset = await db.asset.update({
       where: { id: assetId },
       data: { status: 'COMPROMISED' }
