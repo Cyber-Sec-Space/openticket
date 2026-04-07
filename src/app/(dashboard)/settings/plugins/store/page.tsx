@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
+import { hasPermission } from "@/lib/auth-utils"
 import { redirect } from "next/navigation"
 import { activePlugins } from "@/plugins"
 import { PluginCard } from "../plugin-card"
@@ -26,7 +27,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PluginStorePage() {
   const session = await auth()
-  if (!session?.user?.id || !session.user.roles.includes("ADMIN")) {
+  if (!session?.user?.id || !hasPermission(session as any, 'SYSTEM_SETTINGS')) {
     redirect("/")
   }
 
