@@ -27,7 +27,7 @@ export async function uploadAttachment(formData: FormData) {
 
   // BOLA & RBAC Entity Verification checks
   if (vulnId) {
-    const hasPrivilege = hasPermission(session as any, 'MANAGE_ASSETS')
+    const hasPrivilege = hasPermission(session as any, 'UPDATE_VULNERABILITIES')
     if (!hasPrivilege) {
        return { error: "Forbidden: Strict Vuln BOLA enforcement" }
     }
@@ -36,15 +36,14 @@ export async function uploadAttachment(formData: FormData) {
   }
 
   if (incidentId) {
-    const incident = await db.incident.findUnique({
-      where: { id: incidentId },
-      select: { reporterId: true, assignees: { select: { id: true } } }
-    })
-    
-    if (!incident) return { error: "Incident context invalid" }
-
-    const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
-    if (!hasPrivilege) {
+    if (!hasPermission(session as any, 'UPLOAD_INCIDENT_ATTACHMENTS')) return { error: "Forbidden: Direct capability blocked" }
+    const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+    if (!canViewAll) {
+       const incident = await db.incident.findUnique({
+         where: { id: incidentId },
+         select: { reporterId: true, assignees: { select: { id: true } } }
+       })
+       if (!incident) return { error: "Incident context invalid" }
        const isReporter = incident.reporterId === session.user.id
        const isAssigned = incident.assignees.some(a => a.id === session.user.id)
        if (!isReporter && !isAssigned) {
@@ -122,15 +121,18 @@ export async function deleteAttachment(attachmentId: string) {
   if (!attachment) return { error: "Not found" }
 
   // RBAC for Delete
-  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
+  const hasPrivilege = hasPermission(session as any, 'DELETE_INCIDENT_ATTACHMENTS')
   if (!hasPrivilege) {
     if (attachment.uploaderId !== session.user.id) {
-       // Also check if they are assigned to the parent incident
+       return { error: "Forbidden: You cannot delete evidence you did not upload without Admin privileges." }
+    } else {
+       // Ensure they still have baseline isolation context to the incident
        if (attachment.incident) {
           const isAssigned = attachment.incident.assignees.some(a => a.id === session.user.id)
-          if (!isAssigned) return { error: "Forbidden: You cannot delete evidence you did not upload." }
-       } else {
-          return { error: "Forbidden: You cannot delete evidence you did not upload." }
+          const isReporter = attachment.incident.reporterId === session.user.id
+          if (!isAssigned && !isReporter) {
+             return { error: "Forbidden: You no longer have context access to this incident to manage uploads." }
+          }
        }
     }
   }

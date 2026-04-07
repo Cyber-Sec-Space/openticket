@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { hasPermission } from "@/lib/auth-utils"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default async function NewAssetPage() {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
-    return notFound()
+  if (!session?.user || !hasPermission(session as any, 'CREATE_ASSETS')) {
+    redirect("/login")
   }
 
   return (

@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target, Bug, ChevronLeft, ChevronRight, LayoutList, Clock, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { TrendChart } from "@/components/trend-chart"
@@ -23,7 +24,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   if (!session?.user) return null
 
-  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
+  if (!hasPermission(session as any, 'VIEW_DASHBOARD')) {
+    redirect("/incidents")
+  }
+
+  const hasPrivilege = hasPermission(session as any, ['VIEW_INCIDENTS_ALL', 'VIEW_INCIDENTS_ASSIGNED', 'VIEW_INCIDENTS_UNASSIGNED'])
 
   // Metric computations for the dashboard
   const filterParams: any = {}
@@ -247,7 +252,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">System Status</h1>
           <p className="text-muted-foreground mt-2">
-            Welcome, <span className="text-primary font-medium">{session.user.name || session.user.email}</span> [{session.user.permissions?.join(', ')}]
+            Welcome, <span className="text-primary font-medium">{session.user.name || session.user.email}</span>
           </p>
         </div>
         <div className="flex gap-4">

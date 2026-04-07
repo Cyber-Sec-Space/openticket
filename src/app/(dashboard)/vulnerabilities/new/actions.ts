@@ -11,8 +11,8 @@ import { hasPermission } from "@/lib/auth-utils"
 export async function createVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
-    throw new Error("Unauthorized")
+  if (!session?.user || !hasPermission(session as any, 'CREATE_VULNERABILITIES')) {
+    throw new Error("Forbidden")
   }
 
   const title = formData.get("title") as string
@@ -56,7 +56,7 @@ export async function createVulnerabilityAction(formData: FormData) {
 
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   if (settings?.smtpTriggerOnNewVulnerability) {
-    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_ASSETS', 'SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { email: true } })
+    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_VULNERABILITIES', 'VIEW_VULNERABILITIES'] } } }, email: { not: null } }, select: { email: true } })
     await sendNewVulnerabilityAlertEmail(newVuln.title, newVuln.severity, admins.map(a => a.email as string))
   }
 

@@ -13,7 +13,7 @@ const execAsync = promisify(exec);
 
 export async function togglePluginState(pluginId: string, currentState: boolean) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, "SYSTEM_SETTINGS")) {
+  if (!session?.user?.id || !hasPermission(session as any, 'MANAGE_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -30,7 +30,7 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
 
 export async function updatePluginConfig(pluginId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, "SYSTEM_SETTINGS")) {
+  if (!session?.user?.id || !hasPermission(session as any, 'MANAGE_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -67,7 +67,7 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
 
 export async function installExternalPlugin(pluginId: string, version: string, sourceType: string, packageName?: string) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, "SYSTEM_SETTINGS")) {
+  if (!session?.user?.id || !hasPermission(session as any, 'MANAGE_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -118,14 +118,14 @@ export async function installExternalPlugin(pluginId: string, version: string, s
 
 export async function triggerProductionBuild() {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, "SYSTEM_SETTINGS")) throw new Error("Unauthorized");
+  if (!session?.user?.id || !hasPermission(session as any, 'MANAGE_PLUGINS')) throw new Error("Unauthorized");
   // Execute the production build (Wait asynchronously)
   await execAsync("npm run build");
 }
 
 export async function triggerServerRestart() {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, "SYSTEM_SETTINGS")) throw new Error("Unauthorized");
+  if (!session?.user?.id || !hasPermission(session as any, 'MANAGE_PLUGINS')) throw new Error("Unauthorized");
   
   // Schedule the process kill out of band so the HTTP response can return success to UI first.
   // Next.js will close gracefully and be brought back up by PM2/Docker restart-policies.

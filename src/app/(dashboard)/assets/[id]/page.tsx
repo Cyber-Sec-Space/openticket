@@ -50,7 +50,7 @@ export default async function AssetDetailPage({
   async function updateAssetAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || !hasPermission(sessionUrl as any, 'MANAGE_ASSETS')) throw new Error("Forbidden")
+    if (!sessionUrl || !hasPermission(sessionUrl as any, 'UPDATE_ASSETS')) throw new Error("Forbidden")
 
     const newName = formData.get("name") as string
     const newType = formData.get("type") as any
@@ -82,7 +82,7 @@ export default async function AssetDetailPage({
   async function deleteAssetAction() {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || !hasPermission(sessionUrl as any, 'MANAGE_ASSETS')) throw new Error("Forbidden")
+    if (!sessionUrl || !hasPermission(sessionUrl as any, 'DELETE_ASSETS')) throw new Error("Forbidden")
 
     // Deleting Asset sets incident.assetId = NULL by Prisma definition.
     await db.asset.deleteMany({ where: { id: asset!.id } })
@@ -97,7 +97,7 @@ export default async function AssetDetailPage({
         </Link>
 
         <div className="flex items-center gap-3">
-          {hasPermission(session as any, 'MANAGE_ASSETS') && !isEditing && (
+          {hasPermission(session as any, 'UPDATE_ASSETS') && !isEditing && (
             <Link href={`/assets/${asset.id}?edit=true`}>
               <Button variant="outline" size="sm" className="bg-black/20 text-blue-400 border-blue-400/30 hover:bg-blue-400/10">
                 <Edit3 className="w-4 h-4 mr-2" /> Modify Specs
@@ -105,7 +105,7 @@ export default async function AssetDetailPage({
             </Link>
           )}
 
-          {hasPermission(session as any, 'MANAGE_ASSETS') && (
+          {hasPermission(session as any, 'DELETE_ASSETS') && (
             <ConfirmForm action={deleteAssetAction} promptMessage="Permanently terminate this node? Associated intelligence tags will be unlinked.">
               <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" /> Decommission Node

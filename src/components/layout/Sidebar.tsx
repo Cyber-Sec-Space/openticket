@@ -3,29 +3,38 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
-import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, LayoutDashboard, ToyBrick } from "lucide-react"
+import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, LayoutDashboard, ToyBrick, Key } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function Sidebar({ userPermissions }: { userPermissions?: string[] }) {
   const pathname = usePathname()
   
-  const hasPrivilege = userPermissions?.some(p => ['VIEW_ASSETS', 'MANAGE_ASSETS', 'SYSTEM_SETTINGS'].includes(p))
 
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Incidents", href: "/incidents", icon: ShieldAlert },
   ]
 
-  // Conditionally inject SECOPS/ADMIN modules
-  if (hasPrivilege) {
+  // Conditionally inject modules based on granular permissions
+  if (userPermissions?.includes('VIEW_ASSETS')) {
     navItems.push({ name: "Assets", href: "/assets", icon: Server })
+  }
+  if (userPermissions?.includes('VIEW_VULNERABILITIES')) {
     navItems.push({ name: "Vulnerabilities", href: "/vulnerabilities", icon: Bug })
+  }
+  if (userPermissions?.includes('VIEW_AUDIT_LOGS')) {
     navItems.push({ name: "Audit Logs", href: "/audit", icon: FileText })
   }
-  
-  if (userPermissions?.includes('SYSTEM_SETTINGS')) {
+  if (userPermissions?.includes('VIEW_USERS') || userPermissions?.includes('CREATE_USERS')) {
     navItems.push({ name: "Users", href: "/users", icon: Users })
+  }
+  if (userPermissions?.includes('VIEW_ROLES') || userPermissions?.includes('MANAGE_ROLES')) {
+    navItems.push({ name: "Roles Config", href: "/users/roles", icon: Key })
+  }
+  if (userPermissions?.includes('VIEW_SYSTEM_SETTINGS') || userPermissions?.includes('UPDATE_SYSTEM_SETTINGS')) {
     navItems.push({ name: "System Config", href: "/system", icon: Sliders })
+  }
+  if (userPermissions?.includes('VIEW_PLUGINS') || userPermissions?.includes('MANAGE_PLUGINS')) {
     navItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })
   }
 
@@ -43,7 +52,7 @@ export function Sidebar({ userPermissions }: { userPermissions?: string[] }) {
       
       <nav className="flex-1 py-8 px-4 space-y-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !(item.href === "/settings" && pathname.startsWith("/settings/plugins")))
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href) && !(item.href === "/settings" && pathname.startsWith("/settings/plugins")) && !(item.href === "/users" && pathname.startsWith("/users/roles")))
           return (
             <Link
               key={item.href}

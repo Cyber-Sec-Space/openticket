@@ -7,7 +7,7 @@ import { hasPermission } from "@/lib/auth-utils"
 
 export async function updateSystemSettings(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'SYSTEM_SETTINGS')) {
+  if (!session?.user || !hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')) {
     throw new Error("Unauthorized")
   }
 
@@ -16,8 +16,14 @@ export async function updateSystemSettings(formData: FormData) {
   const requireGlobal2FA = formData.get("requireGlobal2FA") === "on"
   const requireEmailVerification = formData.get("requireEmailVerification") === "on"
   const systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
-  const defaultRoleId = formData.get("defaultRoleId") as string
-  const rolePayload = defaultRoleId && defaultRoleId !== "NONE" ? { set: [{ id: defaultRoleId }] } : undefined
+  const defaultRoleName = formData.get("defaultRoleId") as string
+  let rolePayload = undefined
+  if (defaultRoleName && defaultRoleName !== "NONE") {
+    const role = await db.customRole.findUnique({ where: { name: defaultRoleName } })
+    if (role) {
+      rolePayload = { set: [{ id: role.id }] }
+    }
+  }
 
   const webhookEnabled = formData.get("webhookEnabled") === "on"
   const webhookUrl = formData.get("webhookUrl") as string || ""

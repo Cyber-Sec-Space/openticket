@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { hasPermission } from "@/lib/auth-utils"
+import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -13,8 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default async function VulnerabilitiesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'VIEW_ASSETS')) {
-    return notFound()
+  if (!session?.user || !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
+    return redirect("/login")
   }
 
   const resolvedParams = await searchParams;

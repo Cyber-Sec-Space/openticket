@@ -20,7 +20,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   const filterParams: any = {}
 
   // Hard RBAC rule: reporters and assignees can see their tickets
-  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
+  const hasPrivilege = hasPermission(session as any, ['VIEW_INCIDENTS_ALL', 'VIEW_INCIDENTS_ASSIGNED', 'VIEW_INCIDENTS_UNASSIGNED'])
   if (!hasPrivilege) {
     filterParams.AND = [
       {

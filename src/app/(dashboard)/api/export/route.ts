@@ -15,9 +15,8 @@ export async function GET(req: Request) {
   const skipParam = parseInt(searchParams.get('skip') || '0', 10)
   const skip = isNaN(skipParam) ? 0 : skipParam
 
-  
-  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS') // Can view all incidents if true
-  
+  const canExportIncidents = hasPermission(session as any, 'EXPORT_INCIDENTS')
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
   let csvContent = ""
 
   if (type === 'incident') {
@@ -26,8 +25,12 @@ export async function GET(req: Request) {
       whereClause.status = statusFilter
     }
     
-    // BOLA Enforcement: Restrict non-privileged members to their owned tickets AND assigned tickets
-    if (!hasPrivilege) {
+    // BOLA Enforcement: Strict export limitation
+    if (!canExportIncidents) {
+       return new NextResponse("Forbidden: You require standard or advanced export permissions.", { status: 403 })
+    }
+
+    if (!canViewAll) {
        whereClause.OR = [
          { reporterId: session.user.id },
          { assignees: { some: { id: session.user.id } } }
@@ -64,8 +67,8 @@ export async function GET(req: Request) {
     }
   } else if (type === 'vulnerability') {
     // BOLA Enforcement
-    const hasVulnPrivilege = hasPermission(session as any, 'VIEW_ASSETS')
-    if (!hasVulnPrivilege) {
+    const hasVulnExportPrivilege = hasPermission(session as any, 'VIEW_VULNERABILITIES') && hasPermission(session as any, 'EXPORT_INCIDENTS')
+    if (!hasVulnExportPrivilege) {
        return new NextResponse("Forbidden: Comprehensive Threat intelligence extracts mandate explicit clearance.", { status: 403 })
     }
 

@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
   
-  const hasPrivilege = hasPermission(session as any, 'MANAGE_ASSETS')
+  const hasPrivilege = hasPermission(session as any, 'CREATE_ASSETS')
   if (!hasPrivilege) {
     return new NextResponse("Forbidden", { status: 403 })
   }

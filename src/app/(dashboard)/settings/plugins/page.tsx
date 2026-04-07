@@ -7,7 +7,7 @@ import { PluginCard } from "./plugin-card"
 
 export default async function PluginManagementPage() {
   const session = await auth()
-  if (!session?.user?.id || !hasPermission(session as any, 'SYSTEM_SETTINGS')) {
+  if (!session?.user?.id || !hasPermission(session as any, 'VIEW_PLUGINS')) {
     redirect("/")
   }
 

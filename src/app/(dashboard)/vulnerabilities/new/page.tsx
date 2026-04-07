@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { hasPermission } from "@/lib/auth-utils"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { Bug, ShieldAlert, Server } from "lucide-react"
 import { MultiAssetPicker } from "@/components/ui/multi-asset-picker"
@@ -14,8 +14,8 @@ import { createVulnerabilityAction } from "./actions"
 export default async function NewVulnerabilityPage() {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
-    return notFound()
+  if (!session?.user || !hasPermission(session as any, 'CREATE_VULNERABILITIES')) {
+    redirect("/login")
   }
 
   const assets = await db.asset.findMany({ select: { id: true, name: true, type: true, status: true, ipAddress: true } })

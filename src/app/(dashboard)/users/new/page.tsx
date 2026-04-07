@@ -1,5 +1,5 @@
 import { auth } from "@/auth"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { ShieldAlert, UserPlus, Key, Mail, Fingerprint } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,8 +12,8 @@ import { hasPermission } from "@/lib/auth-utils"
 export default async function NewUserPage() {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
-    return notFound()
+  if (!session?.user || !hasPermission(session as any, 'CREATE_USERS')) {
+    redirect("/login")
   }
 
   const allCustomRoles = await db.customRole.findMany({ orderBy: { name: 'asc' } })

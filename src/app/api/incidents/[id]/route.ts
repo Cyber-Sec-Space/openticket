@@ -9,7 +9,7 @@ export async function GET(
   const { id } = await params
   const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
-  if (!hasPermission(session as any, 'VIEW_INCIDENTS')) return new NextResponse("Forbidden", { status: 403 })
+  if (!hasPermission(session as any, ['VIEW_INCIDENTS_ALL', 'VIEW_INCIDENTS_ASSIGNED', 'VIEW_INCIDENTS_UNASSIGNED'])) return new NextResponse("Forbidden", { status: 403 })
 
   try {
     const incident = await db.incident.findUnique({
@@ -25,10 +25,17 @@ export async function GET(
 
     if (!incident) return new NextResponse("Not Found", { status: 404 })
 
-    const hasPrivilege = hasPermission(session as any, 'MANAGE_USERS')
+    const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
     
     // Strict isolation enforcement
-    const isAuthorized = hasPrivilege || incident.reporterId === session.user.id || incident.assignees.some(a => a.id === session.user.id)
+    let isAuthorized = canViewAll || incident.reporterId === session.user.id
+    if (!isAuthorized) {
+        if (canViewAssigned && incident.assignees.some(a => a.id === session.user.id)) isAuthorized = true
+        if (canViewUnassigned && incident.assignees.length === 0) isAuthorized = true
+    }
+
     if (!isAuthorized) {
       return new NextResponse("Forbidden", { status: 403 })
     }
@@ -51,7 +58,12 @@ export async function PATCH(
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
 
   try {
-    const hasPrivilege = hasPermission(session as any, 'ASSIGN_INCIDENTS') // Can assign or change severity
+    const hasAssignAll = hasPermission(session as any, 'ASSIGN_INCIDENTS_OTHERS')
+    const hasAssignSelf = hasPermission(session as any, 'ASSIGN_INCIDENTS_SELF')
+    const hasMetadata = hasPermission(session as any, 'UPDATE_INCIDENTS_METADATA')
+    const canClose = hasPermission(session as any, 'UPDATE_INCIDENT_STATUS_CLOSE')
+    const canResolve = hasPermission(session as any, 'UPDATE_INCIDENT_STATUS_RESOLVE')
+
     const body = await req.json()
     const { status, assigneeId, severity, assetId } = body
 
@@ -61,15 +73,26 @@ export async function PATCH(
     })
     if (!existingIncident) return new NextResponse("Not Found", { status: 404 })
 
-    // Check if user is either universally privileged, or assigned, or has generic status permission (if they are assigned)
-    const canManageStatus = hasPermission(session as any, 'MANAGE_INCIDENT_STATUS')
-    const isAuthorizedToUpdate = hasPrivilege || (existingIncident.assignees.some(a => a.id === session.user.id) && canManageStatus)
-    if (!isAuthorizedToUpdate) {
-      return new NextResponse("Forbidden (Insufficient Permissions)", { status: 403 })
+    const isAssigned = existingIncident.assignees.some(a => a.id === session.user.id)
+    
+    if (assigneeId !== undefined) {
+       if (!hasAssignAll) {
+          if (!hasAssignSelf || assigneeId !== session.user.id) {
+             return new NextResponse("Forbidden: You lack permission to reassign this incident.", { status: 403 })
+          }
+       }
     }
 
-    if ((assigneeId !== undefined || severity !== undefined || assetId !== undefined) && !hasPrivilege) {
-       return new NextResponse("Forbidden: Setting assignees, severities or assets requires explicit ASSIGN_INCIDENTS privilege", { status: 403 })
+    if ((severity !== undefined || assetId !== undefined) && !hasAssignAll && !(isAssigned && hasMetadata)) {
+       return new NextResponse("Forbidden: Setting severities or assets requires explicit assignment privileges.", { status: 403 })
+    }
+
+    if (status) {
+       if (status === 'CLOSED' && !canClose) return new NextResponse("Forbidden: Missing CLOSE privilege", { status: 403 })
+       if (status === 'RESOLVED' && !canResolve) return new NextResponse("Forbidden: Missing RESOLVE privilege", { status: 403 })
+       if (status !== 'CLOSED' && status !== 'RESOLVED' && !hasAssignAll && !(isAssigned && hasMetadata)) {
+          return new NextResponse("Forbidden: Only assignees can change status progression.", { status: 403 })
+       }
     }
 
     const updateData: any = {}

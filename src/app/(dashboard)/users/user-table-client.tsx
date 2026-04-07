@@ -42,7 +42,8 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
   }
 
   const handleBulkRoleUpdate = async () => {
-    if (!confirm(`Update Roles to [${bulkRoles.join(', ')}] for selected users?`)) return
+    const roleNames = bulkRoles.map(id => allCustomRoles?.find(r => r.id === id)?.name || id)
+    if (!confirm(`Update Roles to [${roleNames.join(', ')}] for selected users?`)) return
     setIsProcessing(true)
     await bulkUpdateRolesAction(Array.from(selectedIds), bulkRoles as any)
     setSelectedIds(new Set())
@@ -70,7 +71,7 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs border-white/20">
-                  {bulkRoles.length > 0 ? bulkRoles.join(', ') : "Select Roles"}
+                  {bulkRoles.length > 0 ? bulkRoles.map(id => allCustomRoles?.find(r => r.id === id)?.name || id).join(', ') : "Select Roles"}
               </PopoverTrigger>
               <PopoverContent className="w-56 bg-black/95 shadow-2xl border border-white/10 p-4 space-y-3">
                 <div className="font-semibold text-xs tracking-wider text-muted-foreground uppercase mb-2">Set Privilege Tiers</div>

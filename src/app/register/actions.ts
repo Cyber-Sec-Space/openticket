@@ -58,7 +58,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
 
   // Phase 10: Email Alert on New Registration
   if (settings?.smtpTriggerOnNewUser) {
-    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { has: 'SYSTEM_SETTINGS' } } }, email: { not: null } }, select: { email: true } })
+    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { has: 'VIEW_SYSTEM_SETTINGS' } } }, email: { not: null } }, select: { email: true } })
     await sendNewRegistrationAlertEmail(email, name, admins.map(a => a.email as string))
   }
 

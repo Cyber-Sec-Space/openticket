@@ -10,8 +10,11 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const filterParams: any = {}
   
-  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
-  if (!hasPrivilege) {
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+
+  if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
     filterParams.reporterId = session.user.id
   }
 
@@ -26,8 +29,26 @@ export async function GET(req: Request) {
   
   take = Math.min(take, 100);
 
+  // Add dynamic isolation limits based on exact viewport permissions
+  const rbACWhere: any = {}
+  
+  if (!canViewAll) {
+     const assignedConditions = []
+     if (canViewAssigned) {
+        assignedConditions.push({ reporterId: session.user.id })
+        assignedConditions.push({ assignees: { some: { id: session.user.id } } })
+     }
+     if (canViewUnassigned) {
+        assignedConditions.push({ assignees: { none: {} } })
+     }
+     rbACWhere.OR = assignedConditions
+  }
+
   const incidents = await db.incident.findMany({
-    where: filterParams,
+    where: {
+       ...rbACWhere,
+       ...filterParams
+    },
     include: {
       reporter: { select: { name: true, email: true } },
       assignees: { select: { name: true, email: true } },
@@ -59,11 +80,9 @@ export async function POST(req: Request) {
       processedTags = tags.map(t => String(t).trim()).filter(t => t !== '').map(t => t.startsWith('#') ? t : `#${t}`)
     }
 
-    const hasPrivilege = hasPermission(session as any, 'MANAGE_INCIDENT_STATUS')
-    
-    // Prevent Privilege Escalation
-    const finalAssetId = hasPrivilege ? (assetId || null) : null;
-    const finalSeverity = hasPrivilege ? (severity || 'LOW') : 'LOW';
+    // If user has CREATE_INCIDENTS, they are allowed to set initial target asset and severity
+    const finalAssetId = assetId || null;
+    let finalSeverity = severity || 'LOW';
 
     const newIncident = await db.incident.create({
       data: {

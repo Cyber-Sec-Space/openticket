@@ -59,7 +59,7 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
     return new NextResponse("File Not Found", { status: 404 })
   }
 
-  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS') || hasPermission(session as any, 'VIEW_ASSETS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS_ALL') || hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED') || hasPermission(session as any, 'VIEW_ASSETS')
 
   // Enforce Bound Object Level Authorization
   if (!hasPrivilege) {

@@ -11,7 +11,7 @@ import { hasPermission } from "@/lib/auth-utils"
 export async function createUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
+  if (!session?.user || !hasPermission(session as any, 'CREATE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -59,7 +59,7 @@ export async function createUserAction(formData: FormData) {
   // Phase 10: Email Alert on New Registration
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   if (settings?.smtpTriggerOnNewUser) {
-    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { has: 'SYSTEM_SETTINGS' } } }, email: { not: null }, id: { not: newUser.id } }, select: { email: true } })
+    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { has: 'UPDATE_SYSTEM_SETTINGS' } } }, email: { not: null }, id: { not: newUser.id } }, select: { email: true } })
     await sendNewRegistrationAlertEmail(email, name, admins.map(a => a.email as string))
   }
 

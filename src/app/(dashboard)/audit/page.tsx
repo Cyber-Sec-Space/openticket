@@ -12,7 +12,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
   const session = await auth()
   
   // Security Perimeter: Reporters cannot view system audits.
-  if (!session?.user || !hasPermission(session as any, 'SYSTEM_SETTINGS')) {
+  if (!session?.user || !hasPermission(session as any, 'VIEW_AUDIT_LOGS')) {
      return notFound()
   }
 

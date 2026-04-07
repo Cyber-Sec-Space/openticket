@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { User, Mail, ShieldCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,8 +20,8 @@ export default async function UserDetailPage({
   const resolvedSearchParams = await searchParams
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
-    return notFound()
+  if (!session?.user || !hasPermission(session as any, 'VIEW_USERS')) {
+    redirect("/login")
   }
 
   let auditPage = parseInt(resolvedSearchParams.auditPage as string) || 1

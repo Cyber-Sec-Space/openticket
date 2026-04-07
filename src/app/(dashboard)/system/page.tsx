@@ -15,7 +15,7 @@ import { SlaSettingsPanel } from "./sla-settings-panel"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'SYSTEM_SETTINGS')) {
+  if (!session?.user || !hasPermission(session as any, 'VIEW_SYSTEM_SETTINGS')) {
     redirect("/login")
   }
 
@@ -119,14 +119,14 @@ export default async function SystemSettingsPage() {
                 <p className="text-[11px] text-muted-foreground pb-2">
                    Select the initial access tier granted to newly registered operators.
                 </p>
-                <Select key={settings.defaultUserRoles?.[0]?.id || ""} name="defaultRoleId" defaultValue={settings.defaultUserRoles?.[0]?.id || ""}>
+                <Select key={settings.defaultUserRoles?.[0]?.name || ""} name="defaultRoleId" defaultValue={settings.defaultUserRoles?.[0]?.name || ""}>
                   <SelectTrigger className="w-[280px] bg-black/50 border-white/10">
                     <SelectValue placeholder="Select Tier" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NONE" disabled>Select a default role</SelectItem>
                     {customRoles.map(role => (
-                       <SelectItem key={role.id} value={role.id}>{role.name} {role.isSystem ? '(System)' : ''}</SelectItem>
+                       <SelectItem key={role.id} value={role.name}>{role.name} {role.isSystem ? '(System)' : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

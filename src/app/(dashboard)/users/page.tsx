@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { redirect } from "next/navigation"
 import { UserCog, Plus } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -10,9 +10,9 @@ import { hasPermission } from "@/lib/auth-utils"
 export default async function UsersPage() {
   const session = await auth()
   
-  // Security Perimeter: Only MANAGE_USERS handles User configurations
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_USERS')) {
-    return notFound()
+  // Security Perimeter: Only VIEW_USERS handles User configurations
+  if (!session?.user || !hasPermission(session as any, 'VIEW_USERS')) {
+    redirect("/login")
   }
 
   const users = await db.user.findMany({

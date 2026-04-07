@@ -61,7 +61,7 @@ export default async function IncidentDetailPage({
     db.auditLog.findMany({ where: { entityType: 'Incident', entityId: id }, include: { user: { include: { customRoles: true } } }, orderBy: { createdAt: 'desc' }, take: 50 })
   ])
 
-  const hasPrivilege = hasPermission(session as any, 'MANAGE_INCIDENT_STATUS') || hasPermission(session as any, 'ASSIGN_INCIDENTS')
+  const hasPrivilege = hasPermission(session as any, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(session as any, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
   
   const isAuthorized = hasPrivilege || incident?.reporterId === session.user.id || incident?.assignees.some(a => a.id === session.user.id)
   if (!incident || !isAuthorized) {
@@ -78,7 +78,7 @@ export default async function IncidentDetailPage({
   let eligibleAssignees: any[] = []
   if (hasPrivilege) {
     eligibleAssignees = await db.user.findMany({
-      where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_INCIDENT_STATUS', 'ASSIGN_INCIDENTS'] } } } },
+      where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE', 'ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'] } } } },
       select: { id: true, name: true, customRoles: true }
     })
   }
@@ -89,7 +89,7 @@ export default async function IncidentDetailPage({
   async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = hasPermission(sessionUrl as any, 'MANAGE_INCIDENT_STATUS') || hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS')
+    const hasPostPrivilege = hasPermission(sessionUrl as any, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(sessionUrl as any, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
@@ -196,7 +196,7 @@ export default async function IncidentDetailPage({
 
       await fireHook("onAssetCompromise", affectedAsset)
 
-      const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['MANAGE_ASSETS', 'SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
+      const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_ASSETS', 'VIEW_SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
       await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${resolvedAssetId}`)
 
       if (settings?.smtpTriggerOnAssetCompromise) {
@@ -240,7 +240,7 @@ export default async function IncidentDetailPage({
   async function editDetailsAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = hasPermission(sessionUrl as any, 'MANAGE_INCIDENT_STATUS')
+    const hasPostPrivilege = hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const newTitle = formData.get("title") as string
@@ -469,7 +469,7 @@ export default async function IncidentDetailPage({
                 const content = formData.get("content") as string
                 if (!content) return;
                 
-                const hasPrivilege = hasPermission(sessionUrl as any, 'MANAGE_INCIDENT_STATUS') || hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS');
+                const hasPrivilege = hasPermission(sessionUrl as any, 'ADD_COMMENTS');
                 const isReporterOrAssignee = incident?.reporterId === sessionUrl.user.id || incident?.assignees.some((a: any) => a.id === sessionUrl.user.id);
                 if (!hasPrivilege && !isReporterOrAssignee) {
                    throw new Error("Forbidden: Strict BOLA isolation. You cannot comment on an incident you do not own.");

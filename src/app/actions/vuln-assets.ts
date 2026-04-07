@@ -7,7 +7,7 @@ import { hasPermission } from "@/lib/auth-utils"
 
 export async function linkAssetToVulnerability(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
+  if (!session?.user || !hasPermission(session as any, 'LINK_VULN_TO_ASSET')) {
     throw new Error("Forbidden")
   }
 
@@ -40,7 +40,7 @@ export async function linkAssetToVulnerability(formData: FormData) {
 
 export async function unlinkAssetFromVulnerability(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
+  if (!session?.user || !hasPermission(session as any, 'LINK_VULN_TO_ASSET')) {
     throw new Error("Forbidden")
   }
 
