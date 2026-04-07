@@ -144,7 +144,7 @@ export async function bulkDeleteUsersAction(userIds: string[]) {
 export async function bulkUpdateRolesAction(userIds: string[], roleIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_USER_ROLES')) {
+  if (!session?.user || !hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 

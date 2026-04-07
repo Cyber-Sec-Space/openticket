@@ -27,6 +27,7 @@ async function main() {
   console.log("Database wiped perfectly. Injecting enterprise-scale data...")
 
   // 1. Create Users
+  // eslint-disable-next-line
   const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || "admin123";
   const passwordHash = await bcrypt.hash(rawPassword, 10)
 
