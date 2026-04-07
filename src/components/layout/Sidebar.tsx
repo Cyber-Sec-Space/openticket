@@ -28,13 +28,13 @@ export function Sidebar({ userPermissions }: { userPermissions?: string[] }) {
   if (userPermissions?.includes('VIEW_USERS') || userPermissions?.includes('CREATE_USERS')) {
     navItems.push({ name: "Users", href: "/users", icon: Users })
   }
-  if (userPermissions?.includes('VIEW_ROLES') || userPermissions?.includes('MANAGE_ROLES')) {
+  if (userPermissions?.includes('VIEW_ROLES') || userPermissions?.includes('CREATE_ROLES') || userPermissions?.includes('UPDATE_ROLES')) {
     navItems.push({ name: "Roles Config", href: "/users/roles", icon: Key })
   }
   if (userPermissions?.includes('VIEW_SYSTEM_SETTINGS') || userPermissions?.includes('UPDATE_SYSTEM_SETTINGS')) {
     navItems.push({ name: "System Config", href: "/system", icon: Sliders })
   }
-  if (userPermissions?.includes('VIEW_PLUGINS') || userPermissions?.includes('MANAGE_PLUGINS')) {
+  if (userPermissions?.includes('VIEW_PLUGINS') || userPermissions?.includes('INSTALL_PLUGINS') || userPermissions?.includes('TOGGLE_PLUGINS') || userPermissions?.includes('CONFIGURE_PLUGINS')) {
     navItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })
   }
 

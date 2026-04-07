@@ -60,22 +60,26 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
   }
 
   const hasGlobalIncidents = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
   const hasGlobalVulns = hasPermission(session as any, 'VIEW_ASSETS') || hasPermission(session as any, 'VIEW_VULNERABILITIES')
 
   // Enforce Bound Object Level Authorization
   let authorized = false;
 
-  if (attachment.uploaderId === session.user.id) {
-     authorized = true;
-  } else if (attachment.incident) {
-     if (hasGlobalIncidents) {
+  if (attachment.incident) {
+     if (!hasGlobalIncidents && !canViewAssigned && !canViewUnassigned) {
+        return new NextResponse("Forbidden: Strict BOLA boundaries restrict access to this file.", { status: 403 })
+     }
+     if (hasGlobalIncidents || attachment.incident.reporterId === session.user.id) {
         authorized = true;
      } else {
-        const isReporter = attachment.incident.reporterId === session.user.id
-        const isAssigned = attachment.incident.assignees.some(a => a.id === session.user.id)
-        if (isReporter || isAssigned) authorized = true;
+        if (canViewAssigned && attachment.incident.assignees.some(a => a.id === session.user.id)) authorized = true;
+        if (canViewUnassigned && attachment.incident.assignees.length === 0) authorized = true;
      }
   } else if (attachment.vuln && hasGlobalVulns) {
+     authorized = true;
+  } else if (!attachment.incident && !attachment.vuln && attachment.uploaderId === session.user.id) {
      authorized = true;
   }
 

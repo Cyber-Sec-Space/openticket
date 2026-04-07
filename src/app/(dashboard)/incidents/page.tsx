@@ -19,17 +19,21 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
 
   const filterParams: any = {}
 
-  // Hard RBAC rule: reporters and assignees can see their tickets
-  const hasPrivilege = hasPermission(session as any, ['VIEW_INCIDENTS_ALL', 'VIEW_INCIDENTS_ASSIGNED', 'VIEW_INCIDENTS_UNASSIGNED'])
-  if (!hasPrivilege) {
-    filterParams.AND = [
-      {
-        OR: [
-          { reporterId: session.user.id },
-          { assignees: { some: { id: session.user.id } } }
-        ]
-      }
-    ]
+  // Hard RBAC rule: absolute propagation natively isolates unauthorized read actions
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL');
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED');
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED');
+
+  if (!canViewAll) {
+     const assignedConditions = []
+     if (canViewAssigned || (!canViewAssigned && !canViewUnassigned)) {
+        assignedConditions.push({ reporterId: session.user.id })
+        assignedConditions.push({ assignees: { some: { id: session.user.id } } })
+     }
+     if (canViewUnassigned) {
+        assignedConditions.push({ assignees: { none: {} } })
+     }
+     filterParams.OR = assignedConditions
   }
 
   // URL Filters

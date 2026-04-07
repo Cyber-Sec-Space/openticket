@@ -16,11 +16,12 @@ function isTargetSecure(urlStr: string): boolean {
     const hn = parsed.hostname;
     if (/^127\./.test(hn)) return false;
     if (hn === 'localhost') return false;
+    if (hn === '0.0.0.0') return false; // Null IP Loopback bypass guard
     if (hn === '169.254.169.254') return false; // AWS/GCP/Azure Metadata
     if (/^192\.168\./.test(hn)) return false;
     if (/^10\./.test(hn)) return false;
     if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hn)) return false;
-    if (hn.includes("::1")) return false;
+    if (hn.includes("::1") || hn === '[::]' || hn === '::') return false;
     
     return true;
   } catch {

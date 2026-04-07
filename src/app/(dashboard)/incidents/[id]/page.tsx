@@ -63,7 +63,14 @@ export default async function IncidentDetailPage({
 
   const hasPrivilege = hasPermission(session as any, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(session as any, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
   
-  const isAuthorized = hasPrivilege || incident?.reporterId === session.user.id || incident?.assignees.some(a => a.id === session.user.id)
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+  
+  const isAuthorized = canViewAll 
+    || (canViewUnassigned && incident?.assignees.length === 0) 
+    || incident?.reporterId === session.user.id 
+    || incident?.assignees.some(a => a.id === session.user.id)
+
   if (!incident || !isAuthorized) {
     notFound()
   }
@@ -94,15 +101,18 @@ export default async function IncidentDetailPage({
 
     const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
     
-    // IMPORTANT: Defeating Next.js Stale Closure State
-    // We must fetch the current structural truth directly from the database here 
-    // to calculate SLA deltas and Assignee diffs accurately.
     const currentIncident = await db.incident.findUnique({ 
       where: { id: incident!.id },
       include: { assignees: true, reporter: true }
     })
     
     if (!currentIncident) throw new Error("Synchronization Error: Incident record lost or expunged.")
+
+    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
+    const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
+    if (!canViewAll && !isReporterOrAssignee) {
+       throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.")
+    }
 
     const newStatus = formData.get("status") as any
     const newSeverity = formData.get("severity") as any
@@ -243,6 +253,15 @@ export default async function IncidentDetailPage({
     const hasPostPrivilege = hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
+    const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
+    if (!currentIncident) throw new Error("Incident not found")
+
+    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
+    const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
+    if (!canViewAll && !isReporterOrAssignee) {
+       throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.")
+    }
+
     const newTitle = formData.get("title") as string
     const newType = formData.get("type") as string
     const newDesc = formData.get("description") as string
@@ -275,6 +294,15 @@ export default async function IncidentDetailPage({
     const sessionUrl = await auth()
     const hasPostPrivilege = hasPermission(sessionUrl as any, 'DELETE_INCIDENTS')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
+
+    const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
+    if (!currentIncident) throw new Error("Incident not found")
+
+    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
+    const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
+    if (!canViewAll && !isReporterOrAssignee) {
+       throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.")
+    }
 
     // Scrub physical orphan files before Prisma cascade sweeps the metadata
     try {
@@ -469,10 +497,20 @@ export default async function IncidentDetailPage({
                 const content = formData.get("content") as string
                 if (!content) return;
                 
-                const hasPrivilege = hasPermission(sessionUrl as any, 'ADD_COMMENTS');
-                const isReporterOrAssignee = incident?.reporterId === sessionUrl.user.id || incident?.assignees.some((a: any) => a.id === sessionUrl.user.id);
-                if (!hasPrivilege && !isReporterOrAssignee) {
-                   throw new Error("Forbidden: Strict BOLA isolation. You cannot comment on an incident you do not own.");
+                const canAddComments = hasPermission(sessionUrl as any, 'ADD_COMMENTS');
+                
+                const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
+                if (!currentIncident) throw new Error("Incident not found")
+
+                const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
+                const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id);
+                
+                if (!canAddComments) {
+                    throw new Error("Forbidden: You do not possess the ADD_COMMENTS capability.")
+                }
+
+                if (!canViewAll && !isReporterOrAssignee) {
+                   throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.");
                 }
 
                 await db.comment.create({

@@ -38,15 +38,28 @@ export async function uploadAttachment(formData: FormData) {
   if (incidentId) {
     if (!hasPermission(session as any, 'UPLOAD_INCIDENT_ATTACHMENTS')) return { error: "Forbidden: Direct capability blocked" }
     const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+
+    if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
+       return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance." }
+    }
+
     if (!canViewAll) {
        const incident = await db.incident.findUnique({
          where: { id: incidentId },
          select: { reporterId: true, assignees: { select: { id: true } } }
        })
        if (!incident) return { error: "Incident context invalid" }
-       const isReporter = incident.reporterId === session.user.id
-       const isAssigned = incident.assignees.some(a => a.id === session.user.id)
-       if (!isReporter && !isAssigned) {
+
+       let isAuthorized = incident.reporterId === session.user.id
+       
+       if (!isAuthorized) {
+          if (canViewAssigned && incident.assignees.some(a => a.id === session.user.id)) isAuthorized = true
+          if (canViewUnassigned && incident.assignees.length === 0) isAuthorized = true
+       }
+       
+       if (!isAuthorized) {
           return { error: "Forbidden: Strict Incident BOLA isolation" }
        }
     }
@@ -122,19 +135,31 @@ export async function deleteAttachment(attachmentId: string) {
 
   // RBAC for Delete
   const hasPrivilege = hasPermission(session as any, 'DELETE_INCIDENT_ATTACHMENTS')
-  if (!hasPrivilege) {
-    if (attachment.uploaderId !== session.user.id) {
-       return { error: "Forbidden: You cannot delete evidence you did not upload without Admin privileges." }
-    } else {
-       // Ensure they still have baseline isolation context to the incident
-       if (attachment.incident) {
-          const isAssigned = attachment.incident.assignees.some(a => a.id === session.user.id)
-          const isReporter = attachment.incident.reporterId === session.user.id
-          if (!isAssigned && !isReporter) {
-             return { error: "Forbidden: You no longer have context access to this incident to manage uploads." }
-          }
-       }
-    }
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+  
+  // Absolute Zero-Trust Evaluation
+  if (attachment.incident && !canViewAll && !canViewAssigned && !canViewUnassigned) {
+     return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance to operate on this dataset." }
+  }
+
+  if (!hasPrivilege && attachment.uploaderId !== session.user.id) {
+     return { error: "Forbidden: You cannot delete evidence you did not upload." }
+  }
+
+  // Ensure they still have baseline isolation context to the incident
+  if (attachment.incident && !canViewAll) {
+     let isAuthorized = attachment.incident.reporterId === session.user.id
+       
+     if (!isAuthorized) {
+        if (canViewAssigned && attachment.incident.assignees.some(a => a.id === session.user.id)) isAuthorized = true
+        if (canViewUnassigned && attachment.incident.assignees.length === 0) isAuthorized = true
+     }
+     
+     if (!isAuthorized) {
+        return { error: "Forbidden: You do not have contextual access to manage this incident's forensic evidence." }
+     }
   }
 
   // Delete from filesystem securely

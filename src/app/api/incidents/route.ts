@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
 
   if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
-    filterParams.reporterId = session.user.id
+    return NextResponse.json([]) // Enforce absolute zero-trust view boundary
   }
 
   const takeParam = searchParams.get("take");

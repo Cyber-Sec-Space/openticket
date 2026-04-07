@@ -28,15 +28,22 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     redirect("/incidents")
   }
 
-  const hasPrivilege = hasPermission(session as any, ['VIEW_INCIDENTS_ALL', 'VIEW_INCIDENTS_ASSIGNED', 'VIEW_INCIDENTS_UNASSIGNED'])
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL');
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED');
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED');
 
   // Metric computations for the dashboard
   const filterParams: any = {}
-  if (!hasPrivilege) {
-    filterParams.OR = [
-      { reporterId: session.user.id },
-      { assignees: { some: { id: session.user.id } } }
-    ]
+  if (!canViewAll) {
+     const assignedConditions = []
+     if (canViewAssigned || (!canViewAssigned && !canViewUnassigned)) {
+        assignedConditions.push({ reporterId: session.user.id })
+        assignedConditions.push({ assignees: { some: { id: session.user.id } } })
+     }
+     if (canViewUnassigned) {
+        assignedConditions.push({ assignees: { none: {} } })
+     }
+     filterParams.OR = assignedConditions
   }
 
   const activeIncidents = await db.incident.count({ where: { ...filterParams, status: { notIn: ['CLOSED', 'RESOLVED'] } } })
@@ -63,6 +70,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   // Personal Case Board Logic
   const boardFilterParams: any = {
+    ...filterParams,
     status: { notIn: ['CLOSED', 'RESOLVED'] }
   };
 
@@ -70,22 +78,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     boardFilterParams.reporterId = session.user.id;
   } else if (currentFilter === 'assigned') {
     boardFilterParams.assignees = { some: { id: session.user.id } };
-  } else if (currentFilter === 'unassigned' && hasPrivilege) {
+  } else if (currentFilter === 'unassigned') {
     boardFilterParams.assignees = { none: {} };
-  } else {
-    // Default 'all' logic
-    if (hasPrivilege) {
-      boardFilterParams.OR = [
-        { reporterId: session.user.id },
-        { assignees: { some: { id: session.user.id } } },
-        { assignees: { none: {} } }
-      ]
-    } else {
-      boardFilterParams.OR = [
-        { reporterId: session.user.id },
-        { assignees: { some: { id: session.user.id } } }
-      ]
-    }
   }
 
   const [boardIncidents, boardTotal] = await Promise.all([
@@ -455,7 +449,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                   <strong className="block font-medium">Catalog Infrastructure</strong>
                 </div>
               </Link>
-              {hasPrivilege && (
+              {hasPermission(session as any, 'CREATE_VULNERABILITIES') && (
                 <Link href="/vulnerabilities/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-purple-400/50 text-white rounded-lg transition-all">
                   <Bug className="w-4 h-4 mr-3 text-purple-400 group-hover:scale-110 transition-transform" />
                   <div className="text-sm">
@@ -480,7 +474,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 <Link scroll={false} href={`?filter=all`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'all' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>All</Link>
                 <Link scroll={false} href={`?filter=assigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'assigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Assigned to me</Link>
                 <Link scroll={false} href={`?filter=reported`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'reported' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Reported by me</Link>
-                {hasPrivilege && (
+                {(canViewAll || canViewUnassigned) && (
                   <Link scroll={false} href={`?filter=unassigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'unassigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Unassigned</Link>
                 )}
               </div>

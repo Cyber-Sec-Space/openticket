@@ -30,11 +30,23 @@ export async function GET(req: Request) {
        return new NextResponse("Forbidden: You require standard or advanced export permissions.", { status: 403 })
     }
 
+    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+
+    if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
+       return new NextResponse("Forbidden: No view permissions granted.", { status: 403 })
+    }
+
     if (!canViewAll) {
-       whereClause.OR = [
-         { reporterId: session.user.id },
-         { assignees: { some: { id: session.user.id } } }
-       ]
+       const assignedConditions = []
+       if (canViewAssigned) {
+          assignedConditions.push({ reporterId: session.user.id })
+          assignedConditions.push({ assignees: { some: { id: session.user.id } } })
+       }
+       if (canViewUnassigned) {
+          assignedConditions.push({ assignees: { none: {} } })
+       }
+       whereClause.OR = assignedConditions
     }
     
     // Resource Constraint Enforcement (OOM Prevention) w/ Safe Paging

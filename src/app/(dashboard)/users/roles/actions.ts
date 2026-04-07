@@ -6,20 +6,38 @@ import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
 import { Permission } from "@prisma/client"
 
-// Verify Admin Privileges (SYSTEM_SETTINGS)
-async function verifyAdmin() {
+// Verify granular Admin Privileges
+async function verifyAdmin(action: 'CREATE_ROLES' | 'UPDATE_ROLES' | 'DELETE_ROLES') {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_USER_ROLES')) {
-    throw new Error("Unauthorized: Only Administrators can modify roles.")
+  if (!session?.user || !hasPermission(session as any, action)) {
+    throw new Error(`Unauthorized: You lack the ${action} capability.`)
+  }
+  return session
+}
+
+function enforcePrivilegeSubset(session: any, requestedPermissions: Permission[]) {
+  const callerPerms = new Set(session.user.customRoles?.flatMap((r: any) => r.permissions) || []);
+  
+  // System Administrators bypass the constraint
+  const isRoot = callerPerms.has('UPDATE_SYSTEM_SETTINGS');
+  if (isRoot) return;
+  
+  // A user cannot mint a role containing privileges they do not actively possess.
+  for (const perm of requestedPermissions) {
+    if (!callerPerms.has(perm)) {
+      throw new Error(`Privilege Escalation Blocked: You cannot delegate privileges you do not possess (${perm}).`);
+    }
   }
 }
 
 export async function createRole(formData: FormData) {
-  await verifyAdmin()
+  const session = await verifyAdmin('CREATE_ROLES')
 
   const name = formData.get("name") as string
   const description = formData.get("description") as string
   const permissionIds = formData.getAll("permissions") as Permission[]
+
+  enforcePrivilegeSubset(session, permissionIds)
 
   if (!name) throw new Error("Role name is required")
 
@@ -40,12 +58,14 @@ export async function createRole(formData: FormData) {
 }
 
 export async function updateRole(formData: FormData) {
-  await verifyAdmin()
+  const session = await verifyAdmin('UPDATE_ROLES')
 
   const id = formData.get("id") as string
   const name = formData.get("name") as string
   const description = formData.get("description") as string
   const permissionIds = formData.getAll("permissions") as Permission[]
+  
+  enforcePrivilegeSubset(session, permissionIds)
 
   const existingRole = await db.customRole.findUnique({ where: { id } })
   if (!existingRole) throw new Error("Role not found")
@@ -68,7 +88,7 @@ export async function updateRole(formData: FormData) {
 }
 
 export async function deleteRole(formData: FormData) {
-  await verifyAdmin()
+  await verifyAdmin('DELETE_ROLES')
 
   const id = formData.get("id") as string
   

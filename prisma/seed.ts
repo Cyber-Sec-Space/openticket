@@ -42,7 +42,11 @@ async function main() {
   });
 
   const iamAdminRole = await prisma.customRole.create({
-    data: { name: 'Identity Admin', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_USERS, Permission.CREATE_USERS, Permission.UPDATE_USER_PROFILE, Permission.MANAGE_USER_ROLES, Permission.RESET_USER_PASSWORDS, Permission.SUSPEND_USERS, Permission.DELETE_USERS, Permission.VIEW_ROLES, Permission.CREATE_ROLES, Permission.UPDATE_ROLES, Permission.DELETE_ROLES, Permission.VIEW_AUDIT_LOGS] }
+    data: { name: 'Identity Admin', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_USERS, Permission.CREATE_USERS, Permission.UPDATE_USER_PROFILE, Permission.ASSIGN_USER_ROLES, Permission.RESET_USER_PASSWORDS, Permission.SUSPEND_USERS, Permission.DELETE_USERS, Permission.VIEW_ROLES, Permission.CREATE_ROLES, Permission.UPDATE_ROLES, Permission.DELETE_ROLES, Permission.VIEW_AUDIT_LOGS] }
+  });
+
+  const devopsRole = await prisma.customRole.create({
+    data: { name: 'DevOps Engineer', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_SYSTEM_SETTINGS, Permission.UPDATE_SYSTEM_SETTINGS, Permission.VIEW_PLUGINS, Permission.INSTALL_PLUGINS, Permission.TOGGLE_PLUGINS, Permission.CONFIGURE_PLUGINS, Permission.RESTART_SYSTEM_SERVICES, Permission.MANAGE_INTEGRATIONS, Permission.VIEW_AUDIT_LOGS] }
   });
 
   const incViewerRole = await prisma.customRole.create({

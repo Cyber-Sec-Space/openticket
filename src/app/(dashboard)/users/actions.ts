@@ -8,8 +8,8 @@ import { hasPermission } from "@/lib/auth-utils"
 export async function updateUserRole(formData: FormData) {
   const session = await auth()
   
-  // Security boundary: Only MANAGE_USER_ROLES can modify RBAC.
-  if (!session?.user || !hasPermission(session as any, 'MANAGE_USER_ROLES')) {
+  // Security boundary: Only ASSIGN_USER_ROLES can modify RBAC.
+  if (!session?.user || !hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 

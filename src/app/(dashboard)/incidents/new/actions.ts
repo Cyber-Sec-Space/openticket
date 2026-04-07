@@ -8,10 +8,13 @@ import { dispatchWebhook } from "@/lib/webhook"
 import { sendCriticalAlertEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
 import { dispatchMassAlert } from "@/lib/notifier"
 import { fireHook } from "@/lib/plugins/hook-engine"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function createIncident(prevState: any, formData: FormData) {
   const session = await auth()
-  if (!session?.user) throw new Error("Unauthorized")
+  if (!session?.user || !hasPermission(session as any, 'CREATE_INCIDENTS')) {
+    throw new Error("Forbidden: You do not possess the clearance to mint operational incidents.")
+  }
 
   const title = formData.get("title") as string
   const description = formData.get("description") as string

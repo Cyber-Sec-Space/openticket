@@ -33,7 +33,9 @@ export default async function AssetDetailPage({
   const TAKE_VULN = 10;
 
   const session = await auth()
-  if (!session?.user) return null
+  if (!session?.user || !hasPermission(session as any, 'VIEW_ASSETS')) {
+    return notFound()
+  }
 
   const [asset, incidents, totalIncidents, vulns, totalVulns] = await Promise.all([
     db.asset.findUnique({ where: { id } }),
