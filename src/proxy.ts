@@ -4,7 +4,9 @@ import { authConfig } from "@/auth.config"
 const { auth } = NextAuth(authConfig)
 
 export default auth((req) => {
-  const isLoggedIn = !!req.auth;
+  // Legacy 0.3.0 JWT tokens do not contain 'permissions'. 
+  // We must fail them at the Edge to prevent an infinite redirect loop between Node.js layout and Edge proxy.
+  const isLoggedIn = !!req.auth && Array.isArray(req.auth.user?.permissions);
   const isOnLoginPage = req.nextUrl.pathname.startsWith('/login');
   const isOnRegisterPage = req.nextUrl.pathname.startsWith('/register');
   const isOnSetupPage = req.nextUrl.pathname.startsWith('/setup');

@@ -17,7 +17,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   if (Number.isNaN(page) || page < 1) page = 1;
   const TAKE = 10;
 
-  const filterParams: any = {}
+  const filterParams: any = { AND: [] }
 
   // Hard RBAC rule: absolute propagation natively isolates unauthorized read actions
   const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL');
@@ -33,12 +33,12 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
      if (canViewUnassigned) {
         assignedConditions.push({ assignees: { none: {} } })
      }
-     filterParams.OR = assignedConditions
+     filterParams.AND.push({ OR: assignedConditions })
   }
 
   // URL Filters
-  if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.status = resolvedParams.status.replace(/ /g, '_');
-  if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.severity = resolvedParams.severity;
+  if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.AND.push({ status: resolvedParams.status.replace(/ /g, '_') });
+  if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.AND.push({ severity: resolvedParams.severity });
 
   if (resolvedParams.q) {
     const searchOr = [
@@ -47,11 +47,12 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
       { id: { contains: resolvedParams.q, mode: "insensitive" } },
       { tags: { hasSome: [resolvedParams.q, `#${resolvedParams.q}`] } }
     ]
-    if (filterParams.AND) {
-      filterParams.AND.push({ OR: searchOr })
-    } else {
-      filterParams.OR = searchOr
-    }
+    filterParams.AND.push({ OR: searchOr })
+  }
+
+  // Cleanup empty AND to avoid Prisma errors if no filters applied
+  if (filterParams.AND.length === 0) {
+     delete filterParams.AND;
   }
 
   const totalCount = await db.incident.count({ where: filterParams })
