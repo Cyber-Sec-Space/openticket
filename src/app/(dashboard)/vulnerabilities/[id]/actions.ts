@@ -3,13 +3,14 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { hasPermission } from "@/lib/auth-utils"
 import { redirect } from "next/navigation"
 import { VulnStatus } from "@prisma/client"
 
 export async function updateVulnStatusAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -49,7 +50,7 @@ export async function updateVulnStatusAction(formData: FormData) {
 export async function deleteVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
     throw new Error("Forbidden: Strict Admin Access Control for Destructive Operations")
   }
 

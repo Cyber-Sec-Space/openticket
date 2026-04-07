@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { db } from "@/lib/db"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +16,7 @@ export default async function NewIncidentPage() {
   if (!session?.user) return null
 
   let assets: any[] = []
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_ASSETS')
   if (hasPrivilege) {
     assets = await db.asset.findMany({ select: { id: true, name: true } })
   }

@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { db } from "@/lib/db"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
   if (!session?.user) return null
 
   // STRICT BOLA ENFORCEMENT
-  if (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS')) return notFound()
+  if (!hasPermission(session as any, 'VIEW_ASSETS')) return notFound()
 
   const resolvedParams = await searchParams;
   let page = parseInt(resolvedParams.page || "1", 10);

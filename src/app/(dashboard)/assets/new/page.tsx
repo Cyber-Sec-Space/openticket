@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default async function NewAssetPage() {
   const session = await auth()
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
     return notFound()
   }
 

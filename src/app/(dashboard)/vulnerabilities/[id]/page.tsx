@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
@@ -23,7 +24,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
   const resolvedSearchParams = await searchParams;
   const session = await auth()
   
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
+  if (!session?.user || !hasPermission(session as any, 'VIEW_ASSETS')) {
     return notFound()
   }
 
@@ -82,7 +83,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
         
         {/* Admin Controls */}
         <div className="flex space-x-4 items-center">
-           {session.user.roles.includes('ADMIN') && (
+           {hasPermission(session as any, 'MANAGE_ASSETS') && (
              <form action={deleteVulnerabilityAction}>
                 <input type="hidden" name="vulnId" value={vuln.id} />
                 <Button variant="destructive" size="sm" type="submit" className="opacity-70 hover:opacity-100 flex items-center">
@@ -165,7 +166,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                <h2 className="font-bold tracking-tight text-red-500 flex-1">Infected Infrastructure</h2>
             </div>
             
-            {session.user.roles.includes('ADMIN') && (
+            {hasPermission(session as any, 'MANAGE_ASSETS') && (
               <form action={linkAssetToVulnerability} className="w-full p-4 border-b border-white/5 bg-black/40 flex gap-2">
                  <input type="hidden" name="vulnId" value={vuln.id} />
                  <Select name="assetId" required>
@@ -200,7 +201,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                             </div>
                             {asset.ipAddress && <span className="text-xs bg-red-950/50 text-red-300 px-2 py-1 flex items-center rounded border border-red-900/50 font-mono tracking-tighter">{asset.ipAddress}</span>}
                           </Link>
-                          {session.user.roles.includes('ADMIN') && (
+                          {hasPermission(session as any, 'MANAGE_ASSETS') && (
                              <form action={unlinkAssetFromVulnerability}>
                                 <input type="hidden" name="vulnId" value={vuln.id} />
                                 <input type="hidden" name="assetId" value={asset.id} />

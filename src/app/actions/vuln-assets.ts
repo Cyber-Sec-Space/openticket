@@ -3,10 +3,11 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function linkAssetToVulnerability(formData: FormData) {
   const session = await auth()
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
     throw new Error("Forbidden")
   }
 
@@ -39,7 +40,7 @@ export async function linkAssetToVulnerability(formData: FormData) {
 
 export async function unlinkAssetFromVulnerability(formData: FormData) {
   const session = await auth()
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
     throw new Error("Forbidden")
   }
 

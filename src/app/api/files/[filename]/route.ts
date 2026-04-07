@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
+import { hasPermission } from "@/lib/auth-utils"
 import { NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
@@ -58,7 +59,7 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
     return new NextResponse("File Not Found", { status: 404 })
   }
 
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS') || hasPermission(session as any, 'VIEW_ASSETS')
 
   // Enforce Bound Object Level Authorization
   if (!hasPrivilege) {

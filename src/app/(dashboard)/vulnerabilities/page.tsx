@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default async function VulnerabilitiesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
   
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
+  if (!session?.user || !hasPermission(session as any, 'VIEW_ASSETS')) {
     return notFound()
   }
 

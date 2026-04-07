@@ -6,8 +6,7 @@ import fs from "fs"
 import path from "path"
 import { z } from "zod"
 import crypto from "crypto"
-
-
+import { hasPermission } from "@/lib/auth-utils"
 export async function uploadAttachment(formData: FormData) {
   const session = await auth()
   if (!session?.user) {
@@ -28,7 +27,7 @@ export async function uploadAttachment(formData: FormData) {
 
   // BOLA & RBAC Entity Verification checks
   if (vulnId) {
-    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    const hasPrivilege = hasPermission(session as any, 'MANAGE_ASSETS')
     if (!hasPrivilege) {
        return { error: "Forbidden: Strict Vuln BOLA enforcement" }
     }
@@ -44,7 +43,7 @@ export async function uploadAttachment(formData: FormData) {
     
     if (!incident) return { error: "Incident context invalid" }
 
-    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+    const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
     if (!hasPrivilege) {
        const isReporter = incident.reporterId === session.user.id
        const isAssigned = incident.assignees.some(a => a.id === session.user.id)
@@ -123,7 +122,7 @@ export async function deleteAttachment(attachmentId: string) {
   if (!attachment) return { error: "Not found" }
 
   // RBAC for Delete
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_INCIDENTS')
   if (!hasPrivilege) {
     if (attachment.uploaderId !== session.user.id) {
        // Also check if they are assigned to the parent incident

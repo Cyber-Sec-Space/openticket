@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { Bug, ShieldAlert, Server } from "lucide-react"
@@ -13,7 +14,7 @@ import { createVulnerabilityAction } from "./actions"
 export default async function NewVulnerabilityPage() {
   const session = await auth()
   
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
+  if (!session?.user || !hasPermission(session as any, 'MANAGE_ASSETS')) {
     return notFound()
   }
 
