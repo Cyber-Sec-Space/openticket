@@ -1,5 +1,0 @@
-{
-    "snyk.advanced.autoSelectOrganization": true,
-    "snyk.advanced.organization": "d8da7d02-70ed-4ca6-af53-a760b132792f",
-    "css.lint.unknownAtRules": "ignore"
-}
