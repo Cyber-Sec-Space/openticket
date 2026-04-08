@@ -37,7 +37,23 @@ export default async function PluginStorePage() {
   try {
     const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { cache: "no-store" });
     if (res.ok) {
-      registryPlugins = await res.json();
+      const rawData = await res.json();
+      
+      // Native Structural Validation Boundary
+      if (Array.isArray(rawData)) {
+        registryPlugins = rawData.filter(p => {
+          return (
+            typeof p === 'object' &&
+            p !== null &&
+            typeof p.id === 'string' &&
+            typeof p.name === 'string' &&
+            typeof p.latestVersion === 'string' &&
+            typeof p.versions === 'object' &&
+            p.versions !== null &&
+            p.versions[p.latestVersion] !== undefined
+          );
+        }) as RegistryPlugin[];
+      }
     } else {
       console.error("Failed to fetch registry list", res.status);
     }

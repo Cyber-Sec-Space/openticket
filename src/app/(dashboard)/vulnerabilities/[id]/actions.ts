@@ -63,10 +63,18 @@ export async function updateVulnAssetStatusAction(formData: FormData) {
 
 export async function addAssigneesAction(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'UPDATE_VULNERABILITIES')) throw new Error("Unauthorized")
+  const hasSelf = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF')
+  const hasOthers = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')
+  if (!session?.user || (!hasSelf && !hasOthers)) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string
   const userIds = formData.getAll("userIds") as string[]
+  
+  if (!hasOthers && hasSelf) {
+     if (userIds.length !== 1 || userIds[0] !== session.user.id) {
+        throw new Error("Forbidden: You can only assign yourself.")
+     }
+  }
   
   await db.vulnerability.update({
     where: { id: vulnId },
@@ -78,10 +86,16 @@ export async function addAssigneesAction(formData: FormData) {
 
 export async function removeAssigneeAction(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'UPDATE_VULNERABILITIES')) throw new Error("Unauthorized")
+  const hasSelf = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF')
+  const hasOthers = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')
+  if (!session?.user || (!hasSelf && !hasOthers)) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string
   const userId = formData.get("userId") as string
+  
+  if (!hasOthers && hasSelf && userId !== session.user.id) {
+     throw new Error("Forbidden: You can only remove yourself.")
+  }
   
   await db.vulnerability.update({
     where: { id: vulnId },

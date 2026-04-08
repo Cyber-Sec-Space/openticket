@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { createPortal } from "react-dom"
 import { createRole, updateRole, deleteRole } from "./actions"
 import { Shield, ShieldAlert, Key, Trash2, Edit3, Settings, Plus, Users as UsersIcon, ChevronDown, ChevronRight } from "lucide-react"
 
@@ -169,7 +170,16 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
 
             <div className="mt-6 flex items-center justify-end border-t border-border/30 pt-4 gap-2 relative z-10">
               {role.isSystem ? (
-                <div className="text-xs text-muted-foreground italic truncate">System role permissions cannot be altered.</div>
+                <>
+                  <div className="text-xs text-muted-foreground italic truncate">System role permissions cannot be altered.</div>
+                  <button 
+                    onClick={() => openDialog(role)}
+                    disabled={isPending}
+                    className="flex items-center px-3 py-1.5 text-xs font-semibold hover:bg-white/10 rounded transition-colors ml-auto"
+                  >
+                    <Settings className="w-3.5 h-3.5 mr-1.5" /> View Details
+                  </button>
+                </>
               ) : (
                 <>
                   <button 
@@ -194,16 +204,16 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
       </div>
 
       {/* Editor Dialog */}
-      {isDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center isolate">
+      {isDialogOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center isolate">
           {/* Backdrop */}
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => !isPending && setIsDialogOpen(false)} />
           
           <div className="relative bg-card border border-border/50 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col z-10 m-4 animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-border/40">
               <h2 className="text-xl font-bold flex items-center">
-                {editingRole ? <Edit3 className="w-5 h-5 mr-2 text-primary" /> : <Plus className="w-5 h-5 mr-2 text-primary" />}
-                {editingRole ? "Edit Role" : "Create Custom Role"}
+                {editingRole ? (editingRole.isSystem ? <Shield className="w-5 h-5 mr-2 text-primary" /> : <Edit3 className="w-5 h-5 mr-2 text-primary" />) : <Plus className="w-5 h-5 mr-2 text-primary" />}
+                {editingRole ? (editingRole.isSystem ? "View System Role" : "Edit Role") : "Create Custom Role"}
               </h2>
             </div>
             
@@ -222,8 +232,8 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Auditor"
-                    className="w-full bg-background border border-border/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                    disabled={isPending}
+                    className="w-full bg-background border border-border/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground disabled:opacity-60"
+                    disabled={isPending || editingRole?.isSystem}
                   />
                 </div>
 
@@ -234,8 +244,8 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Optional description for this role..."
                     rows={2}
-                    className="w-full bg-background border border-border/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground"
-                    disabled={isPending}
+                    className="w-full bg-background border border-border/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-foreground disabled:opacity-60"
+                    disabled={isPending || editingRole?.isSystem}
                   />
                 </div>
               </div>
@@ -269,9 +279,9 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
                                   )}
                                 </div>
                                 <button 
-                                   className="text-xs text-primary hover:underline hover:text-primary-foreground select-none"
+                                   className="text-xs text-primary hover:underline hover:text-primary-foreground select-none disabled:opacity-50 disabled:no-underline"
                                    onClick={(e) => { e.stopPropagation(); toggleCategorySelectAll(category, perms) }}
-                                   disabled={isPending}
+                                   disabled={isPending || editingRole?.isSystem}
                                 >
                                    {areAllSelected ? 'Deselect All' : 'Select All'}
                                 </button>
@@ -287,10 +297,10 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
                                         <div className="relative flex items-center justify-center mt-0.5">
                                            <input 
                                               type="checkbox" 
-                                              className="w-4 h-4 cursor-pointer opacity-0 absolute z-10" 
+                                              className="w-4 h-4 cursor-pointer opacity-0 absolute z-10 disabled:cursor-not-allowed" 
                                               checked={isSelected}
                                               onChange={() => handleTogglePerm(perm)}
-                                              disabled={isPending}
+                                              disabled={isPending || editingRole?.isSystem}
                                            />
                                            <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'border-muted-foreground group-hover:border-primary/50'}`}>
                                               {isSelected && <div className="w-2 h-2 bg-black rounded-[1px]" />}
@@ -320,17 +330,20 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
                >
                  Cancel
                </button>
-               <button 
-                  onClick={handleSave}
-                  disabled={isPending || !name.trim()}
-                  className="bg-primary text-primary-foreground px-5 py-2 text-sm font-semibold rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center"
-               >
-                 {isPending && <div className="w-4 h-4 border-2 border-background/20 border-t-background rounded-full animate-spin mr-2" />}
-                 {editingRole ? "Save Changes" : "Create Role"}
-               </button>
+               {!editingRole?.isSystem && (
+                 <button 
+                    onClick={handleSave}
+                    disabled={isPending || !name.trim()}
+                    className="bg-primary text-primary-foreground px-5 py-2 text-sm font-semibold rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center"
+                 >
+                   {isPending && <div className="w-4 h-4 border-2 border-background/20 border-t-background rounded-full animate-spin mr-2" />}
+                   {editingRole ? "Save Changes" : "Create Role"}
+                 </button>
+               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

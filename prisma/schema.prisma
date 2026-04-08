@@ -40,7 +40,11 @@ enum Permission {
   CREATE_VULNERABILITIES
   UPDATE_VULNERABILITIES
   DELETE_VULNERABILITIES
+  ASSIGN_VULNERABILITIES_SELF
+  ASSIGN_VULNERABILITIES_OTHERS
   LINK_VULN_TO_ASSET
+  UPLOAD_VULN_ATTACHMENTS
+  DELETE_VULN_ATTACHMENTS
 
   VIEW_USERS
   CREATE_USERS
@@ -318,6 +322,9 @@ model Vulnerability {
   attachments    Attachment[]
   assignees User[] @relation("VulnAssignees")
   comments Comment[]
+
+  @@index([severity])
+  @@index([status])
 }
 
 enum Severity {
@@ -368,6 +375,9 @@ model Incident {
 
   comments    Comment[]
   attachments Attachment[]
+
+  @@index([status])
+  @@index([severity])
 }
 
 model Comment {

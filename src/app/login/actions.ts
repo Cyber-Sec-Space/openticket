@@ -30,7 +30,8 @@ export async function authenticate(
   }
 
   try {
-    await signIn('credentials', Object.fromEntries(formData))
+    const payload = Object.fromEntries(formData)
+    await signIn('credentials', { ...payload, redirectTo: '/' })
   } catch (error) {
     if (error instanceof AuthError) {
       const errMessage = (error.cause?.err as any)?.message;

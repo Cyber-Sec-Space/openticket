@@ -92,7 +92,7 @@ export async function PATCH(
     
     if (assigneeId !== undefined) {
        if (!hasAssignAll) {
-          if (!hasAssignSelf || assigneeId !== session.user.id) {
+          if (!hasAssignSelf || (assigneeId !== session.user.id && assigneeId !== null)) {
              return new NextResponse("Forbidden: You lack permission to reassign this incident.", { status: 403 })
           }
        }
@@ -113,7 +113,15 @@ export async function PATCH(
     const updateData: any = {}
     if (status) updateData.status = status
     if (assigneeId !== undefined) {
-      updateData.assignees = assigneeId === null ? { set: [] } : { set: [{ id: assigneeId }] }
+      if (!hasAssignAll && hasAssignSelf) {
+          if (assigneeId === session.user.id) {
+             updateData.assignees = { connect: { id: session.user.id } }
+          } else if (assigneeId === null) {
+             updateData.assignees = { disconnect: { id: session.user.id } }
+          }
+      } else {
+          updateData.assignees = assigneeId === null ? { set: [] } : { set: [{ id: assigneeId }] }
+      }
     }
     if (severity) updateData.severity = severity
     if (assetId !== undefined) {

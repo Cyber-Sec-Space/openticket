@@ -13,14 +13,23 @@ export default auth((req) => {
   const isOnSetupPage = req.nextUrl.pathname.startsWith('/setup');
 
   if (isOnLoginPage || isOnRegisterPage || isOnSetupPage) {
-    if (isLoggedIn) {
-       // Loop Escape Hatch: Deep intercept Node.js ghost token expulsions
+       // Loop Escape Hatch & URL Sanitizer
        if (req.nextUrl.searchParams.has('clearsession')) {
           const res = NextResponse.redirect(new URL('/login', req.nextUrl));
-          res.cookies.delete("authjs.session-token");
-          res.cookies.delete("__Secure-authjs.session-token");
+          const cookiesToClear = [
+             "authjs.session-token", 
+             "__Secure-authjs.session-token",
+             "next-auth.session-token",
+             "__Secure-next-auth.session-token"
+          ];
+          for (const name of cookiesToClear) {
+              res.cookies.set(name, "", { maxAge: 0, path: "/" });
+              res.cookies.delete(name);
+          }
           return res;
        }
+
+    if (isLoggedIn) {
        return Response.redirect(new URL('/', req.nextUrl));
     }
     return;

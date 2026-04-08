@@ -28,8 +28,8 @@ export async function uploadAttachment(formData: FormData) {
 
   // BOLA & RBAC Entity Verification checks
   if (vulnId) {
-    const hasPrivilege = hasPermission(session as any, 'UPDATE_VULNERABILITIES')
-    if (!hasPrivilege) {
+    const hasPrivilege = hasPermission(session as any, 'UPLOAD_VULN_ATTACHMENTS')
+    if (!hasPrivilege || !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
        return { error: "Forbidden: Strict Vuln BOLA enforcement" }
     }
     const vuln = await db.vulnerability.findUnique({ where: { id: vulnId }, select: { id: true }})
@@ -140,7 +140,9 @@ export async function deleteAttachment(attachmentId: string) {
   if (!attachment) return { error: "Not found" }
 
   // RBAC for Delete
-  const hasPrivilege = hasPermission(session as any, 'DELETE_INCIDENT_ATTACHMENTS')
+  const hasIncidentDeletePrivilege = hasPermission(session as any, 'DELETE_INCIDENT_ATTACHMENTS')
+  const hasVulnDeletePrivilege = hasPermission(session as any, 'DELETE_VULN_ATTACHMENTS')
+
   const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
   const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
   const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
@@ -150,8 +152,16 @@ export async function deleteAttachment(attachmentId: string) {
      return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance to operate on this dataset." }
   }
 
-  if (!hasPrivilege && attachment.uploaderId !== session.user.id) {
-     return { error: "Forbidden: You cannot delete evidence you did not upload." }
+  if (attachment.vuln && !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
+     return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance to operate on this dataset." }
+  }
+
+  if (attachment.incident && !hasIncidentDeletePrivilege && attachment.uploaderId !== session.user.id) {
+     return { error: "Forbidden: You cannot delete incident evidence you did not upload." }
+  }
+
+  if (attachment.vuln && !hasVulnDeletePrivilege && attachment.uploaderId !== session.user.id) {
+     return { error: "Forbidden: You cannot delete vulnerability evidence you did not upload." }
   }
 
   // Ensure they still have baseline isolation context to the incident

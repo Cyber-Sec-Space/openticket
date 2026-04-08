@@ -12,7 +12,7 @@ export async function createVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
   if (!session?.user || !hasPermission(session as any, 'CREATE_VULNERABILITIES')) {
-    throw new Error("Forbidden")
+    return { error: "Forbidden: You lack the CREATE_VULNERABILITIES capability." }
   }
 
   const title = formData.get("title") as string
@@ -24,10 +24,11 @@ export async function createVulnerabilityAction(formData: FormData) {
   const cvssScoreRaw = formData.get("cvssScore") as string
   const cvssScore = cvssScoreRaw ? parseFloat(cvssScoreRaw) : null
 
-  const assetIds = formData.getAll("assetIds") as string[]
+  const rawAssetIds = formData.getAll("assetIds") as string[]
+  const assetIds = rawAssetIds.filter(id => id !== "NONE")
 
   if (!title || !description) {
-    throw new Error("Validation structural error: missing foundational CVE markers.")
+    return { error: "Validation structural error: missing foundational CVE markers." }
   }
 
   const newVuln = await db.vulnerability.create({

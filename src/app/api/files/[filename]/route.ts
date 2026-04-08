@@ -62,7 +62,7 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
   const hasGlobalIncidents = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
   const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
   const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
-  const hasGlobalVulns = hasPermission(session as any, 'VIEW_ASSETS') || hasPermission(session as any, 'VIEW_VULNERABILITIES')
+  const hasGlobalVulns = hasPermission(session as any, 'VIEW_VULNERABILITIES')
 
   // Enforce Bound Object Level Authorization
   let authorized = false;

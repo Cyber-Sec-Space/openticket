@@ -172,13 +172,15 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                ) : (
                  vuln.assignees.map((user: any) => (
                    <Badge key={user.id} variant="secondary" className="pl-1 pr-3 py-1 flex items-center h-8 bg-primary/10 hover:bg-primary/20 text-primary border-primary/20 transition-colors">
-                     <form action={removeAssigneeAction}>
-                        <input type="hidden" name="vulnId" value={vuln.id} />
-                        <input type="hidden" name="userId" value={user.id} />
-                        <button type="submit" className="hover:bg-primary/20 p-1 rounded-full mr-1.5 transition-colors" title="Remove assignee">
-                           <Trash2 className="w-3 h-3 text-primary" />
-                        </button>
-                     </form>
+                     {(hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS') || (hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF') && user.id === session!.user.id)) && (
+                       <form action={removeAssigneeAction}>
+                          <input type="hidden" name="vulnId" value={vuln.id} />
+                          <input type="hidden" name="userId" value={user.id} />
+                          <button type="submit" className="hover:bg-primary/20 p-1 rounded-full mr-1.5 transition-colors" title="Remove assignee">
+                             <Trash2 className="w-3 h-3 text-primary" />
+                          </button>
+                       </form>
+                     )}
                      <span className="truncate max-w-[150px]">{user.name}</span>
                      {user.isBot && <Badge className="ml-2 text-[9px] h-4 px-1 absolute -top-2 -right-2 transform">BOT</Badge>}
                    </Badge>
@@ -186,7 +188,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                )}
              </div>
 
-             {hasPermission(session as any, 'UPDATE_VULNERABILITIES') && (
+             {(hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF') || hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')) && (
                <form action={addAssigneesAction} className="flex gap-2">
                  <input type="hidden" name="vulnId" value={vuln.id} />
                  <Select name="userIds" required>
@@ -194,10 +196,13 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                        <SelectValue placeholder="Add assignees..." />
                     </SelectTrigger>
                     <SelectContent className="bg-black/95 shadow-2xl border-white/10 max-h-[300px]">
-                       {allUsers.filter((u: any) => !vuln.assignees.find((a: any) => a.id === u.id)).map((user: any) => (
-                          <SelectItem key={user.id} value={user.id} className="cursor-pointer">
-                             {user.name} {user.isBot && "(BOT)"}
-                          </SelectItem>
+                       {allUsers
+                         .filter((u: any) => !vuln.assignees.find((a: any) => a.id === u.id))
+                         .filter((u: any) => hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS') || u.id === session!.user.id)
+                         .map((user: any) => (
+                           <SelectItem key={user.id} value={user.id} className="cursor-pointer">
+                              {user.name} {user.isBot && "(BOT)"}
+                           </SelectItem>
                        ))}
                     </SelectContent>
                  </Select>

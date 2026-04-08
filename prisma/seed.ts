@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient, Permission, IncidentStatus, Severity, IncidentType, AssetStatus, AssetType, VulnStatus } from '@prisma/client'
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs'
-
 const prisma = new PrismaClient()
 
 // Helper to get a random date between now and X days ago
@@ -26,9 +26,11 @@ async function main() {
 
   console.log("Database wiped perfectly. Injecting enterprise-scale data...")
 
-  // 1. Create Users
-  // eslint-disable-next-line
-  const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || "admin123";
+  let rawPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+  if (!rawPassword) {
+     rawPassword = crypto.randomBytes(12).toString('hex');
+     console.log("Auto-generated default admin password: " + rawPassword);
+  }
   const passwordHash = await bcrypt.hash(rawPassword, 10)
 
   console.log('Creating diverse user roster...')
@@ -83,11 +85,11 @@ async function main() {
   });
 
   const vulnOperatorRole = await prisma.customRole.create({
-    data: { name: 'Vulnerability Operator', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES, Permission.LINK_VULN_TO_ASSET] }
+    data: { name: 'Vulnerability Operator', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES, Permission.ASSIGN_VULNERABILITIES_SELF, Permission.LINK_VULN_TO_ASSET, Permission.UPLOAD_VULN_ATTACHMENTS] }
   });
 
   const vulnAdminRole = await prisma.customRole.create({
-    data: { name: 'Vulnerability Admin', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES, Permission.DELETE_VULNERABILITIES, Permission.LINK_VULN_TO_ASSET] }
+    data: { name: 'Vulnerability Admin', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES, Permission.DELETE_VULNERABILITIES, Permission.ASSIGN_VULNERABILITIES_SELF, Permission.ASSIGN_VULNERABILITIES_OTHERS, Permission.LINK_VULN_TO_ASSET, Permission.UPLOAD_VULN_ATTACHMENTS, Permission.DELETE_VULN_ATTACHMENTS] }
   });
 
   const adminUser = await prisma.user.create({
