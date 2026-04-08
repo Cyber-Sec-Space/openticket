@@ -38,14 +38,31 @@ export default async function UserDetailPage({
 
   // Parallel data fetching for high performance
   const canViewAuditLogs = hasPermission(session as any, 'VIEW_AUDIT_LOGS')
+  const hasGlobalIncidents = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+
+  // BOLA Incident filter: Prevent cross-user assignment peeking
+  let incidentsWhere: any = { assignees: { some: { id } } };
+  if (!hasGlobalIncidents) {
+    if (canViewAssigned && session.user.id !== id) {
+       // Intersection: Only show incidents where BOTH the target user AND the viewing user are co-assigned
+       incidentsWhere = { AND: [ { assignees: { some: { id } } }, { assignees: { some: { id: session.user.id } } } ] }
+    } else if (!canViewAssigned && session.user.id !== id) {
+       incidentsWhere = { id: "NONE" } // Structural Empty Output
+    }
+  }
+
+  // BOLA Evidence filter: Hide files completely if lacking systemic viewing privileges
+  const canViewAttachments = hasGlobalIncidents || session.user.id === id;
+
   const [user, auditLogs, totalAuditLogs, attachments, totalAttachments, assignedIncidents, totalIncidents] = await Promise.all([
     db.user.findUnique({ where: { id }, include: { customRoles: { select: { name: true } } } }),
     canViewAuditLogs ? db.auditLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_AUDIT, skip: (auditPage - 1) * TAKE_AUDIT }) : Promise.resolve([]),
     canViewAuditLogs ? db.auditLog.count({ where: { userId: id } }) : Promise.resolve(0),
-    db.attachment.findMany({ where: { uploaderId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
-    db.attachment.count({ where: { uploaderId: id } }),
-    db.incident.findMany({ where: { assignees: { some: { id } } }, select: { id: true, title: true, status: true, severity: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: TAKE_INC, skip: (incPage - 1) * TAKE_INC }),
-    db.incident.count({ where: { assignees: { some: { id } } } })
+    canViewAttachments ? db.attachment.findMany({ where: { uploaderId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }) : Promise.resolve([]),
+    canViewAttachments ? db.attachment.count({ where: { uploaderId: id } }) : Promise.resolve(0),
+    db.incident.findMany({ where: incidentsWhere, select: { id: true, title: true, status: true, severity: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: TAKE_INC, skip: (incPage - 1) * TAKE_INC }),
+    db.incident.count({ where: incidentsWhere })
   ])
 
   if (!user) return notFound()
