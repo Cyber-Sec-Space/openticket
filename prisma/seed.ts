@@ -179,11 +179,12 @@ async function main() {
   for (const bp of vulnBlueprints) {
     // Pick random assets
     const affected = assets.filter(() => Math.random() > 0.85); // 15% chance to link any given asset
+    const assignees = allUsers.filter(() => Math.random() > 0.7); // 30% chance for users to be assigned
 
     const statusRoll = Math.random();
     const status = statusRoll < 0.5 ? VulnStatus.OPEN : (statusRoll < 0.8 ? VulnStatus.MITIGATED : VulnStatus.RESOLVED);
 
-    await prisma.vulnerability.create({
+    const newVuln = await prisma.vulnerability.create({
       data: {
         title: bp.title,
         cveId: bp.cveId || null,
@@ -191,9 +192,20 @@ async function main() {
         description: bp.desc + '\n\nAutomatically generated for demo purposes to simulate diverse structural mappings.',
         severity: bp.severity,
         status: status,
-        affectedAssets: { connect: affected.map(a => ({ id: a.id })) }
+        vulnerabilityAssets: { create: affected.map(a => ({ assetId: a.id, status: status === VulnStatus.RESOLVED ? 'PATCHED' : status === VulnStatus.MITIGATED ? 'MITIGATED' : 'AFFECTED' })) },
+        assignees: { connect: assignees.map(u => ({ id: u.id })) }
       }
     });
+
+    if (Math.random() > 0.4) {
+      await prisma.comment.create({
+        data: {
+          content: "Initial triage scan completed. Waiting on infrastructure patching window to verify remediation.",
+          vulnId: newVuln.id,
+          authorId: allUsers[Math.floor(Math.random() * allUsers.length)].id
+        }
+      });
+    }
   }
 
   // 4. Create Incidents

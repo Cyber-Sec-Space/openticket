@@ -42,7 +42,7 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
   const vulnerabilities = await db.vulnerability.findMany({
     where: filterParams,
     orderBy: { createdAt: 'desc' },
-    include: { affectedAssets: true },
+    include: { vulnerabilityAssets: true },
     skip: (page - 1) * TAKE,
     take: TAKE,
   })
@@ -207,14 +207,22 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
                  </TableCell>
 
                  <TableCell className="text-center font-mono py-4">
-                    {vuln.affectedAssets.length > 0 ? (
-                       <div className="flex items-center justify-center text-sm font-semibold text-cyan-400">
-                          <ShieldAlert className="w-4 h-4 mr-2" />
-                          {vuln.affectedAssets.length} <span className="text-xs font-sans font-normal text-muted-foreground ml-1">Nodes</span>
-                       </div>
-                    ) : (
-                       <span className="text-xs opacity-50">Isolated</span>
-                    )}
+                    <div className="flex gap-1.5 flex-wrap flex-1 min-w-[200px]">
+                      {vuln.vulnerabilityAssets?.length > 0 ? (
+                        vuln.vulnerabilityAssets.slice(0, 3).map((va: any) => (
+                          <Badge key={va.assetId || va.id} variant="outline" className={`text-[10px] bg-black/40 border-white/5 font-mono ${va.status === 'MITIGATED' ? 'text-yellow-500' : va.status === 'PATCHED' ? 'text-green-500' : 'text-red-400'}`}>
+                            asset_{va.assetId.substring(va.assetId.length - 4)} [{va.status}]
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic font-mono opacity-50">NO_ASSETS_LINKED</span>
+                      )}
+                      {vuln.vulnerabilityAssets?.length > 3 && (
+                         <Badge variant="outline" className="text-[10px] bg-black/40 text-muted-foreground border-white/5">
+                           +{vuln.vulnerabilityAssets.length - 3} MORE
+                         </Badge>
+                      )}
+                    </div>
                  </TableCell>
 
                  <TableCell className="text-right pr-6 py-4">

@@ -84,8 +84,11 @@ export default async function IncidentDetailPage({
   // Only authorized operators can assign tickets.
   let eligibleAssignees: any[] = []
   if (hasPrivilege) {
+    const canAssignOthers = hasPermission(session as any, 'ASSIGN_INCIDENTS_OTHERS')
     eligibleAssignees = await db.user.findMany({
-      where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE', 'ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'] } } } },
+      where: canAssignOthers 
+        ? { customRoles: { some: { permissions: { hasSome: ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE', 'ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'] } } } }
+        : { id: session.user.id },
       select: { id: true, name: true, customRoles: true }
     })
   }
@@ -109,8 +112,10 @@ export default async function IncidentDetailPage({
     if (!currentIncident) throw new Error("Synchronization Error: Incident record lost or expunged.")
 
     const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
-    if (!canViewAll && !isReporterOrAssignee) {
+    const isUnassigned = currentIncident.assignees.length === 0
+    if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
        throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.")
     }
 
@@ -319,8 +324,10 @@ export default async function IncidentDetailPage({
     if (!currentIncident) throw new Error("Incident not found")
 
     const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
-    if (!canViewAll && !isReporterOrAssignee) {
+    const isUnassigned = currentIncident.assignees.length === 0
+    if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
        throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.")
     }
 
@@ -361,8 +368,10 @@ export default async function IncidentDetailPage({
     if (!currentIncident) throw new Error("Incident not found")
 
     const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
-    if (!canViewAll && !isReporterOrAssignee) {
+    const isUnassigned = currentIncident.assignees.length === 0
+    if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
        throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.")
     }
 
@@ -565,13 +574,15 @@ export default async function IncidentDetailPage({
                 if (!currentIncident) throw new Error("Incident not found")
 
                 const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
+                const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
                 const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id);
+                const isUnassigned = currentIncident.assignees.length === 0;
                 
                 if (!canAddComments) {
                     throw new Error("Forbidden: You do not possess the ADD_COMMENTS capability.")
                 }
 
-                if (!canViewAll && !isReporterOrAssignee) {
+                if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
                    throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.");
                 }
 

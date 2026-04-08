@@ -37,8 +37,8 @@ export async function createVulnerabilityAction(formData: FormData) {
       description,
       cvssScore,
       severity,
-      affectedAssets: hasPermission(session as any, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
-        ? { connect: assetIds.map(id => ({ id })) }
+      vulnerabilityAssets: hasPermission(session as any, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
+        ? { create: assetIds.map(id => ({ assetId: id, status: 'AFFECTED' })) }
         : undefined
     }
   })

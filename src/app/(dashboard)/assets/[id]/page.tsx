@@ -41,8 +41,8 @@ export default async function AssetDetailPage({
     db.asset.findUnique({ where: { id } }),
     db.incident.findMany({ where: { assetId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_INC, skip: (incPage - 1) * TAKE_INC }),
     db.incident.count({ where: { assetId: id } }),
-    db.vulnerability.findMany({ where: { affectedAssets: { some: { id } } }, orderBy: { createdAt: 'desc' }, take: TAKE_VULN, skip: (vulnPage - 1) * TAKE_VULN }),
-    db.vulnerability.count({ where: { affectedAssets: { some: { id } } } })
+    db.vulnerability.findMany({ where: { vulnerabilityAssets: { some: { assetId: id } } }, orderBy: { createdAt: 'desc' }, take: TAKE_VULN, skip: (vulnPage - 1) * TAKE_VULN }),
+    db.vulnerability.count({ where: { vulnerabilityAssets: { some: { assetId: id } } } })
   ])
 
   if (!asset) {

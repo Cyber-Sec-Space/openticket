@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateTimePicker } from "@/components/ui/date-time-picker"
-import { updateVulnStatusAction, deleteVulnerabilityAction } from "./actions"
-import { linkAssetToVulnerability, unlinkAssetFromVulnerability } from "@/app/actions/vuln-assets"
+import { updateVulnAssetStatusAction, deleteVulnerabilityAction, addAssigneesAction, removeAssigneeAction, postVulnCommentAction, linkVulnAssetAction, unlinkVulnAssetAction } from "./actions"
 import Link from "next/link"
+import { Users, MessageSquare } from "lucide-react"
 
 interface MatchProps {
   params: Promise<{ id: string }>
@@ -37,13 +37,28 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
   const TAKE_ASSET = 10;
   const TAKE_FILE = 8;
 
-  const [vuln, affectedAssets, totalAssets, attachments, totalAttachments, allAssets] = await Promise.all([
-    db.vulnerability.findUnique({ where: { id } }),
-    db.asset.findMany({ where: { vulnerabilities: { some: { id } } }, take: TAKE_ASSET, skip: (assetPage - 1) * TAKE_ASSET }),
-    db.asset.count({ where: { vulnerabilities: { some: { id } } } }),
+  const [vuln, affectedAssets, totalAssets, attachments, totalAttachments, allAssets, allUsers] = await Promise.all([
+    db.vulnerability.findUnique({ 
+      where: { id },
+      include: {
+        assignees: true,
+        comments: {
+          include: { author: true },
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    }),
+    db.vulnerabilityAsset.findMany({ 
+      where: { vulnId: id }, 
+      include: { asset: true },
+      take: TAKE_ASSET, 
+      skip: (assetPage - 1) * TAKE_ASSET 
+    }),
+    db.vulnerabilityAsset.count({ where: { vulnId: id } }),
     db.attachment.findMany({ where: { vulnId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
     db.attachment.count({ where: { vulnId: id } }),
-    db.asset.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, type: true } })
+    db.asset.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, type: true } }),
+    db.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, isBot: true } })
   ])
 
   if (!vuln) {
@@ -126,35 +141,114 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
             <h2 className="text-lg font-bold tracking-tight mb-4 flex items-center text-primary/80">
                <Activity className="w-5 h-5 mr-3 text-purple-400" /> Operational Posture
             </h2>
-            <form action={updateVulnStatusAction} className="flex flex-col space-y-4">
-               <input type="hidden" name="vulnId" value={vuln.id} />
-                 <div className="flex gap-4">
+            <div className="flex flex-col space-y-4">
+               <div className="flex gap-4">
                  <div className="flex-1 space-y-2">
                    <label className="text-xs text-white/70 uppercase tracking-widest">Enforce SLA Date</label>
                    <DateTimePicker
                      name="targetSlaDate"
                      defaultValue={vuln.targetSlaDate}
                      className="max-w-full"
+                     disabled
                    />
                  </div>
                  <div className="flex-1 space-y-2">
-                   <label className="text-xs text-white/70 uppercase tracking-widest">Workflow State</label>
-                   <Select key={`vuln-status-${vuln.status}`} name="status" defaultValue={vuln.status}>
-                      <SelectTrigger className="w-full bg-black/50 border-white/10 !h-10 rounded-md">
-                         <SelectValue placeholder="Update Status" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-black/95 shadow-2xl border-white/10">
-                         <SelectItem value="OPEN" className="text-red-400 font-bold">OPEN / UNPATCHED</SelectItem>
-                         <SelectItem value="MITIGATED" className="text-yellow-400">MITIGATED (Temp Fix)</SelectItem>
-                         <SelectItem value="RESOLVED" className="text-green-400 font-bold">RESOLVED</SelectItem>
-                      </SelectContent>
-                   </Select>
+                   <label className="text-xs text-white/70 uppercase tracking-widest">Computed State</label>
+                   <div className="h-10 w-full bg-black/50 border border-white/10 rounded-md flex items-center px-3 font-mono text-sm text-muted-foreground cursor-not-allowed">
+                     {vuln.status} (Derived via Assets)
+                   </div>
                  </div>
                </div>
-               <Button type="submit" variant="secondary" className="w-full shadow-[0_0_10px_rgba(255,255,255,0.1)]">
-                  Apply Structural State
-               </Button>
-            </form>
+            </div>
+          </div>
+
+          <div className="glass-card rounded-xl p-6 border border-border mt-8 shadow-2xl relative overflow-hidden">
+             <h2 className="text-lg font-bold tracking-tight mb-4 flex items-center text-primary/80">
+               <Users className="w-5 h-5 mr-3" /> Triage Assignees
+             </h2>
+             <div className="flex flex-wrap gap-2 mb-4 p-4 rounded-lg bg-black/40 border border-white/5 min-h-[4rem]">
+               {vuln.assignees.length === 0 ? (
+                  <span className="text-muted-foreground text-sm italic py-1 flex items-center">Unassigned Vulnerability</span>
+               ) : (
+                 vuln.assignees.map((user: any) => (
+                   <Badge key={user.id} variant="secondary" className="pl-1 pr-3 py-1 flex items-center h-8 bg-primary/10 hover:bg-primary/20 text-primary border-primary/20 transition-colors">
+                     <form action={removeAssigneeAction}>
+                        <input type="hidden" name="vulnId" value={vuln.id} />
+                        <input type="hidden" name="userId" value={user.id} />
+                        <button type="submit" className="hover:bg-primary/20 p-1 rounded-full mr-1.5 transition-colors" title="Remove assignee">
+                           <Trash2 className="w-3 h-3 text-primary" />
+                        </button>
+                     </form>
+                     <span className="truncate max-w-[150px]">{user.name}</span>
+                     {user.isBot && <Badge className="ml-2 text-[9px] h-4 px-1 absolute -top-2 -right-2 transform">BOT</Badge>}
+                   </Badge>
+                 ))
+               )}
+             </div>
+
+             {hasPermission(session as any, 'UPDATE_VULNERABILITIES') && (
+               <form action={addAssigneesAction} className="flex gap-2">
+                 <input type="hidden" name="vulnId" value={vuln.id} />
+                 <Select name="userIds" required>
+                    <SelectTrigger className="w-[300px] bg-black/50 border-white/10">
+                       <SelectValue placeholder="Add assignees..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/95 shadow-2xl border-white/10 max-h-[300px]">
+                       {allUsers.filter((u: any) => !vuln.assignees.find((a: any) => a.id === u.id)).map((user: any) => (
+                          <SelectItem key={user.id} value={user.id} className="cursor-pointer">
+                             {user.name} {user.isBot && "(BOT)"}
+                          </SelectItem>
+                       ))}
+                    </SelectContent>
+                 </Select>
+                 <Button type="submit" variant="secondary" className="bg-white/5 border border-white/10 hover:bg-white/10 transition-colors font-semibold">
+                   Assign
+                 </Button>
+               </form>
+             )}
+          </div>
+
+          <div className="glass-card rounded-xl p-6 border border-border mt-8 shadow-2xl relative">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full pointer-events-none" />
+             <h2 className="text-lg font-bold tracking-tight mb-6 flex items-center text-primary/80">
+               <MessageSquare className="w-5 h-5 mr-3" /> Communication Wall
+             </h2>
+             <div className="space-y-4 mb-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+               {vuln.comments.length === 0 ? (
+                 <p className="text-muted-foreground text-sm italic text-center py-8">No communication logs recorded.</p>
+               ) : (
+                 vuln.comments.map((comment: any) => (
+                   <div key={comment.id} className="bg-black/40 rounded-lg p-4 border border-white/5 flex gap-4">
+                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                        <span className="text-primary font-bold text-xs">{comment.author?.name?.charAt(0) || '?'}</span>
+                     </div>
+                     <div className="flex-1">
+                       <div className="flex justify-between items-center mb-1">
+                         <span className="font-bold text-sm text-white/90">{comment.author?.name || 'Unknown User'}</span>
+                         <span className="text-xs text-muted-foreground font-mono">{comment.createdAt.toLocaleString()}</span>
+                       </div>
+                       <p className="text-sm text-white/80 whitespace-pre-wrap">{comment.content}</p>
+                     </div>
+                   </div>
+                 ))
+               )}
+             </div>
+             
+             {hasPermission(session as any, 'VIEW_VULNERABILITIES') && (
+               <form action={postVulnCommentAction} className="mt-4 flex flex-col space-y-2">
+                 <input type="hidden" name="vulnId" value={vuln.id} />
+                 <textarea
+                   name="content"
+                   rows={3}
+                   required
+                   placeholder="Record investigation notes or attach intel..."
+                   className="w-full text-sm rounded-lg border border-border/60 bg-black/30 p-3 text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none transition-all resize-none"
+                 />
+                 <Button type="submit" size="sm" variant="secondary" className="shadow-[0_0_15px_rgba(255,255,255,0.1)] font-semibold">
+                   Post Investigation Log
+                 </Button>
+               </form>
+             )}
           </div>
         </div>
 
@@ -167,14 +261,14 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
             </div>
             
             {hasPermission(session as any, 'UPDATE_VULNERABILITIES') && (
-              <form action={linkAssetToVulnerability} className="w-full p-4 border-b border-white/5 bg-black/40 flex gap-2">
+              <form action={linkVulnAssetAction} className="w-full p-4 border-b border-white/5 bg-black/40 flex gap-2">
                  <input type="hidden" name="vulnId" value={vuln.id} />
                  <Select name="assetId" required>
                     <SelectTrigger className="w-full bg-black/50 border-white/10 !h-8 text-xs rounded-md">
                        <SelectValue placeholder="Correlate New Asset..." />
                     </SelectTrigger>
                     <SelectContent className="bg-black/95 shadow-2xl border-white/10 max-h-64">
-                       {allAssets.map(a => (
+                       {allAssets.map((a: any) => (
                          <SelectItem key={a.id} value={a.id} className="text-xs font-mono">{a.name}</SelectItem>
                        ))}
                     </SelectContent>
@@ -192,24 +286,48 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                ) : (
                  <>
                    <ul className="space-y-2">
-                      {affectedAssets.map(asset => (
-                        <li key={asset.id} className="bg-black/40 border border-red-500/20 rounded-lg p-3 hover:bg-black/60 transition-colors flex justify-between items-center group">
-                          <Link href={`/assets/${asset.id}`} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-1">
+                      {affectedAssets.map((vulnAsset: any) => (
+                        <li key={vulnAsset.id} className="bg-black/40 border border-red-500/20 rounded-lg p-3 hover:bg-black/60 transition-colors flex flex-col gap-3 group">
+                          <Link href={`/assets/${vulnAsset.asset.id}`} className="flex justify-between items-start">
                             <div>
-                              <p className="font-bold font-mono text-sm text-red-400 group-hover:text-red-300 transition-colors">{asset.name}</p>
-                              <span className="text-[10px] text-muted-foreground uppercase">{asset.type.replace(/_/g, ' ')} • {asset.status.replace(/_/g, ' ')}</span>
+                              <p className="font-bold font-mono text-sm text-red-400 group-hover:text-red-300 transition-colors">{vulnAsset.asset.name}</p>
+                              <span className="text-[10px] text-muted-foreground uppercase">{vulnAsset.asset.type.replace(/_/g, ' ')} • {vulnAsset.asset.status.replace(/_/g, ' ')}</span>
                             </div>
-                            {asset.ipAddress && <span className="text-xs bg-red-950/50 text-red-300 px-2 py-1 flex items-center rounded border border-red-900/50 font-mono tracking-tighter">{asset.ipAddress}</span>}
+                            {vulnAsset.asset.ipAddress && <span className="text-xs bg-red-950/50 text-red-300 px-2 py-1 flex items-center rounded border border-red-900/50 font-mono tracking-tighter">{vulnAsset.asset.ipAddress}</span>}
                           </Link>
-                          {hasPermission(session as any, 'DELETE_VULNERABILITIES') && (
-                             <form action={unlinkAssetFromVulnerability}>
-                                <input type="hidden" name="vulnId" value={vuln.id} />
-                                <input type="hidden" name="assetId" value={asset.id} />
-                                <button type="submit" className="p-2 ml-2 hover:bg-red-500/20 text-red-400/50 hover:text-red-400 rounded transition-colors" title="Unlink Asset">
-                                   <Trash2 className="w-4 h-4" />
-                                </button>
-                             </form>
-                          )}
+
+                          <div className="flex gap-2 items-center justify-between border-t border-white/5 pt-2">
+                             {hasPermission(session as any, 'UPDATE_VULNERABILITIES') ? (
+                               <form action={updateVulnAssetStatusAction} className="flex gap-2">
+                                  <input type="hidden" name="vulnAssetId" value={vulnAsset.id} />
+                                  <input type="hidden" name="vulnId" value={vuln.id} />
+                                  <Select name="status" defaultValue={vulnAsset.status}>
+                                     <SelectTrigger className="w-[140px] bg-black/50 border-white/10 !h-7 text-[10px] rounded">
+                                        <SelectValue />
+                                     </SelectTrigger>
+                                     <SelectContent className="bg-black/95 border-white/10">
+                                        <SelectItem value="AFFECTED" className="text-[11px] text-red-400">AFFECTED</SelectItem>
+                                        <SelectItem value="MITIGATED" className="text-[11px] text-yellow-500">MITIGATED</SelectItem>
+                                        <SelectItem value="PATCHED" className="text-[11px] text-green-500">PATCHED</SelectItem>
+                                        <SelectItem value="FALSE_POSITIVE" className="text-[11px] text-blue-400">FALSE POSITIVE</SelectItem>
+                                     </SelectContent>
+                                  </Select>
+                                  <Button type="submit" size="sm" variant="outline" className="h-7 text-[10px] bg-black/40 hover:bg-black/80 text-muted-foreground">Save</Button>
+                               </form>
+                             ) : (
+                                <Badge variant="outline" className="text-[10px] font-mono">{vulnAsset.status}</Badge>
+                             )}
+
+                             {hasPermission(session as any, 'DELETE_VULNERABILITIES') && (
+                               <form action={unlinkVulnAssetAction}>
+                                  <input type="hidden" name="vulnId" value={vuln.id} />
+                                  <input type="hidden" name="vulnAssetId" value={vulnAsset.id} />
+                                  <button type="submit" className="p-1.5 hover:bg-red-500/20 text-red-400/50 hover:text-red-400 rounded transition-colors" title="Unlink Asset">
+                                     <Trash2 className="w-4 h-4" />
+                                  </button>
+                               </form>
+                             )}
+                          </div>
                         </li>
                       ))}
                    </ul>
@@ -257,7 +375,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
 
               {attachments.length > 0 ? (
                 <div className="flex flex-col gap-2 pt-1">
-                  {attachments.map(att => (
+                  {attachments.map((att: any) => (
                     <div key={att.id} className="relative flex items-center p-2 rounded-lg border border-indigo-500/10 bg-indigo-500/5 hover:border-indigo-400/40 transition-colors group">
                       <a href={att.fileUrl} target="_blank" rel="noreferrer" className="flex flex-1 min-w-0 items-center">
                         <Paperclip className="w-3 h-3 mr-2 text-indigo-400/70 group-hover:text-indigo-400 flex-shrink-0" />

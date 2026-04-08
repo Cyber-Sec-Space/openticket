@@ -37,10 +37,11 @@ export default async function UserDetailPage({
   const TAKE_INC = 6
 
   // Parallel data fetching for high performance
+  const canViewAuditLogs = hasPermission(session as any, 'VIEW_AUDIT_LOGS')
   const [user, auditLogs, totalAuditLogs, attachments, totalAttachments, assignedIncidents, totalIncidents] = await Promise.all([
     db.user.findUnique({ where: { id }, include: { customRoles: { select: { name: true } } } }),
-    db.auditLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_AUDIT, skip: (auditPage - 1) * TAKE_AUDIT }),
-    db.auditLog.count({ where: { userId: id } }),
+    canViewAuditLogs ? db.auditLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_AUDIT, skip: (auditPage - 1) * TAKE_AUDIT }) : Promise.resolve([]),
+    canViewAuditLogs ? db.auditLog.count({ where: { userId: id } }) : Promise.resolve(0),
     db.attachment.findMany({ where: { uploaderId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
     db.attachment.count({ where: { uploaderId: id } }),
     db.incident.findMany({ where: { assignees: { some: { id } } }, select: { id: true, title: true, status: true, severity: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: TAKE_INC, skip: (incPage - 1) * TAKE_INC }),

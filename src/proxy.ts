@@ -1,5 +1,6 @@
 import NextAuth from "next-auth"
 import { authConfig } from "@/auth.config"
+import { NextResponse } from "next/server"
 
 const { auth } = NextAuth(authConfig)
 
@@ -12,7 +13,16 @@ export default auth((req) => {
   const isOnSetupPage = req.nextUrl.pathname.startsWith('/setup');
 
   if (isOnLoginPage || isOnRegisterPage || isOnSetupPage) {
-    if (isLoggedIn) return Response.redirect(new URL('/', req.nextUrl));
+    if (isLoggedIn) {
+       // Loop Escape Hatch: Deep intercept Node.js ghost token expulsions
+       if (req.nextUrl.searchParams.has('clearsession')) {
+          const res = NextResponse.redirect(new URL('/login', req.nextUrl));
+          res.cookies.delete("authjs.session-token");
+          res.cookies.delete("__Secure-authjs.session-token");
+          return res;
+       }
+       return Response.redirect(new URL('/', req.nextUrl));
+    }
     return;
   }
 

@@ -73,6 +73,21 @@ export async function PATCH(
     })
     if (!existingIncident) return new NextResponse("Not Found", { status: 404 })
 
+    // Enforce Zero-Trust BOLA Isolation before allowing any mutation blocks
+    const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    
+    let isAuthorized = canViewAll || existingIncident.reporterId === session.user.id
+    if (!isAuthorized) {
+        if (canViewAssigned && existingIncident.assignees.some(a => a.id === session.user.id)) isAuthorized = true
+        if (canViewUnassigned && existingIncident.assignees.length === 0) isAuthorized = true
+    }
+
+    if (!isAuthorized) {
+      return new NextResponse("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.", { status: 403 })
+    }
+
     const isAssigned = existingIncident.assignees.some(a => a.id === session.user.id)
     
     if (assigneeId !== undefined) {
@@ -101,7 +116,12 @@ export async function PATCH(
       updateData.assignees = assigneeId === null ? { set: [] } : { set: [{ id: assigneeId }] }
     }
     if (severity) updateData.severity = severity
-    if (assetId !== undefined) updateData.assetId = assetId
+    if (assetId !== undefined) {
+       if (!hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET')) {
+          return new NextResponse("Forbidden: Missing LINK_INCIDENT_TO_ASSET privilege", { status: 403 })
+       }
+       updateData.assetId = assetId
+    }
 
     const updatedIncident = await db.incident.update({
       where: { id },

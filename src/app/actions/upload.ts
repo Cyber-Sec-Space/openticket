@@ -6,6 +6,7 @@ import fs from "fs"
 import path from "path"
 import { z } from "zod"
 import crypto from "crypto"
+import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
 export async function uploadAttachment(formData: FormData) {
   const session = await auth()
@@ -114,6 +115,11 @@ export async function uploadAttachment(formData: FormData) {
         changes: `Uploaded evidence file: ${file.name}`
       }
     })
+    revalidatePath(`/incidents/${incidentId}`)
+  }
+
+  if (vulnId) {
+    revalidatePath(`/vulnerabilities/${vulnId}`)
   }
 
   return { success: true, url: createdFile.fileUrl, filename: createdFile.filename }
@@ -191,6 +197,11 @@ export async function deleteAttachment(attachmentId: string) {
         changes: `Deleted evidence file: ${attachment.filename}`
       }
     })
+    revalidatePath(`/incidents/${attachment.incidentId}`)
+  }
+
+  if (attachment.vulnId) {
+    revalidatePath(`/vulnerabilities/${attachment.vulnId}`)
   }
 
   return { success: true }

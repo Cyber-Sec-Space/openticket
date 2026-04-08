@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     }
 
     // If user has CREATE_INCIDENTS, they are allowed to set initial target asset and severity
-    const finalAssetId = assetId || null;
+    const finalAssetId = hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null;
     let finalSeverity = severity || 'LOW';
 
     const newIncident = await db.incident.create({
@@ -108,7 +108,12 @@ export async function POST(req: Request) {
     })
 
     // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation
-    if (newIncident.severity === 'CRITICAL' && newIncident.assetId) {
+    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    const sevRank = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 }
+    const currentRank = sevRank[newIncident.severity as keyof typeof sevRank] || 0
+    const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
+
+    if (settings?.soarAutoQuarantineEnabled && newIncident.assetId && currentRank >= thresholdRank) {
       await db.asset.update({
         where: { id: newIncident.assetId },
         data: { status: 'COMPROMISED' }
@@ -120,7 +125,7 @@ export async function POST(req: Request) {
           entityType: "Asset",
           entityId: newIncident.assetId,
           userId: session.user.id,
-          changes: `Asset automatically marked as COMPROMISED due to CRITICAL Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
+          changes: `Asset automatically marked as COMPROMISED due to ${newIncident.severity} Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
         }
       })
     }

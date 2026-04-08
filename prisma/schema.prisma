@@ -144,6 +144,7 @@ model User {
   // Relations for OpenTicket
   reportedIncidents Incident[]   @relation("Reporter")
   assignedIncidents Incident[]   @relation("IncidentAssignees")
+  assignedVulnerabilities Vulnerability[] @relation("VulnAssignees")
   comments          Comment[]
   auditLogs         AuditLog[]
   attachments       Attachment[]
@@ -270,13 +271,35 @@ model Asset {
   updatedAt DateTime    @updatedAt
 
   incidents       Incident[]
-  vulnerabilities Vulnerability[] @relation("AssetVulnerabilities")
+  vulnerabilityAssets VulnerabilityAsset[]
 }
 
 enum VulnStatus {
   OPEN
   MITIGATED
   RESOLVED
+}
+
+enum VulnAssetStatus {
+  AFFECTED
+  MITIGATED
+  PATCHED
+  FALSE_POSITIVE
+}
+
+model VulnerabilityAsset {
+  id      String @id @default(cuid())
+  vulnId  String
+  assetId String
+  status  VulnAssetStatus @default(AFFECTED)
+  notes   String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vulnerability Vulnerability @relation(fields: [vulnId], references: [id], onDelete: Cascade)
+  asset         Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([vulnId, assetId])
 }
 
 model Vulnerability {
@@ -291,8 +314,10 @@ model Vulnerability {
   updatedAt     DateTime   @updatedAt
   targetSlaDate DateTime?
 
-  affectedAssets Asset[]      @relation("AssetVulnerabilities")
+  vulnerabilityAssets VulnerabilityAsset[]
   attachments    Attachment[]
+  assignees User[] @relation("VulnAssignees")
+  comments Comment[]
 }
 
 enum Severity {
@@ -351,8 +376,11 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  incidentId String
-  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  incidentId String?
+  incident   Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  vulnId String?
+  vuln   Vulnerability? @relation(fields: [vulnId], references: [id], onDelete: Cascade)
 
   authorId String?
   author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)

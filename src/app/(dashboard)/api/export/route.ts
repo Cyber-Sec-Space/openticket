@@ -92,7 +92,7 @@ export async function GET(req: Request) {
     // Resource Constraint Enforcement (OOM Prevention)
     const vulns = await db.vulnerability.findMany({
       where: whereClause,
-      include: { affectedAssets: true },
+      include: { vulnerabilityAssets: { include: { asset: true } } },
       orderBy: { createdAt: 'desc' },
       take: 5000,
       skip: skip
@@ -102,7 +102,7 @@ export async function GET(req: Request) {
     csvContent += headers.join(",") + "\n"
 
     for (const vuln of vulns) {
-      const assetsStr = vuln.affectedAssets.map(a => a.name).join("; ")
+      const assetsStr = vuln.vulnerabilityAssets.map((va: any) => va.asset.name).join("; ")
       const row = [
         vuln.id,
         vuln.cveId || "None",
