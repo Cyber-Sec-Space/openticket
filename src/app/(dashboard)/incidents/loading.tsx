@@ -1,26 +1,62 @@
-import { Siren, ShieldAlert } from "lucide-react"
+import { ShieldAlert, Filter } from "lucide-react"
 
 export default function IncidentsLoading() {
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-500">
-      <div className="relative flex flex-col items-center justify-center p-12 rounded-full">
-        {/* Radar sweeping effect */}
-        <div className="absolute inset-0 border border-red-500/30 rounded-full animate-ping opacity-20 duration-1000" />
-        <div className="absolute inset-4 border border-red-500/20 rounded-full animate-ping opacity-40 duration-700 delay-150" />
-        
-        {/* Core Icon */}
-        <div className="relative z-10 flex items-center justify-center w-24 h-24 bg-red-950/50 rounded-full border border-red-500/50 shadow-[0_0_40px_rgba(239,68,68,0.4)]">
-          <Siren className="w-12 h-12 text-red-500 animate-pulse" />
+    <div className="p-8 max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+      {/* Header Skeleton */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center">
+            <ShieldAlert className="mr-3 text-primary/30 h-8 w-8 animate-pulse" /> 
+            <div className="h-8 w-48 bg-white/10 rounded-md animate-pulse"></div>
+          </h1>
+          <div className="h-4 w-96 bg-white/5 rounded-md mt-3 animate-pulse"></div>
+        </div>
+        <div className="flex gap-4">
+          <div className="h-10 w-24 bg-white/10 rounded-md animate-pulse"></div>
+          <div className="h-10 w-40 bg-primary/20 rounded-md animate-pulse"></div>
         </div>
       </div>
-      
-      <div className="mt-8 flex flex-col items-center space-y-2">
-        <h3 className="font-mono text-xl font-bold tracking-[0.3em] text-red-500 uppercase overflow-hidden whitespace-nowrap animate-pulse">
-          Triaging Signals...
-        </h3>
-        <div className="flex items-center space-x-2 text-xs font-mono text-red-500/60">
-          <ShieldAlert className="w-4 h-4 animate-bounce" />
-          <span>Intercepting global threat vectors</span>
+
+      {/* Filter Bar Skeleton */}
+      <div className="glass-card rounded-xl p-4 flex gap-4 items-center mb-6 border border-border">
+        <Filter className="w-5 h-5 text-muted-foreground/30 mr-2" />
+        <div className="h-9 flex-1 min-w-[200px] bg-white/5 rounded-md animate-pulse"></div>
+        <div className="h-9 w-[150px] bg-white/5 rounded-md animate-pulse"></div>
+        <div className="h-9 w-[150px] bg-white/5 rounded-md animate-pulse"></div>
+        <div className="h-9 w-[120px] bg-primary/10 rounded-md animate-pulse"></div>
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
+        <div className="bg-black/20 h-12 border-b border-border w-full flex items-center px-6 gap-4">
+           <div className="h-4 w-12 bg-white/10 rounded animate-pulse"></div>
+           <div className="h-4 w-32 bg-white/10 rounded animate-pulse ml-8"></div>
+           <div className="h-4 w-20 bg-white/10 rounded animate-pulse ml-auto"></div>
+        </div>
+        <div className="divide-y divide-border">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="flex flex-row items-center w-full min-h-[64px] px-6 gap-6 py-2">
+              <div className="flex-none h-4 w-16 bg-white/5 rounded animate-pulse"></div>
+              <div className="flex-1 flex flex-col gap-2">
+                 <div className="h-4 w-1/2 max-w-[300px] bg-white/10 rounded animate-pulse"></div>
+                 <div className="h-2 w-24 bg-white/5 rounded animate-pulse"></div>
+              </div>
+              <div className="flex-none hidden md:block h-6 w-20 bg-white/10 rounded-full animate-pulse"></div>
+              <div className="flex-none h-6 w-24 bg-white/5 rounded-full animate-pulse"></div>
+              <div className="flex-none hidden xl:block h-4 w-24 bg-white/10 rounded animate-pulse ml-auto"></div>
+              <div className="flex-none h-4 w-20 bg-white/5 rounded animate-pulse ml-auto text-right"></div>
+            </div>
+          ))}
+        </div>
+        {/* Pagination Skeleton */}
+        <div className="border-t border-border/50 bg-black/10 p-4 flex items-center justify-between">
+           <div className="h-4 w-40 bg-white/5 rounded animate-pulse"></div>
+           <div className="flex gap-2">
+             <div className="h-8 w-16 bg-white/5 rounded animate-pulse"></div>
+             <div className="h-8 w-24 bg-white/10 rounded animate-pulse"></div>
+             <div className="h-8 w-16 bg-white/5 rounded animate-pulse"></div>
+           </div>
         </div>
       </div>
     </div>

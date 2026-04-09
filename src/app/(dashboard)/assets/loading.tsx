@@ -1,36 +1,51 @@
-import { Server, Cpu, Database } from "lucide-react"
+import { Server, Filter } from "lucide-react"
 
 export default function AssetsLoading() {
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-500 overflow-hidden">
-      <div className="relative w-64 h-64 flex items-center justify-center">
-        {/* Connecting Lines */}
-        <div className="absolute inset-x-0 h-[1px] bg-cyan-500/30 animate-pulse top-1/2" />
-        <div className="absolute inset-y-0 w-[1px] bg-cyan-500/30 animate-pulse left-1/2" />
-        
-        {/* Nodes */}
-        <div className="absolute top-4 left-4 p-3 bg-cyan-950/40 rounded-lg border border-cyan-500/30">
-          <Database className="w-6 h-6 text-cyan-500/50" />
+    <div className="p-8 max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+      {/* Header Skeleton */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-6">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center">
+            <Server className="mr-3 text-cyan-500/30 h-8 w-8 animate-pulse" /> 
+            <div className="h-8 w-56 bg-white/10 rounded-md animate-pulse"></div>
+          </h1>
+          <div className="h-4 w-72 bg-white/5 rounded-md mt-3 animate-pulse"></div>
         </div>
-        <div className="absolute bottom-4 right-4 p-3 bg-cyan-950/40 rounded-lg border border-cyan-500/30">
-          <Cpu className="w-6 h-6 text-cyan-500/50" />
-        </div>
-
-        {/* Central Server */}
-        <div className="relative z-10 p-6 bg-cyan-950/80 rounded-xl border border-cyan-400 shadow-[0_0_50px_rgba(34,211,238,0.3)]">
-          <Server className="w-12 h-12 text-cyan-400" />
-          {/* Scanning Beam */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-cyan-300 shadow-[0_0_10px_#67e8f9] animate-[ping_2s_ease-in-out_infinite]" />
+        <div className="flex gap-4">
+          <div className="h-10 w-32 bg-cyan-500/20 rounded-md animate-pulse"></div>
         </div>
       </div>
-      
-      <div className="mt-8 flex flex-col items-center space-y-2">
-        <h3 className="font-mono text-xl font-bold tracking-[0.3em] text-cyan-400 uppercase">
-          Mapping Infrastructure...
-        </h3>
-        <span className="text-xs font-mono text-cyan-500/60 tracking-widest">
-          Polling telemetry & heartbeat signatures
-        </span>
+
+      {/* Filter Bar Skeleton */}
+      <div className="glass-card rounded-xl p-4 flex gap-4 items-center mb-6 border border-border">
+        <Filter className="w-5 h-5 text-muted-foreground/30 mr-2" />
+        <div className="h-9 flex-1 min-w-[200px] bg-white/5 rounded-md animate-pulse"></div>
+        <div className="h-9 w-[150px] bg-white/5 rounded-md animate-pulse"></div>
+        <div className="h-9 w-[120px] bg-cyan-500/10 rounded-md animate-pulse"></div>
+      </div>
+
+      {/* Grid skeleton (Assets uses a card grid usually, so we'll do a mix or table) */}
+      <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
+        <div className="bg-black/20 h-12 border-b border-border w-full flex items-center px-6 gap-4">
+           <div className="h-4 w-32 bg-white/10 rounded animate-pulse"></div>
+           <div className="h-4 w-24 bg-white/10 rounded animate-pulse ml-8"></div>
+           <div className="h-4 w-24 bg-white/10 rounded animate-pulse ml-16"></div>
+           <div className="h-4 w-20 bg-white/10 rounded animate-pulse ml-auto"></div>
+        </div>
+        <div className="divide-y divide-border">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="flex flex-row items-center w-full min-h-[64px] px-6 gap-6 py-2">
+              <div className="flex-1 flex flex-col gap-2">
+                 <div className="h-4 w-48 bg-white/10 rounded animate-pulse"></div>
+                 <div className="h-2 w-32 bg-white/5 rounded animate-pulse"></div>
+              </div>
+              <div className="flex-none hidden md:block h-6 w-24 bg-white/10 rounded-full animate-pulse"></div>
+              <div className="flex-none hidden xl:block h-4 w-32 bg-white/5 rounded animate-pulse ml-auto"></div>
+              <div className="flex-none h-6 w-20 bg-white/5 rounded-full animate-pulse ml-auto"></div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
