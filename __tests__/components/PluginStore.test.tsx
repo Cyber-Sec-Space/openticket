@@ -30,6 +30,7 @@ describe('PluginStorePage Server Component', () => {
   })
 
   it('renders Cannot Connect to Plugin Registry when fetch fails or returns invalid structurally', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
       status: 404
@@ -39,6 +40,7 @@ describe('PluginStorePage Server Component', () => {
     render(jsx)
 
     expect(screen.getByText('Cannot Connect to Plugin Registry')).toBeTruthy()
+    consoleSpy.mockRestore()
   })
 
   it('renders PluginStore cards when registry structurally validates', async () => {
