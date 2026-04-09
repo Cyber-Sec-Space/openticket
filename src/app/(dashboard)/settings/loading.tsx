@@ -12,26 +12,26 @@ export default function SettingsLoading() {
           <div className="mt-2 h-5 w-48 bg-white/5 rounded animate-pulse"></div>
         </div>
         <div className="flex items-center gap-3">
-           <div className="h-10 w-28 bg-purple-600/20 rounded-md animate-pulse"></div>
+           <div className="h-8 w-[100px] bg-purple-600/20 rounded-lg animate-pulse"></div>
         </div>
       </header>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border mt-8 shadow-2xl">
-        <div className="border-b border-white/5 bg-black/20 p-6 flex flex-col space-y-1.5">
-          <div className="h-6 w-48 bg-white/10 rounded animate-pulse"></div>
-          <div className="h-4 w-64 bg-white/5 rounded animate-pulse"></div>
+        <div className="border-b border-white/5 bg-black/20 p-6 grid auto-rows-min gap-1">
+          <div className="h-[22px] w-48 bg-white/10 rounded animate-pulse"></div>
+          <div className="h-[20px] w-64 bg-white/5 rounded animate-pulse"></div>
         </div>
 
         <div className="p-6">
           <div className="space-y-6">
             <div className="space-y-3">
               <div className="h-4 w-48 bg-white/5 rounded animate-pulse"></div>
-              <div className="h-9 w-full bg-white/5 rounded animate-pulse"></div>
+              <div className="h-8 w-full bg-white/5 rounded-lg animate-pulse"></div>
             </div>
 
             <div className="space-y-3">
               <div className="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
-              <div className="h-9 w-full bg-white/5 rounded animate-pulse"></div>
+              <div className="h-8 w-full bg-white/5 rounded-lg animate-pulse"></div>
             </div>
 
             <div className="space-y-3">
@@ -39,15 +39,18 @@ export default function SettingsLoading() {
                 <div className="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
                 <div className="h-4 w-16 bg-white/5 rounded animate-pulse"></div>
               </div>
-              <div className="h-9 w-full bg-white/10 rounded animate-pulse"></div>
+              <div className="h-8 w-full bg-white/10 rounded-lg animate-pulse"></div>
             </div>
 
             <div className="space-y-3">
               <div className="h-4 w-56 bg-white/5 rounded animate-pulse"></div>
-              <div className="h-10 w-full bg-white/5 rounded-lg animate-pulse"></div>
+              <div className="h-10 w-full bg-white/5 rounded-lg animate-pulse flex justify-between items-center px-3 border border-white/5">
+                <div className="h-4 w-32 bg-white/10 rounded animate-pulse"></div>
+                <div className="h-4 w-4 bg-white/10 rounded animate-pulse"></div>
+              </div>
             </div>
 
-            <div className="h-10 w-32 bg-blue-600/20 rounded-md animate-pulse"></div>
+            <div className="h-8 w-32 bg-blue-600/20 rounded-lg animate-pulse"></div>
           </div>
 
           <div className="pt-4">
@@ -67,8 +70,8 @@ export default function SettingsLoading() {
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <div className="flex items-center space-x-3">
-                    <div className="h-[26px] w-28 bg-white/10 rounded-md animate-pulse"></div>
-                    <div className="h-8 w-24 bg-emerald-600/20 rounded text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.1)] animate-pulse"></div>
+                    <div className="h-[22px] w-[90px] bg-white/10 rounded-md animate-pulse"></div>
+                    <div className="h-8 w-[100px] bg-emerald-600/20 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.1)] animate-pulse"></div>
                   </div>
                 </div>
               </div>
