@@ -45,9 +45,9 @@ export default function DashboardLoading() {
                 <div className="h-[24px] w-24 bg-white/5 rounded-md animate-pulse"></div>
               </div>
             </div>
-            <div className="p-6 flex-1 flex flex-col justify-center min-h-[320px] h-[320px]">
-               {/* Pulsing grid lines mock */}
-               <div className="w-full h-full flex items-end justify-between gap-2 opacity-20">
+            <div className="p-6 flex-1 flex flex-col justify-center min-h-[320px]">
+               {/* Pulsing grid lines mock matching TrendChart dimensions */}
+               <div className="w-full h-80 flex items-end justify-between gap-2 opacity-20">
                   {Array.from({ length: 14 }).map((_, j) => (
                      <div key={j} className="w-full bg-white/10 rounded-t animate-pulse" style={{ height: `${Math.random() * 60 + 20}%`}}></div>
                   ))}
@@ -63,8 +63,10 @@ export default function DashboardLoading() {
                   <div className="h-4 w-4 rounded-full bg-white/10 animate-pulse"></div>
                   <div className="h-[20px] w-48 bg-white/10 rounded animate-pulse"></div>
                 </div>
-                <div className="p-4 flex-1 min-h-[320px] h-[320px] flex items-center justify-center">
-                  <div className="w-40 h-40 rounded-full border-[10px] border-white/5 animate-pulse"></div>
+                <div className="p-4 flex-1 min-h-[320px] flex items-center justify-center">
+                  <div className="w-full h-80 flex items-center justify-center">
+                    <div className="w-40 h-40 rounded-full border-[10px] border-white/5 animate-pulse"></div>
+                  </div>
                 </div>
               </div>
             ))}
