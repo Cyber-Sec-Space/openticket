@@ -14,6 +14,13 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  collectCoverageFrom: [
+    'src/lib/plugins/**/*.{js,ts}',
+    '!src/lib/plugins/types.ts',
+    'src/lib/auth-utils.ts',
+    'src/app/(dashboard)/settings/plugins/actions.ts',
+    'src/app/(dashboard)/system/actions.ts'
+  ]
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

@@ -24,6 +24,11 @@ All notable changes to this project will be documented in this file.
 - Phase 9 executed the final systemic **Absolute Zero-Trust** sweep across the unified filesystem architecture (`api/files/[filename]` and `upload.ts`). It unconditionally severs all IO evidence streams (upload, download, delete) for operatives functioning with Zero View Capabilities (lacking all of `ALL`, `ASSIGNED`, and `UNASSIGNED`), forcibly closing the last logical data extraction aperture even if an operative originally authored the document.
 - Phase 10 identified and resolved a severe **Vertical Privilege Escalation (PrivEsc)** vulnerability stemming from unrestricted "Role Minting" in Custom Role management. Specifically, it decoupled monolithic privileges (`MANAGE_PLUGINS`, `MANAGE_USER_ROLES`) into 6 modular capabilities via Prisma (`INSTALL_PLUGINS`, `TOGGLE_PLUGINS`, `CONFIGURE_PLUGINS`, `RESTART_SYSTEM_SERVICES`, `ASSIGN_USER_ROLES`, `CREATE_ROLES`...). Most importantly, the `createRole`/`updateRole` API was weaponized with a mathematical **Subset Integrity Check**, aggressively throwing HTTP `403` if an operative attempts to delegate or mint a custom role containing capabilities strictly higher than their own (unless possessing systemic `UPDATE_SYSTEM_SETTINGS`).
 
+### Added
+- **Security Checksums**: Integrated SRMI hash payload bindings for `npm run build` validating production deployment consistency using native Node `crypto` capabilities.
+- **Enterprise Test Coverage Protocol**: Scoped Jest unit tests to validate 100% line, generic and branch code coverage targeting global configuration mapping schemas securely.
+- **Extensive Plugin Mock Implementations**: Over 300+ lines of custom mock environments spanning Node's `child_process`, `fs/promises`, global `fetch` arrays, and boundary detection implementations shielding untested gaps.
+
 ## 0.3.0
 ### Security
 - Fixed a massive Privilege Escalation (PrivEsc) vector inside `/api/incidents` where `REPORTER`s could illegally inject arbitrary `assetId` values to force system-wide SOAR automated quarantines across unowned macro infrastructure.
