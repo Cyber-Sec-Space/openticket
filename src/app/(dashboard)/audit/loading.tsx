@@ -27,40 +27,40 @@ export default function AuditLoading() {
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-              <TableHead className="font-semibold text-primary/50 pl-6">Timestamp</TableHead>
-              <TableHead className="font-semibold text-primary/50">Operative</TableHead>
-              <TableHead className="font-semibold text-primary/50">Domain</TableHead>
-              <TableHead className="font-semibold text-primary/50">Action Executed</TableHead>
-              <TableHead className="font-semibold text-primary/50">Payload Diff</TableHead>
-              <TableHead className="font-semibold text-primary/50 text-right pr-6">Target Key</TableHead>
+              <TableHead className="font-semibold text-primary/50 pl-6 w-[15%]">Timestamp</TableHead>
+              <TableHead className="font-semibold text-primary/50 w-[20%]">Operative</TableHead>
+              <TableHead className="font-semibold text-primary/50 w-[15%] hidden sm:table-cell">Domain</TableHead>
+              <TableHead className="font-semibold text-primary/50 w-[15%] hidden md:table-cell">Action</TableHead>
+              <TableHead className="font-semibold text-primary/50 w-[20%] truncate">Payload Diff</TableHead>
+              <TableHead className="font-semibold text-primary/50 text-right pr-6 w-[15%]">Target Key</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: 15 }).map((_, i) => (
               <TableRow key={i} className="border-border/50">
                 <TableCell className="pl-6 py-4">
-                  <div className="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
                 </TableCell>
                 <TableCell className="py-4">
                   <div className="flex flex-col gap-1">
-                    <div className="h-4 w-32 bg-white/10 rounded animate-pulse"></div>
+                    <div className="h-4 w-3/4 max-w-[150px] bg-white/10 rounded animate-pulse"></div>
                     <div className="h-3 w-16 bg-white/5 rounded animate-pulse"></div>
                   </div>
                 </TableCell>
-                <TableCell className="py-4">
-                  <div className="h-4 w-20 bg-purple-500/10 rounded animate-pulse"></div>
+                <TableCell className="py-4 hidden sm:table-cell">
+                  <div className="h-4 w-16 bg-purple-500/10 rounded animate-pulse"></div>
                 </TableCell>
-                <TableCell className="py-4">
-                  <div className="h-5 w-24 bg-white/10 rounded-md animate-pulse"></div>
+                <TableCell className="py-4 hidden md:table-cell">
+                  <div className="h-5 w-20 bg-white/10 rounded-md animate-pulse"></div>
                 </TableCell>
-                <TableCell className="py-4">
-                  <div className="h-4 w-48 bg-white/5 rounded animate-pulse"></div>
+                <TableCell className="py-4 truncate">
+                  <div className="h-4 w-5/6 max-w-[200px] bg-white/5 rounded animate-pulse"></div>
                 </TableCell>
                 <TableCell className="pr-6 text-right py-4">
-                  <div className="h-4 w-20 bg-white/5 rounded ml-auto animate-pulse"></div>
+                  <div className="h-4 w-16 bg-white/5 rounded ml-auto animate-pulse"></div>
                 </TableCell>
               </TableRow>
             ))}
