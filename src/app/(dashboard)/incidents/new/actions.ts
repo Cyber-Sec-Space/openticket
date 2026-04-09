@@ -8,10 +8,13 @@ import { dispatchWebhook } from "@/lib/webhook"
 import { sendCriticalAlertEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
 import { dispatchMassAlert } from "@/lib/notifier"
 import { fireHook } from "@/lib/plugins/hook-engine"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function createIncident(prevState: any, formData: FormData) {
   const session = await auth()
-  if (!session?.user) throw new Error("Unauthorized")
+  if (!session?.user || !hasPermission(session as any, 'CREATE_INCIDENTS')) {
+    throw new Error("Forbidden: You do not possess the clearance to mint operational incidents.")
+  }
 
   const title = formData.get("title") as string
   const description = formData.get("description") as string
@@ -49,15 +52,19 @@ export async function createIncident(prevState: any, formData: FormData) {
       type: type as any,
       severity: effectiveSeverity,
       reporterId: session.user.id,
-      assetId: assetId || null,
+      assetId: hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null,
       status: 'NEW',
       targetSlaDate,
       tags
     }
   })
 
-  // Phase 7: SOAR Automations
-  if (severity === 'CRITICAL' && assetId) {
+  // Phase 7 & 11: SOAR Automations (Auto-Quarantine)
+  const sevRank = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 }
+  const currentRank = sevRank[effectiveSeverity as keyof typeof sevRank] || 0
+  const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
+
+  if (settings?.soarAutoQuarantineEnabled && assetId && currentRank >= thresholdRank) {
     const affectedAsset = await db.asset.update({
       where: { id: assetId },
       data: { status: 'COMPROMISED' }
@@ -67,7 +74,7 @@ export async function createIncident(prevState: any, formData: FormData) {
     await fireHook("onAssetCompromise", affectedAsset)
 
     if (settings?.smtpTriggerOnAssetCompromise) {
-      const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { id: true, email: true } })
+      const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['VIEW_INCIDENTS_ALL', 'UPDATE_SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { id: true, email: true } })
       await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
       await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${assetId}`)
     }
@@ -109,7 +116,7 @@ export async function createIncident(prevState: any, formData: FormData) {
   // Phase 9 & 10: Webhook & Native Notifications Dispatch
   if (severity === 'CRITICAL' || severity === 'HIGH') {
     const alertedUsers = await db.user.findMany({
-      where: { roles: { hasSome: ['SECOPS', 'ADMIN'] } },
+      where: { customRoles: { some: { permissions: { hasSome: ['VIEW_INCIDENTS_ALL', 'UPDATE_SYSTEM_SETTINGS'] } } } },
       select: { id: true, email: true }
     })
     

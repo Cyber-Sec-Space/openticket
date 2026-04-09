@@ -6,8 +6,8 @@ import fs from "fs"
 import path from "path"
 import { z } from "zod"
 import crypto from "crypto"
-
-
+import { revalidatePath } from "next/cache"
+import { hasPermission } from "@/lib/auth-utils"
 export async function uploadAttachment(formData: FormData) {
   const session = await auth()
   if (!session?.user) {
@@ -28,8 +28,8 @@ export async function uploadAttachment(formData: FormData) {
 
   // BOLA & RBAC Entity Verification checks
   if (vulnId) {
-    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
-    if (!hasPrivilege) {
+    const hasPrivilege = hasPermission(session as any, 'UPLOAD_VULN_ATTACHMENTS')
+    if (!hasPrivilege || !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
        return { error: "Forbidden: Strict Vuln BOLA enforcement" }
     }
     const vuln = await db.vulnerability.findUnique({ where: { id: vulnId }, select: { id: true }})
@@ -37,18 +37,30 @@ export async function uploadAttachment(formData: FormData) {
   }
 
   if (incidentId) {
-    const incident = await db.incident.findUnique({
-      where: { id: incidentId },
-      select: { reporterId: true, assignees: { select: { id: true } } }
-    })
-    
-    if (!incident) return { error: "Incident context invalid" }
+    if (!hasPermission(session as any, 'UPLOAD_INCIDENT_ATTACHMENTS')) return { error: "Forbidden: Direct capability blocked" }
+    const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
 
-    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
-    if (!hasPrivilege) {
-       const isReporter = incident.reporterId === session.user.id
-       const isAssigned = incident.assignees.some(a => a.id === session.user.id)
-       if (!isReporter && !isAssigned) {
+    if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
+       return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance." }
+    }
+
+    if (!canViewAll) {
+       const incident = await db.incident.findUnique({
+         where: { id: incidentId },
+         select: { reporterId: true, assignees: { select: { id: true } } }
+       })
+       if (!incident) return { error: "Incident context invalid" }
+
+       let isAuthorized = incident.reporterId === session.user.id
+       
+       if (!isAuthorized) {
+          if (canViewAssigned && incident.assignees.some(a => a.id === session.user.id)) isAuthorized = true
+          if (canViewUnassigned && incident.assignees.length === 0) isAuthorized = true
+       }
+       
+       if (!isAuthorized) {
           return { error: "Forbidden: Strict Incident BOLA isolation" }
        }
     }
@@ -103,6 +115,11 @@ export async function uploadAttachment(formData: FormData) {
         changes: `Uploaded evidence file: ${file.name}`
       }
     })
+    revalidatePath(`/incidents/${incidentId}`)
+  }
+
+  if (vulnId) {
+    revalidatePath(`/vulnerabilities/${vulnId}`)
   }
 
   return { success: true, url: createdFile.fileUrl, filename: createdFile.filename }
@@ -123,17 +140,42 @@ export async function deleteAttachment(attachmentId: string) {
   if (!attachment) return { error: "Not found" }
 
   // RBAC for Delete
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
-  if (!hasPrivilege) {
-    if (attachment.uploaderId !== session.user.id) {
-       // Also check if they are assigned to the parent incident
-       if (attachment.incident) {
-          const isAssigned = attachment.incident.assignees.some(a => a.id === session.user.id)
-          if (!isAssigned) return { error: "Forbidden: You cannot delete evidence you did not upload." }
-       } else {
-          return { error: "Forbidden: You cannot delete evidence you did not upload." }
-       }
-    }
+  const hasIncidentDeletePrivilege = hasPermission(session as any, 'DELETE_INCIDENT_ATTACHMENTS')
+  const hasVulnDeletePrivilege = hasPermission(session as any, 'DELETE_VULN_ATTACHMENTS')
+
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+  
+  // Absolute Zero-Trust Evaluation
+  if (attachment.incident && !canViewAll && !canViewAssigned && !canViewUnassigned) {
+     return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance to operate on this dataset." }
+  }
+
+  if (attachment.vuln && !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
+     return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance to operate on this dataset." }
+  }
+
+  if (attachment.incident && !hasIncidentDeletePrivilege && attachment.uploaderId !== session.user.id) {
+     return { error: "Forbidden: You cannot delete incident evidence you did not upload." }
+  }
+
+  if (attachment.vuln && !hasVulnDeletePrivilege && attachment.uploaderId !== session.user.id) {
+     return { error: "Forbidden: You cannot delete vulnerability evidence you did not upload." }
+  }
+
+  // Ensure they still have baseline isolation context to the incident
+  if (attachment.incident && !canViewAll) {
+     let isAuthorized = attachment.incident.reporterId === session.user.id
+       
+     if (!isAuthorized) {
+        if (canViewAssigned && attachment.incident.assignees.some(a => a.id === session.user.id)) isAuthorized = true
+        if (canViewUnassigned && attachment.incident.assignees.length === 0) isAuthorized = true
+     }
+     
+     if (!isAuthorized) {
+        return { error: "Forbidden: You do not have contextual access to manage this incident's forensic evidence." }
+     }
   }
 
   // Delete from filesystem securely
@@ -165,6 +207,11 @@ export async function deleteAttachment(attachmentId: string) {
         changes: `Deleted evidence file: ${attachment.filename}`
       }
     })
+    revalidatePath(`/incidents/${attachment.incidentId}`)
+  }
+
+  if (attachment.vulnId) {
+    revalidatePath(`/vulnerabilities/${attachment.vulnId}`)
   }
 
   return { success: true }

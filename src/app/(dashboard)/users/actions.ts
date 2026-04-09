@@ -3,29 +3,64 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { Role } from "@prisma/client"
+import { hasPermission } from "@/lib/auth-utils"
+
+// Phase 12 Security: Vertical Privilege Validation
+async function verifyTargetHeightAndSubset(executor: any, targetUserIds: string[], roleIds?: string[]) {
+  const hasRoot = hasPermission(executor, 'UPDATE_SYSTEM_SETTINGS');
+  if (hasRoot) return; // Root bypasses restrictions
+
+  // 1. Target Height Check
+  const targets = await db.user.findMany({
+    where: { id: { in: targetUserIds } },
+    include: { customRoles: true }
+  });
+
+  for (const target of targets) {
+    for (const role of target.customRoles) {
+      if (role.permissions.includes('UPDATE_SYSTEM_SETTINGS')) {
+        throw new Error("Forbidden: Target possesses root privileges. You lack UPDATE_SYSTEM_SETTINGS to interact.");
+      }
+    }
+  }
+
+  // 2. Subset Check for requested role assignments
+  if (roleIds && roleIds.length > 0) {
+    const rolesToAssign = await db.customRole.findMany({ where: { id: { in: roleIds } } })
+    const executorPerms = new Set(executor.user?.permissions || [])
+    for (const role of rolesToAssign) {
+      for (const perm of role.permissions) {
+        if (!executorPerms.has(perm)) {
+           throw new Error("Forbidden: Cannot assign roles containing privileges beyond your own clearance.");
+        }
+      }
+    }
+  }
+}
 
 export async function updateUserRole(formData: FormData) {
   const session = await auth()
   
-  // Security boundary: Only ADMIN can modify RBAC.
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  // Security boundary: Only ASSIGN_USER_ROLES can modify RBAC.
+  if (!session?.user || !hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
   const targetUserId = formData.get("userId") as string
-  const newRoles = formData.getAll("roles") as Role[]
+  const customRoleIds = formData.getAll("customRoleIds") as string[]
 
-  if (!targetUserId || !newRoles || newRoles.length === 0) return
+  if (!targetUserId || !customRoleIds || customRoleIds.length === 0) return
 
   // Prevent admin from demoting themselves by accident, optional but safe.
-  if (targetUserId === session.user.id && !newRoles.includes('ADMIN')) {
-     throw new Error("Operation blocked: Administrators cannot revoke their own root privileges directly.");
+  if (targetUserId === session.user.id) {
+     throw new Error("Operation blocked: Administrators cannot modify their own privileges directly.");
   }
+
+  await verifyTargetHeightAndSubset(session, [targetUserId], customRoleIds);
 
   const updatedUser = await db.user.update({
     where: { id: targetUserId },
-    data: { roles: newRoles }
+    data: { customRoles: { set: customRoleIds.map(id => ({ id })) } }
   })
 
   // Log to global audit
@@ -35,7 +70,7 @@ export async function updateUserRole(formData: FormData) {
       entityType: "User",
       entityId: targetUserId,
       userId: session.user.id,
-      changes: `Roles of ${updatedUser.name || updatedUser.email} adjusted to [${newRoles.join(', ')}]`
+      changes: `Roles of ${updatedUser.name || updatedUser.email} completely overwritten`
     }
   })
 
@@ -45,7 +80,7 @@ export async function updateUserRole(formData: FormData) {
 export async function deleteUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'DELETE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -56,6 +91,8 @@ export async function deleteUserAction(formData: FormData) {
   if (targetUserId === session.user.id) {
     throw new Error("Operation blocked: Administrators cannot surgically excise their own root credentials.")
   }
+
+  await verifyTargetHeightAndSubset(session, [targetUserId]);
 
   const userToDelete = await db.user.findUnique({ where: { id: targetUserId } })
   if (!userToDelete) return;
@@ -81,13 +118,15 @@ export async function deleteUserAction(formData: FormData) {
 export async function toggleUserStatusAction(userId: string, isDisabled: boolean) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'SUSPEND_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
   if (userId === session.user.id) {
     throw new Error("Operation blocked: You cannot suspend your own active session.")
   }
+
+  await verifyTargetHeightAndSubset(session, [userId]);
 
   const updatedUser = await db.user.update({
     where: { id: userId },
@@ -116,13 +155,15 @@ export async function toggleUserStatusAction(userId: string, isDisabled: boolean
 export async function bulkDeleteUsersAction(userIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'DELETE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
   // Prevent self-deletion in bulk
   const safeUserIds = userIds.filter(id => id !== session.user.id)
   if (safeUserIds.length === 0) return
+
+  await verifyTargetHeightAndSubset(session, safeUserIds);
 
   await db.user.deleteMany({
     where: { id: { in: safeUserIds } }
@@ -141,22 +182,29 @@ export async function bulkDeleteUsersAction(userIds: string[]) {
   revalidatePath("/users")
 }
 
-export async function bulkUpdateRolesAction(userIds: string[], roles: Role[]) {
+export async function bulkUpdateRolesAction(userIds: string[], roleIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
-  // Prevent admin from demoting themselves via bulk
-  const finalUserIds = roles.includes('ADMIN') ? userIds : userIds.filter(id => id !== session.user.id)
+  // Prevent self modification
+  const finalUserIds = userIds.filter(id => id !== session.user.id)
   
   if (finalUserIds.length === 0) return
 
-  await db.user.updateMany({
-    where: { id: { in: finalUserIds } },
-    data: { roles }
-  })
+  await verifyTargetHeightAndSubset(session, finalUserIds, roleIds);
+
+  // Prisma updateMany doesn't support relations. We must loop and execute sequentially or inside a transaction
+  await db.$transaction(
+    finalUserIds.map(id => 
+      db.user.update({
+        where: { id },
+        data: { customRoles: { set: roleIds.map(rId => ({ id: rId })) } }
+      })
+    )
+  )
 
   await db.auditLog.create({
     data: {
@@ -164,7 +212,7 @@ export async function bulkUpdateRolesAction(userIds: string[], roles: Role[]) {
       entityType: "User",
       entityId: "BULK",
       userId: session.user.id,
-      changes: `Bulk assigned roles [${roles.join(', ')}] to ${finalUserIds.length} users.`
+      changes: `Bulk assigned roles to ${finalUserIds.length} users.`
     }
   })
 

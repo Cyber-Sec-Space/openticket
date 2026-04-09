@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { db } from "@/lib/db"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -16,24 +17,30 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   if (Number.isNaN(page) || page < 1) page = 1;
   const TAKE = 10;
 
-  const filterParams: any = {}
+  const filterParams: any = { AND: [] }
 
-  // Hard RBAC rule: reporters and assignees can see their tickets
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
-  if (!hasPrivilege) {
-    filterParams.AND = [
-      {
-        OR: [
-          { reporterId: session.user.id },
-          { assignees: { some: { id: session.user.id } } }
-        ]
-      }
-    ]
+  // Hard RBAC rule: absolute propagation natively isolates unauthorized read actions
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL');
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED');
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED');
+
+  if (!canViewAll) {
+     const assignedConditions = []
+     if (canViewAssigned || (!canViewAssigned && !canViewUnassigned)) {
+        assignedConditions.push({ reporterId: session.user.id })
+        assignedConditions.push({ assignees: { some: { id: session.user.id } } })
+     }
+     if (canViewUnassigned) {
+        assignedConditions.push({ assignees: { none: {} } })
+     }
+     filterParams.AND.push({ OR: assignedConditions })
   }
 
+  const canCreate = hasPermission(session as any, 'CREATE_INCIDENTS');
+
   // URL Filters
-  if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.status = resolvedParams.status.replace(/ /g, '_');
-  if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.severity = resolvedParams.severity;
+  if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.AND.push({ status: resolvedParams.status.replace(/ /g, '_') });
+  if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.AND.push({ severity: resolvedParams.severity });
 
   if (resolvedParams.q) {
     const searchOr = [
@@ -42,11 +49,12 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
       { id: { contains: resolvedParams.q, mode: "insensitive" } },
       { tags: { hasSome: [resolvedParams.q, `#${resolvedParams.q}`] } }
     ]
-    if (filterParams.AND) {
-      filterParams.AND.push({ OR: searchOr })
-    } else {
-      filterParams.OR = searchOr
-    }
+    filterParams.AND.push({ OR: searchOr })
+  }
+
+  // Cleanup empty AND to avoid Prisma errors if no filters applied
+  if (filterParams.AND.length === 0) {
+     delete filterParams.AND;
   }
 
   const totalCount = await db.incident.count({ where: filterParams })
@@ -55,7 +63,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   const incidents = await db.incident.findMany({
     where: filterParams,
     include: {
-      reporter: { select: { name: true } },
+      reporter: { select: { name: true, isBot: true } },
       assignees: { select: { name: true } },
     },
     orderBy: { createdAt: 'desc' },
@@ -88,11 +96,13 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               Export CSV
             </Button>
           </Link>
-          <Link href="/incidents/new">
-            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
-              <Plus className="w-4 h-4 mr-2" /> Report Incident
-            </Button>
-          </Link>
+          {canCreate && (
+            <Link href="/incidents/new">
+              <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
+                <Plus className="w-4 h-4 mr-2" /> Report Incident
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -217,7 +227,15 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                     {incident.status.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground hidden xl:table-cell">{incident.reporter?.name || "Unknown"}</TableCell>
+                <TableCell className="text-muted-foreground hidden xl:table-cell">
+                  {incident.reporter ? (
+                    incident.reporter.isBot ? (
+                      <span className="flex items-center gap-1.5"><Badge variant="outline" className="text-[10px] bg-primary/10 border-primary/30 text-primary px-1 hover:bg-primary/20 transition-colors">BOT</Badge> {incident.reporter.name}</span>
+                    ) : (
+                      incident.reporter.name || "Unknown"
+                    )
+                  ) : "Unknown"}
+                </TableCell>
                 <TableCell className="text-muted-foreground font-medium border-r border-border/20">
                   {incident.assignees.length > 0
                     ? incident.assignees.map(a => a.name).join(', ')

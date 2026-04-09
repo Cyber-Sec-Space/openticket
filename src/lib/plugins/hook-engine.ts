@@ -1,6 +1,7 @@
 import { activePlugins } from "@/plugins"
 import { OpenTicketPluginHooks } from "./types"
 import { db } from "@/lib/db"
+import { createPluginContext } from "./sdk-context"
 
 export async function fireHook<K extends keyof OpenTicketPluginHooks>(
   event: K,
@@ -31,7 +32,8 @@ export async function fireHook<K extends keyof OpenTicketPluginHooks>(
       promises.push(
         (async () => {
           try {
-            await hookFn(payload, config)
+            const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name)
+            await hookFn(payload, config, context)
           } catch (error) {
             console.error(`[Plugin Core] Trigger failure in plugin [${plugin.manifest.id}] on event [${event}]:`, error)
           }

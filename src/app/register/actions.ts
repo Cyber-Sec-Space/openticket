@@ -1,13 +1,13 @@
 "use server"
 
 import { db } from "@/lib/db"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
 import { sendNewRegistrationAlertEmail, sendVerificationEmail } from "@/lib/mailer"
 import crypto from "crypto"
 
 export async function attemptRegistration(prevState: any, formData: FormData) {
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" }, include: { defaultUserRoles: true } })
   const allowRegistration = settings?.allowRegistration ?? true
 
   if (!allowRegistration) {
@@ -46,7 +46,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
         email,
         name,
         passwordHash,
-        roles: (settings && settings.defaultUserRoles && settings.defaultUserRoles.length > 0) ? settings.defaultUserRoles : ["REPORTER"]
+        customRoles: (settings && settings.defaultUserRoles && settings.defaultUserRoles.length > 0) ? { connect: settings.defaultUserRoles.map(r => ({ id: r.id })) } : undefined
       }
     })
   } catch (error: any) {
@@ -58,7 +58,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
 
   // Phase 10: Email Alert on New Registration
   if (settings?.smtpTriggerOnNewUser) {
-    const admins = await db.user.findMany({ where: { roles: { hasSome: ['ADMIN'] }, email: { not: null } }, select: { email: true } })
+    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { has: 'VIEW_SYSTEM_SETTINGS' } } }, email: { not: null } }, select: { email: true } })
     await sendNewRegistrationAlertEmail(email, name, admins.map(a => a.email as string))
   }
 

@@ -6,12 +6,13 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { Severity } from "@prisma/client"
 import { sendNewVulnerabilityAlertEmail } from "@/lib/mailer"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function createVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
-    throw new Error("Forbidden: Strict Access Control")
+  if (!session?.user || !hasPermission(session as any, 'CREATE_VULNERABILITIES')) {
+    return { error: "Forbidden: You lack the CREATE_VULNERABILITIES capability." }
   }
 
   const title = formData.get("title") as string
@@ -23,10 +24,11 @@ export async function createVulnerabilityAction(formData: FormData) {
   const cvssScoreRaw = formData.get("cvssScore") as string
   const cvssScore = cvssScoreRaw ? parseFloat(cvssScoreRaw) : null
 
-  const assetIds = formData.getAll("assetIds") as string[]
+  const rawAssetIds = formData.getAll("assetIds") as string[]
+  const assetIds = rawAssetIds.filter(id => id !== "NONE")
 
   if (!title || !description) {
-    throw new Error("Validation structural error: missing foundational CVE markers.")
+    return { error: "Validation structural error: missing foundational CVE markers." }
   }
 
   const newVuln = await db.vulnerability.create({
@@ -36,9 +38,9 @@ export async function createVulnerabilityAction(formData: FormData) {
       description,
       cvssScore,
       severity,
-      affectedAssets: {
-        connect: assetIds.map(id => ({ id }))
-      }
+      vulnerabilityAssets: hasPermission(session as any, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
+        ? { create: assetIds.map(id => ({ assetId: id, status: 'AFFECTED' })) }
+        : undefined
     }
   })
 
@@ -55,7 +57,7 @@ export async function createVulnerabilityAction(formData: FormData) {
 
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   if (settings?.smtpTriggerOnNewVulnerability) {
-    const admins = await db.user.findMany({ where: { roles: { hasSome: ['SECOPS', 'ADMIN'] }, email: { not: null } }, select: { email: true } })
+    const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_VULNERABILITIES', 'VIEW_VULNERABILITIES'] } } }, email: { not: null } }, select: { email: true } })
     await sendNewVulnerabilityAlertEmail(newVuln.title, newVuln.severity, admins.map(a => a.email as string))
   }
 

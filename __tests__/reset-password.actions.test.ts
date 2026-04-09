@@ -10,7 +10,7 @@ jest.mock("../src/lib/db", () => ({
     $transaction: jest.fn()
   }
 }));
-jest.mock("bcrypt", () => ({ hash: jest.fn().mockResolvedValue("new-hash") }));
+jest.mock("bcryptjs", () => ({ hash: jest.fn().mockResolvedValue("new-hash") }));
 
 describe("executeReset", () => {
   afterEach(() => jest.clearAllMocks());

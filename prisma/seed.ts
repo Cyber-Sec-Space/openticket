@@ -1,7 +1,7 @@
 import 'dotenv/config';
-import { PrismaClient, Role, IncidentStatus, Severity, IncidentType, AssetStatus, AssetType, VulnStatus } from '@prisma/client'
-import bcrypt from 'bcrypt'
-
+import { PrismaClient, Permission, IncidentStatus, Severity, IncidentType, AssetStatus, AssetType, VulnStatus } from '@prisma/client'
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 // Helper to get a random date between now and X days ago
@@ -22,38 +22,108 @@ async function main() {
   await prisma.vulnerability.deleteMany({})
   await prisma.asset.deleteMany({})
   await prisma.user.deleteMany({})
+  await prisma.customRole.deleteMany({})
 
   console.log("Database wiped perfectly. Injecting enterprise-scale data...")
 
-  // 1. Create Users
-  const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || "admin123";
+  let rawPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+  if (!rawPassword) {
+     rawPassword = crypto.randomBytes(12).toString('hex');
+     console.log("Auto-generated default admin password: " + rawPassword);
+  }
   const passwordHash = await bcrypt.hash(rawPassword, 10)
 
   console.log('Creating diverse user roster...')
 
+  // Create Custom Roles
+  const adminRole = await prisma.customRole.create({
+    data: { name: 'System Administrator', isSystem: true, permissions: Object.values(Permission) }
+  });
+
+  const auditorRole = await prisma.customRole.create({
+    data: { name: 'Global Auditor', isSystem: true, permissions: [Permission.VIEW_INCIDENTS_ALL, Permission.VIEW_ASSETS, Permission.VIEW_VULNERABILITIES, Permission.VIEW_AUDIT_LOGS, Permission.VIEW_USERS, Permission.VIEW_ROLES, Permission.VIEW_SYSTEM_SETTINGS, Permission.VIEW_PLUGINS, Permission.VIEW_DASHBOARD, Permission.EXPORT_INCIDENTS] }
+  });
+
+  const iamAdminRole = await prisma.customRole.create({
+    data: { name: 'Identity Admin', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_USERS, Permission.CREATE_USERS, Permission.UPDATE_USER_PROFILE, Permission.ASSIGN_USER_ROLES, Permission.RESET_USER_PASSWORDS, Permission.SUSPEND_USERS, Permission.DELETE_USERS, Permission.VIEW_ROLES, Permission.CREATE_ROLES, Permission.UPDATE_ROLES, Permission.DELETE_ROLES, Permission.VIEW_AUDIT_LOGS] }
+  });
+
+  const devopsRole = await prisma.customRole.create({
+    data: { name: 'DevOps Engineer', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_SYSTEM_SETTINGS, Permission.UPDATE_SYSTEM_SETTINGS, Permission.VIEW_PLUGINS, Permission.INSTALL_PLUGINS, Permission.TOGGLE_PLUGINS, Permission.CONFIGURE_PLUGINS, Permission.RESTART_SYSTEM_SERVICES, Permission.MANAGE_INTEGRATIONS, Permission.VIEW_AUDIT_LOGS] }
+  });
+
+  const incViewerRole = await prisma.customRole.create({
+    data: { name: 'Incident Viewer', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_INCIDENTS_ALL, Permission.ADD_COMMENTS] }
+  });
+
+  const incOperatorRole = await prisma.customRole.create({
+    data: { name: 'Incident Operator', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_INCIDENTS_ASSIGNED, Permission.VIEW_INCIDENTS_UNASSIGNED, Permission.CREATE_INCIDENTS, Permission.UPDATE_INCIDENTS_METADATA, Permission.ASSIGN_INCIDENTS_SELF, Permission.UPLOAD_INCIDENT_ATTACHMENTS, Permission.LINK_INCIDENT_TO_ASSET, Permission.ADD_COMMENTS, Permission.DELETE_OWN_COMMENTS] }
+  });
+
+  const incManagerRole = await prisma.customRole.create({
+    data: { name: 'Incident Manager', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_INCIDENTS_ALL, Permission.VIEW_INCIDENTS_ASSIGNED, Permission.VIEW_INCIDENTS_UNASSIGNED, Permission.CREATE_INCIDENTS, Permission.UPDATE_INCIDENTS_METADATA, Permission.ASSIGN_INCIDENTS_SELF, Permission.ASSIGN_INCIDENTS_OTHERS, Permission.UPDATE_INCIDENT_STATUS_RESOLVE, Permission.UPDATE_INCIDENT_STATUS_CLOSE, Permission.UPLOAD_INCIDENT_ATTACHMENTS, Permission.LINK_INCIDENT_TO_ASSET, Permission.ADD_COMMENTS, Permission.DELETE_OWN_COMMENTS, Permission.DELETE_ANY_COMMENTS, Permission.EXPORT_INCIDENTS] }
+  });
+
+  const incAdminRole = await prisma.customRole.create({
+    data: { name: 'Incident Admin', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_INCIDENTS_ALL, Permission.VIEW_INCIDENTS_ASSIGNED, Permission.VIEW_INCIDENTS_UNASSIGNED, Permission.CREATE_INCIDENTS, Permission.UPDATE_INCIDENTS_METADATA, Permission.ASSIGN_INCIDENTS_SELF, Permission.ASSIGN_INCIDENTS_OTHERS, Permission.UPDATE_INCIDENT_STATUS_RESOLVE, Permission.UPDATE_INCIDENT_STATUS_CLOSE, Permission.UPLOAD_INCIDENT_ATTACHMENTS, Permission.DELETE_INCIDENT_ATTACHMENTS, Permission.LINK_INCIDENT_TO_ASSET, Permission.ADD_COMMENTS, Permission.DELETE_OWN_COMMENTS, Permission.DELETE_ANY_COMMENTS, Permission.EXPORT_INCIDENTS, Permission.DELETE_INCIDENTS] }
+  });
+
+  const assetViewerRole = await prisma.customRole.create({
+    data: { name: 'Asset Viewer', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_ASSETS] }
+  });
+
+  const assetOperatorRole = await prisma.customRole.create({
+    data: { name: 'Asset Operator', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_ASSETS, Permission.CREATE_ASSETS, Permission.UPDATE_ASSETS] }
+  });
+
+  const assetAdminRole = await prisma.customRole.create({
+    data: { name: 'Asset Admin', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_ASSETS, Permission.CREATE_ASSETS, Permission.UPDATE_ASSETS, Permission.DELETE_ASSETS] }
+  });
+
+  const vulnViewerRole = await prisma.customRole.create({
+    data: { name: 'Vulnerability Viewer', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_VULNERABILITIES] }
+  });
+
+  const vulnOperatorRole = await prisma.customRole.create({
+    data: { name: 'Vulnerability Operator', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES, Permission.ASSIGN_VULNERABILITIES_SELF, Permission.LINK_VULN_TO_ASSET, Permission.UPLOAD_VULN_ATTACHMENTS] }
+  });
+
+  const vulnAdminRole = await prisma.customRole.create({
+    data: { name: 'Vulnerability Admin', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES, Permission.DELETE_VULNERABILITIES, Permission.ASSIGN_VULNERABILITIES_SELF, Permission.ASSIGN_VULNERABILITIES_OTHERS, Permission.LINK_VULN_TO_ASSET, Permission.UPLOAD_VULN_ATTACHMENTS, Permission.DELETE_VULN_ATTACHMENTS] }
+  });
+
   const adminUser = await prisma.user.create({
-    data: {
-      name: 'System Admin', email: 'admin@openticket.local', passwordHash, roles: [Role.ADMIN, Role.SECOPS]
-    }
+    data: { name: 'System Admin', email: 'admin@openticket.local', passwordHash, customRoles: { connect: [{ id: adminRole.id }] } }
   });
 
   const secopsLead = await prisma.user.create({
-    data: { name: 'Sarah Connor (Lead)', email: 'sarah@openticket.local', passwordHash, roles: [Role.SECOPS] }
+    data: { name: 'Sarah Connor (Lead)', email: 'sarah@openticket.local', passwordHash, customRoles: { connect: [{ id: incManagerRole.id }, { id: vulnAdminRole.id }] } }
   });
 
   const analyst1 = await prisma.user.create({
-    data: { name: 'John Doe (Analyst)', email: 'john@openticket.local', passwordHash, roles: [Role.REPORTER] }
+    data: { name: 'John Doe (Analyst)', email: 'john@openticket.local', passwordHash, customRoles: { connect: [{ id: incOperatorRole.id }, { id: assetViewerRole.id }, { id: vulnViewerRole.id }] } }
   });
 
   const analyst2 = await prisma.user.create({
-    data: { name: 'Jane Smith (Analyst)', email: 'jane@openticket.local', passwordHash, roles: [Role.REPORTER] }
+    data: { name: 'Jane Smith (Analyst)', email: 'jane@openticket.local', passwordHash, customRoles: { connect: [{ id: incOperatorRole.id }, { id: assetViewerRole.id }, { id: vulnViewerRole.id }] } }
   });
 
   const auditor = await prisma.user.create({
-    data: { name: 'Compliance Auditor', email: 'audit@openticket.local', passwordHash, roles: [Role.REPORTER] }
+    data: { name: 'Compliance Auditor', email: 'audit@openticket.local', passwordHash, customRoles: { connect: [{ id: auditorRole.id }] } }
   });
 
-  const allUsers = [adminUser, secopsLead, analyst1, analyst2, auditor];
+  const externalUser = await prisma.user.create({
+    data: { name: 'External Contributor', email: 'external@openticket.local', passwordHash, customRoles: { connect: [{ id: incViewerRole.id }] } }
+  });
+
+  const allUsers = [adminUser, secopsLead, analyst1, analyst2, auditor, externalUser];
+
+  // Map settings (Default new users to Incident Operator)
+  await prisma.systemSetting.upsert({
+    where: { id: "global" },
+    update: { defaultUserRoles: { connect: [{ id: incOperatorRole.id }] } },
+    create: { id: "global", defaultUserRoles: { connect: [{ id: incOperatorRole.id }] } }
+  });
 
   // 2. Create Assets
   console.log('Provisioning global asset infrastructure...')
@@ -111,11 +181,12 @@ async function main() {
   for (const bp of vulnBlueprints) {
     // Pick random assets
     const affected = assets.filter(() => Math.random() > 0.85); // 15% chance to link any given asset
+    const assignees = allUsers.filter(() => Math.random() > 0.7); // 30% chance for users to be assigned
 
     const statusRoll = Math.random();
     const status = statusRoll < 0.5 ? VulnStatus.OPEN : (statusRoll < 0.8 ? VulnStatus.MITIGATED : VulnStatus.RESOLVED);
 
-    await prisma.vulnerability.create({
+    const newVuln = await prisma.vulnerability.create({
       data: {
         title: bp.title,
         cveId: bp.cveId || null,
@@ -123,9 +194,20 @@ async function main() {
         description: bp.desc + '\n\nAutomatically generated for demo purposes to simulate diverse structural mappings.',
         severity: bp.severity,
         status: status,
-        affectedAssets: { connect: affected.map(a => ({ id: a.id })) }
+        vulnerabilityAssets: { create: affected.map(a => ({ assetId: a.id, status: status === VulnStatus.RESOLVED ? 'PATCHED' : status === VulnStatus.MITIGATED ? 'MITIGATED' : 'AFFECTED' })) },
+        assignees: { connect: assignees.map(u => ({ id: u.id })) }
       }
     });
+
+    if (Math.random() > 0.4) {
+      await prisma.comment.create({
+        data: {
+          content: "Initial triage scan completed. Waiting on infrastructure patching window to verify remediation.",
+          vulnId: newVuln.id,
+          authorId: allUsers[Math.floor(Math.random() * allUsers.length)].id
+        }
+      });
+    }
   }
 
   // 4. Create Incidents

@@ -6,7 +6,7 @@ import { Check, Users, ChevronDown } from "lucide-react"
 interface UserOption {
   id: string;
   name: string | null;
-  role: string;
+  customRoles?: any[];
 }
 
 interface MultiAssigneePickerProps {
@@ -70,7 +70,7 @@ export function MultiAssigneePicker({ users, defaultSelectedIds = [] }: MultiAss
                    </div>
                    <span className="text-sm font-medium text-white/90">{u.name}</span>
                  </div>
-                 <Badge variant="outline" className="text-[10px] uppercase opacity-60 border-white/10 bg-black/40">{u.role}</Badge>
+                 <Badge variant="outline" className="text-[10px] uppercase opacity-60 border-white/10 bg-black/40">{u.customRoles?.map((r:any) => r.name).join(', ') || 'OPERATOR'}</Badge>
                </label>
              ))}
                

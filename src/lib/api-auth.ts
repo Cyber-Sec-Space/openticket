@@ -17,7 +17,7 @@ export async function apiAuth() {
 
     const apiToken = await db.apiToken.findUnique({
       where: { tokenHash },
-      include: { user: { select: { id: true, name: true, email: true, roles: true, isDisabled: true } } }
+      include: { user: { select: { id: true, name: true, email: true, isDisabled: true, customRoles: { select: { permissions: true } } } } }
     })
 
     if (apiToken && !apiToken.user.isDisabled) {
@@ -32,13 +32,14 @@ export async function apiAuth() {
         data: { lastUsedAt: new Date() }
       }).catch(console.error)
 
+      const perms = Array.from(new Set(apiToken.user.customRoles.flatMap(r => r.permissions)))
       // Return a pseudo-session
       return {
         user: {
           id: apiToken.user.id,
           name: apiToken.user.name,
           email: apiToken.user.email,
-          roles: apiToken.user.roles
+          permissions: perms
         }
       }
     } else {

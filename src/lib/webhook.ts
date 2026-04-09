@@ -1,4 +1,5 @@
 import { db } from "@/lib/db"
+import dns from "dns"
 
 interface WebhookPayload {
   title: string
@@ -7,23 +8,27 @@ interface WebhookPayload {
   url: string
 }
 
-function isTargetSecure(urlStr: string): boolean {
+async function isTargetSecure(urlStr: string): Promise<boolean> {
   try {
     const parsed = new URL(urlStr);
     if (!['http:', 'https:'].includes(parsed.protocol)) return false;
     
-    // Basic SSRF Defenses (Cloud Metadata / Loopback Isolation)
     const hn = parsed.hostname;
-    if (/^127\./.test(hn)) return false;
-    if (hn === 'localhost') return false;
-    if (hn === '169.254.169.254') return false; // AWS/GCP/Azure Metadata
-    if (/^192\.168\./.test(hn)) return false;
-    if (/^10\./.test(hn)) return false;
-    if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hn)) return false;
-    if (hn.includes("::1")) return false;
+    // Initial string check
+    if (/^127\./.test(hn) || hn === 'localhost' || hn === '0.0.0.0' || hn === '169.254.169.254' || /^192\.168\./.test(hn) || /^10\./.test(hn) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hn) || hn.includes("::1") || hn === '[::]' || hn === '::') {
+      return false;
+    }
     
+    // DNS Resolution for actual remote IP bounds check
+    const { address } = await dns.promises.lookup(hn);
+    
+    if (/^127\./.test(address) || address === '0.0.0.0' || address === '169.254.169.254' || /^192\.168\./.test(address) || /^10\./.test(address) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(address) || address.includes("::1")) {
+      return false;
+    }
+
     return true;
-  } catch {
+  } catch (error) {
+    // If DNS resolution fails, implicitly block outbound connection
     return false;
   }
 }
@@ -35,7 +40,7 @@ export async function dispatchWebhook(payload: WebhookPayload) {
       return
     }
 
-    if (!isTargetSecure(settings.webhookUrl)) {
+    if (!(await isTargetSecure(settings.webhookUrl))) {
       console.warn(`[WEBHOOK_ERROR] Inhibited webhook dispatch. Target violates SSRF security boundaries: ${settings.webhookUrl}`)
       return;
     }

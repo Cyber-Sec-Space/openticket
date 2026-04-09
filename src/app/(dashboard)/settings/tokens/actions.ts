@@ -4,11 +4,12 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import crypto from "crypto"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function createApiTokenAction(formData: FormData) {
   const session = await auth()
-  if (!session?.user || (!session.user.roles.includes('API_ACCESS') && !session.user.roles.includes('ADMIN'))) {
-     throw new Error("Forbidden: You do not have the API_ACCESS or ADMIN role required to mint automation tokens.")
+  if (!session?.user || !hasPermission(session as any, 'ISSUE_API_TOKENS')) {
+     throw new Error("Forbidden: You do not have the clearance tier required to mint automation tokens.")
   }
 
   const name = formData.get("name") as string || "Default Token"

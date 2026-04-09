@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
+import { hasPermission } from "@/lib/auth-utils"
 import { redirect } from "next/navigation"
 import { activePlugins } from "@/plugins"
 import { PluginCard } from "../plugin-card"
@@ -26,7 +27,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PluginStorePage() {
   const session = await auth()
-  if (!session?.user?.id || !session.user.roles.includes("ADMIN")) {
+  if (!session?.user?.id || !hasPermission(session as any, 'VIEW_PLUGINS')) {
     redirect("/")
   }
 
@@ -36,7 +37,23 @@ export default async function PluginStorePage() {
   try {
     const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { cache: "no-store" });
     if (res.ok) {
-      registryPlugins = await res.json();
+      const rawData = await res.json();
+      
+      // Native Structural Validation Boundary
+      if (Array.isArray(rawData)) {
+        registryPlugins = rawData.filter(p => {
+          return (
+            typeof p === 'object' &&
+            p !== null &&
+            typeof p.id === 'string' &&
+            typeof p.name === 'string' &&
+            typeof p.latestVersion === 'string' &&
+            typeof p.versions === 'object' &&
+            p.versions !== null &&
+            p.versions[p.latestVersion] !== undefined
+          );
+        }) as RegistryPlugin[];
+      }
     } else {
       console.error("Failed to fetch registry list", res.status);
     }

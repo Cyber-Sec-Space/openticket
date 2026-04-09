@@ -1,6 +1,7 @@
 import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function GET(req: Request) {
   const session = await apiAuth()
@@ -9,9 +10,12 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const filterParams: any = {}
   
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
-  if (!hasPrivilege) {
-    filterParams.reporterId = session.user.id
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+
+  if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
+    return NextResponse.json([]) // Enforce absolute zero-trust view boundary
   }
 
   const takeParam = searchParams.get("take");
@@ -25,8 +29,26 @@ export async function GET(req: Request) {
   
   take = Math.min(take, 100);
 
+  // Add dynamic isolation limits based on exact viewport permissions
+  const rbACWhere: any = {}
+  
+  if (!canViewAll) {
+     const assignedConditions = []
+     if (canViewAssigned) {
+        assignedConditions.push({ reporterId: session.user.id })
+        assignedConditions.push({ assignees: { some: { id: session.user.id } } })
+     }
+     if (canViewUnassigned) {
+        assignedConditions.push({ assignees: { none: {} } })
+     }
+     rbACWhere.OR = assignedConditions
+  }
+
   const incidents = await db.incident.findMany({
-    where: filterParams,
+    where: {
+       ...rbACWhere,
+       ...filterParams
+    },
     include: {
       reporter: { select: { name: true, email: true } },
       assignees: { select: { name: true, email: true } },
@@ -43,6 +65,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await apiAuth()
   if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+  if (!hasPermission(session as any, 'CREATE_INCIDENTS')) return new NextResponse("Forbidden", { status: 403 })
 
   try {
     const body = await req.json()
@@ -57,11 +80,9 @@ export async function POST(req: Request) {
       processedTags = tags.map(t => String(t).trim()).filter(t => t !== '').map(t => t.startsWith('#') ? t : `#${t}`)
     }
 
-    const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
-    
-    // Prevent Privilege Escalation
-    const finalAssetId = hasPrivilege ? (assetId || null) : null;
-    const finalSeverity = hasPrivilege ? (severity || 'LOW') : 'LOW';
+    // If user has CREATE_INCIDENTS, they are allowed to set initial target asset and severity
+    const finalAssetId = hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null;
+    let finalSeverity = severity || 'LOW';
 
     const newIncident = await db.incident.create({
       data: {
@@ -87,7 +108,12 @@ export async function POST(req: Request) {
     })
 
     // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation
-    if (newIncident.severity === 'CRITICAL' && newIncident.assetId) {
+    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    const sevRank = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 }
+    const currentRank = sevRank[newIncident.severity as keyof typeof sevRank] || 0
+    const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
+
+    if (settings?.soarAutoQuarantineEnabled && newIncident.assetId && currentRank >= thresholdRank) {
       await db.asset.update({
         where: { id: newIncident.assetId },
         data: { status: 'COMPROMISED' }
@@ -99,7 +125,7 @@ export async function POST(req: Request) {
           entityType: "Asset",
           entityId: newIncident.assetId,
           userId: session.user.id,
-          changes: `Asset automatically marked as COMPROMISED due to CRITICAL Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
+          changes: `Asset automatically marked as COMPROMISED due to ${newIncident.severity} Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
         }
       })
     }

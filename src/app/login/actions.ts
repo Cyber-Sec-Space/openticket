@@ -30,20 +30,16 @@ export async function authenticate(
   }
 
   try {
-    await signIn('credentials', Object.fromEntries(formData))
+    const payload = Object.fromEntries(formData)
+    await signIn('credentials', { ...payload, redirectTo: '/' })
   } catch (error) {
     if (error instanceof AuthError) {
       const errMessage = (error.cause?.err as any)?.message;
       if (errMessage === "Missing2FA") return "REQUIRES_2FA";
       
-      // If it's a real failure, record the attempt
+      // If it's a real failure, Cleanup old records asynchronously so DB doesn't bloat
       if (errMessage === "Invalid2FA" || error.type === 'CredentialsSignin') {
         if (settings?.rateLimitEnabled) {
-          await db.loginAttempt.create({
-            data: { ip, identifier: email }
-          })
-          
-          // Cleanup old records asynchronously so DB doesn't bloat
           const cleanupWindow = new Date(Date.now() - (settings.rateLimitWindowMs * 2))
           db.loginAttempt.deleteMany({
             where: { createdAt: { lt: cleanupWindow } }

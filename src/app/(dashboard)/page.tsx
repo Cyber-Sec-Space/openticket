@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target, Bug, ChevronLeft, ChevronRight, LayoutList, Clock, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { TrendChart } from "@/components/trend-chart"
@@ -8,6 +9,7 @@ import { IncidentRadarChart } from "@/components/incident-radar-chart"
 import { VulnStatusChart } from "@/components/vuln-status-chart"
 import { VulnSeverityChart } from "@/components/vuln-severity-chart"
 import { getDashboardTrendData } from "@/lib/metrics-service"
+import { hasPermission } from "@/lib/auth-utils"
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ page?: string; filter?: string; range?: string }> }) {
   const { page, filter, range } = await (searchParams || {});
@@ -22,15 +24,26 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   if (!session?.user) return null
 
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  if (!hasPermission(session as any, 'VIEW_DASHBOARD')) {
+    redirect("/incidents")
+  }
+
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL');
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED');
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED');
 
   // Metric computations for the dashboard
   const filterParams: any = {}
-  if (!hasPrivilege) {
-    filterParams.OR = [
-      { reporterId: session.user.id },
-      { assignees: { some: { id: session.user.id } } }
-    ]
+  if (!canViewAll) {
+     const assignedConditions = []
+     if (canViewAssigned || (!canViewAssigned && !canViewUnassigned)) {
+        assignedConditions.push({ reporterId: session.user.id })
+        assignedConditions.push({ assignees: { some: { id: session.user.id } } })
+     }
+     if (canViewUnassigned) {
+        assignedConditions.push({ assignees: { none: {} } })
+     }
+     filterParams.OR = assignedConditions
   }
 
   const activeIncidents = await db.incident.count({ where: { ...filterParams, status: { notIn: ['CLOSED', 'RESOLVED'] } } })
@@ -57,6 +70,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   // Personal Case Board Logic
   const boardFilterParams: any = {
+    ...filterParams,
     status: { notIn: ['CLOSED', 'RESOLVED'] }
   };
 
@@ -64,22 +78,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
     boardFilterParams.reporterId = session.user.id;
   } else if (currentFilter === 'assigned') {
     boardFilterParams.assignees = { some: { id: session.user.id } };
-  } else if (currentFilter === 'unassigned' && hasPrivilege) {
+  } else if (currentFilter === 'unassigned') {
     boardFilterParams.assignees = { none: {} };
-  } else {
-    // Default 'all' logic
-    if (hasPrivilege) {
-      boardFilterParams.OR = [
-        { reporterId: session.user.id },
-        { assignees: { some: { id: session.user.id } } },
-        { assignees: { none: {} } }
-      ]
-    } else {
-      boardFilterParams.OR = [
-        { reporterId: session.user.id },
-        { assignees: { some: { id: session.user.id } } }
-      ]
-    }
   }
 
   const [boardIncidents, boardTotal] = await Promise.all([
@@ -246,7 +246,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">System Status</h1>
           <p className="text-muted-foreground mt-2">
-            Welcome, <span className="text-primary font-medium">{session.user.name || session.user.email}</span> [{session.user.roles.join(', ')}]
+            Welcome, <span className="text-primary font-medium">{session.user.name || session.user.email}</span>
           </p>
         </div>
         <div className="flex gap-4">
@@ -437,19 +437,23 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           <div className="border border-primary/20 bg-primary/5 rounded-xl flex flex-col justify-between p-5 shadow-[0_0_20px_rgba(0,100,255,0.05)] shrink-0">
             <h2 className="text-sm font-bold tracking-widest text-primary/80 mb-3 uppercase">Command Actions</h2>
             <div className="space-y-2">
-              <Link href="/incidents/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-primary/50 text-white rounded-lg transition-all">
-                <ShieldAlert className="w-4 h-4 mr-3 text-primary group-hover:scale-110 transition-transform" />
-                <div className="text-sm">
-                  <strong className="block font-medium">Declare Incident</strong>
-                </div>
-              </Link>
-              <Link href="/assets/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-blue-400/50 text-white rounded-lg transition-all">
-                <Server className="w-4 h-4 mr-3 text-blue-400 group-hover:scale-110 transition-transform" />
-                <div className="text-sm">
-                  <strong className="block font-medium">Catalog Infrastructure</strong>
-                </div>
-              </Link>
-              {hasPrivilege && (
+              {hasPermission(session as any, 'CREATE_INCIDENTS') && (
+                <Link href="/incidents/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-primary/50 text-white rounded-lg transition-all">
+                  <ShieldAlert className="w-4 h-4 mr-3 text-primary group-hover:scale-110 transition-transform" />
+                  <div className="text-sm">
+                    <strong className="block font-medium">Declare Incident</strong>
+                  </div>
+                </Link>
+              )}
+              {hasPermission(session as any, 'CREATE_ASSETS') && (
+                <Link href="/assets/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-blue-400/50 text-white rounded-lg transition-all">
+                  <Server className="w-4 h-4 mr-3 text-blue-400 group-hover:scale-110 transition-transform" />
+                  <div className="text-sm">
+                    <strong className="block font-medium">Catalog Infrastructure</strong>
+                  </div>
+                </Link>
+              )}
+              {hasPermission(session as any, 'CREATE_VULNERABILITIES') && (
                 <Link href="/vulnerabilities/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-purple-400/50 text-white rounded-lg transition-all">
                   <Bug className="w-4 h-4 mr-3 text-purple-400 group-hover:scale-110 transition-transform" />
                   <div className="text-sm">
@@ -474,7 +478,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                 <Link scroll={false} href={`?filter=all`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'all' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>All</Link>
                 <Link scroll={false} href={`?filter=assigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'assigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Assigned to me</Link>
                 <Link scroll={false} href={`?filter=reported`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'reported' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Reported by me</Link>
-                {hasPrivilege && (
+                {(canViewAll || canViewUnassigned) && (
                   <Link scroll={false} href={`?filter=unassigned`} className={`px-2 py-1 rounded transition-colors ${currentFilter === 'unassigned' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'bg-white/5 text-muted-foreground hover:bg-white/10 border border-transparent'}`}>Unassigned</Link>
                 )}
               </div>

@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { db } from "@/lib/db"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,8 +15,24 @@ export default async function NewIncidentPage() {
   const session = await auth()
   if (!session?.user) return null
 
+  const canCreate = hasPermission(session as any, 'CREATE_INCIDENTS')
+  if (!canCreate) {
+    return (
+      <div className="p-8 text-center max-w-xl mx-auto space-y-4 animate-fade-in-up mt-20">
+        <ShieldAlert className="mx-auto w-16 h-16 text-destructive opacity-80 animate-pulse" />
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Access Denied</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          You do not possess the clearance (<code className="text-primary font-mono bg-primary/10 px-1 rounded">CREATE_INCIDENTS</code>) to mint operational incidents. Please contact your administrator.
+        </p>
+        <Link href="/incidents">
+           <Button variant="outline" className="mt-6 border-white/20 hover:bg-white/5"><ArrowLeft className="w-4 h-4 mr-2" /> Return to Safety</Button>
+        </Link>
+      </div>
+    )
+  }
+
   let assets: any[] = []
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasPrivilege = hasPermission(session as any, 'VIEW_ASSETS')
   if (hasPrivilege) {
     assets = await db.asset.findMany({ select: { id: true, name: true } })
   }

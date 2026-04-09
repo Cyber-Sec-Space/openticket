@@ -1,20 +1,31 @@
 import { auth } from "@/auth"
-import { notFound } from "next/navigation"
+import { hasPermission } from "@/lib/auth-utils"
+import { notFound, redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import { Bug, ShieldAlert, Server } from "lucide-react"
-import { MultiAssetPicker } from "@/components/ui/multi-asset-picker"
+import { ShieldAlert, Bug } from "lucide-react"
+import { VulnFormClient } from "./vuln-form-client"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createVulnerabilityAction } from "./actions"
 
 export default async function NewVulnerabilityPage() {
   const session = await auth()
   
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
-    return notFound()
+  if (!session?.user) return null
+  const canCreate = hasPermission(session as any, 'CREATE_VULNERABILITIES')
+
+  if (!canCreate) {
+    return (
+      <div className="p-8 text-center max-w-xl mx-auto space-y-4 animate-fade-in-up mt-20">
+        <Bug className="mx-auto w-16 h-16 text-destructive opacity-80 animate-pulse" />
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Access Denied</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          You do not possess the clearance (<code className="text-primary font-mono bg-primary/10 px-1 rounded">CREATE_VULNERABILITIES</code>) to log vulnerabilities into the registry. Please contact your administrator.
+        </p>
+        <Link href="/vulnerabilities">
+           <Button variant="outline" className="mt-6 border-white/20 hover:bg-white/5">Return to active catalog</Button>
+        </Link>
+      </div>
+    )
   }
 
   const assets = await db.asset.findMany({ select: { id: true, name: true, type: true, status: true, ipAddress: true } })
@@ -31,84 +42,7 @@ export default async function NewVulnerabilityPage() {
       </header>
       
       <div className="glass-card rounded-xl p-8 border border-border shadow-2xl relative">
-        
-        <form action={createVulnerabilityAction} className="space-y-6 relative z-10">
-          <div className="space-y-3">
-            <Label className="uppercase text-xs tracking-widest text-muted-foreground">General Nomenclature</Label>
-            <Input 
-               name="title" 
-               type="text" 
-               required 
-               placeholder="e.g. Log4Shell Remote Code Execution" 
-               className="bg-black/30 border-white/10 focus:ring-red-500/50" 
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-             <div className="space-y-3">
-                <Label className="uppercase text-xs tracking-widest text-muted-foreground flex items-center">
-                  <Bug className="w-3 h-3 mr-2" /> CVE Indicator
-                </Label>
-                <Input 
-                   name="cveId" 
-                   type="text" 
-                   placeholder="CVE-2021-44228" 
-                   className="bg-black/30 border-white/10 focus:ring-red-500/50 uppercase placeholder:normal-case font-mono" 
-                />
-             </div>
-             
-             <div className="space-y-3 flex flex-col items-end">
-                <Label className="uppercase text-xs tracking-widest text-muted-foreground text-right w-full">CVSS v3 Score (0.0 - 10.0)</Label>
-                <Input 
-                   name="cvssScore" 
-                   type="number" 
-                   step="0.1" 
-                   min="0" 
-                   max="10" 
-                   placeholder="9.8" 
-                   className="bg-black/30 border-white/10 focus:ring-red-500/50 text-right font-mono tracking-widest text-lg w-[120px] text-red-400" 
-                />
-             </div>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="uppercase text-xs tracking-widest text-muted-foreground">Remediation Blueprint & Context</Label>
-            <Textarea 
-               name="description" 
-               required 
-               className="bg-black/30 border-white/10 min-h-[150px] focus:ring-red-500/50 font-mono text-sm leading-relaxed" 
-               placeholder="Describe the affected vectors, proof of concepts, or link external mitigation guidelines..."
-            />
-          </div>
-
-          <div className="space-y-3">
-            <Label className="uppercase text-xs tracking-widest text-muted-foreground">Estimated Internal Threat Constraint</Label>
-            <Select name="severity" defaultValue="HIGH">
-              <SelectTrigger className="bg-black/30 border-white/10">
-                <SelectValue placeholder="Assign Internal Severity" />
-              </SelectTrigger>
-              <SelectContent className="bg-black/95 shadow-2xl">
-                <SelectItem value="LOW">LOW EXPOSURE</SelectItem>
-                <SelectItem value="MEDIUM" className="text-yellow-400">MEDIUM EXPOSURE</SelectItem>
-                <SelectItem value="HIGH" className="text-orange-500 font-medium">HIGH EXPOSURE</SelectItem>
-                <SelectItem value="CRITICAL" className="text-red-500 font-bold">CRITICAL EXPOSURE</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-3 relative z-50">
-            <Label className="uppercase text-xs tracking-widest text-muted-foreground flex items-center">
-               <Server className="w-3 h-3 mr-2" /> Associated Infrastructure (Multi-Select Mapping)
-            </Label>
-            <MultiAssetPicker assets={assets as any} />
-          </div>
-
-          <div className="pt-6 border-t border-white/10 flex justify-end">
-            <Button type="submit" className="w-full sm:w-auto bg-red-600 hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.3)] text-white font-bold tracking-wide">
-              Commit Vulnerability
-            </Button>
-          </div>
-        </form>
+        <VulnFormClient assets={assets} />
       </div>
     </div>
   )

@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useRouter } from "next/navigation"
 import { bulkDeleteUsersAction, bulkUpdateRolesAction, toggleUserStatusAction } from "./actions"
 
-export function UserTableClient({ users, sessionUserId }: { users: any[], sessionUserId: string }) {
+export function UserTableClient({ users, sessionUserId, allCustomRoles }: { users: any[], sessionUserId: string, allCustomRoles?: any[] }) {
   const router = useRouter()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkRoles, setBulkRoles] = useState<string[]>(["REPORTER"])
@@ -42,7 +42,8 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
   }
 
   const handleBulkRoleUpdate = async () => {
-    if (!confirm(`Update Roles to [${bulkRoles.join(', ')}] for selected users?`)) return
+    const roleNames = bulkRoles.map(id => allCustomRoles?.find(r => r.id === id)?.name || id)
+    if (!confirm(`Update Roles to [${roleNames.join(', ')}] for selected users?`)) return
     setIsProcessing(true)
     await bulkUpdateRolesAction(Array.from(selectedIds), bulkRoles as any)
     setSelectedIds(new Set())
@@ -70,24 +71,24 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
           <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs border-white/20">
-                  {bulkRoles.length > 0 ? bulkRoles.join(', ') : "Select Roles"}
+                  {bulkRoles.length > 0 ? bulkRoles.map(id => allCustomRoles?.find(r => r.id === id)?.name || id).join(', ') : "Select Roles"}
               </PopoverTrigger>
               <PopoverContent className="w-56 bg-black/95 shadow-2xl border border-white/10 p-4 space-y-3">
                 <div className="font-semibold text-xs tracking-wider text-muted-foreground uppercase mb-2">Set Privilege Tiers</div>
-                {['REPORTER', 'SECOPS', 'ADMIN', 'API_ACCESS'].map(role => (
-                  <div key={role} className="flex items-center space-x-2">
+                {allCustomRoles?.map(role => (
+                  <div key={role.id} className="flex items-center space-x-2">
                     <Checkbox
-                      id={`bulk-${role}`}
-                      checked={bulkRoles.includes(role)}
+                      id={`bulk-${role.id}`}
+                      checked={bulkRoles.includes(role.id)}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setBulkRoles(prev => [...prev, role])
+                          setBulkRoles(prev => [...prev, role.id])
                         } else {
-                          setBulkRoles(prev => prev.filter(r => r !== role))
+                          setBulkRoles(prev => prev.filter(r => r !== role.id))
                         }
                       }}
                     />
-                    <label htmlFor={`bulk-${role}`} className="text-sm text-white/80 cursor-pointer">{role}</label>
+                    <label htmlFor={`bulk-${role.id}`} className="text-sm text-white/80 cursor-pointer">{role.name}</label>
                   </div>
                 ))}
               </PopoverContent>
@@ -140,18 +141,21 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
                   <TableCell className="pl-6" onClick={(e) => e.stopPropagation()}>
                     <Checkbox 
                        checked={isSelected}
-                       disabled={isSelf}
+                       disabled={isSelf || user.isBot}
                        onClick={(e) => toggleOne(user.id, e as any)}
                        className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
                     />
                   </TableCell>
                   <TableCell className="font-medium text-foreground py-4">
                     <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full bg-gradient-to-br flex items-center justify-center border border-white/5 ${user.isDisabled ? 'from-red-500/20 to-red-900/40 text-red-500' : 'from-emerald-400/20 to-primary/20 text-emerald-400'}`}>
-                         <span className="text-xs font-mono font-bold">{user.name?.charAt(0).toUpperCase() || "U"}</span>
+                      <div className={`h-8 w-8 rounded-full bg-gradient-to-br flex items-center justify-center border border-white/5 ${user.isDisabled ? 'from-red-500/20 to-red-900/40 text-red-500' : user.isBot ? 'from-blue-500/20 to-purple-500/20 text-purple-400' : 'from-emerald-400/20 to-primary/20 text-emerald-400'}`}>
+                         <span className="text-xs font-mono font-bold">{user.isBot ? "BOT" : (user.name?.charAt(0).toUpperCase() || "U")}</span>
                       </div>
                       <div>
-                        <span className="block text-sm leading-none mb-1">{user.name || "Default Originator"}</span>
+                        <span className="block text-sm leading-none mb-1 flex items-center gap-2">
+                           {user.isBot && <Badge variant="outline" className="text-[9px] h-4 bg-primary/10 border-primary/30 text-primary px-1">BOT</Badge>}
+                           {user.name || "Default Originator"}
+                        </span>
                         <span className="text-[10px] font-mono text-muted-foreground opacity-50 block leading-none">ID-{user.id.substring(0,8).toUpperCase()}</span>
                       </div>
                     </div>
@@ -170,21 +174,23 @@ export function UserTableClient({ users, sessionUserId }: { users: any[], sessio
                     )}
                   </TableCell>
 
-                  <TableCell className="text-center">
+                   <TableCell className="text-center">
                      <Badge variant="outline" className={`bg-transparent border ${
-                       user.roles.includes('ADMIN') ? 'border-primary/50 text-primary bg-primary/10' :
-                       user.roles.includes('SECOPS') ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
+                       user.customRoles?.some((r:any) => r.name.includes('Admin') || r.isSystem) ? 'border-primary/50 text-primary bg-primary/10' :
+                       user.customRoles?.some((r:any) => r.name.includes('SecOps')) ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
                        'border-muted-foreground/30 text-muted-foreground bg-black/20'
                      }`}>
-                       {user.roles.join(', ')}
-                       {user.roles.includes('ADMIN') && <ShieldCheck className="w-3 h-3 ml-1" />}
+                       {user.customRoles?.map((r:any) => r.name).join(', ') || 'NONE'}
+                       {user.customRoles?.some((r:any) => r.name.includes('Admin')) && <ShieldCheck className="w-3 h-3 ml-1 inline" />}
                      </Badge>
                   </TableCell>
 
                   <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
-                     {/* Admins shouldn't casually alter themselves through this module to prevent locking out of root keys */}
+                     {/* Admins shouldn't casually alter themselves or System bots through this module */}
                      {isSelf ? (
-                       <span className="text-[10px] text-primary/50 font-mono tracking-widest">[ SELF MODULE ]</span>
+                       <span className="text-[10px] text-primary/50 font-mono tracking-widest">[ SELF ]</span>
+                     ) : user.isBot ? (
+                       <span className="text-[10px] text-purple-400/50 font-mono tracking-widest">[ SYSTEM BOT ]</span>
                      ) : (
                      <div className="flex justify-end items-center gap-1">
                        <Button 

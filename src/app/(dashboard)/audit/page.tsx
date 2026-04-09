@@ -3,14 +3,16 @@ import { db } from "@/lib/db"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { FileText, Filter, ChevronLeft, ChevronRight, Search, Activity } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { FileText, Filter, ChevronLeft, ChevronRight, Search, Activity, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { hasPermission } from "@/lib/auth-utils"
 
 export default async function AuditLogPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
   
   // Security Perimeter: Reporters cannot view system audits.
-  if (!session?.user || (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS'))) {
+  if (!session?.user || !hasPermission(session as any, 'VIEW_AUDIT_LOGS')) {
      return notFound()
   }
 
@@ -37,7 +39,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
     where: filterParams,
     include: {
       user: {
-        select: { name: true, email: true, roles: true }
+        select: { name: true, email: true, isBot: true, customRoles: { select: { name: true } } }
       }
     },
     orderBy: { createdAt: 'desc' },
@@ -122,11 +124,12 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
                 </TableCell>
                 
                 <TableCell>
-                  <div className="flex flex-col">
+                  <div className="flex flex-col gap-0.5">
                     <span className="font-medium text-foreground text-sm flex items-center gap-1.5">
+                      {log.user?.isBot && <Badge variant="outline" className="text-[9px] bg-primary/10 border-primary/30 text-primary px-1 hover:bg-primary/20 py-0 h-4">BOT</Badge>}
                       {log.user?.name || log.user?.email || "System/Unknown"}
                     </span>
-                    <span className="text-[10px] text-muted-foreground uppercase opacity-80">{log.user?.roles?.join(', ') || "AUTO"}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase opacity-80">{log.user?.customRoles?.map(r => r.name).join(', ') || "SYSTEM IDENT"}</span>
                   </div>
                 </TableCell>
                 

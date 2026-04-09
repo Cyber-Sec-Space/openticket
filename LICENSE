@@ -1,53 +1,45 @@
 Cyber Sec Space OpenTicket License
 
-This repository contains two distinct categories of source code, which are licensed differently:
+OpenTicket operates under a Dual-Licensing business model. This architecture is explicitly designed to foster a vibrant open-source ecosystem while aggressively protecting the platform's commercial viability and SaaS (Software as a Service) profitability.
 
-1. Open Source Software (OSS) Core
-2. Enterprise / Commercial Features (Premium)
+This repository contains two distinct categories of source code:
 
----
-
-## 1. Open Source Software (OSS) Core
-
-Unless explicitly noted otherwise (for example, by a header in the file or by residing in a directory named `ee/` or `premium/`), all files in this repository are licensed under the **MIT License**.
-
-### MIT License
-
-Copyright (c) 2026 Cyber Sec Space
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. Open Source Core (AGPL-3.0)
+2. Enterprise / Commercial Edition (Proprietary)
 
 ---
 
-## 2. Enterprise / Commercial Features (Premium)
+## 1. Open Source Core (AGPL-3.0)
 
-Any files located in a designated Enterprise directory (such as `ee/`, `premium/`, or `pro/`), or files explicitly carrying the "Cyber Sec Space Enterprise License" header, are NOT licensed under the MIT License. 
+Unless explicitly noted otherwise (e.g., by a header in the file or by residing in a directory named `ee/`, `premium/`, or `pro/`), all Core files in this repository are licensed under the **GNU Affero General Public License Version 3 (AGPL-3.0)**.
 
-These premium features require a valid commercial License Key to activate and utilize in any environment. 
+The AGPL-3.0 is a strong copyleft license that ensures any modifications to the software must be shared back with the community. Crucially, **it closes the "SaaS loophole"**. If you modify OpenTicket and offer it to others as a service over a network (like a hosted cloud SaaS), you MUST make your modified source code available to your users. 
 
-### Cyber Sec Space Enterprise License (Proprietary)
+This prevents large cloud providers and competitors from monetizing our core platform as a hosted service without contributing back or paying for a commercial license.
+
+For the full legal text of the AGPL-3.0, please see: https://www.gnu.org/licenses/agpl-3.0.html
+
+---
+
+## 2. Enterprise / Commercial Edition
+
+Any files located in a designated Enterprise directory (such as `ee/`, `premium/`, or `pro/`), or files explicitly carrying the "Cyber Sec Space Enterprise License" header, are proprietary and NOT licensed under the AGPL-3.0. 
+
+Furthermore, organizations that wish to bypass the AGPL-3.0 restrictions must purchase a Commercial/Enterprise License.
+
+### You need a Commercial License if you want to:
+1. **Host as a SaaS:** Provide OpenTicket as a managed cloud service or SaaS to external customers without having to open-source your entire proprietary management and billing infrastructure.
+2. **Proprietary Embedding:** Embed or integrate OpenTicket Core within your own proprietary, closed-source commercial applications or SOC platforms (avoiding the AGPL copyleft viral effect).
+3. **Enterprise Features:** Access premium features designed exclusively for large-scale operations (e.g., Advanced SAML/SSO, High-Availability Clustering, Proprietary Threat Feeds, advanced SLA matrices).
+4. **Resell:** Act as an authorized reseller or white-label vendor of the OpenTicket infrastructure.
+
+### Cyber Sec Space Enterprise License Terms (Summary)
 
 Copyright (c) 2026 Cyber Sec Space. All rights reserved.
 
-1. You may only use the Enterprise Features if you possess a valid, active commercial license key acquired directly from Cyber Sec Space or its authorized resellers.
+1. You may only use the Enterprise Features or bypass AGPL copyleft restrictions if you possess a valid, active Commercial License Key acquired directly from Cyber Sec Space or its authorized resellers.
 2. You may view and modify the Enterprise source code strictly for internal deployment and evaluation purposes associated with your valid license key.
 3. You may NOT distribute, sublicense, sell, or publicly share the Enterprise Features, modified or unmodified, to any third party.
-4. If your license key expires or is revoked, you must immediately cease all use of the Enterprise Features.
+4. If your license key expires or is revoked, you must immediately cease deployments of the Enterprise features or revert to strict AGPL-3.0 compliance for the Core software.
 
-For inquiries regarding commercial licensing or to obtain a license key, please contact Cyber Sec Space.
+For inquiries regarding commercial licensing, SaaS vendor agreements, or to obtain a license key, please contact the Cyber Sec Space Sales & Legal team.

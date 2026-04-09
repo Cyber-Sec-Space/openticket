@@ -1,12 +1,13 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { User, Mail, ShieldCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { toggleUserStatusAction, deleteUserAction } from "../actions"
 import { UserPanels } from "./user-panels"
+import { hasPermission } from "@/lib/auth-utils"
 
 export default async function UserDetailPage({
   params,
@@ -19,8 +20,8 @@ export default async function UserDetailPage({
   const resolvedSearchParams = await searchParams
   const session = await auth()
   
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
-    return notFound()
+  if (!session?.user || !hasPermission(session as any, 'VIEW_USERS')) {
+    redirect("/login")
   }
 
   let auditPage = parseInt(resolvedSearchParams.auditPage as string) || 1
@@ -36,14 +37,32 @@ export default async function UserDetailPage({
   const TAKE_INC = 6
 
   // Parallel data fetching for high performance
+  const canViewAuditLogs = hasPermission(session as any, 'VIEW_AUDIT_LOGS')
+  const hasGlobalIncidents = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+
+  // BOLA Incident filter: Prevent cross-user assignment peeking
+  let incidentsWhere: any = { assignees: { some: { id } } };
+  if (!hasGlobalIncidents) {
+    if (canViewAssigned && session.user.id !== id) {
+       // Intersection: Only show incidents where BOTH the target user AND the viewing user are co-assigned
+       incidentsWhere = { AND: [ { assignees: { some: { id } } }, { assignees: { some: { id: session.user.id } } } ] }
+    } else if (!canViewAssigned && session.user.id !== id) {
+       incidentsWhere = { id: "NONE" } // Structural Empty Output
+    }
+  }
+
+  // BOLA Evidence filter: Hide files completely if lacking systemic viewing privileges
+  const canViewAttachments = hasGlobalIncidents || session.user.id === id;
+
   const [user, auditLogs, totalAuditLogs, attachments, totalAttachments, assignedIncidents, totalIncidents] = await Promise.all([
-    db.user.findUnique({ where: { id } }),
-    db.auditLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_AUDIT, skip: (auditPage - 1) * TAKE_AUDIT }),
-    db.auditLog.count({ where: { userId: id } }),
-    db.attachment.findMany({ where: { uploaderId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
-    db.attachment.count({ where: { uploaderId: id } }),
-    db.incident.findMany({ where: { assignees: { some: { id } } }, select: { id: true, title: true, status: true, severity: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: TAKE_INC, skip: (incPage - 1) * TAKE_INC }),
-    db.incident.count({ where: { assignees: { some: { id } } } })
+    db.user.findUnique({ where: { id }, include: { customRoles: { select: { name: true } } } }),
+    canViewAuditLogs ? db.auditLog.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_AUDIT, skip: (auditPage - 1) * TAKE_AUDIT }) : Promise.resolve([]),
+    canViewAuditLogs ? db.auditLog.count({ where: { userId: id } }) : Promise.resolve(0),
+    canViewAttachments ? db.attachment.findMany({ where: { uploaderId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }) : Promise.resolve([]),
+    canViewAttachments ? db.attachment.count({ where: { uploaderId: id } }) : Promise.resolve(0),
+    db.incident.findMany({ where: incidentsWhere, select: { id: true, title: true, status: true, severity: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: TAKE_INC, skip: (incPage - 1) * TAKE_INC }),
+    db.incident.count({ where: incidentsWhere })
   ])
 
   if (!user) return notFound()
@@ -66,7 +85,7 @@ export default async function UserDetailPage({
             </h1>
             <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono">
               <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {user.email}</span>
-              <span className="flex items-center gap-1 text-primary"><ShieldCheck className="w-3 h-3" /> {user.roles.join(', ')}</span>
+              <span className="flex items-center gap-1 text-primary"><ShieldCheck className="w-3 h-3" /> {user.customRoles?.map(r => r.name).join(', ')}</span>
               {user.isTwoFactorEnabled && <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px]">2FA ENFORCED</Badge>}
             </div>
             <p className="text-[10px] text-muted-foreground font-mono opacity-50 pt-2">UID: {user.id}</p>

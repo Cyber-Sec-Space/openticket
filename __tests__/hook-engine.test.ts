@@ -14,6 +14,10 @@ jest.mock("../src/lib/db", () => ({
         { id: "testConfig", isActive: true, configJson: `{"key":"value"}` },
         { id: "testConfigBad", isActive: true, configJson: `"{bad}` },
       ])
+    },
+    user: {
+      findUnique: jest.fn().mockResolvedValue({ id: "system_bot", roleIds: ["bot_role"] }),
+      update: jest.fn()
     }
   }
 }));
@@ -50,7 +54,7 @@ describe("Hook Engine", () => {
     
     await fireHook("onIncidentCreated", dummyIncident);
 
-    expect(mockOnIncidentCreated).toHaveBeenCalledWith(dummyIncident, {});
+    expect(mockOnIncidentCreated).toHaveBeenCalledWith(dummyIncident, {}, expect.any(Object));
     expect(mockOnAssetCompromise).not.toHaveBeenCalled();
   });
 
@@ -119,8 +123,8 @@ describe("Hook Engine", () => {
 
     await fireHook("onIncidentCreated", {} as any);
 
-    expect(mockOnIncidentCreatedGood).toHaveBeenCalledWith({}, { key: "value" });
-    expect(mockOnIncidentCreatedBadJSON).toHaveBeenCalledWith({}, {});
+    expect(mockOnIncidentCreatedGood).toHaveBeenCalledWith({}, { key: "value" }, expect.any(Object));
+    expect(mockOnIncidentCreatedBadJSON).toHaveBeenCalledWith({}, {}, expect.any(Object));
   });
 
   it("should catch db.pluginState findMany errors natively without explosive disruption", async () => {

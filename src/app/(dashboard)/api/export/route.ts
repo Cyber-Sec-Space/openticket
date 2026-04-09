@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function GET(req: Request) {
   const session = await auth()
@@ -14,9 +15,8 @@ export async function GET(req: Request) {
   const skipParam = parseInt(searchParams.get('skip') || '0', 10)
   const skip = isNaN(skipParam) ? 0 : skipParam
 
-  
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
-  
+  const canExportIncidents = hasPermission(session as any, 'EXPORT_INCIDENTS')
+  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
   let csvContent = ""
 
   if (type === 'incident') {
@@ -25,12 +25,28 @@ export async function GET(req: Request) {
       whereClause.status = statusFilter
     }
     
-    // BOLA Enforcement: Restrict non-privileged members to their owned tickets AND assigned tickets
-    if (!hasPrivilege) {
-       whereClause.OR = [
-         { reporterId: session.user.id },
-         { assignees: { some: { id: session.user.id } } }
-       ]
+    // BOLA Enforcement: Strict export limitation
+    if (!canExportIncidents) {
+       return new NextResponse("Forbidden: You require standard or advanced export permissions.", { status: 403 })
+    }
+
+    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+
+    if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
+       return new NextResponse("Forbidden: No view permissions granted.", { status: 403 })
+    }
+
+    if (!canViewAll) {
+       const assignedConditions = []
+       if (canViewAssigned) {
+          assignedConditions.push({ reporterId: session.user.id })
+          assignedConditions.push({ assignees: { some: { id: session.user.id } } })
+       }
+       if (canViewUnassigned) {
+          assignedConditions.push({ assignees: { none: {} } })
+       }
+       whereClause.OR = assignedConditions
     }
     
     // Resource Constraint Enforcement (OOM Prevention) w/ Safe Paging
@@ -63,8 +79,9 @@ export async function GET(req: Request) {
     }
   } else if (type === 'vulnerability') {
     // BOLA Enforcement
-    if (!hasPrivilege) {
-       return new NextResponse("Forbidden: Comprehensive Threat intelligence extracts mandate explicit SECOPS or ADMIN clearance.", { status: 403 })
+    const hasVulnExportPrivilege = hasPermission(session as any, 'VIEW_VULNERABILITIES') && hasPermission(session as any, 'EXPORT_INCIDENTS')
+    if (!hasVulnExportPrivilege) {
+       return new NextResponse("Forbidden: Comprehensive Threat intelligence extracts mandate explicit clearance.", { status: 403 })
     }
 
     const whereClause: any = {}
@@ -75,7 +92,7 @@ export async function GET(req: Request) {
     // Resource Constraint Enforcement (OOM Prevention)
     const vulns = await db.vulnerability.findMany({
       where: whereClause,
-      include: { affectedAssets: true },
+      include: { vulnerabilityAssets: { include: { asset: true } } },
       orderBy: { createdAt: 'desc' },
       take: 5000,
       skip: skip
@@ -85,7 +102,7 @@ export async function GET(req: Request) {
     csvContent += headers.join(",") + "\n"
 
     for (const vuln of vulns) {
-      const assetsStr = vuln.affectedAssets.map(a => a.name).join("; ")
+      const assetsStr = vuln.vulnerabilityAssets.map((va: any) => va.asset.name).join("; ")
       const row = [
         vuln.id,
         vuln.cveId || "None",

@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
+import { hasPermission } from "@/lib/auth-utils"
 import { NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
@@ -58,23 +59,32 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
     return new NextResponse("File Not Found", { status: 404 })
   }
 
-  const hasPrivilege = session.user.roles.includes('ADMIN') || session.user.roles.includes('SECOPS')
+  const hasGlobalIncidents = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+  const hasGlobalVulns = hasPermission(session as any, 'VIEW_VULNERABILITIES')
 
   // Enforce Bound Object Level Authorization
-  if (!hasPrivilege) {
-    if (attachment.uploaderId !== session.user.id) {
-       // If it belongs to an incident
-       if (attachment.incident) {
-          const isReporter = attachment.incident.reporterId === session.user.id
-          const isAssigned = attachment.incident.assignees.some(a => a.id === session.user.id)
-          if (!isReporter && !isAssigned) {
-             return new NextResponse("Forbidden: Strict BOLA boundaries restrict access to this file.", { status: 403 })
-          }
-       } else {
-          // If it is detached or belongs to a vuln, and they are not ADMIN/SECOPS or uploader -> Deny
-          return new NextResponse("Forbidden: Access Denied.", { status: 403 })
-       }
-    }
+  let authorized = false;
+
+  if (attachment.incident) {
+     if (!hasGlobalIncidents && !canViewAssigned && !canViewUnassigned) {
+        return new NextResponse("Forbidden: Strict BOLA boundaries restrict access to this file.", { status: 403 })
+     }
+     if (hasGlobalIncidents || attachment.incident.reporterId === session.user.id) {
+        authorized = true;
+     } else {
+        if (canViewAssigned && attachment.incident.assignees.some(a => a.id === session.user.id)) authorized = true;
+        if (canViewUnassigned && attachment.incident.assignees.length === 0) authorized = true;
+     }
+  } else if (attachment.vuln && hasGlobalVulns) {
+     authorized = true;
+  } else if (!attachment.incident && !attachment.vuln && attachment.uploaderId === session.user.id) {
+     authorized = true;
+  }
+
+  if (!authorized) {
+    return new NextResponse("Forbidden: Strict BOLA boundaries restrict access to this file.", { status: 403 })
   }
 
   const safeBase = path.resolve(process.cwd(), 'private', 'uploads')

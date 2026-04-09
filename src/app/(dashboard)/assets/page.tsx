@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
 import { db } from "@/lib/db"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,8 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
   if (!session?.user) return null
 
   // STRICT BOLA ENFORCEMENT
-  if (!session.user.roles.includes('ADMIN') && !session.user.roles.includes('SECOPS')) return notFound()
+  if (!hasPermission(session as any, 'VIEW_ASSETS')) return notFound()
+  const canCreate = hasPermission(session as any, 'CREATE_ASSETS')
 
   const resolvedParams = await searchParams;
   let page = parseInt(resolvedParams.page || "1", 10);
@@ -66,11 +68,13 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
           <p className="text-muted-foreground mt-2 text-sm">Review real-time telemetry and catalog metadata for enterprise systems.</p>
         </div>
         
-        <Link href="/assets/new">
-          <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
-            <Plus className="w-4 h-4 mr-2" /> Register Asset
-          </Button>
-        </Link>
+        {canCreate && (
+          <Link href="/assets/new">
+            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
+              <Plus className="w-4 h-4 mr-2" /> Register Asset
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">

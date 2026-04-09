@@ -1,21 +1,29 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { notFound } from "next/navigation"
+import { redirect } from "next/navigation"
 import { UserCog, Plus } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { UserTableClient } from "./user-table-client"
+import { hasPermission } from "@/lib/auth-utils"
 
 export default async function UsersPage() {
   const session = await auth()
   
-  // Security Perimeter: Only ADMIN handles User configurations
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
-    return notFound()
+  // Security Perimeter: Only VIEW_USERS handles User configurations
+  if (!session?.user || !hasPermission(session as any, 'VIEW_USERS')) {
+    redirect("/login")
   }
 
+  const canCreate = hasPermission(session as any, 'CREATE_USERS')
+
   const users = await db.user.findMany({
-    orderBy: { email: 'asc' } 
+    orderBy: { email: 'asc' },
+    include: { customRoles: { select: { id: true, name: true, isSystem: true } } }
+  })
+  
+  const allCustomRoles = await db.customRole.findMany({
+    orderBy: { name: 'asc' }
   })
 
   return (
@@ -28,15 +36,17 @@ export default async function UsersPage() {
           <p className="text-muted-foreground mt-2 text-sm">Assign structural responsibilities shaping the defense-in-depth model.</p>
         </div>
         <div>
-          <Link href="/users/new">
-            <Button className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-              <Plus className="w-4 h-4 mr-2" /> Provision Identity
-            </Button>
-          </Link>
+          {canCreate && (
+            <Link href="/users/new">
+              <Button className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                <Plus className="w-4 h-4 mr-2" /> Provision Identity
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
-      <UserTableClient users={users} sessionUserId={session.user.id} />
+      <UserTableClient users={users} sessionUserId={session.user.id} allCustomRoles={allCustomRoles} />
     </div>
   )
 }

@@ -1,15 +1,16 @@
 import { Incident, Asset, User } from "@prisma/client";
 import { ComponentType } from "react";
+import { PluginSdkContext } from "./sdk-context";
 
 export type OpenTicketPluginHooks = {
   /** Triggered instantly when a new incident is logged into the system */
-  onIncidentCreated?: (incident: Partial<Incident>, config: Record<string, any>) => Promise<void>;
+  onIncidentCreated?: (incident: Partial<Incident>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
   
   /** Triggered when a ticket shifts structurally to RESOLVED or CLOSED */
-  onIncidentResolved?: (incident: Partial<Incident>, config: Record<string, any>) => Promise<void>;
+  onIncidentResolved?: (incident: Partial<Incident>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
   
   /** Triggered during Automated Quarantines or manual Admin Asset isolation */
-  onAssetCompromise?: (asset: Partial<Asset>, config: Record<string, any>) => Promise<void>;
+  onAssetCompromise?: (asset: Partial<Asset>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
 };
 
 export type OpenTicketPluginUI = {

@@ -75,7 +75,10 @@ export function UserPanels({
                     <span className="text-[10px] text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</span>
                   </div>
                   <div className="text-muted-foreground text-xs leading-relaxed break-all whitespace-pre-wrap font-mono opacity-80 bg-black/40 p-3 rounded-lg max-h-40 overflow-y-auto mt-2">
-                    {typeof log.changes === 'object' ? JSON.stringify(log.changes, null, 2) : String(log.changes)}
+                    {!log.changes 
+                        ? "No explicit telemetry payload matrix recorded." 
+                        : (typeof log.changes === 'object' ? JSON.stringify(log.changes, null, 2) : String(log.changes))
+                    }
                   </div>
                 </div>
               ))}

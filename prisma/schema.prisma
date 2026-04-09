@@ -11,11 +11,82 @@ datasource db {
 // NextAuth / Auth.js (SSO reserved schema) & RBAC
 // -----------------------------------------------------------------------------
 
-enum Role {
-  ADMIN
-  SECOPS
-  REPORTER
-  API_ACCESS
+enum Permission {
+  VIEW_INCIDENTS_ALL
+  VIEW_INCIDENTS_ASSIGNED
+  VIEW_INCIDENTS_UNASSIGNED
+  CREATE_INCIDENTS
+  UPDATE_INCIDENTS_METADATA
+  UPDATE_INCIDENT_STATUS_RESOLVE
+  UPDATE_INCIDENT_STATUS_CLOSE
+  ASSIGN_INCIDENTS_SELF
+  ASSIGN_INCIDENTS_OTHERS
+  LINK_INCIDENT_TO_ASSET
+  UPLOAD_INCIDENT_ATTACHMENTS
+  DELETE_INCIDENT_ATTACHMENTS
+  DELETE_INCIDENTS
+  EXPORT_INCIDENTS
+
+  ADD_COMMENTS
+  DELETE_OWN_COMMENTS
+  DELETE_ANY_COMMENTS
+
+  VIEW_ASSETS
+  CREATE_ASSETS
+  UPDATE_ASSETS
+  DELETE_ASSETS
+
+  VIEW_VULNERABILITIES
+  CREATE_VULNERABILITIES
+  UPDATE_VULNERABILITIES
+  DELETE_VULNERABILITIES
+  ASSIGN_VULNERABILITIES_SELF
+  ASSIGN_VULNERABILITIES_OTHERS
+  LINK_VULN_TO_ASSET
+  UPLOAD_VULN_ATTACHMENTS
+  DELETE_VULN_ATTACHMENTS
+
+  VIEW_USERS
+  CREATE_USERS
+  UPDATE_USER_PROFILE
+  ASSIGN_USER_ROLES
+  RESET_USER_PASSWORDS
+  SUSPEND_USERS
+  DELETE_USERS
+
+  VIEW_ROLES
+  CREATE_ROLES
+  UPDATE_ROLES
+  DELETE_ROLES
+
+  VIEW_DASHBOARD
+  VIEW_SYSTEM_SETTINGS
+  UPDATE_SYSTEM_SETTINGS
+  MANAGE_INTEGRATIONS
+  
+  VIEW_PLUGINS
+  INSTALL_PLUGINS
+  TOGGLE_PLUGINS
+  CONFIGURE_PLUGINS
+  
+  RESTART_SYSTEM_SERVICES
+  VIEW_AUDIT_LOGS
+
+  ACCESS_API
+  VIEW_API_TOKENS
+  ISSUE_API_TOKENS
+  REVOKE_API_TOKENS
+}
+
+model CustomRole {
+  id          String       @id @default(cuid())
+  name        String       @unique 
+  description String?
+  isSystem    Boolean      @default(false) 
+  permissions Permission[] 
+
+  users       User[]       @relation("UserCustomRoles")
+  systemRule  SystemSetting[] @relation("DefaultUserRoles")
 }
 
 model Account {
@@ -52,10 +123,14 @@ model User {
   emailVerified      DateTime?
   image              String?
   passwordHash       String? // Added for Credentials provider MVP
-  roles              Role[]    @default([REPORTER])
+  customRoles        CustomRole[] @relation("UserCustomRoles")
   isTwoFactorEnabled Boolean   @default(false)
   twoFactorSecret    String?
   isDisabled         Boolean   @default(false) // Phase 5 Suspension Support
+
+  // Plugin Identity Mapping
+  isBot               Boolean   @default(false)
+  botPluginIdentifier String?   @unique
 
   // Browser Notification Preferences
   browserNotificationsEnabled Boolean @default(false)
@@ -73,6 +148,7 @@ model User {
   // Relations for OpenTicket
   reportedIncidents Incident[]   @relation("Reporter")
   assignedIncidents Incident[]   @relation("IncidentAssignees")
+  assignedVulnerabilities Vulnerability[] @relation("VulnAssignees")
   comments          Comment[]
   auditLogs         AuditLog[]
   attachments       Attachment[]
@@ -117,7 +193,7 @@ model SystemSetting {
   id                String  @id @default("global") // Enforce singleton
   allowRegistration Boolean @default(true)
   requireGlobal2FA  Boolean @default(false)
-  defaultUserRoles  Role[]  @default([REPORTER])
+  defaultUserRoles  CustomRole[] @relation("DefaultUserRoles")
 
   webhookUrl     String?
   webhookEnabled Boolean @default(false)
@@ -153,6 +229,10 @@ model SystemSetting {
   // Auth Enforcements
   requireEmailVerification      Boolean @default(false)
   systemPlatformUrl             String  @default("http://localhost:3000")
+
+  // SOAR Automations
+  soarAutoQuarantineEnabled     Boolean @default(true)
+  soarAutoQuarantineThreshold   Severity @default(CRITICAL)
 
   updatedAt DateTime @updatedAt
 }
@@ -195,13 +275,35 @@ model Asset {
   updatedAt DateTime    @updatedAt
 
   incidents       Incident[]
-  vulnerabilities Vulnerability[] @relation("AssetVulnerabilities")
+  vulnerabilityAssets VulnerabilityAsset[]
 }
 
 enum VulnStatus {
   OPEN
   MITIGATED
   RESOLVED
+}
+
+enum VulnAssetStatus {
+  AFFECTED
+  MITIGATED
+  PATCHED
+  FALSE_POSITIVE
+}
+
+model VulnerabilityAsset {
+  id      String @id @default(cuid())
+  vulnId  String
+  assetId String
+  status  VulnAssetStatus @default(AFFECTED)
+  notes   String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vulnerability Vulnerability @relation(fields: [vulnId], references: [id], onDelete: Cascade)
+  asset         Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([vulnId, assetId])
 }
 
 model Vulnerability {
@@ -216,8 +318,13 @@ model Vulnerability {
   updatedAt     DateTime   @updatedAt
   targetSlaDate DateTime?
 
-  affectedAssets Asset[]      @relation("AssetVulnerabilities")
+  vulnerabilityAssets VulnerabilityAsset[]
   attachments    Attachment[]
+  assignees User[] @relation("VulnAssignees")
+  comments Comment[]
+
+  @@index([severity])
+  @@index([status])
 }
 
 enum Severity {
@@ -268,6 +375,9 @@ model Incident {
 
   comments    Comment[]
   attachments Attachment[]
+
+  @@index([status])
+  @@index([severity])
 }
 
 model Comment {
@@ -276,8 +386,11 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  incidentId String
-  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  incidentId String?
+  incident   Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  vulnId String?
+  vuln   Vulnerability? @relation(fields: [vulnId], references: [id], onDelete: Cascade)
 
   authorId String?
   author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)

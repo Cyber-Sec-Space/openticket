@@ -3,11 +3,11 @@
 import { db } from "@/lib/db"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
-import { Role } from "@prisma/client"
+import { hasPermission } from "@/lib/auth-utils"
 
 export async function updateSystemSettings(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !session.user.roles.includes('ADMIN')) {
+  if (!session?.user || !hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')) {
     throw new Error("Unauthorized")
   }
 
@@ -16,8 +16,14 @@ export async function updateSystemSettings(formData: FormData) {
   const requireGlobal2FA = formData.get("requireGlobal2FA") === "on"
   const requireEmailVerification = formData.get("requireEmailVerification") === "on"
   const systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
-  const defaultUserRolesRaw = formData.getAll("defaultUserRoles") as any[]
-  const defaultUserRoles = defaultUserRolesRaw.length > 0 ? defaultUserRolesRaw : ["REPORTER"]
+  const defaultRoleName = formData.get("defaultRoleId") as string
+  let rolePayload = undefined
+  if (defaultRoleName && defaultRoleName !== "NONE") {
+    const role = await db.customRole.findUnique({ where: { name: defaultRoleName } })
+    if (role) {
+      rolePayload = { set: [{ id: role.id }] }
+    }
+  }
 
   const webhookEnabled = formData.get("webhookEnabled") === "on"
   const webhookUrl = formData.get("webhookUrl") as string || ""
@@ -61,6 +67,11 @@ export async function updateSystemSettings(formData: FormData) {
   const smtpTriggerOnNewUser = formData.get("smtpTriggerOnNewUser") === "on"
   const smtpTriggerOnNewVulnerability = formData.get("smtpTriggerOnNewVulnerability") === "on"
 
+  // SOAR Automations
+  const soarAutoQuarantineEnabled = formData.get("soarAutoQuarantineEnabled") === "on"
+  const soarAutoQuarantineThresholdRaw = formData.get("soarAutoQuarantineThreshold") as string
+  const soarAutoQuarantineThreshold = (soarAutoQuarantineThresholdRaw || "CRITICAL") as any
+
   await db.systemSetting.upsert({
     where: { id: "global" },
     update: {
@@ -70,7 +81,7 @@ export async function updateSystemSettings(formData: FormData) {
       systemPlatformUrl,
       webhookEnabled,
       webhookUrl,
-      defaultUserRoles,
+      ...(rolePayload ? { defaultUserRoles: rolePayload } : {}),
       slaCriticalHours,
       slaHighHours,
       slaMediumHours,
@@ -90,7 +101,9 @@ export async function updateSystemSettings(formData: FormData) {
       smtpTriggerOnResolution,
       smtpTriggerOnAssetCompromise,
       smtpTriggerOnNewUser,
-      smtpTriggerOnNewVulnerability
+      smtpTriggerOnNewVulnerability,
+      soarAutoQuarantineEnabled,
+      soarAutoQuarantineThreshold
     },
     create: {
       id: "global",
@@ -100,7 +113,7 @@ export async function updateSystemSettings(formData: FormData) {
       systemPlatformUrl,
       webhookEnabled,
       webhookUrl,
-      defaultUserRoles,
+      ...(rolePayload ? { defaultUserRoles: { connect: rolePayload.set } } : {}),
       slaCriticalHours,
       slaHighHours,
       slaMediumHours,
@@ -120,7 +133,9 @@ export async function updateSystemSettings(formData: FormData) {
       smtpTriggerOnResolution,
       smtpTriggerOnAssetCompromise,
       smtpTriggerOnNewUser,
-      smtpTriggerOnNewVulnerability
+      smtpTriggerOnNewVulnerability,
+      soarAutoQuarantineEnabled,
+      soarAutoQuarantineThreshold
     }
   })
 
