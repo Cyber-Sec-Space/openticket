@@ -286,6 +286,7 @@ body.dark-theme {
 .item-1 { grid-column: span 2; }
 .item-4 { grid-column: span 2; }
 .item-5 { grid-column: span 2; }
+.item-7 { grid-column: span 3; }
 
 .bento-icon {
   width: 48px; height: 48px;
@@ -334,6 +335,6 @@ body.dark-theme {
 /* Responsive */
 @media (max-width: 992px) {
   .bento-grid { grid-template-columns: 1fr; }
-  .item-1, .item-4 { grid-column: 1; }
+  .item-1, .item-4, .item-5, .item-7 { grid-column: 1; }
   .nav-links { display: none; }
 }
