@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.4.0
 ### Security
+- **Phase 27 RBAC UI Hardening**: Applied an elegant Access Denied UX boundary across all isolated `<form>` creation routes (`/incidents/new`, `/assets/new`, `/vulnerabilities/new`, `/users/new`). Prevents Application-Level HTTP 500 crash states by gracefully blocking unsanctioned `GET` traffic attempting to load mutations structurally locked by Server Actions.
 - **Phase 26 Production Defect Sweeps**: Identified a lethal component failure within Next.js Server Actions tied precisely to raw `throw new Error()` emissions. Refactored `<form>` native submissions via interactive `useActionState`/`useTransition` React Client boundaries resolving `null:null` screen vaporization crashes.
 - **Phase 25 Form Hardening**: Eliminated arbitrary data assumption logic inside `settings/plugins/store` native structural validation, effectively cutting off supply chain poisoning via hijacked or malformed GitHub JSON manifests.
 - **Phase 24 Database Resilience**: Ingested strict `@@index([status])` & `@@index([severity])` B-Tree lookups recursively to Prisma schemas, collapsing Big-O database search intervals across macro horizontal workloads, preventing Time-Boxing query failures.
