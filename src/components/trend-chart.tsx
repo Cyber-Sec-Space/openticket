@@ -21,31 +21,33 @@ interface TrendData {
   incBreached: number;
 }
 
-export function TrendChart({ data }: { data: TrendData[] }) {
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-black/90 border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl">
-          <p className="text-white/50 text-[10px] font-bold mb-2 tracking-[0.2em] uppercase">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center justify-between text-sm font-bold mb-1">
-              <div className="flex items-center">
-                <span 
-                  className="w-2.5 h-2.5 rounded-full mr-3 shrink-0" 
-                  style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}` }} 
-                />
-                <span className="text-white w-32">{entry.name}</span>
-              </div>
-              <span className="text-white text-lg font-black ml-4" style={{ color: entry.color }}>
-                {entry.value}{entry.name.includes('Rate') ? '%' : ''}
-              </span>
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-black/90 border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl">
+        <p className="text-white/50 text-[10px] font-bold mb-2 tracking-[0.2em] uppercase">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center justify-between text-sm font-bold mb-1">
+            <div className="flex items-center">
+              <span 
+                className="w-2.5 h-2.5 rounded-full mr-3 shrink-0" 
+                style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}` }} 
+              />
+              <span className="text-white w-32">{entry.name}</span>
             </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+            <span className="text-white text-lg font-black ml-4" style={{ color: entry.color }}>
+              {entry.value}{entry.name.includes('Rate') ? '%' : ''}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+export function TrendChart({ data }: { data: TrendData[] }) {
+
 
   return (
     <div className="w-full h-80">

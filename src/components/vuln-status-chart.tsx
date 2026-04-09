@@ -14,6 +14,30 @@ interface StatusData {
   count: number;
 }
 
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-black/80 border border-white/10 p-3 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl">
+        <p className="text-white/50 text-[10px] font-bold mb-1 tracking-[0.2em] uppercase">{payload[0].name}</p>
+        <p className="text-white font-black text-2xl flex items-center">
+           <span className="w-2.5 h-2.5 rounded-full mr-3 shadow-[0_0_10px_currentColor]" 
+             style={{ 
+               backgroundColor: payload[0].payload.fill.includes('Open') ? '#ef4444' : payload[0].payload.fill.includes('Mitigated') ? '#eab308' : '#10b981', 
+               color: payload[0].payload.fill.includes('Open') ? '#ef4444' : payload[0].payload.fill.includes('Mitigated') ? '#eab308' : '#10b981' 
+             }} 
+           />
+           {payload[0].value} <span className="text-[10px] font-medium text-white/30 ml-2 tracking-widest uppercase">Records</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const renderLegendText = (value: string) => {
+  return <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{value}</span>;
+};
+
 export function VulnStatusChart({ data }: { data: StatusData[] }) {
   const colorMap: any = {
     OPEN: "url(#pieOpen)",
@@ -26,29 +50,7 @@ export function VulnStatusChart({ data }: { data: StatusData[] }) {
     fill: colorMap[d.status] || "#8884d8"
   }))
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-black/80 border border-white/10 p-3 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl">
-          <p className="text-white/50 text-[10px] font-bold mb-1 tracking-[0.2em] uppercase">{payload[0].name}</p>
-          <p className="text-white font-black text-2xl flex items-center">
-             <span className="w-2.5 h-2.5 rounded-full mr-3 shadow-[0_0_10px_currentColor]" 
-               style={{ 
-                 backgroundColor: payload[0].payload.fill.includes('Open') ? '#ef4444' : payload[0].payload.fill.includes('Mitigated') ? '#eab308' : '#10b981', 
-                 color: payload[0].payload.fill.includes('Open') ? '#ef4444' : payload[0].payload.fill.includes('Mitigated') ? '#eab308' : '#10b981' 
-               }} 
-             />
-             {payload[0].value} <span className="text-[10px] font-medium text-white/30 ml-2 tracking-widest uppercase">Records</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
-  const renderLegendText = (value: string) => {
-    return <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{value}</span>;
-  };
 
   return (
     <div className="w-full h-80">

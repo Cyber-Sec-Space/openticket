@@ -38,7 +38,7 @@ export default async function PluginManagementPage() {
       ) : (
         <div className="flex flex-col items-center justify-center py-16 px-4 bg-black/20 rounded-xl border border-white/5 border-dashed">
           <p className="text-muted-foreground font-medium mb-1">No Active Plugins</p>
-          <p className="text-sm text-neutral-500">You haven't installed any plugins from the store yet.</p>
+          <p className="text-sm text-neutral-500">{"You haven't installed any plugins from the store yet."}</p>
         </div>
       )}
     </div>

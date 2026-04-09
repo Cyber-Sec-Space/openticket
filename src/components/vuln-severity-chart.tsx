@@ -15,21 +15,23 @@ interface SeverityData {
   count: number;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-black/90 border border-indigo-500/20 p-4 rounded-xl shadow-[0_0_30px_rgba(79,70,229,0.3)] backdrop-blur-xl">
+        <p className="text-indigo-400 text-[10px] font-bold mb-1 tracking-[0.2em] uppercase">{label} VULNERABILITIES</p>
+        <p className="text-white font-black text-3xl flex items-center">
+           <span className="w-2.5 h-2.5 rounded-full mr-3 shadow-[0_0_10px_#818cf8] bg-indigo-400 text-indigo-400" />
+           {payload[0].value} <span className="text-xs font-medium text-white/30 ml-2 tracking-wide uppercase">Active Nodes</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export function VulnSeverityChart({ data }: { data: SeverityData[] }) {
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-black/90 border border-indigo-500/20 p-4 rounded-xl shadow-[0_0_30px_rgba(79,70,229,0.3)] backdrop-blur-xl">
-          <p className="text-indigo-400 text-[10px] font-bold mb-1 tracking-[0.2em] uppercase">{label} VULNERABILITIES</p>
-          <p className="text-white font-black text-3xl flex items-center">
-             <span className="w-2.5 h-2.5 rounded-full mr-3 shadow-[0_0_10px_#818cf8] bg-indigo-400 text-indigo-400" />
-             {payload[0].value} <span className="text-xs font-medium text-white/30 ml-2 tracking-wide uppercase">Active Nodes</span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+
 
   return (
     <div className="w-full h-80">

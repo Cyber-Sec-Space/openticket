@@ -14,9 +14,10 @@ interface AssetOption {
 interface MultiAssetPickerProps {
   assets: AssetOption[];
   defaultSelectedIds?: string[];
+  disabled?: boolean;
 }
 
-export function MultiAssetPicker({ assets, defaultSelectedIds = [] }: MultiAssetPickerProps) {
+export function MultiAssetPicker({ assets, defaultSelectedIds = [], disabled = false }: MultiAssetPickerProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set(defaultSelectedIds))
   const [open, setOpen] = useState(false)
 
@@ -37,8 +38,9 @@ export function MultiAssetPicker({ assets, defaultSelectedIds = [] }: MultiAsset
 
       <button 
         type="button" 
-        onClick={() => setOpen(!open)}
-        className="flex min-h-[42px] w-full items-center justify-between rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all flex-wrap gap-2"
+        onClick={() => !disabled && setOpen(!open)}
+        disabled={disabled}
+        className={`flex min-h-[42px] w-full items-center justify-between rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all flex-wrap gap-2 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {selected.size === 0 ? (
            <span className="text-muted-foreground italic flex items-center gap-2"><Server className="w-4 h-4"/> No Infrastructure Mapped (Select Assets)</span>
