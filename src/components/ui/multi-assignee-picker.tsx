@@ -56,7 +56,7 @@ export function MultiAssigneePicker({ users, defaultSelectedIds = [] }: MultiAss
       </button>
 
       {open && (
-        <div className="absolute top-full mt-2 w-full z-50 rounded-lg border border-border/80 bg-black/95 shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute bottom-full mb-2 w-full z-50 rounded-lg border border-border/80 bg-black/95 shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           <div className="max-h-64 overflow-y-auto p-2 space-y-1">
              {users.map(u => (
                <label 
