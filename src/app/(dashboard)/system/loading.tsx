@@ -16,8 +16,8 @@ export default function SystemSettingsLoading() {
       <div className="glass-card rounded-xl overflow-hidden border border-border mt-8 shadow-2xl">
         <div className="border-b border-white/5 bg-black/20 p-6 flex flex-row items-center space-x-4">
           <ShieldCheck className="w-8 h-8 text-primary/30 animate-pulse" />
-          <div className="flex flex-col gap-1 w-full pt-0.5">
-            <div className="h-[24px] w-48 bg-white/10 rounded animate-pulse"></div>
+          <div className="flex flex-col w-full">
+            <div className="h-[22px] w-48 bg-white/10 rounded animate-pulse"></div>
             <div className="h-[20px] w-64 bg-white/5 rounded animate-pulse"></div>
           </div>
         </div>
@@ -67,7 +67,7 @@ export default function SystemSettingsLoading() {
                 <div className="w-full pt-0.5">
                   <div className="h-[12px] w-[80%] bg-white/5 rounded animate-pulse mb-3"></div>
                 </div>
-                <div className="h-10 w-full bg-white/5 rounded-md animate-pulse flex items-center px-3 gap-2">
+                <div className="h-8 w-full bg-white/5 rounded-md animate-pulse flex items-center px-3 gap-2">
                 </div>
               </div>
 
@@ -77,7 +77,7 @@ export default function SystemSettingsLoading() {
                 <div className="w-full">
                   <div className="h-[12px] w-[65%] bg-white/5 rounded mt-0.5 animate-pulse mb-3"></div>
                 </div>
-                <div className="h-10 w-[280px] bg-white/5 rounded-md animate-pulse"></div>
+                <div className="h-8 w-[280px] bg-white/5 rounded-md animate-pulse"></div>
               </div>
 
               <hr className="my-2 border-white/5" />
@@ -101,12 +101,12 @@ export default function SystemSettingsLoading() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-8">
                   <div className="space-y-2">
-                    <div className="h-[12px] w-32 bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-32 bg-white/5 rounded-md animate-pulse"></div>
+                    <div className="h-[12px] w-32 bg-white/5 rounded animate-pulse mt-0.5"></div>
+                    <div className="h-8 w-32 bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-[12px] w-48 bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-48 bg-white/5 rounded-md animate-pulse"></div>
+                    <div className="h-[12px] w-48 bg-white/5 rounded animate-pulse mt-0.5"></div>
+                    <div className="h-8 w-48 bg-white/5 rounded-md animate-pulse"></div>
                     <div className="h-[14px] w-32 bg-white/5 rounded mt-1 animate-pulse"></div>
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export default function SystemSettingsLoading() {
 
                 <div className="ml-8 space-y-2 mt-4">
                   <div className="h-4 w-48 bg-white/5 rounded animate-pulse"></div>
-                  <div className="h-10 w-[280px] bg-white/5 rounded-md animate-pulse"></div>
+                  <div className="h-8 w-[280px] bg-white/5 rounded-md animate-pulse"></div>
                   <div className="h-[14px] w-[60%] bg-white/5 rounded mt-1 animate-pulse"></div>
                 </div>
               </div>
@@ -187,23 +187,23 @@ export default function SystemSettingsLoading() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-8">
                   <div className="space-y-2">
                     <div className="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-full bg-white/5 rounded-md animate-pulse"></div>
+                    <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2">
                     <div className="h-4 w-16 bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-full bg-white/5 rounded-md animate-pulse"></div>
+                    <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2">
                     <div className="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-full bg-white/5 rounded-md animate-pulse"></div>
+                    <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2">
                     <div className="h-4 w-40 bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-full bg-white/5 rounded-md animate-pulse"></div>
+                    <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <div className="h-4 w-48 bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-10 w-full bg-white/5 rounded-md animate-pulse"></div>
+                    <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                 </div>
 
