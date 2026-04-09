@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateSystemSettings } from "./actions"
 import { SlaSettingsPanel } from "./sla-settings-panel"
+import { HeightLogger } from "@/components/height-logger"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
@@ -38,6 +39,7 @@ export default async function SystemSettingsPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in-up">
+      <HeightLogger />
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-white/10">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center">
