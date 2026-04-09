@@ -2,14 +2,30 @@ import { auth } from "@/auth"
 import { hasPermission } from "@/lib/auth-utils"
 import { notFound, redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import { ShieldAlert } from "lucide-react"
+import { ShieldAlert, Bug } from "lucide-react"
 import { VulnFormClient } from "./vuln-form-client"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default async function NewVulnerabilityPage() {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'CREATE_VULNERABILITIES')) {
-    redirect("/login")
+  if (!session?.user) return null
+  const canCreate = hasPermission(session as any, 'CREATE_VULNERABILITIES')
+
+  if (!canCreate) {
+    return (
+      <div className="p-8 text-center max-w-xl mx-auto space-y-4 animate-fade-in-up mt-20">
+        <Bug className="mx-auto w-16 h-16 text-destructive opacity-80 animate-pulse" />
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Access Denied</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          You do not possess the clearance (<code className="text-primary font-mono bg-primary/10 px-1 rounded">CREATE_VULNERABILITIES</code>) to log vulnerabilities into the registry. Please contact your administrator.
+        </p>
+        <Link href="/vulnerabilities">
+           <Button variant="outline" className="mt-6 border-white/20 hover:bg-white/5">Return to active catalog</Button>
+        </Link>
+      </div>
+    )
   }
 
   const assets = await db.asset.findMany({ select: { id: true, name: true, type: true, status: true, ipAddress: true } })

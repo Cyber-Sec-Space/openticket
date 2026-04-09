@@ -17,6 +17,7 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
   if (!session?.user || !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
     return redirect("/login")
   }
+  const canCreate = hasPermission(session as any, 'CREATE_VULNERABILITIES')
 
   const resolvedParams = await searchParams;
   let page = parseInt(resolvedParams.page || "1", 10);
@@ -86,11 +87,13 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
               Export CSV
             </Button>
           </Link>
-          <Link href="/vulnerabilities/new">
-            <Button className="bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)]">
-              <Plus className="w-4 h-4 mr-2" /> Log Vulnerability
-            </Button>
-          </Link>
+          {canCreate && (
+            <Link href="/vulnerabilities/new">
+              <Button className="bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)]">
+                <Plus className="w-4 h-4 mr-2" /> Log Vulnerability
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

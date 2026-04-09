@@ -11,8 +11,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default async function NewAssetPage() {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'CREATE_ASSETS')) {
-    redirect("/login")
+  if (!session?.user) return null
+  const canCreate = hasPermission(session as any, 'CREATE_ASSETS')
+
+  if (!canCreate) {
+    return (
+      <div className="p-8 text-center max-w-xl mx-auto space-y-4 animate-fade-in-up mt-20">
+        <Server className="mx-auto w-16 h-16 text-destructive opacity-80 animate-pulse" />
+        <h2 className="text-3xl font-extrabold text-foreground tracking-tight">Access Denied</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          You do not possess the clearance (<code className="text-primary font-mono bg-primary/10 px-1 rounded">CREATE_ASSETS</code>) to register infrastructure. Please contact your administrator.
+        </p>
+        <Link href="/assets">
+           <Button variant="outline" className="mt-6 border-white/20 hover:bg-white/5"><ArrowLeft className="w-4 h-4 mr-2" /> Return to Assets Directory</Button>
+        </Link>
+      </div>
+    )
   }
 
   return (

@@ -15,6 +15,8 @@ export default async function UsersPage() {
     redirect("/login")
   }
 
+  const canCreate = hasPermission(session as any, 'CREATE_USERS')
+
   const users = await db.user.findMany({
     orderBy: { email: 'asc' },
     include: { customRoles: { select: { id: true, name: true, isSystem: true } } }
@@ -34,11 +36,13 @@ export default async function UsersPage() {
           <p className="text-muted-foreground mt-2 text-sm">Assign structural responsibilities shaping the defense-in-depth model.</p>
         </div>
         <div>
-          <Link href="/users/new">
-            <Button className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-              <Plus className="w-4 h-4 mr-2" /> Provision Identity
-            </Button>
-          </Link>
+          {canCreate && (
+            <Link href="/users/new">
+              <Button className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                <Plus className="w-4 h-4 mr-2" /> Provision Identity
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
