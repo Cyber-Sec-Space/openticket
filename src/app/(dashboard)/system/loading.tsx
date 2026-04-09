@@ -30,10 +30,9 @@ export default function SystemSettingsLoading() {
               <div className="flex flex-row items-center space-x-4 rounded-md border border-white/10 p-5 shadow-sm bg-black/20">
                 <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                 <div className="space-y-1 w-full flex flex-col justify-center">
-                  <div className="h-[14px] w-56 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
-                  <div className="w-3/4 pt-1">
-                    <div className="h-[12px] w-full bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-[12px] w-[80%] bg-white/5 rounded animate-pulse mt-1"></div>
+                  <div className="h-[14px] w-48 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
+                  <div className="w-full pt-1">
+                    <div className="h-[12px] w-[60%] bg-white/5 rounded animate-pulse"></div>
                   </div>
                 </div>
               </div>
@@ -42,10 +41,10 @@ export default function SystemSettingsLoading() {
               <div className="flex flex-row items-center space-x-4 rounded-md border border-white/10 p-5 shadow-sm bg-black/20">
                 <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                 <div className="space-y-1 w-full flex flex-col justify-center">
-                  <div className="h-[14px] w-72 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
-                  <div className="w-3/4 pt-1">
+                  <div className="h-[14px] w-64 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
+                  <div className="w-[85%] pt-1">
                     <div className="h-[12px] w-full bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-[12px] w-[60%] bg-white/5 rounded animate-pulse mt-1"></div>
+                    <div className="h-[12px] w-[20%] bg-white/5 rounded animate-pulse mt-1"></div>
                   </div>
                 </div>
               </div>
@@ -54,34 +53,31 @@ export default function SystemSettingsLoading() {
               <div className="flex flex-row items-center space-x-4 rounded-md border border-white/10 p-5 shadow-sm bg-black/20">
                 <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                 <div className="space-y-1 w-full flex flex-col justify-center">
-                  <div className="h-[14px] w-60 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
-                  <div className="w-3/4 pt-1">
-                    <div className="h-[12px] w-full bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-[12px] w-[65%] bg-white/5 rounded animate-pulse mt-1"></div>
+                  <div className="h-[14px] w-52 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
+                  <div className="w-full pt-1">
+                    <div className="h-[12px] w-[85%] bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-[40%] bg-white/5 rounded animate-pulse mt-1"></div>
                   </div>
                 </div>
               </div>
 
               {/* System Platform URL */}
               <div className="space-y-3 p-5 border border-white/10 rounded-md bg-black/20">
-                <div className="h-5 w-40 bg-white/10 rounded animate-pulse"></div>
-                <div className="w-3/4">
-                  <div className="h-[12px] w-full bg-white/5 rounded animate-pulse"></div>
-                  <div className="h-[12px] w-[40%] bg-white/5 rounded mt-1 animate-pulse mb-2"></div>
+                <div className="h-4 w-40 bg-white/10 rounded animate-pulse mt-0.5"></div>
+                <div className="w-full pt-0.5">
+                  <div className="h-[12px] w-[80%] bg-white/5 rounded animate-pulse mb-3"></div>
                 </div>
                 <div className="h-10 w-full bg-white/5 rounded-md animate-pulse flex items-center px-3 gap-2">
-                  <div className="h-4 w-4 bg-white/10 rounded animate-pulse shrink-0"></div>
                 </div>
               </div>
 
               {/* Default Role Select */}
               <div className="space-y-3 p-5 border border-white/10 rounded-md bg-black/20">
-                <div className="h-5 w-64 bg-white/10 rounded animate-pulse"></div>
-                <div className="w-3/4">
-                  <div className="h-[12px] w-full bg-white/5 rounded animate-pulse"></div>
-                  <div className="h-[12px] w-[60%] bg-white/5 rounded mt-1 animate-pulse mb-2"></div>
+                <div className="h-4 w-56 bg-white/10 rounded animate-pulse mt-0.5"></div>
+                <div className="w-full">
+                  <div className="h-[12px] w-[65%] bg-white/5 rounded mt-0.5 animate-pulse mb-3"></div>
                 </div>
-                <div className="h-8 w-[280px] bg-white/5 rounded-md animate-pulse"></div>
+                <div className="h-10 w-[280px] bg-white/5 rounded-md animate-pulse"></div>
               </div>
 
               <hr className="my-2 border-white/5" />
@@ -96,9 +92,9 @@ export default function SystemSettingsLoading() {
                 <div className="flex flex-row items-center space-x-4 mb-4">
                   <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                   <div className="space-y-1 w-full pt-1">
-                    <div className="h-[14px] w-64 bg-white/10 rounded mb-1 animate-pulse"></div>
-                    <div className="flex flex-col gap-1 pt-1">
-                      <div className="h-[12px] w-[65%] bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[14px] w-56 bg-white/10 rounded mb-1 animate-pulse"></div>
+                    <div className="w-full pt-0.5">
+                      <div className="h-[12px] w-[70%] bg-white/5 rounded animate-pulse"></div>
                     </div>
                   </div>
                 </div>
@@ -128,10 +124,10 @@ export default function SystemSettingsLoading() {
                 <div className="flex flex-row items-center space-x-4 mb-4">
                   <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                   <div className="space-y-1 w-full">
-                    <div className="h-[14px] w-[50%] bg-white/10 rounded mb-1 animate-pulse"></div>
-                    <div className="flex flex-col gap-1 w-5/6 pt-1">
-                      <div className="h-[12px] w-full bg-white/5 rounded animate-pulse"></div>
-                      <div className="h-[12px] w-[40%] bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[14px] w-80 bg-white/10 rounded mb-1 animate-pulse"></div>
+                    <div className="w-5/6 pt-1">
+                      <div className="h-[12px] w-[95%] bg-white/5 rounded animate-pulse"></div>
+                      <div className="h-[12px] w-[50%] bg-white/5 rounded animate-pulse mt-1"></div>
                     </div>
                   </div>
                 </div>
@@ -181,9 +177,9 @@ export default function SystemSettingsLoading() {
                 <div className="flex flex-row items-center space-x-4 mb-4">
                   <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                   <div className="space-y-1 w-full pt-1">
-                    <div className="h-[14px] w-48 bg-white/10 rounded mb-1 animate-pulse"></div>
-                    <div className="flex flex-col gap-1 w-full pt-1">
-                       <div className="h-[12px] w-[70%] bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[14px] w-40 bg-white/10 rounded mb-1 animate-pulse"></div>
+                    <div className="w-full pt-0.5">
+                       <div className="h-[12px] w-[65%] bg-white/5 rounded animate-pulse"></div>
                     </div>
                   </div>
                 </div>
