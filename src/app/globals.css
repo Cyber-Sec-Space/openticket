@@ -150,7 +150,7 @@
 }
 
 .glass-card {
-  @apply bg-card/60 backdrop-blur-md border border-white/5 shadow-xl transition-all duration-300;
+  @apply bg-card/60 backdrop-blur-md border border-white/5 shadow-xl transition duration-300;
 }
 .glass-card:hover {
   @apply border-white/20 bg-card/80;

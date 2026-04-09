@@ -16,11 +16,24 @@ export default function DashboardLoading() {
 
       {/* Metric Cards Skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="glass-card p-4 flex flex-col justify-between rounded-xl relative overflow-hidden border-white/5">
+        {/* Row 1: Cards 1-4 (No Delta) */}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={`row1-${i}`} className="glass-card p-4 flex flex-col justify-between rounded-xl relative overflow-hidden border-white/5">
             <div className="flex z-10 flex-col h-full justify-between">
               <div className="flex items-center justify-between mb-4">
                 <div className="h-[14px] w-20 bg-white/10 rounded animate-pulse" />
+              </div>
+              <div className="h-[36px] w-12 bg-white/20 rounded animate-pulse" />
+            </div>
+          </div>
+        ))}
+        {/* Row 2: Cards 5-8 (With Delta Chip - 20px height) */}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={`row2-${i}`} className="glass-card p-4 flex flex-col justify-between rounded-xl relative overflow-hidden border-white/5">
+            <div className="flex z-10 flex-col h-full justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-[14px] w-20 bg-white/10 rounded animate-pulse" />
+                <div className="h-[20px] w-12 bg-white/10 rounded-full animate-pulse" />
               </div>
               <div className="h-[36px] w-12 bg-white/20 rounded animate-pulse" />
             </div>
@@ -102,6 +115,7 @@ export default function DashboardLoading() {
               <div className="flex flex-wrap gap-2">
                  <div className="h-[20px] w-12 bg-white/5 rounded animate-pulse"></div>
                  <div className="h-[20px] w-24 bg-white/5 rounded animate-pulse"></div>
+                 <div className="h-[20px] w-28 bg-white/5 rounded animate-pulse"></div>
                  <div className="h-[20px] w-20 bg-white/5 rounded animate-pulse"></div>
               </div>
             </div>
