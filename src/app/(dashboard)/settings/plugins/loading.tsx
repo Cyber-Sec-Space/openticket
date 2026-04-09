@@ -11,8 +11,8 @@ export default function PluginsLoading() {
                 <ToyBrick className="w-8 h-8 text-primary/30 animate-pulse" />
                 <div className="h-[20px] w-16 bg-white/10 rounded-full animate-pulse"></div>
               </div>
-              <div className="flex flex-col gap-1.5 mt-1">
-                <div className="h-7 w-3/4 max-w-[200px] bg-white/10 rounded animate-pulse"></div>
+              <div className="flex flex-col gap-1.5 mt-1 w-3/4">
+                <div className="h-7 w-full bg-white/10 rounded animate-pulse"></div>
                 <div className="h-[20px] w-28 bg-emerald-500/20 border-emerald-500/30 border rounded-full mt-1 animate-pulse"></div>
               </div>
               <div className="flex flex-col gap-1.5 mt-2">

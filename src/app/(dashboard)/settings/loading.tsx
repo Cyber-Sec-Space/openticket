@@ -63,9 +63,9 @@ export default function SettingsLoading() {
                     <KeyRound className="w-4 h-4 mr-2" />
                     <div className="h-5 w-36 bg-white/10 rounded animate-pulse"></div>
                   </h3>
-                  <div className="flex flex-col gap-1 mt-1">
-                    <div className="h-4 w-3/4 max-w-[400px] bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-4 w-1/2 max-w-[250px] bg-white/5 rounded animate-pulse"></div>
+                  <div className="flex flex-col gap-1 mt-1 w-3/4">
+                    <div className="h-4 w-full bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-4 w-[60%] bg-white/5 rounded animate-pulse"></div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
@@ -88,9 +88,9 @@ export default function SettingsLoading() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="h-5 w-40 bg-white/10 rounded animate-pulse"></div>
-                    <div className="flex flex-col gap-1 mt-1">
-                       <div className="h-4 w-3/4 max-w-[280px] bg-white/5 rounded animate-pulse"></div>
-                       <div className="h-4 w-1/2 max-w-[200px] bg-white/5 rounded animate-pulse"></div>
+                    <div className="flex flex-col gap-1 mt-1 w-[80%]">
+                       <div className="h-4 w-full bg-white/5 rounded animate-pulse"></div>
+                       <div className="h-4 w-[50%] bg-white/5 rounded animate-pulse"></div>
                     </div>
                   </div>
                   <div className="h-8 w-[140px] bg-white/10 rounded-lg animate-pulse shrink-0"></div>
