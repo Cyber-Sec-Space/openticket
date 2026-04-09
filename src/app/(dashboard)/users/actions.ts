@@ -63,6 +63,10 @@ export async function updateUserRole(formData: FormData) {
     data: { customRoles: { set: customRoleIds.map(id => ({ id })) } }
   })
 
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onUserUpdated", updatedUser as any)
+
+
   // Log to global audit
   await db.auditLog.create({
     data: {
@@ -101,6 +105,10 @@ export async function deleteUserAction(formData: FormData) {
     where: { id: targetUserId }
   })
 
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onUserDestroyed", targetUserId)
+
+
   // Log to global audit
   await db.auditLog.create({
     data: {
@@ -132,6 +140,10 @@ export async function toggleUserStatusAction(userId: string, isDisabled: boolean
     where: { id: userId },
     data: { isDisabled }
   })
+
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onUserUpdated", updatedUser as any)
+
 
   if (isDisabled) {
     // Forcefully revoke all active JWT/DB sessions implicitly by triggering auth.ts database check 
@@ -169,6 +181,12 @@ export async function bulkDeleteUsersAction(userIds: string[]) {
     where: { id: { in: safeUserIds } }
   })
 
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  for (const uid of safeUserIds) {
+    await fireHook("onUserDestroyed", uid)
+  }
+
+
   await db.auditLog.create({
     data: {
       action: "USERS_BULK_DELETED",
@@ -205,6 +223,13 @@ export async function bulkUpdateRolesAction(userIds: string[], roleIds: string[]
       })
     )
   )
+
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  for (const uid of finalUserIds) {
+    const updated = await db.user.findUnique({ where: { id: uid } })
+    if (updated) await fireHook("onUserUpdated", updated as any)
+  }
+
 
   await db.auditLog.create({
     data: {

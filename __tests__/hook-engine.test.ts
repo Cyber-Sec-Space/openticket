@@ -16,7 +16,7 @@ jest.mock("../src/lib/db", () => ({
       ])
     },
     user: {
-      findUnique: jest.fn().mockResolvedValue({ id: "system_bot", roleIds: ["bot_role"] }),
+      findUnique: jest.fn().mockResolvedValue({ id: "system_bot", customRoles: [] }),
       update: jest.fn()
     }
   }
@@ -130,6 +130,7 @@ describe("Hook Engine", () => {
   it("should catch db.pluginState findMany errors natively without explosive disruption", async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const { db } = require("../src/lib/db");
+    const { invalidateHookCache } = require("../src/lib/plugins/hook-engine");
     
     // Simulate DB offline
     (db.pluginState.findMany as jest.Mock).mockRejectedValueOnce(new Error("DB Connection Lost"));
@@ -140,6 +141,7 @@ describe("Hook Engine", () => {
       hooks: { onIncidentCreated: mockOnIncidentCreated }
     });
 
+    invalidateHookCache();
     await fireHook("onIncidentCreated", {} as any);
     
     // Engine will continue but uses empty dbState array

@@ -255,6 +255,12 @@ enum AssetType {
   ENDPOINT
   NETWORK
   SOFTWARE
+  REPOSITORY      // Added for GitHub / GitLab / Source Control
+  CLOUD_RESOURCE  // Added for AWS / Azure / GCP resources
+  DOMAIN          // Added for URLs and DNS names
+  IAM_ROLE        // Added for Identity and Access Management
+  SAAS_APP        // Added for external SaaS identities
+  CONTAINER       // Added for Docker / K8s
   OTHER
 }
 
@@ -270,12 +276,20 @@ model Asset {
   name      String
   type      AssetType   @default(OTHER)
   ipAddress String?
+  
+  // Phase 5: Virtual Asset Compatibility
+  externalId String?    // Used to uniquely identify assets coming from outside (e.g., github repo URLs, AWS ARNs)
+  metadata   Json?      // Highly flexible JSON column for plugin-specific data (e.g. { "language": "TypeScript", "visibility": "public" })
+
   status    AssetStatus @default(ACTIVE)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
   incidents       Incident[]
   vulnerabilityAssets VulnerabilityAsset[]
+
+  @@index([name])
+  @@index([ipAddress])
 }
 
 enum VulnStatus {
@@ -378,6 +392,7 @@ model Incident {
 
   @@index([status])
   @@index([severity])
+  @@index([title])
 }
 
 model Comment {

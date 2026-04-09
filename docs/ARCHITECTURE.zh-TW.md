@@ -129,20 +129,34 @@ erDiagram
 ### 2.3 機器自動化介接 (Machine-to-Machine API Integration)
 系統內建支援純服務互動 (Headless Execution) 的 REST 端點 (如 `/api/incidents`, `/api/assets`)。為了確保隔離性與權限可追溯性，外部整合會被要求夾帶 `Authorization: Bearer <token>` 標頭。這些金鑰在建立期會**自動繼承發放此金鑰的帳號權限** (動態細粒度權限矩陣)，藉此讓自動化機器人與呼叫者維持對等的資安授權邊界。
 
-### 2.4 混合式外掛市集與事件總線 (Hybrid Plugin Architecture)
-為避免核心後端路由被各種獨立開發的外部擴充功能 (如遠端推播、雙向同步腳本) 阻塞，本系統採用非同步的 **Hook Engine**。所有的核心事件 (建立事件/資產覆滅等) 皆會被派發至 EventBus，進而觸發完全脫離於主機體之外的外掛邏輯。
+### 2.4 混合式外掛市集與事件總線 (Hybrid Plugin Sandbox)
+為避免核心後端路由被各種獨立開發的外部擴充功能 (如遠端推播、雙向同步腳本) 阻塞，本系統採用非同步的 **零信任 Hook Engine**。所有的核心執行管線皆會觸發內部 EventBus，進而參照 PostgreSQL `PluginState` 狀態來廣播非同步 Webhooks，並受到極度堅固的沙盒保護。
 
-不僅如此，OpenTicket 導入了 **混合分發模式 (Hybrid Registry)**，賦予管理員直接透過 UI 瀏覽並安裝遠端 Github Registry 外掛的特權。
+外掛架構圍繞著縱深防禦 (Defense-in-Depth) 的框架建構，包含了五大核心防禦層：
+1. **絕對身分閘道 (Absolute Identity Gating)**：外部外掛必須透過受限的 `api.createIncident()` SDK 進行互動，所有請求都會被強制向下轉交給無權限的沙盒機器人角色 (Sandbox Bot Role) 進行代理。
+2. **授權清單簽證 (OAuth-Style Manifests)**：核心整合系統必須在 `manifest` 宣告所請求的操作權限。這些授權清單會在前端的 React Presentation 層彈出，強制等待管理員進行「Grant & Activate」的手動同意。後端同時會執行嚴格的集合交集 (Set-Intersections)，無情過濾任何外掛企圖暗中啟動的未授權 API。
+3. **靜態密碼學防護 (Encryption At Rest)**：為了保證第三方設定 (例如 Webhook URLs, OAuth secrets) 不外洩，設定檔在存入資料庫前，皆會透過擷取自 `NEXTAUTH_SECRET` 的熵值，使用 `AES-256-GCM` 直接靜態加密，並且自帶 AuthTag 將資料庫被竄改的風險降至零。
+4. **防雪崩快取 (Thundering Herd Eradication)**：高頻率的事件派發 (每秒可能高達 10,000+ 次 hook 廣播) 透過短暫生命週期的 (10秒) 同步 Context Cache 對射，徹底隔絕了對於 PostgreSQL `SELECT` 的查詢雪崩，所有相同的 DB 查詢全域僅會執行一次。
+5. **時限炸彈沙盒 (Promise Time-Bomb Sandbox)**：為阻斷不良外部 API `fetch()` 或 `無窮迴圈` 造成的系統阻斷服務 (DoS) 與執行緒卡死，所有事件呼叫皆強制被包裝進 `Promise.race()` 系統中，若外掛執行超過 `5000ms`，將被系統強制斬斷管線，完美保護 Node 的單執行緒迴圈。
+
 ```mermaid
-graph LR
-    SystemEvents[事件建立 / 資產異動] --> HookEngine((Hook Engine EventBus))
-    HookEngine --> DBCheck{檢查 DB `PluginState`}
-    DBCheck -- "Activated (安裝)" --> Plugins[執行隔離之外掛腳本]
-
-    subgraph Registry [遠端外掛市集機制]
-        RemoteRepo[GitHub Raw JSON] -->|Server Action| Download[伺服器端下載並解析 .tsx]
-        Download --> Build[背景執行 webpack production build]
-        Build --> Restart[無縫觸發 Node.js 熱重載重生]
+graph TD
+    SystemEvents[資料變異與事件] --> HookEngine((Zero-Trust Hook Engine))
+    
+    subgraph Execution_Sandbox [Engine 防護沙盒層]
+        HookEngine --> CacheCheck{10秒 TTL Cache 檢查}
+        CacheCheck -- "Miss" --> Decrypt[AES256 JSON 即時解密]
+        CacheCheck -- "Hit" --> Exec[Promise.race 5000ms 執行炸彈]
+        Decrypt --> Exec
+    end
+    
+    Exec -->|嚴密限制的 SDK 邊界| Plugins[喚醒已隔離的第三方模組]
+    
+    subgraph Registry [遠端市集分發管線]
+        RemoteRepo[GitHub Raw Module] -->|Server Action| Download[下載原始碼並校驗]
+        Download --> UIAuth[UI 權限同意 Modal]
+        UIAuth --> DBIntercept[後端權限交集 (Intersection)]
+        DBIntercept --> Build[編譯 Webpack 生產包]
     end
 ```
 

@@ -14,7 +14,7 @@
 - **雙因子驗證 (2FA) 安全機制：** 內建基於 TOTP 演算法的 2FA 模組，可完美整合各種標準驗證器應用程式 (如 Google Authenticator, Authy)。更支援系統管理員「一鍵強制全域啟用 2FA」的鎖定功能。
 - **高密度 SOC 配置 (High-Density Layout)：** 重新設計的單行 8 指標 KPI 網格，讓維運人員能一眼看清資安戰場全貌，並將重點應變面板 (Command Actions) 移至上方，極速縮短反應遲滯時間。
 - **動態細粒度權限矩陣 (Dynamic Granular Permission Matrix)：** 原生的進階 RBAC 權限隔離機制，管理員能夠自由定義「自訂角色 (Custom Roles)」，並精細配置各項原子操作權限 (如 `CREATE_INCIDENTS`, `VIEW_ASSETS`)。人員能同時疊加複數自訂角色權限標籤，為巨型 SOC 環境帶來零信任 (Zero-Trust) 的極大組織架構彈性。
-- **混合式外掛生態 (Hybrid Plugin Architecture)：** 具備隔離的資料庫驅動 Hook 引擎 (EventBus)。管理員可以直接在「外掛市集 (Plugin Store)」中一鍵安裝來自 Github Registry 的遠端擴充模組，系統會在後台非同步重新編譯，實現接近零停機的熱重載 (Hot-Reload) 部署。
+- **零信任沙盒與外掛生態 (Zero-Trust EventBus & Plugins)：** 具備堅若磐石的背景 EventBus。外部的第三方外掛會被原生的五道隔離防線死死鎖進沙盒中，包含：Promise `Time-Bomb` 執行時限炸彈 (5000ms)、`Thundering Herd` 快取防雪崩機制、以及配置資料庫的 `端對端 AES-256-GCM` 靜態加密。管理員更能在安裝外掛前，透過沉浸式的 UI 授權畫面進行底層權限交集審核。
 - **全方位通知中心 (Omni-channel Notifications)：** 原生支援藉由可配置的 SMTP 設定發送 Email（適用於驗證與密碼重置），同時具備基於「伺服器發送事件 (SSE, Server-Sent Events)」的高效能 HTML5 桌面推播通知中心，持續在背景過濾並提醒重大資安威脅。
 - **資安優先防禦 (Security-First Paradigm)：** 針對認證管道實施 in-memory 防暴力破解 (Brute Force Rate Limiting) 壓制撞庫攻擊；並且在事件評論與關鍵操作上導入無死角的越權存取防禦 (BOLA, Broken Object Level Authorization) 阻攔未授權編輯。
 - **企業級現代介面 (Enterprise UI)：** 以 TailwindCSS 打造高質感 Blur / Backdrop-filter 動態特效，結合深度互動的 Shadcn 元件、透過 Portal 防裁切與支援手動輸入的客製化 `react-datepicker`，以及視覺化的 Recharts 圖表庫。
@@ -43,9 +43,9 @@
 - 在外部腳本呼叫 `/api/incidents` 或 `/api/assets` 端點時，將其帶入 Header：`Authorization: Bearer <token>`。該呼叫將自動繼承生成該金鑰者的既有伺服器權限。
 
 ### API 與系統整合
-- **Hook 引擎 (Hook Engine)**：獨立的事件總線架構 (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`)，能在背景安全執行外部程式碼，不損害主系統穩定性。
-- **整合遠端外掛市集 (External Plugin Orchestration)**：直接透過 UI 驅動的外掛市集，一鍵橋接 Jira 雙向同步、外部 SOC 監聽器或 Slack/Teams Webhooks。系統會執行強大的伺服器端子程序編譯，近乎無縫地為您的正式環境注入新能力。
-- **自動化機器金鑰 (M2M Keys)**：高度強固的抗枚舉 `ApiToken` 模型，產出搭載 `SHA-256` Bearer 驗證的實體 token，為您的 SOAR/SIEM 整合邏輯把關。
+- **零信任 Hook 引擎 (Zero-Trust Hook Engine)**：非同步的事件總線架構 (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`)，能在背景安全執行外部程式碼，並受到強大的 5秒 `Promise.race` 沙盒保護，完全免疫阻斷服務 (DoS) 攻擊。
+- **外部沙盒外掛編排 (External Plugin Sandbox Orchestration)**：直接透過 UI 驅動的外掛市集，一鍵橋接 Jira 雙向同步、外部 SOC 監聽器或 Slack/Teams Webhooks。所有外掛都會強制進入伺服器級的「權限交集審查 (Manifest Intersections)」，必須由管理員手動核准其最小運行權限。
+- **加固 M2M 機器金鑰 (Secure M2M Key Cryptography)**：面對資料庫洩露具備絕對抗性。除了傳統的機器介接金鑰採用不可逆雜湊，所有的第三方整合參數庫皆會透過 `AES-256-GCM` 加密封裝至保險庫中。
 - **登入限流與撞庫防禦 (Brute Force & Rate Limiting)**：透過後台對存取源的精準頻率限制，防止分散式密碼噴灑 (Password Spraying) 耗盡您的核心伺服器資源。
 
 ---

@@ -21,7 +21,9 @@ async function computeVulnStatus(vulnId: string) {
   if (allResolved) computedStatus = 'RESOLVED'
   else if (!anyAffected && assets.some(a => a.status === 'MITIGATED')) computedStatus = 'MITIGATED'
 
-  await db.vulnerability.update({ where: { id: vulnId }, data: { status: computedStatus } })
+  const updatedVuln = await db.vulnerability.update({ where: { id: vulnId }, data: { status: computedStatus } })
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onVulnerabilityUpdated", updatedVuln as any)
 }
 
 export async function updateVulnAssetStatusAction(formData: FormData) {
@@ -76,11 +78,14 @@ export async function addAssigneesAction(formData: FormData) {
      }
   }
   
-  await db.vulnerability.update({
+  const updatedVuln = await db.vulnerability.update({
     where: { id: vulnId },
-    data: { assignees: { connect: userIds.map(id => ({ id })) } }
+    data: { assignees: { connect: userIds.map((id: string) => ({ id })) } }
   })
   
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onVulnerabilityUpdated", updatedVuln as any)
+
   revalidatePath(`/vulnerabilities/${vulnId}`)
 }
 
@@ -97,11 +102,14 @@ export async function removeAssigneeAction(formData: FormData) {
      throw new Error("Forbidden: You can only remove yourself.")
   }
   
-  await db.vulnerability.update({
+  const updatedVuln = await db.vulnerability.update({
     where: { id: vulnId },
     data: { assignees: { disconnect: { id: userId } } }
   })
   
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onVulnerabilityUpdated", updatedVuln as any)
+
   revalidatePath(`/vulnerabilities/${vulnId}`)
 }
 
@@ -118,13 +126,16 @@ export async function postVulnCommentAction(formData: FormData) {
   
   if (!vulnId || !content.trim()) throw new Error("Missing parameters")
 
-  await db.comment.create({
+  const newComment = await db.comment.create({
     data: {
       content,
       vulnId,
       authorId: session.user.id
     }
   })
+  
+  const { fireHook } = await import("@/lib/plugins/hook-engine");
+  await fireHook("onCommentAdded", newComment);
   
   revalidatePath(`/vulnerabilities/${vulnId}`)
 }
@@ -199,6 +210,10 @@ export async function deleteVulnerabilityAction(formData: FormData) {
   }
 
   await db.vulnerability.deleteMany({ where: { id: vulnId } })
+
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onVulnerabilityDestroyed", vulnId)
+
   revalidatePath("/vulnerabilities")
   redirect("/vulnerabilities")
 }

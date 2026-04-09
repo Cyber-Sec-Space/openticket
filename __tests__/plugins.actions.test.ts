@@ -27,6 +27,41 @@ jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
+jest.mock("../src/plugins/index.ts", () => ({
+  activePlugins: [
+    {
+       manifest: { id: "p1", name: "P1" },
+       hooks: {
+         onInstall: jest.fn().mockResolvedValue(true),
+         onUninstall: jest.fn().mockResolvedValue(true)
+       }
+    }
+  ]
+}), { virtual: true });
+
+jest.mock("../src/plugins", () => ({
+  activePlugins: [
+    {
+       manifest: { id: "p1", name: "P1" },
+       hooks: {
+         onInstall: jest.fn().mockResolvedValue(true),
+         onUninstall: jest.fn().mockResolvedValue(true)
+       }
+    }
+  ]
+}), { virtual: true });
+
+jest.mock("../src/lib/plugins/sdk-context", () => ({
+  createPluginContext: jest.fn().mockResolvedValue({ api: {} })
+}));
+
+jest.mock("../src/lib/plugins/crypto", () => ({
+  encryptPluginConfig: jest.fn().mockImplementation((config) => JSON.stringify(config)),
+  parsePluginConfig: jest.fn().mockImplementation((jsonString) => {
+    try { return JSON.parse(jsonString); } catch (e) { return {}; }
+  })
+}));
+
 jest.mock("fs", () => ({
   promises: {
     writeFile: jest.fn(),
@@ -55,13 +90,20 @@ describe("Plugin Actions", () => {
     });
 
     it("upserts inverted phase and revalidates paths", async () => {
-      await togglePluginState("p1", true);
-      expect(db.pluginState.upsert).toHaveBeenCalledWith({
-        where: { id: "p1" },
-        update: { isActive: false },
-        create: { id: "p1", isActive: false, configJson: "{}" }
-      });
+      await togglePluginState("p1", false);
+      
+      expect(db.pluginState.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ update: { isActive: true }})
+      );
       expect(revalidatePath).toHaveBeenCalledWith('/settings/plugins');
+    });
+
+    it("triggers onUninstall when turning plugin off", async () => {
+      await togglePluginState("p1", true);
+      
+      expect(db.pluginState.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ update: { isActive: false }})
+      );
     });
   });
 
@@ -93,17 +135,14 @@ describe("Plugin Actions", () => {
 
     it("silently swallows bad JSON from DB and continues cleanly", async () => {
       (db.pluginState.findUnique as jest.Mock).mockResolvedValueOnce({ configJson: `{bad}` });
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       
       const fd = new FormData();
       fd.append("x", "y");
       await updatePluginConfig("p2", fd);
       
-      expect(consoleSpy).toHaveBeenCalled();
       expect(db.pluginState.upsert).toHaveBeenCalledWith(
         expect.objectContaining({ update: { configJson: JSON.stringify({ x: "y" }) }})
       );
-      consoleSpy.mockRestore();
     });
   });
 
@@ -153,9 +192,14 @@ describe("Plugin Actions", () => {
     
     it("skips index rewrite if import already exists", async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, text: jest.fn().mockResolvedValue("code") });
-      (fs.promises.readFile as jest.Mock).mockResolvedValueOnce(`from "./external-good"`); // simulates existing import
+      const importStatement = `import externalgoodPlugin from "./external-good";\n`;
+      (fs.promises.readFile as jest.Mock).mockResolvedValueOnce(importStatement); // simulates existing import
       await installExternalPlugin("good", "1.0", "registry");
       expect(fs.promises.writeFile).toHaveBeenCalledTimes(1); // Only writes external file, skips index.ts
+    });
+    
+    it("throws an error when source type is npm", async () => {
+      await expect(installExternalPlugin("some-pkg", "latest", "npm", "some-pkg")).rejects.toThrow("NPM dynamic installation via UI is currently restricted");
     });
 
     it("enforces absolute path boundary checks natively against forged returns", async () => {

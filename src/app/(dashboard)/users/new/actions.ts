@@ -24,6 +24,14 @@ export async function createUserAction(formData: FormData) {
     throw new Error("Validation structural error: missing foundational identity markers.")
   }
 
+  // CVE-407 DoS Mitigation: Bcrypt CPU Starvation block
+  if (password.length > 72) {
+    throw new Error("Input Boundary Violation: Password length exceeds secure cryptographic maximums (72 bytes).")
+  }
+  if (email.length > 255 || name.length > 255) {
+    throw new Error("Input Boundary Violation: Identity fields exceed maximum length.")
+  }
+
   // Check if user already exists
   const existingUser = await db.user.findUnique({
     where: { email }
@@ -74,6 +82,9 @@ export async function createUserAction(formData: FormData) {
       customRoles: finalRoleIds.length > 0 ? { connect: finalRoleIds.map(id => ({ id })) } : undefined
     }
   })
+
+  const { fireHook } = await import("@/lib/plugins/hook-engine");
+  await fireHook("onUserCreated", newUser);
 
   // Telemetry Audit log hook
   await db.auditLog.create({

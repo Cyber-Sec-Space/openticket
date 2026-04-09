@@ -7,9 +7,13 @@ jest.mock("../src/lib/db", () => ({
   db: {
     systemSetting: {
       upsert: jest.fn().mockResolvedValue({}),
+      findUnique: jest.fn().mockResolvedValue({}),
     },
     customRole: {
       findUnique: jest.fn().mockResolvedValue({ id: "role_123" })
+    },
+    pluginState: {
+      findMany: jest.fn().mockResolvedValue([])
     },
     $executeRawUnsafe: jest.fn().mockResolvedValue({})
   },

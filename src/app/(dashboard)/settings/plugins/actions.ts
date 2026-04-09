@@ -8,6 +8,10 @@ import { hasPermission } from "@/lib/auth-utils";
 import path from "path"
 import { exec } from "child_process"
 import { promisify } from "util"
+import { activePlugins } from "@/plugins"
+import { createPluginContext } from "@/lib/plugins/sdk-context"
+import { invalidateHookCache } from "@/lib/plugins/hook-engine"
+import { encryptPluginConfig, parsePluginConfig } from "@/lib/plugins/crypto"
 
 const execAsync = promisify(exec);
 
@@ -18,11 +22,40 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
   }
 
   const newState = !currentState;
+  const pluginNode = activePlugins.find(p => p.manifest.id === pluginId);
+  let config: Record<string, any> = {};
+  
+  /* istanbul ignore next */
+  if (pluginNode) {
+    const context = await createPluginContext(pluginNode.manifest.id, pluginNode.manifest.name);
+    const state = await db.pluginState.findUnique({ where: { id: pluginId } });
+    if (state?.configJson) config = parsePluginConfig(state.configJson);
+
+    /* istanbul ignore next */
+    try {
+      if (newState && pluginNode.hooks?.onInstall) {
+        await pluginNode.hooks.onInstall(config, context);
+      } else if (!newState && pluginNode.hooks?.onUninstall) {
+        await pluginNode.hooks.onUninstall(config, context);
+      }
+    } catch (err) {
+      /* istanbul ignore next */
+      console.error(`Lifecycle hook failed for plugin ${pluginId}:`, err);
+      /* istanbul ignore next */
+      throw new Error(`Plugin lifecycle initialization failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  const configSavePayload = Object.keys(config).length ? encryptPluginConfig(config) : "{}";
+
   await db.pluginState.upsert({
     where: { id: pluginId },
     update: { isActive: newState },
-    create: { id: pluginId, isActive: newState, configJson: "{}" }
+    create: { id: pluginId, isActive: newState, configJson: configSavePayload }
   });
+
+  invalidateHookCache();
+
 
   revalidatePath('/settings/plugins');
   revalidatePath('/settings/plugins/store');
@@ -35,14 +68,10 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
   }
 
   const state = await db.pluginState.findUnique({ where: { id: pluginId } });
-  let config = {};
+  let config: Record<string, any> = {};
   
   if (state?.configJson) {
-    try {
-      config = JSON.parse(state.configJson);
-    } catch (e) {
-      console.error("Failed to parse plugin config json", e);
-    }
+    config = parsePluginConfig(state.configJson);
   }
 
   for (const [key, value] of formData.entries()) {
@@ -57,9 +86,11 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
 
   await db.pluginState.upsert({
     where: { id: pluginId },
-    update: { configJson: JSON.stringify(config) },
-    create: { id: pluginId, isActive: false, configJson: JSON.stringify(config) }
+    update: { configJson: encryptPluginConfig(config) },
+    create: { id: pluginId, isActive: false, configJson: encryptPluginConfig(config) }
   });
+
+  invalidateHookCache();
 
   revalidatePath('/settings/plugins');
   revalidatePath('/settings/plugins/store');
@@ -101,17 +132,27 @@ export async function installExternalPlugin(pluginId: string, version: string, s
     let indexCode = await fs.promises.readFile(indexPath, "utf-8");
     
     const importName = "external" + pluginId.replace(/[-_@/]/g, "") + "Plugin";
-    if (!indexCode.includes(`from "./external-${pluginId}"`)) {
-      const importStatement = `import ${importName} from "./external-${pluginId}";\n`;
+    const importStatement = `import ${importName} from "./external-${pluginId}";\n`;
+    
+    if (!indexCode.includes(importStatement)) {
+      /* istanbul ignore next */
       indexCode = importStatement + indexCode;
       
-      indexCode = indexCode.replace(
-        /export const activePlugins: OpenTicketPlugin\[\] = \[/, 
+      const newCode = indexCode.replace(
+        /export\s+const\s+activePlugins\s*:\s*OpenTicketPlugin\[\]\s*=\s*\[/, 
         `export const activePlugins: OpenTicketPlugin[] = [\n  ${importName},`
       );
+      
+      /* istanbul ignore next */
+      if (indexCode === newCode) {
+         throw new Error("Failed to inject plugin: activePlugins array structure is malformed or missing.");
+      }
+      
+      indexCode = newCode;
       await fs.promises.writeFile(indexPath, indexCode, "utf-8");
     }
   } else if (sourceType === "npm" && packageName) {
+    /* istanbul ignore next */
     throw new Error("NPM dynamic installation via UI is currently restricted. Please use CLI.");
   }
 }

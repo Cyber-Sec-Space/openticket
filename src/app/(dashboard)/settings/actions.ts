@@ -18,10 +18,14 @@ export async function updateProfile(formData: FormData) {
     throw new Error("Display name cannot be structurally barren.")
   }
 
-  await db.user.update({
+  const updatedUser = await db.user.update({
     where: { id: session.user.id },
     data: { name: name.trim() }
   })
+
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onUserUpdated", updatedUser as any)
+
 
   redirect("/settings")
 }
