@@ -37,34 +37,34 @@ export default function SystemSettingsLoading() {
 
               {/* 2FA Toggle */}
               <div className="flex flex-row items-center space-x-4 rounded-md border border-white/10 p-5 shadow-sm bg-black/20">
-                <div className="h-[18px] w-[18px] shrink-0 bg-white/10 rounded-sm animate-pulse border-white/20"></div>
+                <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                 <div className="space-y-1 w-full flex flex-col justify-center">
-                  <div className="h-5 w-72 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
-                  <div className="h-4 w-3/4 max-w-[600px] bg-white/5 rounded animate-pulse"></div>
-                  <div className="h-4 w-1/2 max-w-[400px] bg-white/5 rounded mt-1 animate-pulse"></div>
+                  <div className="h-[14px] w-72 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
+                  <div className="h-[12px] w-3/4 max-w-[600px] bg-white/5 rounded animate-pulse"></div>
+                  <div className="h-[12px] w-1/2 max-w-[400px] bg-white/5 rounded mt-1 animate-pulse"></div>
                 </div>
               </div>
 
               {/* Identity Verification Toggle */}
               <div className="flex flex-row items-center space-x-4 rounded-md border border-white/10 p-5 shadow-sm bg-black/20">
-                <div className="h-[18px] w-[18px] shrink-0 bg-white/10 rounded-sm animate-pulse border-white/20"></div>
+                <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                 <div className="space-y-1 w-full flex flex-col justify-center">
-                  <div className="h-5 w-60 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
-                  <div className="h-4 w-3/4 max-w-[550px] bg-white/5 rounded animate-pulse"></div>
+                  <div className="h-[14px] w-60 flex items-center bg-white/10 rounded mb-1 animate-pulse"></div>
+                  <div className="h-[12px] w-3/4 max-w-[550px] bg-white/5 rounded animate-pulse"></div>
                 </div>
               </div>
 
               {/* System Platform URL */}
               <div className="space-y-3 p-5 border border-white/10 rounded-md bg-black/20">
-                <div className="h-5 w-48 bg-white/10 rounded animate-pulse"></div>
-                <div className="h-4 w-3/4 max-w-[500px] bg-white/5 rounded animate-pulse"></div>
+                <div className="h-[14px] w-48 bg-white/10 rounded animate-pulse"></div>
+                <div className="h-[12px] w-3/4 max-w-[500px] bg-white/5 rounded animate-pulse"></div>
                 <div className="h-8 w-full bg-white/5 rounded-md mt-1 animate-pulse"></div>
               </div>
 
               {/* Default Role Select */}
               <div className="space-y-3 p-5 border border-white/10 rounded-md bg-black/20">
-                <div className="h-5 w-64 bg-white/10 rounded animate-pulse"></div>
-                <div className="h-4 w-3/4 max-w-[450px] bg-white/5 rounded animate-pulse"></div>
+                <div className="h-[14px] w-64 bg-white/10 rounded animate-pulse"></div>
+                <div className="h-[12px] w-3/4 max-w-[450px] bg-white/5 rounded animate-pulse"></div>
                 <div className="h-8 w-[280px] bg-white/5 rounded-md mt-1 animate-pulse"></div>
               </div>
 
@@ -74,24 +74,24 @@ export default function SystemSettingsLoading() {
               <div className="space-y-4 p-5 border border-white/10 rounded-md bg-black/20">
                 <h3 className="flex items-center">
                   <ShieldAlert className="w-4 h-4 mr-2 text-primary/30 animate-pulse" /> 
-                  <div className="h-5 w-72 bg-white/10 rounded animate-pulse"></div>
+                  <div className="h-[14px] w-72 bg-white/10 rounded animate-pulse"></div>
                 </h3>
                 
                 <div className="flex flex-row items-center space-x-4 mb-4">
-                  <div className="h-[18px] w-[18px] shrink-0 bg-white/10 rounded-sm animate-pulse border-white/20"></div>
+                  <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                   <div className="space-y-1 w-full">
-                    <div className="h-5 w-64 bg-white/10 rounded mb-1 animate-pulse"></div>
-                    <div className="h-4 w-3/4 max-w-[500px] bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[14px] w-64 bg-white/10 rounded mb-1 animate-pulse"></div>
+                    <div className="h-[12px] w-3/4 max-w-[500px] bg-white/5 rounded animate-pulse"></div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-8">
                   <div className="space-y-2">
-                    <div className="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-32 bg-white/5 rounded animate-pulse"></div>
                     <div className="h-8 w-32 bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-4 w-48 bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-48 bg-white/5 rounded animate-pulse"></div>
                     <div className="h-8 w-48 bg-white/5 rounded-md animate-pulse"></div>
                     <div className="h-[14px] w-32 bg-white/5 rounded mt-1 animate-pulse"></div>
                   </div>
@@ -104,20 +104,20 @@ export default function SystemSettingsLoading() {
               <div className="space-y-4 p-5 border border-white/10 rounded-md bg-black/20">
                 <h3 className="flex items-center">
                   <ShieldAlert className="w-4 h-4 mr-2 text-primary/30 animate-pulse" /> 
-                  <div className="h-5 w-80 max-w-full bg-white/10 rounded animate-pulse"></div>
+                  <div className="h-[14px] w-80 max-w-full bg-white/10 rounded animate-pulse"></div>
                 </h3>
                 
                 <div className="flex flex-row items-center space-x-4 mb-4">
-                  <div className="h-[18px] w-[18px] shrink-0 bg-white/10 rounded-sm animate-pulse border-white/20"></div>
+                  <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                   <div className="space-y-1 w-full">
-                    <div className="h-5 w-3/4 max-w-[400px] bg-white/10 rounded mb-1 animate-pulse"></div>
-                    <div className="h-4 w-5/6 max-w-[600px] bg-white/5 rounded animate-pulse"></div>
-                    <div className="h-4 w-1/2 max-w-[300px] bg-white/5 rounded mt-1 animate-pulse"></div>
+                    <div className="h-[14px] w-3/4 max-w-[400px] bg-white/10 rounded mb-1 animate-pulse"></div>
+                    <div className="h-[12px] w-5/6 max-w-[600px] bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-1/2 max-w-[300px] bg-white/5 rounded mt-1 animate-pulse"></div>
                   </div>
                 </div>
 
                 <div className="ml-8 space-y-2 mt-4">
-                  <div className="h-4 w-48 bg-white/5 rounded animate-pulse"></div>
+                  <div className="h-[12px] w-48 bg-white/5 rounded animate-pulse"></div>
                   <div className="h-8 w-[280px] bg-white/5 rounded-md animate-pulse"></div>
                   <div className="h-[14px] w-3/4 max-w-[500px] bg-white/5 rounded mt-1 animate-pulse"></div>
                 </div>
@@ -131,15 +131,15 @@ export default function SystemSettingsLoading() {
                     <div className="h-6 w-56 bg-white/10 rounded animate-pulse"></div>
                     <div className="w-10 h-6 bg-white/5 rounded-full animate-pulse"></div>
                  </div>
-                 <div className="h-4 w-3/4 max-w-[600px] bg-white/5 rounded mb-6 animate-pulse"></div>
+                 <div className="h-[12px] w-3/4 max-w-[600px] bg-white/5 rounded mb-6 animate-pulse"></div>
                  
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="p-4 border rounded-md bg-black/30 border-white/5 space-y-2">
-                        <div className="h-4 w-20 bg-white/10 rounded animate-pulse"></div>
+                        <div className="h-[12px] w-20 bg-white/10 rounded animate-pulse"></div>
                         <div className="flex items-center">
-                          <div className="h-9 w-full bg-white/5 rounded-md animate-pulse"></div>
-                          <div className="h-4 w-8 bg-white/5 rounded ml-2 animate-pulse"></div>
+                          <div className="h-[48px] w-full bg-white/5 rounded-md animate-pulse"></div>
+                          <div className="h-[12px] w-8 bg-white/5 rounded ml-2 animate-pulse"></div>
                         </div>
                       </div>
                     ))}
@@ -152,49 +152,49 @@ export default function SystemSettingsLoading() {
               <div className="space-y-4 p-5 border border-white/10 rounded-md bg-black/20">
                 <h3 className="flex items-center mb-4">
                   <Mail className="w-4 h-4 mr-2 text-primary/30 animate-pulse" /> 
-                  <div className="h-5 w-56 bg-white/10 rounded animate-pulse"></div>
+                  <div className="h-[14px] w-56 bg-white/10 rounded animate-pulse"></div>
                 </h3>
 
                 <div className="flex flex-row items-center space-x-4 mb-4">
-                  <div className="h-[18px] w-[18px] shrink-0 bg-white/10 rounded-sm animate-pulse border-white/20"></div>
+                  <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
                   <div className="space-y-1 w-full">
-                    <div className="h-5 w-48 bg-white/10 rounded mb-1 animate-pulse"></div>
-                    <div className="h-4 w-3/4 max-w-[500px] bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[14px] w-48 bg-white/10 rounded mb-1 animate-pulse"></div>
+                    <div className="h-[12px] w-3/4 max-w-[500px] bg-white/5 rounded animate-pulse"></div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-8">
                   <div className="space-y-2">
-                    <div className="h-4 w-24 bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-24 bg-white/5 rounded animate-pulse"></div>
                     <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-4 w-16 bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-16 bg-white/5 rounded animate-pulse"></div>
                     <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-4 w-32 bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-32 bg-white/5 rounded animate-pulse"></div>
                     <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-4 w-40 bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-40 bg-white/5 rounded animate-pulse"></div>
                     <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <div className="h-4 w-48 bg-white/5 rounded animate-pulse"></div>
+                    <div className="h-[12px] w-48 bg-white/5 rounded animate-pulse"></div>
                     <div className="h-8 w-full bg-white/5 rounded-md animate-pulse"></div>
                   </div>
                 </div>
 
                 <hr className="my-4 border-white/5 mx-4" />
                 
-                <div className="h-4 w-32 bg-white/10 rounded ml-8 mb-2 animate-pulse"></div>
+                <div className="h-[14px] w-32 bg-white/10 rounded ml-8 mb-2 animate-pulse"></div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-8">
                    {Array.from({ length: 7 }).map((_, i) => (
                      <div key={i} className="flex items-center space-x-3">
-                       <div className="h-[18px] w-[18px] shrink-0 bg-white/10 rounded-sm animate-pulse border-white/20"></div>
-                       <div className="h-5 w-64 bg-white/5 rounded animate-pulse"></div>
+                       <div className="h-4 w-4 shrink-0 bg-white/10 rounded-[4px] animate-pulse border border-input"></div>
+                       <div className="h-[14px] w-64 bg-white/5 rounded animate-pulse"></div>
                      </div>
                    ))}
                 </div>
