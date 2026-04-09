@@ -36,6 +36,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
      filterParams.AND.push({ OR: assignedConditions })
   }
 
+  const canCreate = hasPermission(session as any, 'CREATE_INCIDENTS');
+
   // URL Filters
   if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.AND.push({ status: resolvedParams.status.replace(/ /g, '_') });
   if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.AND.push({ severity: resolvedParams.severity });
@@ -94,11 +96,13 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               Export CSV
             </Button>
           </Link>
-          <Link href="/incidents/new">
-            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
-              <Plus className="w-4 h-4 mr-2" /> Report Incident
-            </Button>
-          </Link>
+          {canCreate && (
+            <Link href="/incidents/new">
+              <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
+                <Plus className="w-4 h-4 mr-2" /> Report Incident
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
