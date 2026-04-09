@@ -13,7 +13,7 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 - **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
 - **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
-- **Array-based Multi-Role Control (RBAC):** Native multi-tenant segregation distinguishing `ADMIN` (Infrastructure overrides), `SECOPS` (Triage), `REPORTER` (End-User), and `API_ACCESS` (Machine Integration) roles. Users can be assigned multiple roles simultaneously for maximum operational flexibility.
+- **Dynamic Granular Permission Matrix:** Platform Administrators can leverage fine-grained access control by defining "Custom Privilege Tiers" bounding exact atomic actions (e.g., `CREATE_INCIDENTS`, `VIEW_ASSETS`). Operators can be assigned multiple discrete roles simultaneously, enabling true Zero-Trust (ZT) organizational flexibility natively mapped to PostgreSQL matrices.
 - **Hybrid Plugin Architecture:** Equipped with an isolated database-backed Hook Engine (EventBus). Third-party dependencies and extensions are gracefully managed natively under the Settings -> Plugins section for hot-swapping and configurations. Administrators can browse the built-in Plugin Store to install remote GitHub extensions asynchronously with Zero-Downtime Hot Reload capabilities.
 - **Omni-channel Notifications:** Natively handles email transmission via configurable SMTP configurations, accompanied by an HTML5 Desktop Push Notification center operating persistently in background tabs via highly-efficient Server-Sent Events (SSE) filtering specifically for Critical/High system incidents.
 - **Security-First Paradigm:** Defends against credential stuffing with in-memory Brute Force Rate Limiting across authentication pipelines. Ensures strict BOLA (Broken Object Level Authorization) evaluations actively rejecting unauthorized object-level manipulation.
@@ -24,7 +24,7 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 ## 🚀 Examples & Usage
 
 ### 1. Declaring an Incident
-When a `REPORTER` or `SECOPS` engineer discovers a threat:
+When an operator possessing the `CREATE_INCIDENTS` permission discovers a threat:
 - Click **"Declare Incident"** from the Dashboard.
 - Provide the Incident Signature (e.g., *Suspicious outbound traffic on Port 443*).
 - Select the **Target Node (Asset)** it corresponds to (e.g., *SRV-WEB-01*). 
@@ -38,7 +38,7 @@ Vulnerability components mirror the system's asset inventory:
 
 ### 3. Machine-to-Machine Automation (API Tokens)
 You can directly bridge OpenTicket to your CI/CD pipelines or SOAR orchestrators.
-- Navigate to **"Identity Preferences -> API Tokens"** (Requires `API_ACCESS` or `ADMIN` roles).
+- Navigate to **"Identity Preferences -> API Tokens"** (Requires `ISSUE_API_TOKENS` capability).
 - Mint a new cryptographic automation token (e.g., *GitHub Actions Push*).
 - Provide the generated raw token payload in the Header: `Authorization: Bearer <token>` when directly calling the `/api/incidents` or `/api/assets` endpoints. Your automated integration inherently assumes your exact privilege tier.
 

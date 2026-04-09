@@ -61,9 +61,18 @@ erDiagram
     User {
         String id PK
         String email
-        EnumArray roles "ADMIN, SECOPS, REPORTER, API_ACCESS"
         Boolean isTwoFactorEnabled
         DateTime emailVerified
+    }
+    CustomRole {
+        String id PK
+        String name
+        Boolean isSystem
+        Json permissions
+    }
+    UserCustomRoles {
+        String userId FK
+        String customRoleId FK
     }
     VerificationToken {
         String token PK
@@ -112,11 +121,13 @@ erDiagram
     User ||--|{ VerificationToken : "Verifies Identity"
     User ||--|{ PasswordResetToken : "Overrides Credentials"
     User ||--o{ AuditLog : "執行 (Performs)"
+    User ||--o{ UserCustomRoles : "Assigned"
+    CustomRole ||--o{ UserCustomRoles : "Defines"
     User ||--o{ ApiToken : "發行 (Issues)"
 ```
 
 ### 2.3 機器自動化介接 (Machine-to-Machine API Integration)
-系統內建支援純服務互動 (Headless Execution) 的 REST 端點 (如 `/api/incidents`, `/api/assets`)。為了確保隔離性與權限可追溯性，外部整合會被要求夾帶 `Authorization: Bearer <token>` 標頭。這些金鑰在建立期會**自動繼承發放此金鑰的帳號權限** (陣列形式存放)，藉此讓自動化機器人與呼叫者維持對等的資安授權邊界。
+系統內建支援純服務互動 (Headless Execution) 的 REST 端點 (如 `/api/incidents`, `/api/assets`)。為了確保隔離性與權限可追溯性，外部整合會被要求夾帶 `Authorization: Bearer <token>` 標頭。這些金鑰在建立期會**自動繼承發放此金鑰的帳號權限** (動態細粒度權限矩陣)，藉此讓自動化機器人與呼叫者維持對等的資安授權邊界。
 
 ### 2.4 混合式外掛市集與事件總線 (Hybrid Plugin Architecture)
 為避免核心後端路由被各種獨立開發的外部擴充功能 (如遠端推播、雙向同步腳本) 阻塞，本系統採用非同步的 **Hook Engine**。所有的核心事件 (建立事件/資產覆滅等) 皆會被派發至 EventBus，進而觸發完全脫離於主機體之外的外掛邏輯。
@@ -152,7 +163,7 @@ graph TD
 ## 3. 關鍵技術決策 (ADR - Architecture Decision Records)
 
 * **Server Actions 優先於 REST API：** 多數的內部狀態異動直接採用 React 的伺服器動作（標註 `"use server"`），並直接處理 `FormData`。這不僅省去了撰寫 `fetch/axios` 的繁瑣程式碼，還能立刻在後端執行驗證。
-* **陣列化多角色存取控制 (Multi-Role RBAC)：** 我們並未選擇使用多個斷開的布林值（如 `isAdmin`, `isSecops`），而是直接使用 PostgreSQL 原生支援的 Array 陣列結構結合 Prisma。這不僅實現了重疊權限分配（例如：[`SECOPS`, `API_ACCESS`]），未來若有新型角色需求，也無須經歷繁瑣的 Database Schema 遷移歷程。
+* **動態細粒度權限矩陣 (Dynamic Granular Permission Matrix)：** 我們並未選擇使用多個斷開的布林值（如 `isAdmin`, `isSecops`），而是直接使用 PostgreSQL 關聯表單與 `JSON` 原生結構設計了強大的角色控制總線。這不僅實現了重疊權限分配，也達成讓管理員隨意組合原子操作（例如：單純配發 `CREATE_INCIDENTS`），未來若有新型能力需求，也無須經歷繁瑣的 Database Schema 遷移歷程。
 * **API Token 密碼學儲存機制：** 資料庫拒絕存放明文形式的 `ApiToken` 連線密鑰。當外部系統提出發行請求時，OpenTicket 會呼叫 `crypto.randomBytes(24)` 生成出一組 48 字元的 16 進位字串供操作員複製，並對該字串實施不可逆的 `SHA-256` 雜湊入庫儲存。爾後 API 運行時期的驗證也都透過安全雜湊比對，阻斷任何橫向提權的風險。
 * **元件層級列舉與資料庫列舉對齊：** Prisma 會在不同的應用層以不同的方式解讀字串。我們讓資料庫強制維持原生 PostgreSQL Enum 的命名規範（例如 `IN_PROGRESS`），由於 Next.js React 渲染層不適合顯示帶底線的字串，我們在 UI 層統一呈現無底線字串（例如 `IN PROGRESS`），並在傳回 Server Action 時自動重新組合，以兼容資料庫。
 * **從源頭確保安全性 (Security at Inception)：** 

@@ -13,7 +13,7 @@
 - **事件與漏洞雙軌追蹤：** 具備端對端的事件分流管道，能將複雜的資安事件與 CVE 漏洞直接映射到內部受害資產上。
 - **雙因子驗證 (2FA) 安全機制：** 內建基於 TOTP 演算法的 2FA 模組，可完美整合各種標準驗證器應用程式 (如 Google Authenticator, Authy)。更支援系統管理員「一鍵強制全域啟用 2FA」的鎖定功能。
 - **高密度 SOC 配置 (High-Density Layout)：** 重新設計的單行 8 指標 KPI 網格，讓維運人員能一眼看清資安戰場全貌，並將重點應變面板 (Command Actions) 移至上方，極速縮短反應遲滯時間。
-- **陣列化多角色存取控制 (Multi-Role RBAC)：** 原生的多層次權限隔離機制，支援同時為特定維運人員疊加 `ADMIN` (全域基建覆蓋), `SECOPS` (事件處置), `REPORTER` (通報) 與 `API_ACCESS` (開放機器介接) 等複數權限標籤，帶來極大的組織架構彈性。
+- **動態細粒度權限矩陣 (Dynamic Granular Permission Matrix)：** 原生的進階 RBAC 權限隔離機制，管理員能夠自由定義「自訂角色 (Custom Roles)」，並精細配置各項原子操作權限 (如 `CREATE_INCIDENTS`, `VIEW_ASSETS`)。人員能同時疊加複數自訂角色權限標籤，為巨型 SOC 環境帶來零信任 (Zero-Trust) 的極大組織架構彈性。
 - **混合式外掛生態 (Hybrid Plugin Architecture)：** 具備隔離的資料庫驅動 Hook 引擎 (EventBus)。管理員可以直接在「外掛市集 (Plugin Store)」中一鍵安裝來自 Github Registry 的遠端擴充模組，系統會在後台非同步重新編譯，實現接近零停機的熱重載 (Hot-Reload) 部署。
 - **全方位通知中心 (Omni-channel Notifications)：** 原生支援藉由可配置的 SMTP 設定發送 Email（適用於驗證與密碼重置），同時具備基於「伺服器發送事件 (SSE, Server-Sent Events)」的高效能 HTML5 桌面推播通知中心，持續在背景過濾並提醒重大資安威脅。
 - **資安優先防禦 (Security-First Paradigm)：** 針對認證管道實施 in-memory 防暴力破解 (Brute Force Rate Limiting) 壓制撞庫攻擊；並且在事件評論與關鍵操作上導入無死角的越權存取防禦 (BOLA, Broken Object Level Authorization) 阻攔未授權編輯。
@@ -24,7 +24,7 @@
 ## 🚀 應用範例與使用情境 (Examples & Usage)
 
 ### 1. 通報資安事件 (Declaring an Incident)
-當一位 `REPORTER` 或 `SECOPS` 發現潛在威脅時：
+當一位具備 `CREATE_INCIDENTS` 權限的維運人員發現潛在威脅時：
 - 在主控台點擊 **"Declare Incident (通報事件)"**。
 - 輸入事件特徵 (舉例：*Port 443 發現可疑的外部連線流量*)。
 - 選擇與該威脅相關聯的 **Target Node (事件標的資產)** (舉例：*SRV-WEB-01*)。 
@@ -38,7 +38,7 @@
 
 ### 3. 機器自動化介接 (Machine-to-Machine API Tokens)
 您可以將 OpenTicket 直接與 CI/CD 管道或企業內部的 SOAR 自動化劇本串接。
-- 前往 **"Identity Preferences (身分設定) -> API Tokens"** (帳戶需具備 `API_ACCESS` 或 `ADMIN` 標籤)。
+- 前往 **"Identity Preferences (身分設定) -> API Tokens"** (帳戶需具備 `ISSUE_API_TOKENS` 高權限標籤)。
 - 生成一組受密碼學保護的自動化金鑰 (例如命名為：*GitHub Actions Push*)。
 - 在外部腳本呼叫 `/api/incidents` 或 `/api/assets` 端點時，將其帶入 Header：`Authorization: Bearer <token>`。該呼叫將自動繼承生成該金鑰者的既有伺服器權限。
 
