@@ -84,5 +84,13 @@ chmod +x setup.sh
 npm run dev
 ```
 
+### ⬆️ Upgrading from `<= v0.3.x` to `v0.4.0`
+Version 0.4.0 introduces the **Dynamic Granular Permission Matrix**, which overhauls the legacy `EnumArray` roles system into relational `CustomRole` matrices natively in PostgreSQL. To avoid data loss when applying these strict database schema changes, you **MUST** run the dedicated upgrade migration script which safely bridges your legacy roles to the new architecture mapping:
+
+```bash
+# Safely pull legacy permissions, apply schema drops, and remap cleanly to the CustomRole structure
+npm run upgrade:0.4.0
+```
+
 ### 🪄 First-Time Bootstrap Workflow
 No matter which method you choose, visiting `http://localhost:3000` for the first time will automatically intercept and route you to the **Setup Wizard (`/setup`)**. This securely provisions your first Global System Administrator account.

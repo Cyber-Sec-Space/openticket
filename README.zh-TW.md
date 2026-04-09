@@ -84,5 +84,13 @@ chmod +x setup.sh
 npm run dev
 ```
 
+### ⬆️ 從舊版 (`<= v0.3.x`) 升級至 `v0.4.0`
+版本 0.4.0 導入了突破性的 **動態細粒度權限矩陣 (Dynamic Granular Permission Matrix)**，徹底將舊版的 `EnumArray` 固定角色剝離，轉化為客製化關聯表。為避免直接套用資料庫改動而造成欄位與帳戶權限遺失，您**必須**在進行 Prisma 同步前執行專屬的無損升級腳本：
+
+```bash
+# 自動由底層攔截備份舊版 Enum 標籤、放行資料庫改動，並無損映射至新版的 CustomRole 矩陣
+npm run upgrade:0.4.0
+```
+
 ### 🪄 首次啟動引導精靈
 無論您選擇上述哪一種部屬方式，當您首次進入 `http://localhost:3000` 時，系統會自動將您重新導向至**系統初始化精靈 (`/setup`)**。這將引導您安全地註冊全系統第一位最高權限管理員 (Global System Administrator)。
