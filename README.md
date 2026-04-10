@@ -94,12 +94,23 @@ npm run dev
 Version 0.5.0 finalizes the massive **Zero-Trust Plugin SDK** and **PgBouncer** integration, building directly upon the RBAC overhauls initiated in 0.4.0.
 To prevent catastrophic SQL column-drop data loss across legacy transitions, OpenTicket natively encapsulates idempotent backward-compatible interceptions. 
 
-If operating Docker, pulling the latest `docker-compose.yml` and executing `docker-compose up` natively triggers the chained `migrate:prod` pipeline resolving structural updates asynchronously. 
-For Bare-Metal deployments, you **MUST** run the designated sequential upgrade command, guaranteeing legacy Role Mapping extraction operates before schema deprecation:
+#### Option A: Docker Upgrades
+If operating Docker, pulling the latest codebase and executing `docker-compose up -d --build` natively triggers the chained `migrate:prod` pipeline, resolving structural updates asynchronously before booting the application.
+
+#### Option B: Bare-Metal Upgrades
+For local Node environments without Docker, you **MUST** run the designated sequential upgrade command, guaranteeing legacy Role Mapping extraction operates before schema deprecation, followed by a system rebuild:
 
 ```bash
-# Safely pull legacy permissions, apply schema drops, remap to CustomRoles, and bootstrap Plugin System constraints
+# 1. Fetch the latest v0.5.0 codebase and install newly added packages
+git pull origin main
+npm install
+
+# 2. Safely backup legacy permissions, apply schema drops, remap to CustomRoles, and bootstrap Plugin constraints
 npm run migrate:prod
+
+# 3. Rebuild the Next.js production payload and restart your daemon
+npm run build
+npm start
 ```
 
 ### 🪄 First-Time Bootstrap Workflow
