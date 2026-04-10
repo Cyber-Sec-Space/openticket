@@ -234,13 +234,26 @@
   <!-- Architecture Section -->
   <section id="architecture" class="architecture content-wrapper section-padding">
     <div class="reveal">
-      <h2 class="section-title">Headless <span class="text-gradient">Machine-to-Machine</span> Integrations</h2>
-      <p class="section-subtitle">Power your automation flawlessly with our anti-enumeration ApiToken engine generating
-        secure SHA-256 Bearer authentications for SOAR/SIEM integration logic.</p>
+      <h2 class="section-title">Built on a <span class="text-gradient">Zero-Trust Enterprise Architecture</span></h2>
+      <p class="section-subtitle">OpenTicket is designed from the ground-up for extreme production resilience, featuring High-Availability horizontal scaling and sandboxed extension execution.</p>
 
-      <div class="terminal glass cursor-pointer">
-        <div class="mac-window-controls"><span></span><span></span><span></span></div>
-        <pre><code><span class="keyword">curl</span> -X POST https://soc.openticket.local/api/incidents \
+      <div class="bento-grid" style="grid-template-columns: 1fr;">
+        <!-- HA Infrastructure Block -->
+        <div class="bento-card glass">
+          <h3>High Availability & Stateful Connection Pooling</h3>
+          <p>The system natively embeds a sidecar <strong>PgBouncer</strong> proxy within the Docker Compose orchestration. This radically optimizes standard Node.js server connections, ensuring thousands of synchronous SOAR inputs don't exhaust PostgreSQL locks, keeping your SOC absolutely stable under overwhelming workloads.</p>
+          <div class="img-placeholder relative-overflow mt-4 border-top" style="min-height: 480px;">
+            <img src="assets/ha-infrastructure.png" alt="OpenTicket High Availability PgBouncer Infrastructure" class="bento-img" style="object-fit: contain; background-color: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+          </div>
+        </div>
+
+        <!-- Headless API Block -->
+        <div class="bento-card glass">
+          <h3>Headless Machine-to-Machine Integrations</h3>
+          <p>Power your automation flawlessly with our anti-enumeration API Token engine generating secure SHA-256 Bearer authentications for external SOAR/SIEM integration logic.</p>
+          <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
+            <div class="mac-window-controls"><span></span><span></span><span></span></div>
+            <pre><code><span class="keyword">curl</span> -X POST https://soc.openticket.local/api/incidents \
   -H <span class="string">"Authorization: Bearer ot_secv2_ab12c3"</span> \
   -H <span class="string">"Content-Type: application/json"</span> \
   -d '{
@@ -248,6 +261,8 @@
     <span class="property">"severity"</span>: <span class="string">"HIGH"</span>,
     <span class="property">"type"</span>: <span class="string">"UNAUTHORIZED_ACCESS"</span>
   }'</code></pre>
+          </div>
+        </div>
       </div>
     </div>
   </section>
