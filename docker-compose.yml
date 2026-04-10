@@ -19,6 +19,35 @@ services:
       timeout: 5s
       retries: 5
 
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: openticket_pgbouncer
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-openticket_admin}:${POSTGRES_PASSWORD:-supersecurepassword}@db:5432/${POSTGRES_DB:-openticket_prod}
+      MAX_CLIENT_CONN: "1000"
+      DEFAULT_POOL_SIZE: "20"
+      POOL_MODE: "transaction"
+      IGNORE_STARTUP_PARAMETERS: "extra_float_digits"
+    ports:
+      - "6432:5432"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openticket_migrator
+    # Automatically apply schema migrations natively, then trigger v0.5.0 script data seeding
+    command: npm run migrate:prod
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-openticket_admin}:${POSTGRES_PASSWORD:-supersecurepassword}@db:5432/${POSTGRES_DB:-openticket_prod}
+    depends_on:
+      db:
+        condition: service_healthy
+
   app:
     build:
       context: .
@@ -28,13 +57,15 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-openticket_admin}:${POSTGRES_PASSWORD:-supersecurepassword}@db:5432/${POSTGRES_DB:-openticket_prod}
+      # Use PgBouncer connection for the main application querying and attach ?pgbouncer=true parameter for Prisma
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-openticket_admin}:${POSTGRES_PASSWORD:-supersecurepassword}@pgbouncer:5432/${POSTGRES_DB:-openticket_prod}?pgbouncer=true
       - AUTH_SECRET=${AUTH_SECRET:-generate_a_strong_secret_in_production_environments}
     depends_on:
-      db:
-        condition: service_healthy
-    # We override the CMD to run migrations first before booting the standalone server
-    command: /bin/sh -c "npx prisma migrate deploy && node server.js"
+      migrator:
+        condition: service_completed_successfully
+      pgbouncer:
+        condition: service_started
+    # Server will boot natively according to Dockerfile CMD after migrator completes
 
 volumes:
   openticket_data:

@@ -1,4 +1,4 @@
-import { createPluginContext, initializePluginBotUser } from "../src/lib/plugins/sdk-context"
+import { createPluginContext } from "../src/lib/plugins/sdk-context"
 import { db } from "../src/lib/db"
 
 jest.mock("../src/lib/db", () => ({
@@ -9,10 +9,22 @@ jest.mock("../src/lib/db", () => ({
       create: jest.fn()
     },
     incident: {
-      create: jest.fn()
+      create: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn()
     },
     auditLog: {
       create: jest.fn()
+    },
+    vulnerability: {
+      create: jest.fn(),
+      update: jest.fn()
+    },
+    asset: {
+      findUnique: jest.fn()
+    },
+    pluginState: {
+      findMany: jest.fn().mockResolvedValue([])
     }
   }
 }));
@@ -22,47 +34,11 @@ describe("Plugin SDK Context", () => {
     jest.clearAllMocks();
   });
 
-  describe("initializePluginBotUser", () => {
-    it("returns existing bot id if found and name is identical", async () => {
-      (db.user.findUnique as jest.Mock).mockResolvedValueOnce({ id: "123", name: "[Bot] Test" });
-      
-      const id = await initializePluginBotUser("test-id", "Test");
-      expect(id).toBe("123");
-      expect(db.user.update).not.toHaveBeenCalled();
-    });
-
-    it("updates existing bot name if it has drifted", async () => {
-      (db.user.findUnique as jest.Mock).mockResolvedValueOnce({ id: "123", name: "Old Name" });
-      
-      const id = await initializePluginBotUser("test-id", "New Name");
-      expect(db.user.update).toHaveBeenCalledWith({
-        where: { botPluginIdentifier: "test-id" },
-        data: { name: "[Bot] New Name" }
-      });
-      expect(id).toBe("123");
-    });
-
-    it("creates a new bot if none exists", async () => {
-      (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
-      (db.user.create as jest.Mock).mockResolvedValueOnce({ id: "456" });
-      
-      const id = await initializePluginBotUser("test-id", "Test");
-      expect(db.user.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          name: "[Bot] Test",
-          isBot: true,
-          botPluginIdentifier: "test-id",
-          email: "test-id@bot.plugin.openticket.internal"
-        })
-      });
-      expect(id).toBe("456");
-    });
-  });
-
   describe("createPluginContext Actions", () => {
     beforeEach(() => {
       // Mock the init function returning a constant bot ID implicitly since it runs during context creation
-      (db.user.findUnique as jest.Mock).mockResolvedValue({ id: "bot-123", name: "[Bot] Test" });
+      (db.user.findUnique as jest.Mock).mockResolvedValue({ id: "bot-123", name: "[Bot] Test", customRoles: [{ permissions: ["CREATE_INCIDENTS"] }] });
+      jest.mock('@/plugins', () => ({ activePlugins: [] }), { virtual: true });
     });
 
     it("creates an incident with default mappings when minimum payload provided", async () => {
@@ -109,7 +85,7 @@ describe("Plugin SDK Context", () => {
       const res = await ctx.api.logAudit("CUSTOM_ACTION", "CustomClass", "c-123", { changed: true });
       expect(db.auditLog.create).toHaveBeenCalledWith({
         data: {
-          action: "CUSTOM_ACTION",
+          action: "[PLUGIN:test] CUSTOM_ACTION",
           entityType: "CustomClass",
           entityId: "c-123",
           userId: "bot-123",

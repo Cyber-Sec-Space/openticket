@@ -139,6 +139,11 @@ export async function updateSystemSettings(formData: FormData) {
     }
   })
 
+  const { fireHook } = await import("@/lib/plugins/hook-engine");
+  const updatedSettings = await db.systemSetting.findUnique({ where: { id: "global" } });
+  await fireHook("onSystemSettingsUpdated", updatedSettings);
+
+
   // Retroactively patch SLA dates for unresolved incidents and vulnerabilities
   try {
     await db.$executeRawUnsafe(`

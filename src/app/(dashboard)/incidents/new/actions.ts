@@ -33,6 +33,13 @@ export async function createIncident(prevState: any, formData: FormData) {
     return { error: "Title and description are required." }
   }
 
+  // CVE-400 Boundary DoS mitigation: Truncate oversized payloads
+  if (title.length > 255) throw new Error("Boundary Exception: Title exceeds 255 maximum characters");
+  if (description.length > 50000) throw new Error("Boundary Exception: Description payload exceeds 50000 maximum characters");
+
+  const safeTitle = title.substring(0, 255);
+  const safeDescription = description.substring(0, 50000);
+
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   const effectiveSeverity = severity as any || 'LOW'
   
@@ -47,8 +54,8 @@ export async function createIncident(prevState: any, formData: FormData) {
 
   const newIncident = await db.incident.create({
     data: {
-      title,
-      description,
+      title: safeTitle,
+      description: safeDescription,
       type: type as any,
       severity: effectiveSeverity,
       reporterId: session.user.id,

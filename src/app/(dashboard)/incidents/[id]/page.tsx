@@ -252,6 +252,9 @@ export default async function IncidentDetailPage({
       }
     }
 
+    const updatedIncident = await db.incident.findUnique({ where: { id: currentIncident.id }, include: { reporter: true, assignees: true, asset: true } })
+    await fireHook("onIncidentUpdated", updatedIncident as any)
+
     // Phase 7: Dynamic Triage Auto-Isolation rules
     if (finalSeverity === 'CRITICAL' && finalAssetId && currentIncident.severity !== 'CRITICAL') {
       if (settings?.soarAutoQuarantineEnabled) {
@@ -355,6 +358,11 @@ export default async function IncidentDetailPage({
         changes: `Title / Category / Description updated by SecOps`
       }
     })
+    
+    const updatedIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { reporter: true, assignees: true, asset: true } })
+    const { fireHook } = await import("@/lib/plugins/hook-engine")
+    await fireHook("onIncidentUpdated", updatedIncident as any)
+    
     redirect(`/incidents/${incident!.id}`)
   }
 
@@ -402,6 +410,10 @@ export default async function IncidentDetailPage({
 
     // Prisma cascading handles Comment/AuditLog deletions seamlessly
     await db.incident.deleteMany({ where: { id: incident!.id } })
+    
+    const { fireHook } = await import("@/lib/plugins/hook-engine")
+    await fireHook("onIncidentDestroyed", incident!.id)
+    
     redirect(`/incidents`)
   }
 
@@ -410,7 +422,7 @@ export default async function IncidentDetailPage({
     !['RESOLVED', 'CLOSED'].includes(incident.status);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6 animate-fade-in-up">
+    <div className="p-8 w-full max-w-[1600px] mx-auto space-y-6 animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
         <Link href="/incidents">
           <Button variant="ghost" className="text-muted-foreground hover:text-white">← Back to Incidents</Button>
@@ -586,9 +598,11 @@ export default async function IncidentDetailPage({
                    throw new Error("Forbidden: Strict BOLA isolation restricts this action to owner/assignee context.");
                 }
 
-                await db.comment.create({
+                const newComment = await db.comment.create({
                   data: { content, incidentId: incident!.id, authorId: sessionUrl.user.id }
                 })
+                await fireHook("onCommentAdded", newComment)
+
                 redirect(`/incidents/${incident!.id}`)
               }} className="space-y-3 pb-6 border-b border-border/50">
                 <textarea

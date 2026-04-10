@@ -104,6 +104,10 @@ export async function uploadAttachment(formData: FormData) {
     }
   })
 
+  const { fireHook } = await import("@/lib/plugins/hook-engine");
+  await fireHook("onEvidenceAttached", createdFile);
+
+
   // Log action
   if (incidentId) {
     await db.auditLog.create({
@@ -196,6 +200,10 @@ export async function deleteAttachment(attachmentId: string) {
   }
 
   await db.attachment.deleteMany({ where: { id: attachmentId }})
+
+  const { fireHook } = await import("@/lib/plugins/hook-engine");
+  await fireHook("onEvidenceDestroyed", attachmentId);
+
 
   if (attachment.incidentId) {
     await db.auditLog.create({

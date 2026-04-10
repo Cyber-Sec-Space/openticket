@@ -4,7 +4,7 @@ import { useState } from "react"
 import { OpenTicketPlugin } from "@/lib/plugins/types"
 import { Button } from "@/components/ui/button"
 import { togglePluginState, updatePluginConfig, installExternalPlugin, triggerProductionBuild, triggerServerRestart } from "./actions"
-import { Power, Save, Trash, ToyBrick, Settings as SettingsIcon, AlertCircle, Loader2, Download, Hammer, RefreshCw } from "lucide-react"
+import { Power, Save, Trash, ToyBrick, Settings as SettingsIcon, AlertCircle, Loader2, Download, Hammer, RefreshCw, ShieldAlert, CheckCircle2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,15 @@ export function PluginCard({
   const [selectedVersion, setSelectedVersion] = useState(latestVersion || manifest.version);
   const [installStep, setInstallStep] = useState<number>(0);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+
+  const handleToggleClick = () => {
+    if (!isActive && manifest.requestedPermissions && manifest.requestedPermissions.length > 0) {
+      setIsPermissionModalOpen(true);
+    } else {
+      handleToggle();
+    }
+  }
 
   const handleToggle = async () => {
     setIsUpdating(true);
@@ -84,15 +93,48 @@ export function PluginCard({
   const renderInstallButton = () => {
     if (isLocal) {
       return (
-        <Button 
-          variant={isActive ? "outline" : "default"}
-          size="sm" 
-          onClick={handleToggle} 
-          disabled={isUpdating}
-          className={`${isActive ? 'text-red-400 border-red-500/50 hover:bg-red-500/20' : 'text-black font-bold shadow-[0_0_15px_rgba(0,255,200,0.3)]'} ${layout === 'grid' ? 'w-full' : 'w-32'}`}
-        >
-          {isActive ? <><Trash className="w-4 h-4 mr-2" /> Uninstall</> : <><Power className="w-4 h-4 mr-2" /> Install</>}
-        </Button>
+        <>
+          <Button 
+            variant={isActive ? "outline" : "default"}
+            size="sm" 
+            onClick={handleToggleClick} 
+            disabled={isUpdating}
+            className={`${isActive ? 'text-red-400 border-red-500/50 hover:bg-red-500/20' : 'text-black font-bold shadow-[0_0_15px_rgba(0,255,200,0.3)]'} ${layout === 'grid' ? 'w-full' : 'w-32'}`}
+          >
+            {isActive ? <><Trash className="w-4 h-4 mr-2" /> Uninstall</> : <><Power className="w-4 h-4 mr-2" /> Install</>}
+          </Button>
+          
+          <Dialog open={isPermissionModalOpen} onOpenChange={setIsPermissionModalOpen}>
+            <DialogContent className="sm:max-w-[425px] border border-white/10 bg-zinc-950">
+               <DialogHeader>
+                   <DialogTitle className="text-white text-xl flex items-center gap-2">
+                      <ShieldAlert className="w-5 h-5 text-indigo-400" />
+                      Authorize Plugin
+                   </DialogTitle>
+               </DialogHeader>
+               <div className="py-4 space-y-4">
+                  <p className="text-sm text-neutral-400 leading-relaxed">
+                     <strong className="text-white">{manifest.name}</strong> is requesting the following core operational privileges to act on behalf of the OpenTicket automated bot instance:
+                  </p>
+                  <div className="bg-black/50 border border-white/5 rounded-lg p-3 space-y-2 max-h-[200px] overflow-y-auto">
+                     {manifest.requestedPermissions?.map(p => (
+                        <div key={p} className="flex items-center gap-2 text-sm text-red-300 font-mono tracking-tighter">
+                           <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                           {p.replace(/_/g, ' ')}
+                        </div>
+                     ))}
+                  </div>
+                  <p className="text-xs text-neutral-500">By granting these permissions, this plugin will be capable of performing these actions autonomously in the background.</p>
+               </div>
+               <DialogFooter>
+                   <Button variant="outline" onClick={() => setIsPermissionModalOpen(false)} className="bg-transparent border-white/20 text-white">Cancel</Button>
+                   <Button onClick={() => { setIsPermissionModalOpen(false); handleToggle(); }} className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)] border-0">
+                      Grant & Activate
+                   </Button>
+               </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       );
     } else {
       return (

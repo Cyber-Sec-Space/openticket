@@ -44,6 +44,9 @@ export async function createVulnerabilityAction(formData: FormData) {
     }
   })
 
+  const { fireHook } = await import("@/lib/plugins/hook-engine");
+  await fireHook("onVulnerabilityCreated", newVuln);
+
   // Telemetry Audit log hook
   await db.auditLog.create({
     data: {

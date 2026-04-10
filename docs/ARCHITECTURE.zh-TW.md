@@ -129,20 +129,40 @@ erDiagram
 ### 2.3 機器自動化介接 (Machine-to-Machine API Integration)
 系統內建支援純服務互動 (Headless Execution) 的 REST 端點 (如 `/api/incidents`, `/api/assets`)。為了確保隔離性與權限可追溯性，外部整合會被要求夾帶 `Authorization: Bearer <token>` 標頭。這些金鑰在建立期會**自動繼承發放此金鑰的帳號權限** (動態細粒度權限矩陣)，藉此讓自動化機器人與呼叫者維持對等的資安授權邊界。
 
-### 2.4 混合式外掛市集與事件總線 (Hybrid Plugin Architecture)
-為避免核心後端路由被各種獨立開發的外部擴充功能 (如遠端推播、雙向同步腳本) 阻塞，本系統採用非同步的 **Hook Engine**。所有的核心事件 (建立事件/資產覆滅等) 皆會被派發至 EventBus，進而觸發完全脫離於主機體之外的外掛邏輯。
+### 2.4 混合式外掛市集與事件總線 (Hybrid Plugin Sandbox)
+為避免複雜的外部串接動作（如 Slack Webhooks、Teams 或 Jira 同步）阻塞主要的網頁執行緒，系統採用了 **零信任 Hook 引擎 (Zero-Trust Hook Engine)** 式的背景事件總線。所有主要的執行管道都會觸發內部的 EventBus，由它核對 PostgreSQL 中的 `PluginState` 後無縫地廣播非同步 Webhook。
 
-不僅如此，OpenTicket 導入了 **混合分發模式 (Hybrid Registry)**，賦予管理員直接透過 UI 瀏覽並安裝遠端 Github Registry 外掛的特權。
+### 原生外掛隔離策略
+1. **API 限流沙盒 (API Limit Sandbox)**：所有的 Hook 執行邏輯都會被封裝在一個 `Promise.race()` 原語之中，並在超過 `5000ms` 後無條件拋出例外中斷執行。這能確保無窮迴圈或長時間沒有回應的外部 API 呼叫會在威脅系統反應能力前被迫崩潰中止。
+2. **端對端加密 (End-to-End Cryptography)**：凡是包含有效 API 憑證 (Token) 的外掛參數，在系統將其寫入資料庫實體狀態前，都會綁定伺服器熵 (Server Entropy) 使用 `AES-256-GCM` 原生進行靜態加密。完全杜絕因為資料庫傾印 (Dump) 造成的機器金鑰外洩。
+3. **OAuth 式權限批准 (OAuth-Style Privilege Consent)**：在安裝市集套件期間，遠端 Registry 會明確宣示所需要的權限 (`Permissions`)。這必須經過管理員透過雙層的 UI 閘道器明確授予核准，原生防堵第三方外掛程式碼任意綁架系統核心行為。
+
+外掛架構圍繞著縱深防禦 (Defense-in-Depth) 的框架建構，包含了五大核心防禦層：
+1. **絕對身分閘道 (Absolute Identity Gating)**：外部外掛必須透過受限的 `api.createIncident()` SDK 進行互動，所有請求都會被強制向下轉交給無權限的沙盒機器人角色 (Sandbox Bot Role) 進行代理。
+2. **授權清單簽證 (OAuth-Style Manifests)**：核心整合系統必須在 `manifest` 宣告所請求的操作權限。這些授權清單會在前端的 React Presentation 層彈出，強制等待管理員進行「Grant & Activate」的手動同意。後端同時會執行嚴格的集合交集 (Set-Intersections)，無情過濾任何外掛企圖暗中啟動的未授權 API。
+3. **靜態密碼學防護 (Encryption At Rest)**：為了保證第三方設定 (例如 Webhook URLs, OAuth secrets) 不外洩，設定檔在存入資料庫前，皆會透過擷取自 `NEXTAUTH_SECRET` 的熵值，使用 `AES-256-GCM` 直接靜態加密，並且自帶 AuthTag 將資料庫被竄改的風險降至零。
+4. **防雪崩快取 (Thundering Herd Eradication)**：高頻率的事件派發 (每秒可能高達 10,000+ 次 hook 廣播) 透過短暫生命週期的 (10秒) 同步 Context Cache 對射，徹底隔絕了對於 PostgreSQL `SELECT` 的查詢雪崩，所有相同的 DB 查詢全域僅會執行一次。
+5. **時限炸彈沙盒 (Promise Time-Bomb Sandbox)**：為阻斷不良外部 API `fetch()` 或 `無窮迴圈` 造成的系統阻斷服務 (DoS) 與執行緒卡死，所有事件呼叫皆強制被包裝進 `Promise.race()` 系統中，若外掛執行超過 `5000ms`，將被系統強制斬斷管線，完美保護 Node 的單執行緒迴圈。
+6. **UI 元件注入安全隔離 (UI Component Injection)**：不只侷限於伺服器邏輯，Registry 清單現在安全支援透過 `settingsPanels` API 傳遞 React 定義檔。使得外掛能原生將其專屬的設定介面嵌入 OpenTicket 管理後台，完全不會違反跨來源執行 (Cross-Origin) 的資安限制。
+
 ```mermaid
-graph LR
-    SystemEvents[事件建立 / 資產異動] --> HookEngine((Hook Engine EventBus))
-    HookEngine --> DBCheck{檢查 DB `PluginState`}
-    DBCheck -- "Activated (安裝)" --> Plugins[執行隔離之外掛腳本]
-
-    subgraph Registry [遠端外掛市集機制]
-        RemoteRepo[GitHub Raw JSON] -->|Server Action| Download[伺服器端下載並解析 .tsx]
-        Download --> Build[背景執行 webpack production build]
-        Build --> Restart[無縫觸發 Node.js 熱重載重生]
+graph TD
+    SystemEvents[資料變異與事件] --> HookEngine((Zero-Trust Hook Engine))
+    
+    subgraph Execution_Sandbox [Engine 防護沙盒層]
+        HookEngine --> CacheCheck{10秒 TTL Cache 檢查}
+        CacheCheck -- "Miss" --> Decrypt[AES256 JSON 即時解密]
+        CacheCheck -- "Hit" --> Exec[Promise.race 5000ms 執行炸彈]
+        Decrypt --> Exec
+    end
+    
+    Exec -->|嚴密限制的 SDK 邊界| Plugins[喚醒已隔離的第三方模組]
+    
+    subgraph Registry [遠端市集分發管線]
+        RemoteRepo[GitHub Raw Module] -->|Server Action| Download[下載原始碼並校驗]
+        Download --> UIAuth[UI 權限同意 Modal]
+        UIAuth --> DBIntercept[後端權限交集 (Intersection)]
+        DBIntercept --> Build[編譯 Webpack 生產包]
     end
 ```
 
@@ -157,6 +177,32 @@ graph TD
     SSEQueue --> DesktopAlerts[作業系統桌面底層推播]
     SMTP --> AlertEmail[警報信件與註冊重置驗證信]
 ```
+
+### 2.6 佈署與高可用性架構 (Deployments & High-Availability)
+為了能夠承受在大規模水平擴展拓撲（如 Docker Swarm 或 Kubernetes）中的高可用性要求與突發流量，OpenTicket 透過了專用的 Sidecar 微服務架構，將具狀態 (Stateful) 的執行路徑徹底解耦。
+
+```mermaid
+graph TD
+    ClientLoadBalancer((Load Balancer)) <-->|HTTP/WS| Web1(OpenTicket Node 1)
+    ClientLoadBalancer <-->|HTTP/WS| Web2(OpenTicket Node 2)
+    ClientLoadBalancer <-->|HTTP/WS| Web3(OpenTicket Node N)
+    
+    subgraph Data_Orchestration
+        Web1 -->|TCP/5432| PgBouncer{PgBouncer Connection Pool}
+        Web2 -->|TCP/5432| PgBouncer
+        Web3 -->|TCP/5432| PgBouncer
+        PgBouncer -->|Transaction Mode| Postgres[(Master Postgres DB)]
+    end
+    
+    Migrator[Transient Migrator Container] -.->|Direct Lock / Schema Sync| Postgres
+
+    classDef container fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    class Web1,Web2,Web3,PgBouncer,Migrator,Postgres container;
+```
+
+**關鍵的執行典範 (Key Execution Paradigms)**:
+1. **解耦遷移生命週期 (Migration Decoupling)**: 應用程式的 Schema 與資料庫無痛升級腳本 (`upgrade-to-0.5.0.ts`) 現在完全獨立於前端伺服器，被封裝進一個轉瞬即逝的 `migrator` 容器中執行。這從根本上消滅了多節點同時啟動時，搶佔資料庫 Lock 所造成的災難性 Schema 崩潰。
+2. **交易級連線池 (Connection Pooling)**: 原生整合了強制處於 `Transaction` 模式的 `PgBouncer`，它能極度高效地快取並路由所有來自 React Server Action 的非同步請求，徹底避免動態查詢癱瘓核心資料庫的 `max_connections` (最大連線數) 上限。
 
 ---
 

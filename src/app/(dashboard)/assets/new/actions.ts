@@ -16,17 +16,29 @@ export async function createAsset(formData: FormData) {
   const type = formData.get("type") as any
   const status = formData.get("status") as any
   const ipAddress = formData.get("ipAddress") as string
+  const externalId = formData.get("externalId") as string
 
   if (!name || !type) return
+  if (name.length > 255) throw new Error("Input Boundary Violation: Name exceeds maximum length");
+  if (ipAddress && ipAddress.length > 128) throw new Error("Input Boundary Violation: IP Address exceeds maximum length");
+  if (externalId && externalId.length > 255) throw new Error("Input Boundary Violation: External ID exceeds maximum length");
+  
+  const safeName = name.substring(0, 255);
+  const safeIp = ipAddress ? ipAddress.substring(0, 128) : null;
+  const safeExternalId = externalId ? externalId.substring(0, 255) : null;
 
   const asset = await db.asset.create({
     data: {
-      name,
+      name: safeName,
       type,
       status: status || "ACTIVE",
-      ipAddress: ipAddress || null,
+      ipAddress: safeIp,
+      externalId: safeExternalId,
     }
   })
+
+  const { fireHook } = await import("@/lib/plugins/hook-engine");
+  await fireHook("onAssetCreated", asset);
 
   // Log creation metrics to Unified Timeline
   await db.auditLog.create({

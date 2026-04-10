@@ -154,7 +154,7 @@
       <div class="bento-card glass reveal item-4">
         <div class="bento-icon"><i data-lucide="blocks"></i></div>
         <h3>Hybrid Plugin Orchestration</h3>
-        <p>Build and configure your own native integrations inside the Next.js runtime. Administrators can browse the built-in Plugin Store to install remote GitHub extensions asynchronously with Zero-Downtime Hot Reload capabilities.</p>
+        <p>Build and configure your own native integrations inside the Next.js runtime. Administrators can browse the built-in Plugin Store to install remote GitHub extensions asynchronously with <strong>Zero-Downtime Hot Reload capabilities</strong> without dropping active processes. Plugins can even natively inject their own frontend React Setting Panels seamlessly into the dashboard!</p>
         <div class="img-placeholder relative-overflow border-top">
           <img src="assets/plugin-store.gif" alt="Plugin Store Grid" class="bento-img">
         </div>
@@ -184,11 +184,40 @@
       <!-- Bento Item 7: Zero-Trust RBAC (Full Width) -->
       <div class="bento-card glass reveal item-7">
         <div class="bento-icon"><i data-lucide="shield-check"></i></div>
-        <h3>Zero-Trust Granular Permissions</h3>
-        <p>A dynamic Permission Matrix enabling Custom Roles mapped to atomic operations (e.g., <code>CREATE_INCIDENTS</code>, <code>VIEW_ASSETS</code>). Build overlapping organizational tiers seamlessly integrated into the database constraints, rendering unauthorized UI interactions impossible.</p>
+        <h3>Zero-Trust Granular Permissions & Plugin Consent</h3>
+        <p>A dynamic Permission Matrix enabling Custom Roles mapped to atomic operations (e.g., <code>CREATE_INCIDENTS</code>, <code>VIEW_ASSETS</code>). Extends to external extensions via a <strong>Dual-Layer OAuth-style Plugin Consent Modal</strong> protecting the core DB against malicious internal code installations automatically.</p>
         <div class="img-placeholder relative-overflow border-top" style="min-height: 400px;">
           <!-- 截圖預留位置 (Placeholder for Screenshot) -->
           <img src="assets/rbac-placeholder.png" alt="[Insert Multi-Role RBAC Settings Screenshot Here]" class="bento-img">
+        </div>
+      </div>
+
+      <!-- Bento Item 8: Bank-Grade Crypto (Large) -->
+      <div class="bento-card glass reveal delay-1 item-8">
+        <div class="bento-icon"><i data-lucide="lock"></i></div>
+        <h3>Bank-Grade Storage At Rest</h3>
+        <p>Your external intelligence APIs (like Splunk or Jira tokens) are strictly encrypted locally with <code>AES-256-GCM</code> derived directly from Server Entropy before being saved to PostgreSQL, preventing token theft against database breaches.</p>
+        <div class="img-placeholder relative-overflow border-top">
+          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
+          <img src="assets/encryption-placeholder.png" alt="[Insert Encryption Architecture Settings Here]" class="bento-img">
+        </div>
+      </div>
+
+      <!-- Bento Item 9: Sandbox -->
+      <div class="bento-card glass reveal delay-2 item-9">
+        <div class="bento-icon"><i data-lucide="zap-off"></i></div>
+        <h3>Resilient DoS Sandboxing</h3>
+        <p>Thundering Herd protections wrap every external Plugin execution in a strict <code>5000ms</code> time-bomb, severing unresponsive plugins to guarantee high-reliability event streaming across your primary SOC bus.</p>
+      </div>
+
+      <!-- Bento Item 10: High Availability (Full Width) -->
+      <div class="bento-card glass reveal item-10" style="grid-column: 1 / -1;">
+        <div class="bento-icon"><i data-lucide="network"></i></div>
+        <h3>Enterprise High-Availability & Production Isolation</h3>
+        <p>Natively embeds a <strong>PgBouncer</strong> Sidecar topology enforcing Transactional Connection Pooling. Effectively eradicates multi-node horizontal scaling starvation, while isolating unpredictable Database Migration schemas strictly into dedicated transient containers decoupled from active web nodes.</p>
+        <div class="img-placeholder relative-overflow border-top" style="min-height: 400px;">
+          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
+          <img src="assets/ha-infrastructure.png" alt="[Insert Ha-Infrastructure Diagram Here]" class="bento-img">
         </div>
       </div>
     </div>

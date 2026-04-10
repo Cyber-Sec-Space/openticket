@@ -68,6 +68,10 @@ export default async function AssetDetailPage({
         ipAddress: newIpAddress || null
       }
     })
+    
+    const updatedAsset = await db.asset.findUnique({ where: { id: asset!.id } })
+    const { fireHook } = await import("@/lib/plugins/hook-engine")
+    await fireHook("onAssetUpdated", updatedAsset as any)
 
     await db.auditLog.create({
       data: {
@@ -88,11 +92,15 @@ export default async function AssetDetailPage({
 
     // Deleting Asset sets incident.assetId = NULL by Prisma definition.
     await db.asset.deleteMany({ where: { id: asset!.id } })
+
+    const { fireHook } = await import("@/lib/plugins/hook-engine")
+    await fireHook("onAssetDestroyed", asset!.id)
+
     redirect(`/assets`)
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6 animate-fade-in-up">
+    <div className="p-8 w-full max-w-[1600px] mx-auto space-y-6 animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
         <Link href="/assets">
           <Button variant="ghost" className="text-muted-foreground hover:text-white">← Back to Inventory</Button>

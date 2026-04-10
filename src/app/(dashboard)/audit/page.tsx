@@ -95,15 +95,15 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-              <TableHead className="font-semibold text-primary pl-6">Timestamp</TableHead>
-              <TableHead className="font-semibold text-primary">Operative</TableHead>
-              <TableHead className="font-semibold text-primary">Domain</TableHead>
-              <TableHead className="font-semibold text-primary">Action Executed</TableHead>
-              <TableHead className="font-semibold text-primary">Payload Diff</TableHead>
-              <TableHead className="font-semibold text-primary text-right pr-6">Target Key</TableHead>
+              <TableHead className="font-semibold text-primary pl-6 w-[15%]">Timestamp</TableHead>
+              <TableHead className="font-semibold text-primary w-[20%]">Operative</TableHead>
+              <TableHead className="font-semibold text-primary w-[15%] hidden sm:table-cell">Domain</TableHead>
+              <TableHead className="font-semibold text-primary w-[15%] hidden md:table-cell">Action</TableHead>
+              <TableHead className="font-semibold text-primary w-[20%] truncate">Payload Diff</TableHead>
+              <TableHead className="font-semibold text-primary text-right pr-6 w-[15%]">Target Key</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,11 +133,11 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
                   </div>
                 </TableCell>
                 
-                <TableCell className="text-xs font-semibold tracking-wider text-purple-400/80">
+                <TableCell className="text-xs font-semibold tracking-wider text-purple-400/80 hidden sm:table-cell">
                   {log.entityType.toUpperCase()}
                 </TableCell>
                 
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   <span className="inline-block px-2 text-[11px] font-mono py-0.5 border border-white/10 bg-black/40 rounded tracking-wider text-white/80">
                       {log.action}
                   </span>

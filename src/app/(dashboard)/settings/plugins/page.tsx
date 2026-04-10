@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/auth-utils"
 import { redirect } from "next/navigation"
 import { activePlugins } from "@/plugins"
 import { PluginCard } from "./plugin-card"
+import { parsePluginConfig } from "@/lib/plugins/crypto"
 
 export default async function PluginManagementPage() {
   const session = await auth()
@@ -24,12 +25,13 @@ export default async function PluginManagementPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 animate-fade-in-up">
           {installedPlugins.map(plugin => {
             const state = dbStates.find(s => s.id === plugin.manifest.id);
+            const decryptedConfig = state?.configJson ? parsePluginConfig(state.configJson) : null;
             return (
               <PluginCard 
                 key={plugin.manifest.id} 
                 manifest={plugin.manifest} 
                 isActive={true} 
-                configJson={state?.configJson || null}
+                configJson={decryptedConfig ? JSON.stringify(decryptedConfig) : null}
                 layout="grid"
               />
             )

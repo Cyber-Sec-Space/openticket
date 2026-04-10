@@ -21,6 +21,14 @@ export async function initializeInstance(formData: FormData) {
     throw new Error("Invalid parameters provided or passwords do not match.")
   }
 
+  // CWE-407 DoS Mitigation: Limits payload lengths before Bcrypt processing
+  if (password.length > 72) {
+    throw new Error("Security Violation: Password length exceeds maximum cryptographic bounds.");
+  }
+  if (name.length > 255 || email.length > 255) {
+    throw new Error("Security Violation: Identity parameters exceed maximum bounds.");
+  }
+
   const passwordHash = await bcrypt.hash(password, 12)
 
   // System Setup (Bootstrap first ADMIN and global system settings config)

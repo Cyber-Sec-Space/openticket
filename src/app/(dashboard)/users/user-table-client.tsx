@@ -105,21 +105,21 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
 
       <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl relative">
         {isProcessing && <div className="absolute inset-0 z-50 bg-black/40 backdrop-blur-[1px] flex items-center justify-center font-mono text-emerald-400 animate-pulse text-sm">TRANSMITTING...</div>}
-        <Table>
+        <Table className="table-fixed">
           <TableHeader className="bg-black/20">
             <TableRow className="border-border">
-               <TableHead className="w-12 pl-6">
+               <TableHead className="w-[8%] pl-6">
                  <Checkbox 
                    checked={selectedIds.size > 0 && selectedIds.size === users.length} 
                    onClick={toggleAll}
                    className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
                  />
                </TableHead>
-               <TableHead className="font-semibold text-primary">Identity Profile (UID)</TableHead>
-               <TableHead className="font-semibold text-primary">Contact (Email)</TableHead>
-               <TableHead className="font-semibold text-primary text-center">Status</TableHead>
-               <TableHead className="font-semibold text-primary text-center">Current Privilege Tier</TableHead>
-               <TableHead className="font-semibold text-primary text-right pr-6">Direct Action</TableHead>
+               <TableHead className="font-semibold text-primary w-[25%]">Identity Profile (UID)</TableHead>
+               <TableHead className="font-semibold text-primary w-[25%] hidden md:table-cell">Contact (Email)</TableHead>
+               <TableHead className="font-semibold text-primary text-center w-[12%]">Status</TableHead>
+               <TableHead className="font-semibold text-primary text-center w-[20%] hidden sm:table-cell">Current Privilege Tier</TableHead>
+               <TableHead className="font-semibold text-primary text-right pr-6 w-[10%]">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -146,23 +146,23 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
                        className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
                     />
                   </TableCell>
-                  <TableCell className="font-medium text-foreground py-4">
+                  <TableCell className="font-medium text-foreground py-4 truncate">
                     <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full bg-gradient-to-br flex items-center justify-center border border-white/5 ${user.isDisabled ? 'from-red-500/20 to-red-900/40 text-red-500' : user.isBot ? 'from-blue-500/20 to-purple-500/20 text-purple-400' : 'from-emerald-400/20 to-primary/20 text-emerald-400'}`}>
+                      <div className={`h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center border border-white/5 ${user.isDisabled ? 'bg-gradient-to-br from-red-500/20 to-red-900/40 text-red-500' : user.isBot ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-purple-400' : 'bg-gradient-to-br from-emerald-400/20 to-primary/20 text-emerald-400'}`}>
                          <span className="text-xs font-mono font-bold">{user.isBot ? "BOT" : (user.name?.charAt(0).toUpperCase() || "U")}</span>
                       </div>
-                      <div>
-                        <span className="block text-sm leading-none mb-1 flex items-center gap-2">
-                           {user.isBot && <Badge variant="outline" className="text-[9px] h-4 bg-primary/10 border-primary/30 text-primary px-1">BOT</Badge>}
-                           {user.name || "Default Originator"}
+                      <div className="truncate">
+                        <span className="block text-sm leading-none mb-1 flex items-center gap-2 truncate">
+                           {user.isBot && <Badge variant="outline" className="flex-shrink-0 text-[9px] h-4 bg-primary/10 border-primary/30 text-primary px-1">BOT</Badge>}
+                           <span className="truncate">{user.name || "Default Originator"}</span>
                         </span>
-                        <span className="text-[10px] font-mono text-muted-foreground opacity-50 block leading-none">ID-{user.id.substring(0,8).toUpperCase()}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground opacity-50 block leading-none truncate">ID-{user.id.substring(0,8).toUpperCase()}</span>
                       </div>
                     </div>
                   </TableCell>
                   
-                  <TableCell className="text-muted-foreground font-mono text-xs">
-                     <Mail className="w-3 h-3 inline mr-2 opacity-50 text-primary" />
+                  <TableCell className="text-muted-foreground font-mono text-xs hidden md:table-cell truncate">
+                     <Mail className="w-3 h-3 inline mr-2 opacity-50 text-primary flex-shrink-0" />
                      {user.email || "Orphaned Account"}
                   </TableCell>
 
@@ -174,23 +174,23 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
                     )}
                   </TableCell>
 
-                   <TableCell className="text-center">
-                     <Badge variant="outline" className={`bg-transparent border ${
+                   <TableCell className="text-center hidden sm:table-cell">
+                     <Badge variant="outline" className={`bg-transparent border truncate ${
                        user.customRoles?.some((r:any) => r.name.includes('Admin') || r.isSystem) ? 'border-primary/50 text-primary bg-primary/10' :
                        user.customRoles?.some((r:any) => r.name.includes('SecOps')) ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
                        'border-muted-foreground/30 text-muted-foreground bg-black/20'
                      }`}>
                        {user.customRoles?.map((r:any) => r.name).join(', ') || 'NONE'}
-                       {user.customRoles?.some((r:any) => r.name.includes('Admin')) && <ShieldCheck className="w-3 h-3 ml-1 inline" />}
+                    {user.customRoles?.some((r:any) => r.name.includes('Admin')) && <ShieldCheck className="w-3 h-3 ml-1 inline" />}
                      </Badge>
                   </TableCell>
 
                   <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
                      {/* Admins shouldn't casually alter themselves or System bots through this module */}
                      {isSelf ? (
-                       <span className="text-[10px] text-primary/50 font-mono tracking-widest">[ SELF ]</span>
+                       <span className="text-[10px] text-primary/50 font-mono tracking-widest truncate">[ SELF ]</span>
                      ) : user.isBot ? (
-                       <span className="text-[10px] text-purple-400/50 font-mono tracking-widest">[ SYSTEM BOT ]</span>
+                       <span className="text-[10px] text-purple-400/50 font-mono tracking-widest truncate">[ BOT ]</span>
                      ) : (
                      <div className="flex justify-end items-center gap-1">
                        <Button 

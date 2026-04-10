@@ -72,6 +72,12 @@ export default async function NewAssetPage() {
                       <SelectItem value="ENDPOINT">Client Endpoint</SelectItem>
                       <SelectItem value="NETWORK">Networking Hardware</SelectItem>
                       <SelectItem value="SOFTWARE">Software / Cloud Service</SelectItem>
+                      <SelectItem value="REPOSITORY">Code Repository</SelectItem>
+                      <SelectItem value="CLOUD_RESOURCE">Cloud Resource / VM</SelectItem>
+                      <SelectItem value="DOMAIN">DNS Domain</SelectItem>
+                      <SelectItem value="IAM_ROLE">IAM Role</SelectItem>
+                      <SelectItem value="SAAS_APP">SaaS Platform</SelectItem>
+                      <SelectItem value="CONTAINER">Container / Pod</SelectItem>
                       <SelectItem value="OTHER">Other Telemetry Node</SelectItem>
                     </SelectContent>
                   </Select>
@@ -95,12 +101,22 @@ export default async function NewAssetPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2 md:col-span-1">
                 <Label htmlFor="ipAddress" className="text-sm tracking-wide font-semibold text-primary">IPv4/v6 Address Overlay (Optional)</Label>
                 <Input 
                   id="ipAddress" 
                   name="ipAddress" 
-                  placeholder="10.0.0.X or External Signature..." 
+                  placeholder="10.0.0.X..." 
+                  className="bg-black/30 border-white/10 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/50 transition-all font-mono text-sm py-6" 
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-1">
+                <Label htmlFor="externalId" className="text-sm tracking-wide font-semibold text-primary">Virtual Identifier (Optional)</Label>
+                <Input 
+                  id="externalId" 
+                  name="externalId" 
+                  placeholder="e.g. github:RepoURL or AWS ARN..." 
                   className="bg-black/30 border-white/10 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/50 transition-all font-mono text-sm py-6" 
                 />
               </div>
