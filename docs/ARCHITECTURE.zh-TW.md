@@ -143,6 +143,7 @@ erDiagram
 3. **靜態密碼學防護 (Encryption At Rest)**：為了保證第三方設定 (例如 Webhook URLs, OAuth secrets) 不外洩，設定檔在存入資料庫前，皆會透過擷取自 `NEXTAUTH_SECRET` 的熵值，使用 `AES-256-GCM` 直接靜態加密，並且自帶 AuthTag 將資料庫被竄改的風險降至零。
 4. **防雪崩快取 (Thundering Herd Eradication)**：高頻率的事件派發 (每秒可能高達 10,000+ 次 hook 廣播) 透過短暫生命週期的 (10秒) 同步 Context Cache 對射，徹底隔絕了對於 PostgreSQL `SELECT` 的查詢雪崩，所有相同的 DB 查詢全域僅會執行一次。
 5. **時限炸彈沙盒 (Promise Time-Bomb Sandbox)**：為阻斷不良外部 API `fetch()` 或 `無窮迴圈` 造成的系統阻斷服務 (DoS) 與執行緒卡死，所有事件呼叫皆強制被包裝進 `Promise.race()` 系統中，若外掛執行超過 `5000ms`，將被系統強制斬斷管線，完美保護 Node 的單執行緒迴圈。
+6. **UI 元件注入安全隔離 (UI Component Injection)**：不只侷限於伺服器邏輯，Registry 清單現在安全支援透過 `settingsPanels` API 傳遞 React 定義檔。使得外掛能原生將其專屬的設定介面嵌入 OpenTicket 管理後台，完全不會違反跨來源執行 (Cross-Origin) 的資安限制。
 
 ```mermaid
 graph TD
@@ -176,6 +177,32 @@ graph TD
     SSEQueue --> DesktopAlerts[作業系統桌面底層推播]
     SMTP --> AlertEmail[警報信件與註冊重置驗證信]
 ```
+
+### 2.6 佈署與高可用性架構 (Deployments & High-Availability)
+為了能夠承受在大規模水平擴展拓撲（如 Docker Swarm 或 Kubernetes）中的高可用性要求與突發流量，OpenTicket 透過了專用的 Sidecar 微服務架構，將具狀態 (Stateful) 的執行路徑徹底解耦。
+
+```mermaid
+graph TD
+    ClientLoadBalancer((Load Balancer)) <-->|HTTP/WS| Web1(OpenTicket Node 1)
+    ClientLoadBalancer <-->|HTTP/WS| Web2(OpenTicket Node 2)
+    ClientLoadBalancer <-->|HTTP/WS| Web3(OpenTicket Node N)
+    
+    subgraph Data_Orchestration
+        Web1 -->|TCP/5432| PgBouncer{PgBouncer Connection Pool}
+        Web2 -->|TCP/5432| PgBouncer
+        Web3 -->|TCP/5432| PgBouncer
+        PgBouncer -->|Transaction Mode| Postgres[(Master Postgres DB)]
+    end
+    
+    Migrator[Transient Migrator Container] -.->|Direct Lock / Schema Sync| Postgres
+
+    classDef container fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    class Web1,Web2,Web3,PgBouncer,Migrator,Postgres container;
+```
+
+**關鍵的執行典範 (Key Execution Paradigms)**:
+1. **解耦遷移生命週期 (Migration Decoupling)**: 應用程式的 Schema 與資料庫無痛升級腳本 (`upgrade-to-0.5.0.ts`) 現在完全獨立於前端伺服器，被封裝進一個轉瞬即逝的 `migrator` 容器中執行。這從根本上消滅了多節點同時啟動時，搶佔資料庫 Lock 所造成的災難性 Schema 崩潰。
+2. **交易級連線池 (Connection Pooling)**: 原生整合了強制處於 `Transaction` 模式的 `PgBouncer`，它能極度高效地快取並路由所有來自 React Server Action 的非同步請求，徹底避免動態查詢癱瘓核心資料庫的 `max_connections` (最大連線數) 上限。
 
 ---
 

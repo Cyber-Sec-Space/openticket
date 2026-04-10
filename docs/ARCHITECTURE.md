@@ -142,6 +142,7 @@ The Plugin architecture is built around a defense-in-depth framework spanning fi
 3. **Encryption At Rest**: To preserve the secrecy of Third-Party configurations (e.g. Webhook URLs, OAuth secrets), configuration payloads are automatically encrypted prior to rest via `AES-256-GCM` mapped against `NEXTAUTH_SECRET`, with an integral AuthTag neutralizing manipulation injections.
 4. **Thundering Herd Eradication (TTL Caching)**: High-Frequency telemetry loops (10,000+ hook emissions / second) are cleanly isolated from PostgreSQL `SELECT` avalanching via a short-lived (10-second) Synchronous Context Cache map. DB queries resolve exactly once universally.
 5. **Promise Time-Bomb Sandbox**: To thwart DoS loops or `Awaiting` starvation triggered by poorly-authored external API `fetch()` logic, native Event injections execute inside a bounded `Promise.race()` primitive, unilaterally severing integration pipelines after `5000ms`, shielding Node's single-threaded Loop.
+6. **UI Component Injection**: Moving beyond isolated server boundaries, Registry Manifests can safely transport React definitions via the `settingsPanels` API, natively embedding Plugin-specific Administrative dashboards directly into the parent Application without breaching cross-origin execution limits.
 
 ```mermaid
 graph TD
@@ -175,6 +176,32 @@ graph TD
     SSEQueue --> DesktopAlerts[OS-Native Desktop Alerts]
     SMTP --> AlertEmail[Security Alerts & Auth Verifications]
 ```
+
+### 2.6 Deployments & High-Availability
+To natively process High-Availability requirements and burst traffic within horizontally scaled topologies (e.g. Docker Swarm / Kubernetes), OpenTicket decouples stateful execution paths via dedicated sidecar microservices.
+
+```mermaid
+graph TD
+    ClientLoadBalancer((Load Balancer)) <-->|HTTP/WS| Web1(OpenTicket Node 1)
+    ClientLoadBalancer <-->|HTTP/WS| Web2(OpenTicket Node 2)
+    ClientLoadBalancer <-->|HTTP/WS| Web3(OpenTicket Node N)
+    
+    subgraph Data_Orchestration
+        Web1 -->|TCP/5432| PgBouncer{PgBouncer Connection Pool}
+        Web2 -->|TCP/5432| PgBouncer
+        Web3 -->|TCP/5432| PgBouncer
+        PgBouncer -->|Transaction Mode| Postgres[(Master Postgres DB)]
+    end
+    
+    Migrator[Transient Migrator Container] -.->|Direct Lock / Schema Sync| Postgres
+
+    classDef container fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    class Web1,Web2,Web3,PgBouncer,Migrator,Postgres container;
+```
+
+**Key Execution Paradigms**:
+1. **Migration Decoupling**: Application schemas and Data-upgrade scripts (`upgrade-to-0.5.0.ts`) execute completely isolated within a transient `migrator` container prior to Web-Node boots, eliminating catastrophic database corruption caused by parallel locking crashes.
+2. **Connection Pooling**: `PgBouncer` is natively wrapped enforcing `Transaction` mode, efficiently routing generic React Server Action queries without overflowing the core database `max_connections` bounds dynamically.
 
 ---
 

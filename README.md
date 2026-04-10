@@ -13,11 +13,14 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 - **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
 - **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
-- **Dynamic Granular Permission Matrix:** Platform Administrators can leverage fine-grained access control by defining "Custom Privilege Tiers" bounding exact atomic actions (e.g., `CREATE_INCIDENTS`, `VIEW_ASSETS`). Operators can be assigned multiple discrete roles simultaneously, enabling true Zero-Trust (ZT) organizational flexibility natively mapped to PostgreSQL matrices.
-- **Zero-Trust EventBus & Plugins:** Equipped with a heavily-fortified background EventBus. External third-party dependencies are natively sandboxed via 5 distinct isolation layers including: Promise `Time-Bomb` execution caps (5000ms), `Thundering Herd` query neutralization caching, and `End-to-End AES-256-GCM` configuration storage. Administrators browse the Plugin Registry and explicitly grant bounded Sandbox Permissions via an embedded immersive UI authorization flow.
+- **Enterprise High-Availability (HA):** Natively embeds a `PgBouncer` Sidecar topology enforcing Transactional Connection Pooling. Effectively eradicates multi-node horizontal scaling starvation, ensuring massive concurrent Database throughput underneath load balancers.
+- **Dynamic Granular Permission Matrix:** Platform Administrators can leverage fine-grained access control by defining "Custom Privilege Tiers" bounding exact atomic actions (e.g., `CREATE_INCIDENTS`, `VIEW_ASSETS`, `INSTALL_PLUGINS`). Operators can be assigned multiple discrete roles simultaneously, enabling true Zero-Trust (ZT) organizational flexibility natively mapped to PostgreSQL matrices.
+- **Zero-Trust EventBus & Plugins:** Equipped with a heavily-fortified background EventBus. External third-party dependencies are natively sandboxed via distinct isolation layers including: Promise `Time-Bomb` execution caps (5000ms), `Thundering Herd` query neutralization caching, and `End-to-End AES-256-GCM` configuration storage. Administrators browse the Plugin Registry and explicitly grant bounded Sandbox Permissions via an embedded immersive UI authorization flow. Registry plugins can safely inject Remote React `settingsPanels` natively extending frontend capabilities.
 - **Omni-channel Notifications:** Natively handles email transmission via configurable SMTP configurations, accompanied by an HTML5 Desktop Push Notification center operating persistently in background tabs via highly-efficient Server-Sent Events (SSE) filtering specifically for Critical/High system incidents.
 - **Security-First Paradigm:** Defends against credential stuffing with in-memory Brute Force Rate Limiting across authentication pipelines. Ensures strict BOLA (Broken Object Level Authorization) evaluations actively rejecting unauthorized object-level manipulation.
 - **Enterprise-Grade UI Components:** Built on TailwindCSS utilizing modern blur/backdrop-filter dynamics, combined with deeply interactive BaseUI/Shadcn components, fully portaled `react-datepicker` forms, and Recharts.
+
+<!-- IMAGE PLACEHOLDER: [OpenTicket Dashboard / Threat Matrix Preview] -->
 
 ---
 
@@ -65,10 +68,13 @@ You can directly bridge OpenTicket to your CI/CD pipelines or SOAR orchestrators
 OpenTicket provides two frictionless ways to deploy the platform: **Full Containerization** (Recommended for Production) or a **Bare-metal Setup Script** (Recommended for Development).
 
 ### Option A: Complete Docker Deployment (Enterprise)
-The simplest way to run OpenTicket is via Docker Compose, which automatically provisions the PostgreSQL database, runs migrations, and starts the optimized Next.js standalone container.
+The simplest way to run OpenTicket is via Docker Compose, which automatically provisions the PostgreSQL database, executes isolated Migrator state pipelines asynchronously, starts PgBouncer pooling, and spins up the optimized Next.js standalone container.
 
 ```bash
-docker-compose up -d
+# Ensure you copy your secure production configuration first
+cp .env.example .env
+
+docker-compose up -d --build
 ```
 *Your application will boot up on `http://localhost:3000`. Stop it anytime with `docker-compose down`.*
 
@@ -84,12 +90,16 @@ chmod +x setup.sh
 npm run dev
 ```
 
-### ⬆️ Upgrading from `<= v0.3.x` to `v0.4.0`
-Version 0.4.0 introduces the **Dynamic Granular Permission Matrix**, which overhauls the legacy `EnumArray` roles system into relational `CustomRole` matrices natively in PostgreSQL. To avoid data loss when applying these strict database schema changes, you **MUST** run the dedicated upgrade migration script which safely bridges your legacy roles to the new architecture mapping:
+### ⬆️ Multi-Version Legacy Upgrades (0.3.0 -> 0.5.0)
+Version 0.5.0 finalizes the massive **Zero-Trust Plugin SDK** and **PgBouncer** integration, building directly upon the RBAC overhauls initiated in 0.4.0.
+To prevent catastrophic SQL column-drop data loss across legacy transitions, OpenTicket natively encapsulates idempotent backward-compatible interceptions. 
+
+If operating Docker, pulling the latest `docker-compose.yml` and executing `docker-compose up` natively triggers the chained `migrate:prod` pipeline resolving structural updates asynchronously. 
+For Bare-Metal deployments, you **MUST** run the designated sequential upgrade command, guaranteeing legacy Role Mapping extraction operates before schema deprecation:
 
 ```bash
-# Safely pull legacy permissions, apply schema drops, and remap cleanly to the CustomRole structure
-npm run upgrade:0.4.0
+# Safely pull legacy permissions, apply schema drops, remap to CustomRoles, and bootstrap Plugin System constraints
+npm run migrate:prod
 ```
 
 ### 🪄 First-Time Bootstrap Workflow

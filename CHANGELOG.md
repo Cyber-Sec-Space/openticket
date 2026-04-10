@@ -10,6 +10,13 @@ All notable changes to this project will be documented in this file.
 - **Phase 4 AES-256 Storage At Rest**: Closed plaintext storage exposures affecting external plugin telemetry keys and webhooks. Designed and integrated an `aes-256-gcm` End-to-End Cryptography module drawing on Server `NEXTAUTH_SECRET` entropy, rendering Postgres `PluginState.configJson` illegible if targeted by Database Breaches. Includes resilient fallback mechanisms mitigating breaking regressions across unencrypted legacy states.
 - **Phase 5 OAuth-Style UI Intersect Authorization**: Rectified a critical Authentication Bypass flaw within default plugin configurations, wherein code arrays requesting `MANAGE_USERS` were dynamically approved during blind UI installations. Constructed an immersive Dual-Layer Frontend Modal actively pushing Manifest privileges to end-users for conscious explicit consent, synced unconditionally to a rigid Backend Intersection filter blocking silent configuration payloads.
 
+### Production & Infrastructure
+- **High-Availability (PgBouncer Sidecar)**: Resolved Postgres `max_connections` starvation vulnerabilities under intensive API horizontal scaling by engineering a native `pgbouncer` container instance acting as a transactional connection pool proxy.
+- **Migration Decoupling**: Remediated a destructive container race-condition scenario collapsing multi-node deployments. Schema execution (`prisma migrate`) is now fully isolated into a short-lived transient `migrator` service, protecting the master database Lock mechanisms natively.
+- **Strict Environment Typings**: Deployed a rigorous `.env.example` baseline structurally refusing the deployment of inherently weak default administrative passwords in orchestration runtimes.
+- **Cross-Version Idempotent Upgrades**: Built a catastrophic schema-loss prevention pipeline natively intercepting 0.3.0 -> 0.5.0 Docker migrations (`npm run migrate:prod`). The new mechanism sequentially validates and restores legacy Role Enumerations preventing global administrative lockout.
+- **UI Settings Panel Injection**: Expanded the core `OpenTicketPluginUI` capabilities to securely ingest custom React Component bindings (`settingsPanels`). Registry plugins can now dynamically build seamless configuration interfaces directly within the Global Settings application.
+
 ### Changed
 - Engineered and fully implemented the final `ActivePlugins` hook distribution matrix, converting the Plugin System into a fully mature, extensible zero-trust runtime wrapper.
 
