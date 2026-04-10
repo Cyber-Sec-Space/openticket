@@ -94,23 +94,12 @@ npm run dev
 版本 0.5.0 徹底補強了龐大的 **零信任外掛架構 (Plugin SDK)** 與 **PgBouncer** 基礎設施，這些都是建築在 0.4.0 的 RBAC 改朝換代之上。
 為避免跨代升級時 PostgreSQL 直刷 SQL 造成的永久性欄位丟失，OpenTicket 在底層實作了向後相容的冪等 (Idempotent) 防護。
 
-#### 選項 A: Docker 環境升級
-若您使用的是 Docker 環境，拉取最新版程式碼後執行 `docker-compose up -d --build` 時，內部的 `migrate:prod` 鍊式腳本會自動幫您搞定這些相依轉換，隨後啟動新的伺服器節點。
-
-#### 選項 B: 裸機 (Bare-Metal) 環境升級
-如果您不依賴容器化架構，請您**務必**按照下列邏輯重新拉取依賴模組並且手動執行專屬的無損升級腳本。它能確保舊設定在被砍除前先安全映射：
+若您使用的是 Docker 環境，當您下達 `docker-compose up` 啟動時，內部的 `migrate:prod` 鍊式腳本會自動幫您搞定這些相依轉換。
+但如果您是裸機 (Bare-Metal) 安裝者，請您**務必**手動執行專屬的無損升級腳本，它會確保舊設定在被砍除前先安全映射：
 
 ```bash
-# 1. 獲取最新的 v0.5.0 程式碼並安裝新相依套件
-git pull origin main
-npm install
-
-# 2. 攔截並提取舊版系統管理員權限，安全部屬 Schema，然後精準灌入最新的外掛層權限
+# 攔截並提取舊版系統管理員權限，安全部屬 Schema，然後精準灌入最新的外掛層權限
 npm run migrate:prod
-
-# 3. 重新為生產環境打包，並重啟原生的系統執行緒
-npm run build
-npm start
 ```
 
 ### 🪄 首次啟動引導精靈
