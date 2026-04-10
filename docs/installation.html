@@ -159,6 +159,25 @@
         </div>
       </div>
 
+      <div class="bento-card glass" style="margin-bottom: 2rem;">
+        <h3>Alternative: Pre-compiled Standalone Release (Production / Minimalist)</h3>
+        <p>For operations wishing to bypass Docker compilation or complex <code>node_modules</code> installations natively, OpenTicket directly embeds heavily optimized `.next/standalone` builds via GitHub Releases.</p>
+        <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
+          <div class="mac-window-controls"><span></span><span></span><span></span></div>
+          <pre><code><span class="keyword">wget</span> https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.1/openticket-standalone-v0.5.1.tar.gz
+<span class="comment"># Extract natively</span>
+<span class="keyword">tar</span> -xzf openticket-standalone-v0.5.1.tar.gz
+<span class="keyword">cd</span> openticket-standalone
+
+<span class="comment"># Configure .env (Set DATABASE_URL & NEXTAUTH_SECRET)</span>
+<span class="keyword">cp</span> .env.example .env
+
+<span class="comment"># Prime database and deploy securely</span>
+<span class="keyword">npx</span> prisma migrate deploy
+<span class="keyword">node</span> server.js</code></pre>
+        </div>
+      </div>
+
       <div class="bento-card glass" style="margin-bottom: 2rem; border-color: rgba(244, 114, 182, 0.4);">
         <h3 style="color: #f472b6;">⬆️ Cross-Version Safe Upgrades (0.3.0 -> 0.5.0)</h3>
         <p>If you are upgrading from legacy states to the new <strong>v0.5.0 Plugin & PgBouncer architecture</strong>, you must run our unified idempotent migration utility. It safely chains legacy schema mappings before natively applying `0.5.0` plugin privileges without dropping user roles.</p>
