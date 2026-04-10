@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.1
+### Fixed
+- **Turbopack Build Stabilization**: Eliminated a stealth environment OS trailing-space bug (`vuln-form-client 2.tsx`) aggressively crashing production compiler states by restructuring module resolutions.
+- **Layout Stabilization**: Enforced deterministic layout width (`w-full`) across all major React Dashboard Modals (Create Incident, Asset, Vulnerability) preventing interactive size-jittering explicitly during form population states.
+- **Data Presentation Hardening**: Intercepted `[object Object]` React rendering exceptions natively inside `AuditLog` Timeline components, replacing un-stringified mapping errors with a robust JSON rendering pipeline inside the Audit Stream UI.
+- **Asset Portability Extension**: Added robust fallback parameters `externalId` handling identification paths for non-IP based Virtual Assets (e.g. Git Repositories, Cloud IAM Roles, Cloudflare Workers) natively scaling the Asset Management Matrix.
+- **Permission Structual Check**: Deep-dived into `registry.json` hierarchy maps parsing `requestedPermissions` recursively by active version tag inside the Store Plugin Cards, eliminating false-negative 'No Permissions Requested' alerts natively.
+
+### Added
+- **Multi-Version Protocol Display**: Formally exposed `PLUGIN_API_VERSION` globally. System settings now actively decouple and report precise Semantic Versions defining OpenTicket Base Framework vs OpenTicket Hook Engine capabilities.
+- **Store Deep-Dive Overlay**: Reconstructed the Plugin Registry `PluginCard` mapping array to trigger immersive "Details Metadata Modals", explicitly highlighting kernel `Requested Permissions` dependencies rather than direct unsafe configs on click.
+- **License & Legal UI Integrations**: Brought dual-licensing transparency into the UI by erecting a dedicated "Legal & Licenses" structural tab in `System Settings`, accompanied natively by a globally persistent standard copyright `<Footer>` block.
+
 ## 0.5.0
 ### Security
 - **Phase 1 SDK Zero-Trust Elevation**: Remediated a severe structural escalation vector within the Plugin SDK where installed extensions could arbitrarily alter or grant capabilities natively by passing altered `Permission[]` arrays sequentially to `initEntity()`. Bot roles are now statically enforced and immune to internal code manipulation post-installation.

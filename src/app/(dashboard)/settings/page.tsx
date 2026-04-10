@@ -14,7 +14,7 @@ import { NotificationPanel } from "./notification-panel"
 
 export default async function SettingsPage() {
   const session = await auth()
-  if (!session?.user?.id) return null
+  if (!session?.user?.id) { redirect("/login"); return null; }
 
   const user = await db.user.findUnique({ where: { id: session.user.id }, include: { customRoles: { select: { name: true } } } })
   if (!user) {

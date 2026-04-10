@@ -1,69 +1,76 @@
 import { Incident, Asset, User } from "@prisma/client";
+export type { Incident, Asset, User };
 import { ComponentType } from "react";
 import { PluginSdkContext } from "./sdk-context";
 
+export const PLUGIN_API_VERSION = "1.0.0";
+
+
 export type OpenTicketPluginHooks = {
   /** Triggered exactly once when the plugin is activated by an Administrator */
-  onInstall?: (config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onInstall?: (config: any, context: PluginSdkContext) => Promise<any>;
   
   /** Triggered exactly once when the plugin is deactivated by an Administrator */
-  onUninstall?: (config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onUninstall?: (config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered instantly when a new incident is logged into the system */
-  onIncidentCreated?: (incident: Partial<Incident>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onIncidentCreated?: (incident: any, config: any, context: PluginSdkContext) => Promise<any>;
   
   /** Triggered when a ticket shifts structurally to RESOLVED or CLOSED */
-  onIncidentResolved?: (incident: Partial<Incident>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onIncidentResolved?: (incident: any, config: any, context: PluginSdkContext) => Promise<any>;
   
   /** Triggered during Automated Quarantines or manual Admin Asset isolation */
-  onAssetCompromise?: (asset: Partial<Asset>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onAssetCompromise?: (asset: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when a new infrastructure node is registered */
-  onAssetCreated?: (asset: Partial<Asset>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onAssetCreated?: (asset: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when an infrastructure node's properties or status change */
-  onAssetUpdated?: (asset: Partial<Asset>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onAssetUpdated?: (asset: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when an asset is permanently decommissioned */
-  onAssetDestroyed?: (assetId: string, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onAssetDestroyed?: (assetId: string, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when a new vulnerability is ingested */
-  onVulnerabilityCreated?: (vuln: any, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onVulnerabilityCreated?: (vuln: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when a vulnerability's details, status, or asset mappings change */
-  onVulnerabilityUpdated?: (vuln: any, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onVulnerabilityUpdated?: (vuln: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when a vulnerability record is purged */
-  onVulnerabilityDestroyed?: (vulnId: string, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onVulnerabilityDestroyed?: (vulnId: string, config: any, context: PluginSdkContext) => Promise<any>;
 
 
   /** Triggered when an operator posts a new investigation comment */
-  onCommentAdded?: (comment: any, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onCommentAdded?: (comment: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when a new security operator / user joins the system */
-  onUserCreated?: (user: Partial<User>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onUserCreated?: (user: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when a security operator's details or roles change */
-  onUserUpdated?: (user: Partial<User>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onUserUpdated?: (user: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when a security operator is permanently removed */
-  onUserDestroyed?: (userId: string, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onUserDestroyed?: (userId: string, config: any, context: PluginSdkContext) => Promise<any>;
 
 
   /** Triggered when physical evidence or files are attached to a case */
-  onEvidenceAttached?: (attachment: any, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onEvidenceAttached?: (attachment: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when physical evidence is removed by a root operator */
-  onEvidenceDestroyed?: (attachmentId: string, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onEvidenceDestroyed?: (attachmentId: string, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when incident details, assignees, or statuses change */
-  onIncidentUpdated?: (incident: Partial<Incident>, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onIncidentUpdated?: (incident: any, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when an incident is permanently destroyed */
-  onIncidentDestroyed?: (incidentId: string, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onIncidentDestroyed?: (incidentId: string, config: any, context: PluginSdkContext) => Promise<any>;
 
   /** Triggered when global security policies / system settings are updated */
-  onSystemSettingsUpdated?: (settings: any, config: Record<string, any>, context: PluginSdkContext) => Promise<void>;
+  onSystemSettingsUpdated?: (settings: any, config: any, context: PluginSdkContext) => Promise<any>;
+
+  /** Triggered when an external webhook associated with this plugin is received */
+  onWebhookReceived?: (req: Request, config: any, context: PluginSdkContext) => Promise<any>;
 };
 
 export type OpenTicketPluginUI = {

@@ -4,7 +4,7 @@
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
 </p>
 
-[🌍 Official Webpage](https://openticket.cyber-sec.space) | [🌐 Read in Traditional Chinese (繁體中文)](README.zh-TW.md) | [🏗️ Architecture Specs](docs/ARCHITECTURE.md)
+[🌍 Official Webpage](https://openticket.cyber-sec.space) | [🌐 Read in Traditional Chinese (繁體中文)](README.zh-TW.md) | [🏗️ Architecture Specs](docs/ARCHITECTURE.md) | [🔌 Plugin Registry](https://github.com/Cyber-Sec-Space/openticket-plugin-registry)
 
 A next-generation Cybersecurity Incident & Inventory Management system for SecOps and IT personnel. Designed to be a lightweight, centralized, and visually stunning alternative to enterprise IT ticketing tools like Jira and ServiceNow.
 
@@ -18,6 +18,8 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 - **Zero-Trust EventBus & Plugins:** Equipped with a heavily-fortified background EventBus. External third-party dependencies are natively sandboxed via distinct isolation layers including: Promise `Time-Bomb` execution caps (5000ms), `Thundering Herd` query neutralization caching, and `End-to-End AES-256-GCM` configuration storage. Administrators browse the Plugin Registry and explicitly grant bounded Sandbox Permissions via an embedded immersive UI authorization flow. Registry plugins can safely inject Remote React `settingsPanels` natively extending frontend capabilities.
 - **Omni-channel Notifications:** Natively handles email transmission via configurable SMTP configurations, accompanied by an HTML5 Desktop Push Notification center operating persistently in background tabs via highly-efficient Server-Sent Events (SSE) filtering specifically for Critical/High system incidents.
 - **Security-First Paradigm:** Defends against credential stuffing with in-memory Brute Force Rate Limiting across authentication pipelines. Ensures strict BOLA (Broken Object Level Authorization) evaluations actively rejecting unauthorized object-level manipulation.
+- **Transparent Dual-Licensing:** Natively surfaces dual-licensing modes (AGPL-3.0 / Enterprise) directly within the dashboard infrastructure, ensuring enterprise deployments maintain strict licensing hygiene and regulatory compliance.
+- **Multi-Version Protocol:** Rigidly decouples the OpenTicket Base platform version from the isolated Plugin SDK Framework (`PLUGIN_API_VERSION`). Allows external developer extensions to mandate specific Hook Sandbox runtimes ensuring precise back-compatibility constraints.
 - **Enterprise-Grade UI Components:** Built on TailwindCSS utilizing modern blur/backdrop-filter dynamics, combined with deeply interactive BaseUI/Shadcn components, fully portaled `react-datepicker` forms, and Recharts.
 
 <!-- IMAGE PLACEHOLDER: [OpenTicket Dashboard / Threat Matrix Preview] -->
@@ -88,6 +90,33 @@ chmod +x setup.sh
 
 # Start the development server
 npm run dev
+```
+
+### Option C: Pre-compiled Standalone Release (Production / Minimalist)
+For users who do not wish to orchestrate Docker but want a heavily optimized Next.js production build, OpenTicket provides a pre-compiled Standalone package in the [GitHub Releases](https://github.com/Cyber-Sec-Space/open-ticket/releases) section.
+This `.tar.gz` archive contains the compiled `.next/standalone` output, drastically reducing the deployment footprint manually without requiring raw compilation.
+
+```bash
+# 1. Download the latest standalone bundle from GitHub Releases
+wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.1/openticket-standalone-v0.5.1.tar.gz
+
+# (Optional) Verify Cryptographic Integrity (SHA-512)
+# Expected: 1c299acd4a99dd6c25ec550c7756aeacbe59c59de4e840a387619291775d13ebb022897c090a692ae6db1729a7bbce4e1332cd1be752b7941c335d5170a0958d
+shasum -a 512 openticket-standalone-v0.5.1.tar.gz
+
+# Extract
+tar -xzf openticket-standalone-v0.5.1.tar.gz
+cd openticket-standalone
+
+# 2. Configure your specific environment parameters
+cp .env.example .env
+nano .env # Explicitly set your DATABASE_URL and NEXTAUTH_SECRET
+
+# 3. Apply schema mechanisms to your active database
+npx prisma migrate deploy
+
+# 4. Boot the Production Server natively
+node server.js
 ```
 
 ### ⬆️ Multi-Version Legacy Upgrades (0.3.0 -> 0.5.0)

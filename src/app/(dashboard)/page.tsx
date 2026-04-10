@@ -22,7 +22,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   const session = await auth()
 
-  if (!session?.user) return null
+  if (!session?.user) { redirect("/login"); return null; }
 
   if (!hasPermission(session as any, 'VIEW_DASHBOARD')) {
     redirect("/incidents")

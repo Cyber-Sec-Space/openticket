@@ -89,21 +89,24 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
     })
   }
 
-  const handleDelete = (role: any) => {
-    const isConfirmed = window.confirm(
-      `Are you sure you want to delete the role "${role.name}"?\n\n` + 
-      `Users currently containing this role will NOT be deleted, but this role will be removed from them. If a user is left with no roles, they will automatically be assigned the 'Reporter' fallback role.\n\n` +
-      `This action cannot be undone.`
-    )
-    if (!isConfirmed) return
+  const [roleToDelete, setRoleToDelete] = useState<any>(null)
+  const [deleteErrorMsg, setDeleteErrorMsg] = useState("")
 
+  const handleDelete = (role: any) => {
+    setRoleToDelete(role)
+    setDeleteErrorMsg("")
+  }
+
+  const confirmDelete = () => {
+    if (!roleToDelete) return
     startTransition(async () => {
       try {
         const formData = new FormData()
-        formData.append("id", role.id)
+        formData.append("id", roleToDelete.id)
         await deleteRole(formData)
+        setRoleToDelete(null)
       } catch (err: any) {
-        alert(err.message)
+        setDeleteErrorMsg(err.message)
       }
     })
   }
@@ -340,6 +343,54 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
                    {editingRole ? "Save Changes" : "Create Role"}
                  </button>
                )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      {/* Delete Confirmation Dialog */}
+      {roleToDelete && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center isolate">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => !isPending && setRoleToDelete(null)} />
+          <div className="relative bg-zinc-950 border border-red-500/30 rounded-xl shadow-[0_0_50px_rgba(255,0,0,0.15)] w-full max-w-md overflow-hidden flex flex-col z-10 m-4 animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <h2 className="text-xl font-bold flex items-center text-white gap-2">
+                <ShieldAlert className="w-6 h-6 text-red-500" />
+                Confirm Deletion
+              </h2>
+              <div className="mt-4 space-y-4 text-sm text-neutral-400 leading-relaxed">
+                <p>
+                  Are you sure you want to delete the role <strong className="text-white">"{roleToDelete.name}"</strong>?
+                </p>
+                <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-lg text-red-400">
+                  <p>Users currently holding this role will <strong>NOT</strong> be deleted, but this role will be removed from them. If a user is left with no roles, they will automatically be assigned the <strong>'Reporter'</strong> fallback role.</p>
+                </div>
+                <p className="font-semibold text-white">This action cannot be undone.</p>
+              </div>
+              
+              {deleteErrorMsg && (
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-md text-red-400 text-sm font-mono break-all">
+                  {deleteErrorMsg}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-white/10 bg-black/40 flex justify-end gap-3">
+               <button 
+                  onClick={() => setRoleToDelete(null)}
+                  disabled={isPending}
+                  className="px-4 py-2 text-sm font-medium hover:bg-white/10 text-white rounded-md transition-colors"
+               >
+                 Cancel
+               </button>
+               <button 
+                  onClick={confirmDelete}
+                  disabled={isPending}
+                  className="bg-red-600 text-white px-5 py-2 text-sm font-semibold rounded-md hover:bg-red-500 transition-colors disabled:opacity-50 flex items-center"
+               >
+                 {isPending && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin mr-2" />}
+                 Confirm Delete
+               </button>
             </div>
           </div>
         </div>,

@@ -4,13 +4,21 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createApiTokenAction, deleteApiTokenAction } from "./actions"
-import { Trash2, Copy, Check } from "lucide-react"
+import { Trash2, Copy, Check, AlertCircle } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 export function TokensClient({ tokens }: { tokens: any[] }) {
   const [name, setName] = useState("")
   const [newToken, setNewToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -22,13 +30,31 @@ export function TokensClient({ tokens }: { tokens: any[] }) {
       setNewToken(res.rawToken)
       setName("")
     } catch (e: any) {
-      alert(e.message)
+      setErrorMsg(e.message)
     }
     setLoading(false)
   }
 
   return (
     <div className="space-y-6">
+       <Dialog open={!!errorMsg} onOpenChange={(open) => !open && setErrorMsg(null)}>
+         <DialogContent className="sm:max-w-[425px] border border-red-500/30 bg-zinc-950 shadow-[0_0_50px_rgba(255,0,0,0.15)]" onClick={(e) => e.stopPropagation()}>
+           <DialogHeader>
+             <DialogTitle className="flex items-center gap-2 text-white text-xl">
+               <AlertCircle className="w-5 h-5 text-red-500" /> Action Failed
+             </DialogTitle>
+           </DialogHeader>
+           <div className="py-2">
+             <p className="text-red-400 text-sm bg-red-500/10 p-4 rounded-lg border border-red-500/20 leading-relaxed font-mono">
+                {errorMsg}
+             </p>
+           </div>
+           <DialogFooter className="mt-2 border-t border-white/10 pt-4">
+              <Button variant="outline" onClick={() => setErrorMsg(null)} className="w-full bg-transparent border-white/20 text-white hover:bg-white/5 font-bold">Dismiss</Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
+
        {newToken && (
          <div className="bg-emerald-950/40 border border-emerald-500 p-6 rounded-lg animate-fade-in-up">
            <h3 className="text-emerald-400 font-bold mb-2">Token Generated Successfully!</h3>

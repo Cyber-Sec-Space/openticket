@@ -4,7 +4,7 @@
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
 </p>
 
-[🌍 官方文件網站 (Official Webpage)](https://openticket.cyber-sec.space) | [🌐 Read in English](README.md) | [🏗️ 架構設計書 (Architecture Specs)](docs/ARCHITECTURE.zh-TW.md)
+[🌍 官方文件網站 (Official Webpage)](https://openticket.cyber-sec.space) | [🌐 Read in English](README.md) | [🏗️ 架構設計書 (Architecture Specs)](docs/ARCHITECTURE.zh-TW.md) | [🔌 外掛註冊庫 (Plugin Registry)](https://github.com/Cyber-Sec-Space/openticket-plugin-registry)
 
 專為資安維運 (SecOps) 與 IT 團隊打造的次世代資安事件與資產集中管理系統。作為 Jira 或 ServiceNow 等企業級 IT 工單系統的輕量化、視覺化替代方案而生。
 
@@ -18,6 +18,8 @@
 - **零信任沙盒與外掛生態 (Zero-Trust EventBus & Plugins)：** 具備堅若磐石的背景 EventBus。外部的第三方外掛會被原生的五道隔離防線死死鎖進沙盒中，包含：Promise `Time-Bomb` 執行時限炸彈 (5000ms)、`Thundering Herd` 快取防雪崩機制、以及配置資料庫的 `端對端 AES-256-GCM` 靜態加密。管理員除了能透過沉浸式的 UI 授權畫面進行底層權限交集審核外，外掛現在更能合法透過 `settingsPanels` 擴充原生的前端介面能力。
 - **全方位通知中心 (Omni-channel Notifications)：** 原生支援藉由可配置的 SMTP 設定發送 Email（適用於驗證與密碼重置），同時具備基於「伺服器發送事件 (SSE, Server-Sent Events)」的高效能 HTML5 桌面推播通知中心，持續在背景過濾並提醒重大資安威脅。
 - **資安優先防禦 (Security-First Paradigm)：** 針對認證管道實施 in-memory 防暴力破解 (Brute Force Rate Limiting) 壓制撞庫攻擊；並且在事件評論與關鍵操作上導入無死角的越權存取防禦 (BOLA, Broken Object Level Authorization) 阻攔未授權編輯。
+- **雙軌授權透明化 (Transparent Dual-Licensing)：** 將 AGPL-3.0 與 Enterprise (企業版) 的雙軌授權模式徹底融入應用程式介面中，協助企業級客戶維持嚴謹的開源軟體授權合規性 (Licensing Hygiene)。
+- **多版本協議解耦 (Multi-Version Protocol)：** 將 OpenTicket 平台主版號與底層的 Plugin SDK 沙盒引擎版號 (`PLUGIN_API_VERSION`) 正式脫鉤。允許第三方外掛精準標示其依賴的 Hook Engine 核心版本，達成完美的向後相容。
 - **企業級現代介面 (Enterprise UI)：** 以 TailwindCSS 打造高質感 Blur / Backdrop-filter 動態特效，結合深度互動的 Shadcn 元件、透過 Portal 防裁切與支援手動輸入的客製化 `react-datepicker`，以及視覺化的 Recharts 圖表庫。
 
 <!-- IMAGE PLACEHOLDER: [OpenTicket Dashboard / Threat Matrix Preview] -->
@@ -88,6 +90,33 @@ chmod +x setup.sh
 
 # 啟動開發伺服器
 npm run dev
+```
+
+### 選項 C: 預編譯 Standalone 獨立包 (生產環境 / 極簡部屬)
+對於內部受限無法使用 Docker，但仍需要極度最佳化生產環境部屬的網路，OpenTicket 在 [GitHub Releases](https://github.com/Cyber-Sec-Space/open-ticket/releases) 區塊提供了預先編譯好的 Standalone 獨立封裝包。
+這個 `.tar.gz` 壓縮包內含了 Next.js 編譯並優化後的 `.next/standalone` 輸出庫，您完全不需要在正式環境手動執行耗時的 `npm install`。
+
+```bash
+# 1. 從 GitHub Releases 下載 Standalone 獨立壓縮包
+wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.1/openticket-standalone-v0.5.1.tar.gz
+
+# (可選步驟) 驗證下載檔案的完整性 (SHA-512)
+# 預期輸出: 1c299acd4a99dd6c25ec550c7756aeacbe59c59de4e840a387619291775d13ebb022897c090a692ae6db1729a7bbce4e1332cd1be752b7941c335d5170a0958d
+shasum -a 512 openticket-standalone-v0.5.1.tar.gz
+
+# 解壓縮
+tar -xzf openticket-standalone-v0.5.1.tar.gz
+cd openticket-standalone
+
+# 2. 設定您的環境變數 (.env)
+cp .env.example .env
+nano .env # 請務必設定好獨立的 DATABASE_URL 與 NEXTAUTH_SECRET
+
+# 3. 對您準備好的 PostgreSQL 資料庫執行架構遷移
+npx prisma migrate deploy
+
+# 4. 原生啟動 Node.js 生產端伺服器進程
+node server.js
 ```
 
 ### ⬆️ 跨代版本無痛升級 (0.3.0 -> 0.5.0)
