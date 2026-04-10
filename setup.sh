@@ -69,7 +69,9 @@ npm install
 
 # 3. Database Migration
 echo -e "\n\033[1;36m>> Synchronizing Database Schema...\033[0m"
-npx prisma migrate dev --name init
+npx prisma generate
+npx prisma migrate deploy
+npm run upgrade:0.5.0
 
 echo -e "\n\033[1;36m====================================================\033[0m"
 echo -e "\033[1;32m🎉 Setup Complete! 🎉\033[0m"
