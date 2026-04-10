@@ -7,12 +7,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Server, Plus, Filter, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CreateAssetModal } from "./create-asset-modal"
 
-import { notFound } from "next/navigation"
+import Form from "next/form";
+import {  notFound , redirect } from "next/navigation"
 
 export default async function AssetsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
-  if (!session?.user) return null
+  if (!session?.user) { redirect("/login"); return null; }
 
   // STRICT BOLA ENFORCEMENT
   if (!hasPermission(session as any, 'VIEW_ASSETS')) return notFound()
@@ -69,17 +71,13 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
         </div>
         
         {canCreate && (
-          <Link href="/assets/new">
-            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
-              <Plus className="w-4 h-4 mr-2" /> Register Asset
-            </Button>
-          </Link>
+          <CreateAssetModal />
         )}
       </div>
 
       <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">
         <Filter className="w-5 h-5 text-muted-foreground mr-2" />
-        <form method="GET" action="/assets" className="flex flex-1 gap-4 items-end flex-wrap">
+        <Form action="/assets" className="flex flex-1 gap-4 items-end flex-wrap">
 
           <div className="space-y-1 flex-1 min-w-[200px]">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Search</label>
@@ -136,7 +134,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
               <Button variant="ghost" className="h-9 text-muted-foreground hover:text-white">Clear</Button>
             </Link>
           )}
-        </form>
+        </Form>
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
@@ -146,12 +144,12 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
               <TableHead className="font-semibold text-primary pl-6 w-[15%]">Asset Key</TableHead>
               <TableHead className="font-semibold text-primary w-[35%]">Name</TableHead>
               <TableHead className="font-semibold text-primary w-[10%]">Type</TableHead>
-              <TableHead className="font-semibold text-primary w-[15%]">IP Address</TableHead>
+              <TableHead className="font-semibold text-primary w-[15%]">IP / Identifier</TableHead>
               <TableHead className="font-semibold text-primary w-[10%]">Status</TableHead>
               <TableHead className="font-semibold text-primary text-right pr-6 w-[15%]">Cataloged On</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody key={[resolvedParams.q, resolvedParams.status, resolvedParams.type, page].join("-")} className="animate-fade-in-up">
             {assets.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center h-40 text-muted-foreground">
@@ -172,7 +170,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
                   {asset.name}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{asset.type.replace(/_/g, ' ')}</TableCell>
-                <TableCell className="font-mono text-sm text-blue-400">{asset.ipAddress || 'Internal/NAT'}</TableCell>
+                <TableCell className="font-mono text-sm text-blue-400">{asset.ipAddress || asset.externalId || 'Isolated/Virtual'}</TableCell>
                 <TableCell>
                   <Badge className={`bg-transparent border ${asset.status === 'COMPROMISED' ? 'border-orange-500 text-orange-500 shadow-[0_0_10px_rgba(255,150,0,0.2)] animate-pulse' : (asset.status === 'ACTIVE' ? 'border-primary text-primary' : 'border-muted-foreground text-muted-foreground')}`}>
                     {asset.status.replace(/_/g, ' ')}

@@ -58,6 +58,7 @@ export default async function AssetDetailPage({
     const newType = formData.get("type") as any
     const newStatus = formData.get("status") as any
     const newIpAddress = formData.get("ipAddress") as string
+    const newExternalId = formData.get("externalId") as string
 
     await db.asset.update({
       where: { id: asset!.id },
@@ -65,7 +66,8 @@ export default async function AssetDetailPage({
         name: newName,
         type: newType,
         status: newStatus,
-        ipAddress: newIpAddress || null
+        ipAddress: newIpAddress || null,
+        externalId: newExternalId || null
       }
     })
     
@@ -163,6 +165,11 @@ export default async function AssetDetailPage({
                   </div>
 
                   <div className="space-y-2">
+                    <Label className="text-primary/70 text-xs uppercase tracking-widest">Virtual Identifier</Label>
+                    <Input name="externalId" defaultValue={asset.externalId || ""} placeholder="e.g. github:RepoURL or AWS ARN..." className="bg-black/50 border-white/10 font-mono" />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label className="text-primary/70 text-xs uppercase tracking-widest">Category</Label>
                     <Select key={`asset-type-${asset.type}`} name="type" defaultValue={asset.type}>
                       <SelectTrigger className="flex !h-10 w-full rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-primary">
@@ -202,6 +209,18 @@ export default async function AssetDetailPage({
                 </ConfirmForm>
               ) : (
                 <div className="space-y-5 text-sm">
+                  {asset.externalId && (
+                    <div>
+                      <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Virtual Identifier</strong>
+                      <span className="text-foreground/90 font-mono text-xs">{asset.externalId}</span>
+                    </div>
+                  )}
+                  {asset.ipAddress && (
+                    <div>
+                      <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Network Blueprint (IP)</strong>
+                      <span className="text-foreground/90 font-mono text-xs">{asset.ipAddress}</span>
+                    </div>
+                  )}
                   <div>
                     <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Architecture Record</strong>
                     <span className="text-foreground/90 font-mono text-xs">{asset.createdAt.toLocaleString()}</span>

@@ -211,7 +211,7 @@ async function main() {
   }
 
   // 4. Create Incidents
-  console.log("Generating 150 incidents over 30 days of telemetry...")
+  console.log("Generating 10000 incidents over 30 days of telemetry...")
 
   const incidentTemplates = [
     { title: 'Suspicious East-West DB Traffic', type: IncidentType.DATA_BREACH, severity: Severity.CRITICAL },
@@ -241,7 +241,7 @@ async function main() {
 
   const statuses = [IncidentStatus.NEW, IncidentStatus.IN_PROGRESS, IncidentStatus.PENDING_INFO, IncidentStatus.RESOLVED, IncidentStatus.CLOSED]
 
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 10000; i++) {
     const template = incidentTemplates[Math.floor(Math.random() * incidentTemplates.length)]
     const asset = assets[Math.floor(Math.random() * assets.length)]
     const status = statuses[Math.floor(Math.random() * statuses.length)]

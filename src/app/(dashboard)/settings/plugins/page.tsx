@@ -14,10 +14,7 @@ export default async function PluginManagementPage() {
 
   const dbStates = await db.pluginState.findMany();
 
-  const installedPlugins = activePlugins.filter(plugin => {
-    const state = dbStates.find(s => s.id === plugin.manifest.id);
-    return state?.isActive;
-  });
+  const installedPlugins = activePlugins;
 
   return (
     <div className="space-y-4">
@@ -30,7 +27,7 @@ export default async function PluginManagementPage() {
               <PluginCard 
                 key={plugin.manifest.id} 
                 manifest={plugin.manifest} 
-                isActive={true} 
+                isActive={state?.isActive || false} 
                 configJson={decryptedConfig ? JSON.stringify(decryptedConfig) : null}
                 layout="grid"
               />
@@ -39,7 +36,7 @@ export default async function PluginManagementPage() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 px-4 bg-black/20 rounded-xl border border-white/5 border-dashed">
-          <p className="text-muted-foreground font-medium mb-1">No Active Plugins</p>
+          <p className="text-muted-foreground font-medium mb-1">No Installed Plugins</p>
           <p className="text-sm text-neutral-500">{"You haven't installed any plugins from the store yet."}</p>
         </div>
       )}

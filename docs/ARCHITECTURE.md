@@ -134,7 +134,7 @@ To avoid blocking the primary web threads with complex external third-party acti
 ### Native Plugin Isolation Strategies
 1. **API Limit Sandbox**: Hook executions are bound directly to a `Promise.race()` primitive throwing an exception unconditionally at `5000ms`. Infinite loops or hanging API calls strictly collapse before threatening system responsiveness.
 2. **End-to-End Cryptography**: Plugin parameters containing valid API tokens are protected against Database Dumps natively. Data is strictly ciphered using an `AES-256-GCM` implementation tied to Server Entropy before committing state.
-3. **OAuth-Style Privilege Consent**: During installation, remote Registry Extensions broadcast explicitly required `Permissions`. Global Administrators must grant permissions through a dual-layer UI gateway blocking arbitrary codebase authorizations.
+3. **OAuth-Style Privilege Consent**: During installation, remote Registry Extensions broadcast explicitly required `Permissions`. Global Administrators map these through a Deep-Dive Details Overlay actively extracting hierarchical `versions[].requestedPermissions` arrays. This actively pushes Manifest privileges to end-users blocking arbitrary codebase authorizations.
 
 The Plugin architecture is built around a defense-in-depth framework spanning five core resilience layers:
 1. **Absolute Identity Gating**: Plugins interact with the system via a limited `api.createIncident()` SDK abstraction. Every request is forced downstream via a provisioned Sandbox Bot Role.

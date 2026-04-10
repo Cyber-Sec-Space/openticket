@@ -82,7 +82,12 @@ export async function POST(req: Request) {
 
     // If user has CREATE_INCIDENTS, they are allowed to set initial target asset and severity
     const finalAssetId = hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null;
+    
+    const VALID_SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
     let finalSeverity = severity || 'LOW';
+    if (!VALID_SEVERITIES.includes(finalSeverity)) {
+      return new NextResponse(`Invalid Severity. Accepted values: ${VALID_SEVERITIES.join(', ')}`, { status: 400 })
+    }
 
     const newIncident = await db.incident.create({
       data: {

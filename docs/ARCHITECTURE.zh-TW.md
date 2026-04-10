@@ -135,7 +135,7 @@ erDiagram
 ### 原生外掛隔離策略
 1. **API 限流沙盒 (API Limit Sandbox)**：所有的 Hook 執行邏輯都會被封裝在一個 `Promise.race()` 原語之中，並在超過 `5000ms` 後無條件拋出例外中斷執行。這能確保無窮迴圈或長時間沒有回應的外部 API 呼叫會在威脅系統反應能力前被迫崩潰中止。
 2. **端對端加密 (End-to-End Cryptography)**：凡是包含有效 API 憑證 (Token) 的外掛參數，在系統將其寫入資料庫實體狀態前，都會綁定伺服器熵 (Server Entropy) 使用 `AES-256-GCM` 原生進行靜態加密。完全杜絕因為資料庫傾印 (Dump) 造成的機器金鑰外洩。
-3. **OAuth 式權限批准 (OAuth-Style Privilege Consent)**：在安裝市集套件期間，遠端 Registry 會明確宣示所需要的權限 (`Permissions`)。這必須經過管理員透過雙層的 UI 閘道器明確授予核准，原生防堵第三方外掛程式碼任意綁架系統核心行為。
+3. **OAuth 式權限批准 (OAuth-Style Privilege Consent)**：在安裝套件期間，遠端 Registry 會宣示權限。管理員將被強制經由「深潛式詳細資訊面板 (Deep-Dive Metadata Modal)」查閱從 `versions[].requestedPermissions` 提取的核心依賴清單。這項機制強制用戶意識到賦權範圍，阻止了盲目的同意授權。
 
 外掛架構圍繞著縱深防禦 (Defense-in-Depth) 的框架建構，包含了五大核心防禦層：
 1. **絕對身分閘道 (Absolute Identity Gating)**：外部外掛必須透過受限的 `api.createIncident()` SDK 進行互動，所有請求都會被強制向下轉交給無權限的沙盒機器人角色 (Sandbox Bot Role) 進行代理。

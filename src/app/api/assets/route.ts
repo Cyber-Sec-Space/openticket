@@ -49,11 +49,18 @@ export async function POST(req: Request) {
     if (!name) {
       return new NextResponse("Asset name is required", { status: 400 })
     }
+    
+    // Explicit Enum validation to prevent Prisma 500 Unhandled Exceptions
+    const VALID_ASSET_TYPES = ['ROUTER', 'SWITCH', 'FIREWALL', 'SERVER', 'WORKSTATION', 'MOBILE_DEVICE', 'IOT_DEVICE', 'OTHER', 'LAPTOP', 'DESKTOP'];
+    const finalType = type || 'OTHER';
+    if (!VALID_ASSET_TYPES.includes(finalType)) {
+       return new NextResponse(`Invalid Asset type. Accepted values: ${VALID_ASSET_TYPES.join(', ')}`, { status: 400 })
+    }
 
     const newAsset = await db.asset.create({
       data: {
         name,
-        type: type || 'OTHER',
+        type: finalType,
         ipAddress: ipAddress || null,
         status: 'ACTIVE'
       }

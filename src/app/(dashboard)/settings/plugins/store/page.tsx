@@ -35,30 +35,44 @@ export default async function PluginStorePage() {
   
   let registryPlugins: RegistryPlugin[] = [];
   try {
-    const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { cache: "no-store" });
-    if (res.ok) {
-      const rawData = await res.json();
-      
-      // Native Structural Validation Boundary
-      if (Array.isArray(rawData)) {
-        registryPlugins = rawData.filter(p => {
-          return (
-            typeof p === 'object' &&
-            p !== null &&
-            typeof p.id === 'string' &&
-            typeof p.name === 'string' &&
-            typeof p.latestVersion === 'string' &&
-            typeof p.versions === 'object' &&
-            p.versions !== null &&
-            p.versions[p.latestVersion] !== undefined
-          );
-        }) as RegistryPlugin[];
+    let rawData: any;
+    
+    // Developer Sandbox: Resolve from local filesystem if in dev mode
+    if (process.env.NODE_ENV !== "production") {
+      const fs = await import("fs");
+      const path = await import("path");
+      const localRegistryPath = path.resolve(process.cwd(), "../openticket-plugin-registry/registry.json");
+      if (fs.existsSync(localRegistryPath)) {
+        rawData = JSON.parse(await fs.promises.readFile(localRegistryPath, "utf-8"));
+      } else {
+        console.error("Local dev registry not found at", localRegistryPath);
       }
     } else {
-      console.error("Failed to fetch registry list", res.status);
+      const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { cache: "no-store" });
+      if (res.ok) {
+        rawData = await res.json();
+      } else {
+        console.error("Failed to fetch registry list", res.status);
+      }
+    }
+      
+    // Native Structural Validation Boundary
+    if (Array.isArray(rawData)) {
+      registryPlugins = rawData.filter(p => {
+        return (
+          typeof p === 'object' &&
+          p !== null &&
+          typeof p.id === 'string' &&
+          typeof p.name === 'string' &&
+          typeof p.latestVersion === 'string' &&
+          typeof p.versions === 'object' &&
+          p.versions !== null &&
+          p.versions[p.latestVersion] !== undefined
+        );
+      }) as RegistryPlugin[];
     }
   } catch (error) {
-    console.error("Registry fetch error", error);
+    console.error("Registry load error", error);
   }
 
   return (

@@ -1,3 +1,4 @@
+import Form from "next/form";
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
@@ -68,7 +69,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
 
       <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">
         <Filter className="w-5 h-5 text-muted-foreground mr-2" />
-        <form method="GET" action="/audit" className="flex flex-1 gap-4 items-end flex-wrap">
+        <Form action="/audit" className="flex flex-1 gap-4 items-end flex-wrap">
           <div className="space-y-1 flex-1 min-w-[300px]">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Search Forensic Trail</label>
             <div className="relative">
@@ -91,7 +92,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
               <Button variant="ghost" className="h-9 text-muted-foreground hover:text-white">Clear</Button>
             </Link>
           )}
-        </form>
+        </Form>
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
@@ -106,7 +107,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
               <TableHead className="font-semibold text-primary text-right pr-6 w-[15%]">Target Key</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody key={[resolvedParams.q, page].join("-")} className="animate-fade-in-up">
             {logs.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center h-40 text-muted-foreground">
@@ -143,8 +144,8 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
                   </span>
                 </TableCell>
                 
-                <TableCell className="text-xs text-foreground/80 max-w-[200px] truncate" title={String(log.changes || "No Payload")}>
-                  {String(log.changes || "No explicit changes tracked.")}
+                <TableCell className="text-xs text-foreground/80 max-w-[200px] truncate" title={log.changes ? (typeof log.changes === 'object' ? JSON.stringify(log.changes) : String(log.changes)) : "No Payload"}>
+                  {log.changes ? (typeof log.changes === 'object' ? JSON.stringify(log.changes) : String(log.changes)) : "No explicit changes tracked."}
                 </TableCell>
 
                 <TableCell className="text-right text-muted-foreground font-mono text-xs opacity-60 pr-6">

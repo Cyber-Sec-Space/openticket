@@ -48,6 +48,7 @@ class AuthenticationThrottledError extends Error {
   }
 }
 
+import { headers } from "next/headers"
 import { authConfig } from "./auth.config"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -66,6 +67,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         
         const email = credentials.email as string;
         
+        // Securely identify the network boundary of the requester
+        const requestHeaders = await headers();
+        const requestIp = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() 
+                       || requestHeaders.get("x-real-ip") 
+                       || "127.0.0.1";
+        
         // Fetch global directives (Moved up for early evaluation)
         const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
         
@@ -77,10 +84,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (rateLimitEnabled) {
            const limitThresholdTime = new Date(Date.now() - windowMs);
            
-           // Cross-Cluster State Synchronization
+           // Cross-Cluster State Synchronization: Isolate strictly by Email AND IP
+           // This nullifies the global Account Lockout Denial of Service (DoS) attack vector
            const attemptCount = await db.loginAttempt.count({
               where: {
                  identifier: email,
+                 ip: requestIp,
                  createdAt: { gte: limitThresholdTime }
               }
            });
@@ -94,15 +103,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { email },
           include: { customRoles: { select: { permissions: true } } }
         })
-        
-        // In Server Actions/NextAuth backend context, true client IP is often decoupled/proxied. 
-        // We track via `identifier` isolated boundaries to preserve standard lockouts payload structure.
-        const mockIp = "127.0.0.1"; 
 
         if (!user || (!user.passwordHash)) {
           // Record failure for invalid user asynchronously
           if (rateLimitEnabled) {
-              await db.loginAttempt.create({ data: { identifier: email, ip: mockIp } });
+              await db.loginAttempt.create({ data: { identifier: email, ip: requestIp } });
           }
           return null
         }
@@ -111,7 +116,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!isValid) {
           // Record failure for valid user asynchronously
           if (rateLimitEnabled) {
-              await db.loginAttempt.create({ data: { identifier: email, ip: mockIp } });
+              await db.loginAttempt.create({ data: { identifier: email, ip: requestIp } });
           }
           return null
         }

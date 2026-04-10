@@ -34,7 +34,7 @@ export default async function IncidentDetailPage({
   const isEditing = resolvedSearchParams.edit === "true";
 
   const session = await auth()
-  if (!session?.user) return null
+  if (!session?.user) { redirect("/login"); return null; }
 
   let commentPage = parseInt(resolvedSearchParams.commentPage as string) || 1;
   if (Number.isNaN(commentPage) || commentPage < 1) commentPage = 1;
@@ -78,7 +78,7 @@ export default async function IncidentDetailPage({
   // Construct Unified Timeline
   const timeline: any[] = [
     ...comments.map(c => ({ ...c, type: 'COMMENT' })),
-    ...auditLogs.map(l => ({ ...l, type: 'AUDIT', author: l.user, content: `${l.action} -> ${l.changes}` }))
+    ...auditLogs.map(l => ({ ...l, type: 'AUDIT', author: l.user, content: `${l.action} -> ${l.changes ? (typeof l.changes === 'object' ? JSON.stringify(l.changes) : String(l.changes)) : '{}'}` }))
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
   // Only authorized operators can assign tickets.

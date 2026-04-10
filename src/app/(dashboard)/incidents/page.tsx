@@ -1,3 +1,5 @@
+import Form from "next/form";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth"
 import { hasPermission } from "@/lib/auth-utils"
 import { db } from "@/lib/db"
@@ -7,10 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { ShieldAlert, Plus, Filter, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CreateIncidentModal } from "./create-incident-modal"
 
 export default async function IncidentsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
-  if (!session?.user) return null
+  if (!session?.user) { redirect("/login"); return null; }
 
   const resolvedParams = await searchParams;
   let page = parseInt(resolvedParams.page || "1", 10);
@@ -37,6 +40,11 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   }
 
   const canCreate = hasPermission(session as any, 'CREATE_INCIDENTS');
+  const canLinkAsset = hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET');
+  const assets = canLinkAsset ? await db.asset.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' }
+  }) : [];
 
   // URL Filters
   if (resolvedParams.status && resolvedParams.status !== "ALL") filterParams.AND.push({ status: resolvedParams.status.replace(/ /g, '_') });
@@ -97,18 +105,14 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
             </Button>
           </Link>
           {canCreate && (
-            <Link href="/incidents/new">
-              <Button className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-[0_0_10px_rgba(0,255,200,0.3)]">
-                <Plus className="w-4 h-4 mr-2" /> Report Incident
-              </Button>
-            </Link>
+            <CreateIncidentModal hasPrivilege={canLinkAsset} assets={assets} />
           )}
         </div>
       </div>
 
       <div className="glass-card rounded-xl p-4 flex flex-wrap gap-4 items-center mb-6 border border-border">
         <Filter className="w-5 h-5 text-muted-foreground mr-2" />
-        <form method="GET" action="/incidents" className="flex flex-1 gap-4 items-end flex-wrap">
+        <Form action="/incidents" className="flex flex-1 gap-4 items-end flex-wrap">
 
           <div className="space-y-1 flex-1 min-w-[200px]">
             <label className="text-xs text-muted-foreground uppercase tracking-wider">Search</label>
@@ -165,7 +169,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               <Button variant="ghost" className="h-9 text-muted-foreground hover:text-white">Clear</Button>
             </Link>
           )}
-        </form>
+        </Form>
       </div>
 
       <div className="glass-card rounded-xl overflow-hidden border border-border shadow-2xl">
@@ -182,7 +186,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               <TableHead className="font-semibold text-primary text-right pr-6 w-[10%]">Created</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody key={[resolvedParams.q, resolvedParams.status, resolvedParams.severity, page].join("-")} className="animate-fade-in-up">
             {incidents.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center h-40 text-muted-foreground">

@@ -5,4 +5,3 @@ import { OpenTicketPlugin } from "../lib/plugins/types"
 // prior to dynamic external injections via the PluginState Engine or separate distribution architectures.
 
 export const activePlugins: OpenTicketPlugin[] = [];
-

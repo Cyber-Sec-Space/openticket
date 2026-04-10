@@ -113,9 +113,21 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       throw new Error("Invalid version string format.");
     }
 
-    const res = await fetch(`https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/plugins/${pluginId}/${version}/index.tsx`);
-    if (!res.ok) throw new Error(`Failed to download plugin source code from registry (HTTP ${res.status}).`);
-    const code = await res.text();
+    let code: string;
+    
+    // Developer Sandbox: Source from local filesystem if in dev mode
+    if (process.env.NODE_ENV !== "production") {
+      const localSourcePath = path.resolve(process.cwd(), `../openticket-plugin-registry/plugins/${pluginId}/${version}/index.tsx`);
+      if (fs.existsSync(localSourcePath)) {
+        code = await fs.promises.readFile(localSourcePath, "utf-8");
+      } else {
+        throw new Error(`Local development registry file not found: ${localSourcePath}`);
+      }
+    } else {
+      const res = await fetch(`https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/plugins/${pluginId}/${version}/index.tsx`);
+      if (!res.ok) throw new Error(`Failed to download plugin source code from registry (HTTP ${res.status}).`);
+      code = await res.text();
+    }
     
     const pluginsDir = path.join(process.cwd(), "src/plugins");
     const pluginFile = path.join(pluginsDir, `external-${pluginId}.tsx`);
@@ -157,9 +169,65 @@ export async function installExternalPlugin(pluginId: string, version: string, s
   }
 }
 
+export async function uninstallExternalPlugin(pluginId: string) {
+  const session = await auth();
+  if (!session?.user?.id || !hasPermission(session as any, 'INSTALL_PLUGINS')) {
+    throw new Error("Unauthorized");
+  }
+
+  // Prevent Path Traversal
+  if (!/^[a-zA-Z0-9\-]+$/.test(pluginId)) {
+    throw new Error("Invalid plugin ID format. Only alphanumeric characters and hyphens are permitted.");
+  }
+
+  const pluginsDir = path.join(process.cwd(), "src/plugins");
+  const pluginFile = path.join(pluginsDir, `external-${pluginId}.tsx`);
+  
+  if (!pluginFile.startsWith(pluginsDir)) {
+    throw new Error("Path traversal boundaries violated.");
+  }
+
+  // 1. Delete physical source code file if it exists
+  if (fs.existsSync(pluginFile)) {
+    await fs.promises.unlink(pluginFile);
+  } else {
+    throw new Error("Plugin source file not found. It may be a native plugin or already uninstalled.");
+  }
+
+  // 2. Remove from index.ts references
+  const indexPath = path.join(pluginsDir, "index.ts");
+  let indexCode = await fs.promises.readFile(indexPath, "utf-8");
+  
+  const importName = "external" + pluginId.replace(/[-_@/]/g, "") + "Plugin";
+  
+  // Clean up import
+  const importRegex = new RegExp(`import\\s+${importName}\\s+from\\s+["']\\./external-${pluginId}["'];?\\r?\\n?`);
+  indexCode = indexCode.replace(importRegex, "");
+  
+  // Clean up array entry
+  const arrayEntryRegex = new RegExp(`[\\s\\r\\n]*${importName},?`);
+  indexCode = indexCode.replace(arrayEntryRegex, "");
+  
+  await fs.promises.writeFile(indexPath, indexCode, "utf-8");
+  
+  // 3. Purge from DB and Invalidate
+  await db.pluginState.deleteMany({ where: { id: pluginId } });
+  invalidateHookCache();
+  
+  revalidatePath('/settings/plugins');
+  revalidatePath('/settings/plugins/store');
+}
+
 export async function triggerProductionBuild() {
   const session = await auth();
   if (!session?.user?.id || !hasPermission(session as any, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
+  
+  // Prevent Next.js concurrency corruption by skipping 'build' if running in dev mode.
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[System] Bypassing npm run build because environment is not strictly 'production'.");
+    return;
+  }
+  
   // Execute the production build (Wait asynchronously)
   await execAsync("npm run build");
 }
@@ -168,7 +236,15 @@ export async function triggerServerRestart() {
   const session = await auth();
   if (!session?.user?.id || !hasPermission(session as any, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
   
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[System] Bypassing server restart. Next.js HMR will intelligently hot-reload the plugin injection.");
+    return;
+  }
+  
   // Schedule the process kill out of band so the HTTP response can return success to UI first.
   // Next.js will close gracefully and be brought back up by PM2/Docker restart-policies.
-  setTimeout(() => process.exit(0), 1000);
+  setTimeout(() => {
+    // Native escape hatch for Node.js if Next.js intercepts exit(0)
+    process.kill(process.pid, 'SIGKILL');
+  }, 1000);
 }
