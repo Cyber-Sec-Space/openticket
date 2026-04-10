@@ -125,6 +125,16 @@
         <p class="mt-4">Furthermore, all credentials (such as <code>config.jiraApiToken</code> mentioned above) are encrypted at rest using <code>AES-256-GCM</code>. Your server secret entropy ensures that if the database is backed-up or compromised, third-party authentication tokens remain secure.</p>
       </div>
 
+      <div class="bento-card glass" style="margin-bottom: 2rem;">
+        <h3>UI Component Injection (settingsPanels)</h3>
+        <p>Plugins aren't just limited to backend asynchronous hooks. In OpenTicket 0.5.0+, plugins can natively broadcast bespoke React components, seamlessly bridging the barrier between external Registry Logic and the OpenTicket Settings Dashboard.</p>
+        <div class="img-placeholder relative-overflow border-top mt-4 mb-4" style="min-height: 250px;">
+          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
+          <img src="assets/plugin-ui-injection.png" alt="[Insert Plugin UI Settings Injection Screenshot Here]" class="bento-img" style="object-fit: cover;">
+        </div>
+        <p class="mt-4">By declaring <code>ui: { settingsPanels: [...] }</code>, your plugin securely transports interactive forms into the frontend configuration modal. Administrators can edit your deeply nested <code>configJson</code> parameters fluidly without writing raw configuration schemas, all whilst maintaining absolute isolation from other core DOM elements.</p>
+      </div>
+
       <div class="bento-card glass">
         <h3>How to Register Custom Plugins Manually</h3>
         <p>If you prefer not to use the OpenTicket Registry and want to deploy a highly-sensitive internal air-gapped integration, you can still statically register it. Open
