@@ -130,7 +130,12 @@ erDiagram
 系統內建支援純服務互動 (Headless Execution) 的 REST 端點 (如 `/api/incidents`, `/api/assets`)。為了確保隔離性與權限可追溯性，外部整合會被要求夾帶 `Authorization: Bearer <token>` 標頭。這些金鑰在建立期會**自動繼承發放此金鑰的帳號權限** (動態細粒度權限矩陣)，藉此讓自動化機器人與呼叫者維持對等的資安授權邊界。
 
 ### 2.4 混合式外掛市集與事件總線 (Hybrid Plugin Sandbox)
-為避免核心後端路由被各種獨立開發的外部擴充功能 (如遠端推播、雙向同步腳本) 阻塞，本系統採用非同步的 **零信任 Hook Engine**。所有的核心執行管線皆會觸發內部 EventBus，進而參照 PostgreSQL `PluginState` 狀態來廣播非同步 Webhooks，並受到極度堅固的沙盒保護。
+為避免複雜的外部串接動作（如 Slack Webhooks、Teams 或 Jira 同步）阻塞主要的網頁執行緒，系統採用了 **零信任 Hook 引擎 (Zero-Trust Hook Engine)** 式的背景事件總線。所有主要的執行管道都會觸發內部的 EventBus，由它核對 PostgreSQL 中的 `PluginState` 後無縫地廣播非同步 Webhook。
+
+### 原生外掛隔離策略
+1. **API 限流沙盒 (API Limit Sandbox)**：所有的 Hook 執行邏輯都會被封裝在一個 `Promise.race()` 原語之中，並在超過 `5000ms` 後無條件拋出例外中斷執行。這能確保無窮迴圈或長時間沒有回應的外部 API 呼叫會在威脅系統反應能力前被迫崩潰中止。
+2. **端對端加密 (End-to-End Cryptography)**：凡是包含有效 API 憑證 (Token) 的外掛參數，在系統將其寫入資料庫實體狀態前，都會綁定伺服器熵 (Server Entropy) 使用 `AES-256-GCM` 原生進行靜態加密。完全杜絕因為資料庫傾印 (Dump) 造成的機器金鑰外洩。
+3. **OAuth 式權限批准 (OAuth-Style Privilege Consent)**：在安裝市集套件期間，遠端 Registry 會明確宣示所需要的權限 (`Permissions`)。這必須經過管理員透過雙層的 UI 閘道器明確授予核准，原生防堵第三方外掛程式碼任意綁架系統核心行為。
 
 外掛架構圍繞著縱深防禦 (Defense-in-Depth) 的框架建構，包含了五大核心防禦層：
 1. **絕對身分閘道 (Absolute Identity Gating)**：外部外掛必須透過受限的 `api.createIncident()` SDK 進行互動，所有請求都會被強制向下轉交給無權限的沙盒機器人角色 (Sandbox Bot Role) 進行代理。
