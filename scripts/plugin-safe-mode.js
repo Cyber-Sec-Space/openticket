@@ -5,6 +5,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { PrismaClient } = require('@prisma/client');
 
 const PLUGINS_DIR = path.join(process.cwd(), 'src/plugins');
 const INDEX_FILE = path.join(PLUGINS_DIR, 'index.ts');
@@ -19,7 +20,7 @@ const safeRequire = (modFn: () => any) => {
   try {
     return modFn().default;
   } catch (err) {
-    console.error(\`[Plugin System] Critical Isolation: A plugin threw an exception during initialization and was safely contained.\`, err);
+    console.error("[Plugin System] Critical Isolation: A plugin threw an exception during initialization and was safely contained.", err);
     return null;
   }
 };
@@ -44,16 +45,26 @@ export const activePlugins: OpenTicketPlugin[] = [
     for (const file of files) {
       if (file.startsWith('external-') && (file.endsWith('.tsx') || file.endsWith('.ts'))) {
         await fs.promises.unlink(path.join(PLUGINS_DIR, file));
-        console.log(\`🗑️  Deleted malformed plugin source: \${file}\`);
+        console.log(`🗑️  Deleted malformed plugin source: ${file}`);
         deletedCount++;
       }
     }
 
     // 2. Erase the index.ts static imports to stop Turbopack Compiler crashes
     await fs.promises.writeFile(INDEX_FILE, DEFAULT_INDEX_CODE, 'utf-8');
-    console.log(\`🧹 Sanitized \${INDEX_FILE}\`);
+    console.log(`🧹 Sanitized ${INDEX_FILE}`);
 
-    console.log(\`✅ [Safe Mode] Complete! Purged \${deletedCount} plugins. Next.js Host Application will now compile successfully.\`);
+    // 3. Clear the database state to match the empty file system
+    try {
+      const prisma = new PrismaClient();
+      await prisma.pluginState.updateMany({ data: { isActive: false } });
+      console.log(`💾 Synchronized Database: Marked all PluginState records as inactive.`);
+      await prisma.$disconnect();
+    } catch (dbErr) {
+      console.error(`⚠️ Could not reset database state automatically. Plugins may appear 'colored' in UI but are safely unlinked. Error:`, dbErr.message);
+    }
+
+    console.log(`✅ [Safe Mode] Complete! Purged ${deletedCount} plugins. Next.js Host Application will now compile successfully.`);
     console.log('⚡  Restart the development server or production build.');
 
   } catch(e) {

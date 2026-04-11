@@ -8,13 +8,10 @@ const safeRequire = (modFn: () => any) => {
   try {
     return modFn().default;
   } catch (err) {
-    console.error(`[Plugin System] Critical Isolation: A plugin threw an exception during initialization and was safely contained.`, err);
+    console.error("[Plugin System] Critical Isolation: A plugin threw an exception during initialization and was safely contained.", err);
     return null;
   }
 };
 
 export const activePlugins: OpenTicketPlugin[] = [
-  safeRequire(() => require("./external-github-issues")),
-  safeRequire(() => require("./external-ui-injection-demo")),
-  safeRequire(() => require("./external-broken")),
 ].filter(Boolean);
