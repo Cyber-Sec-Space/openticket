@@ -83,9 +83,39 @@
       <div class="bento-card glass" style="margin-bottom: 2rem;">
         <h3>How to Develop a Zero-Trust Plugin (SDK v0.5.0+)</h3>
         <p>A plugin is simply a TypeScript object conforming to the <code>OpenTicketPlugin</code> interface. With our new <strong>Zero-Trust architecture</strong>, plugins must explicitly declare the privileges they require via the <code>requestedPermissions</code> array. Administrators will review and consent to these permissions via an OAuth-style UI before the plugin can interact with the SOC Database.</p>
-        <div class="img-placeholder relative-overflow border-top mt-4" style="min-height: 200px;">
-          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
-          <img src="assets/oauth-consent-placeholder.png" alt="[Insert Plugin Consent Modal Screenshot Here]" class="bento-img" style="max-height: 300px; object-fit: contain;">
+        <div class="consent-mockup mt-4" style="background: rgba(10,15,25,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <div style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.4);">
+              <i data-lucide="shield-alert" class="text-blue-400"></i>
+            </div>
+            <div>
+              <h4 style="margin: 0; font-size: 1.2rem; color: #fff;">Authorization Required</h4>
+              <p style="margin: 0; font-size: 0.9rem; color: #9ca3af;"><strong>Jira Two-Way Sync</strong> is requesting access to your workspace</p>
+            </div>
+          </div>
+          <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <p style="margin-top: 0; margin-bottom: 0.75rem; font-weight: 600; font-size: 0.85rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Requested Privileges (2)</p>
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+              <li style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <i data-lucide="check" style="width: 16px; margin-top: 2px;" class="text-green-500"></i> 
+                <div>
+                  <code style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa;">VIEW_INCIDENTS_ALL</code>
+                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Read access to all incidents within the organization.</div>
+                </div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <i data-lucide="check" style="width: 16px; margin-top: 2px;" class="text-green-500"></i> 
+                <div>
+                  <code style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa;">ADD_COMMENTS</code>
+                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Post and append comments on existing incidents.</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+            <button style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;">Deny</button>
+            <button style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">Authorize</button>
+          </div>
         </div>
         <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
           <pre><code><span class="keyword">import</span> { OpenTicketPlugin } <span class="keyword">from</span> <span class="string">'@openticket/core'</span>;
@@ -116,6 +146,90 @@
     }
   }
 };</code></pre>
+        </div>
+      </div>
+      
+      <!-- Permissions Matrix Reference Section -->
+      <div class="bento-card glass" style="margin-bottom: 2rem; border-width: 1px; border-color: rgba(59, 130, 246, 0.3);">
+        <h3><i data-lucide="key" style="display: inline-block; width: 20px; vertical-align: text-bottom; margin-right: 8px;" class="text-blue-400"></i> Complete Permissions Dictionary</h3>
+        <p>When developing plugins, reference the exact `requestedPermissions` string identifiers required for SDK interaction. The engine uses strict validation against these scopes.</p>
+        
+        <div style="margin-top: 1.5rem; display: grid; gap: 1rem;">
+          <!-- Incidents -->
+          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; border-left: 3px solid #ef4444;">
+            <h5 style="margin: 0 0 0.5rem 0; color: #ef4444; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">Incidents</h5>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_INCIDENTS_ALL</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_INCIDENTS_ASSIGNED</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_INCIDENTS_UNASSIGNED</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_INCIDENTS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_INCIDENTS_METADATA</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_INCIDENT_STATUS_RESOLVE</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_INCIDENT_STATUS_CLOSE</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_INCIDENTS_SELF</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_INCIDENTS_OTHERS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">LINK_INCIDENT_TO_ASSET</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPLOAD_INCIDENT_ATTACHMENTS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_INCIDENT_ATTACHMENTS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_INCIDENTS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">EXPORT_INCIDENTS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ADD_COMMENTS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_OWN_COMMENTS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_ANY_COMMENTS</code>
+            </div>
+          </div>
+          
+          <!-- Vulnerabilities & Assets -->
+          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; border-left: 3px solid #f59e0b;">
+            <h5 style="margin: 0 0 0.5rem 0; color: #f59e0b; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">Assets & Vulnerabilities</h5>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_ASSETS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_ASSETS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_ASSETS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_ASSETS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_VULNERABILITIES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_VULNERABILITIES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_VULNERABILITIES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_VULNERABILITIES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_VULNERABILITIES_SELF</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_VULNERABILITIES_OTHERS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">LINK_VULN_TO_ASSET</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPLOAD_VULN_ATTACHMENTS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_VULN_ATTACHMENTS</code>
+            </div>
+          </div>
+
+          <!-- Users & System -->
+          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; border-left: 3px solid #8b5cf6;">
+            <h5 style="margin: 0 0 0.5rem 0; color: #8b5cf6; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">Access & Settings (High Privilege)</h5>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_USERS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_USERS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_USER_PROFILE</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_USER_ROLES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">RESET_USER_PASSWORDS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">SUSPEND_USERS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_USERS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_ROLES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_ROLES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_ROLES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_ROLES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_DASHBOARD</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_SYSTEM_SETTINGS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_SYSTEM_SETTINGS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">MANAGE_INTEGRATIONS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_PLUGINS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">INSTALL_PLUGINS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">TOGGLE_PLUGINS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CONFIGURE_PLUGINS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">RESTART_SYSTEM_SERVICES</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_AUDIT_LOGS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ACCESS_API</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_API_TOKENS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ISSUE_API_TOKENS</code>
+              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">REVOKE_API_TOKENS</code>
+            </div>
+          </div>
         </div>
       </div>
       

@@ -97,7 +97,9 @@
 
       <div class="bento-card glass" style="margin-bottom: 2rem;">
         <h3>Alternative: Production Docker Deployment (HA)</h3>
-        <p>The fastest way to deploy OpenTicket to production is using our pre-configured Docker Compose stack. It natively embeds a <strong>PgBouncer Connection Pool</strong> for massive scalability and encapsulates schema upgrades asynchronously inside a secure transient <strong>Migrator Container</strong>.</p>
+        <p>The fastest way to deploy OpenTicket to production is using our pre-configured Docker Compose stack. It
+          natively embeds a <strong>PgBouncer Connection Pool</strong> for massive scalability and encapsulates schema
+          upgrades asynchronously inside a secure transient <strong>Migrator Container</strong>.</p>
         <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
           <div class="mac-window-controls"><span></span><span></span><span></span></div>
           <pre><code><span class="keyword">git</span> clone https://github.com/Cyber-Sec-Space/openticket.git
@@ -130,8 +132,9 @@
 
       <div class="bento-card glass" style="margin-bottom: 2rem;">
         <h3>3. Initialize Database</h3>
-        <p>Install dependencies and prepare the database. Choose between a <strong>Clean Installation</strong> (Empty Database) or a <strong>Demo Installation</strong> (pre-loaded with 150 incidents, assets, and users).</p>
-        
+        <p>Install dependencies and prepare the database. Choose between a <strong>Clean Installation</strong> (Empty
+          Database) or a <strong>Demo Installation</strong> (pre-loaded with 150 incidents, assets, and users).</p>
+
         <h4 class="mt-4" style="color: #60a5fa; font-weight: 600;">Option A: Clean Version (Production Ready)</h4>
         <div class="terminal glass cursor-pointer mt-2" style="margin-bottom: 1.5rem;">
           <div class="mac-window-controls"><span></span><span></span><span></span></div>
@@ -161,7 +164,8 @@
 
       <div class="bento-card glass" style="margin-bottom: 2rem;">
         <h3>Alternative: Pre-compiled Standalone Release (Production / Minimalist)</h3>
-        <p>For operations wishing to bypass Docker compilation or complex <code>node_modules</code> installations natively, OpenTicket directly embeds heavily optimized `.next/standalone` builds via GitHub Releases.</p>
+        <p>For operations wishing to bypass Docker compilation or complex <code>node_modules</code> installations
+          natively, OpenTicket directly embeds heavily optimized `.next/standalone` builds via GitHub Releases.</p>
         <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
           <div class="mac-window-controls"><span></span><span></span><span></span></div>
           <pre><code><span class="keyword">wget</span> https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.1/openticket-standalone-v0.5.1.tar.gz
@@ -180,11 +184,9 @@
 
       <div class="bento-card glass" style="margin-bottom: 2rem; border-color: rgba(244, 114, 182, 0.4);">
         <h3 style="color: #f472b6;">⬆️ Cross-Version Safe Upgrades (0.3.0 -> 0.5.0)</h3>
-        <p>If you are upgrading from legacy states to the new <strong>v0.5.0 Plugin & PgBouncer architecture</strong>, you must run our unified idempotent migration utility. It safely chains legacy schema mappings before natively applying `0.5.0` plugin privileges without dropping user roles.</p>
-        <div class="img-placeholder relative-overflow border-top mt-4 mb-4" style="min-height: 250px;">
-          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
-          <img src="assets/deployment-upgrade.png" alt="[Insert Deployment Upgrade CLI Screenshot Here]" class="bento-img" style="object-fit: contain;">
-        </div>
+        <p>If you are upgrading from legacy states to the new <strong>v0.5.0 Plugin & PgBouncer architecture</strong>,
+          you must run our unified idempotent migration utility. It safely chains legacy schema mappings before natively
+          applying `0.5.0` plugin privileges without dropping user roles.</p>
         <div class="terminal glass cursor-pointer mt-4">
           <div class="mac-window-controls"><span></span><span></span><span></span></div>
           <pre><code><span class="keyword">git</span> pull origin main
