@@ -15,7 +15,7 @@
 - **高密度 SOC 配置 (High-Density Layout)：** 重新設計的單行 8 指標 KPI 網格，讓維運人員能一眼看清資安戰場全貌，並將重點應變面板 (Command Actions) 移至上方，極速縮短反應遲滯時間。
 - **企業級高可用性 (Enterprise High-Availability)：** 原生內建 `PgBouncer` Sidecar 微服務拓撲並強制執行交易連線池 (Transactional Connection Pooling)。這徹底根除了多節點水平擴展時可能發生的資源飢餓，確保在負載平衡器運作下仍具備極致的併發資料庫吞吐量。
 - **動態細粒度權限矩陣 (Dynamic Granular Permission Matrix)：** 原生的進階 RBAC 權限隔離機制，管理員能夠自由定義「自訂角色 (Custom Roles)」，並精細配置各項原子操作權限 (如 `CREATE_INCIDENTS`, `VIEW_ASSETS`, `INSTALL_PLUGINS`)。人員能同時疊加複數自訂角色權限標籤，為巨型 SOC 環境帶來零信任 (Zero-Trust) 的極大組織架構彈性。
-- **零信任沙盒與外掛生態 (Zero-Trust EventBus & Plugins)：** 具備堅若磐石的背景 EventBus。外部的第三方外掛會被原生的五道隔離防線死死鎖進沙盒中，包含：Promise `Time-Bomb` 執行時限炸彈 (5000ms)、`Thundering Herd` 快取防雪崩機制、以及配置資料庫的 `端對端 AES-256-GCM` 靜態加密。管理員除了能透過沉浸式的 UI 授權畫面進行底層權限交集審核外，外掛現在更能合法透過 `settingsPanels` 擴充原生的前端介面能力。
+- **零信任沙盒與外掛生態 (Zero-Trust EventBus & Plugins)：** 具備堅若磐石的背景 EventBus。外部的第三方外掛會被原生的五道隔離防線死死鎖進沙盒中，包含：Promise `Time-Bomb` 執行時限炸彈 (5000ms)、`Thundering Herd` 快取防雪崩機制、以及配置資料庫的 `端對端 AES-256-GCM` 靜態加密。管理員除了能透過沉浸式的 UI 授權畫面進行底層權限交集審核外，外掛現在更能合法透過 `settingsPanels` 擴充原生的前端介面能力，並在安裝前會受到**強制的 AST 語法預防機制 (Pre-flight AST Validation)** 阻攔，徹底防堵任何惡意代碼污染底層的機會。
 - **全方位通知中心 (Omni-channel Notifications)：** 原生支援藉由可配置的 SMTP 設定發送 Email（適用於驗證與密碼重置），同時具備基於「伺服器發送事件 (SSE, Server-Sent Events)」的高效能 HTML5 桌面推播通知中心，持續在背景過濾並提醒重大資安威脅。
 - **資安優先防禦 (Security-First Paradigm)：** 針對認證管道實施 in-memory 防暴力破解 (Brute Force Rate Limiting) 壓制撞庫攻擊；並且在事件評論與關鍵操作上導入無死角的越權存取防禦 (BOLA, Broken Object Level Authorization) 阻攔未授權編輯。
 - **雙軌授權透明化 (Transparent Dual-Licensing)：** 將 AGPL-3.0 與 Enterprise (企業版) 的雙軌授權模式徹底融入應用程式介面中，協助企業級客戶維持嚴謹的開源軟體授權合規性 (Licensing Hygiene)。

@@ -144,6 +144,8 @@ erDiagram
 4. **防雪崩快取 (Thundering Herd Eradication)**：高頻率的事件派發 (每秒可能高達 10,000+ 次 hook 廣播) 透過短暫生命週期的 (10秒) 同步 Context Cache 對射，徹底隔絕了對於 PostgreSQL `SELECT` 的查詢雪崩，所有相同的 DB 查詢全域僅會執行一次。
 5. **時限炸彈沙盒 (Promise Time-Bomb Sandbox)**：為阻斷不良外部 API `fetch()` 或 `無窮迴圈` 造成的系統阻斷服務 (DoS) 與執行緒卡死，所有事件呼叫皆強制被包裝進 `Promise.race()` 系統中，若外掛執行超過 `5000ms`，將被系統強制斬斷管線，完美保護 Node 的單執行緒迴圈。
 6. **UI 元件注入安全隔離 (UI Component Injection)**：不只侷限於伺服器邏輯，Registry 清單現在安全支援透過 `settingsPanels` API 傳遞 React 定義檔。使得外掛能原生將其專屬的設定介面嵌入 OpenTicket 管理後台，完全不會違反跨來源執行 (Cross-Origin) 的資安限制。
+7. **零信任初始化隔離 (Zero-Trust Initialization)**：所有外掛在伺服器啟動時，皆被嚴密包裹於 `Error Boundaries` 與 `safeRequire` 隔離區塊內。如果外掛夾帶了會在編譯/渲染期造成崩潰的致命錯誤 (如 `SyntaxError`, `TypeReferenceError`)，該錯誤將被完美拘束與攔截，絕不允許其擴散並污染 Host Application 核心的事件迴圈 (Event Loop) 與連續運作。
+8. **寫入前 AST 語法預檢 (Pre-Flight AST Syntax Checker)**：為了完全捨棄傳統編譯發生錯誤時的延遲崩潰風險，系統在下載外掛程式碼的瞬間，會直接呼叫底層的 `tsc` (TypeScript compiler) 進行即時預檢。利用解析出的抽象語法樹 (AST)，精準捕捉會造成當機的 `DiagnosticCategory.Error` 結構異常。一旦查獲致命語法，系統會直接拒絕寫入，完美達成檔案系統 (Filesystem) 零污染的自動安全撤銷與資料庫 Rollback。
 
 ```mermaid
 graph TD
