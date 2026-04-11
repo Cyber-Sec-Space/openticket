@@ -39,8 +39,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: builder
     container_name: openticket_migrator
-    # Automatically apply schema migrations natively, then trigger v0.5.0 script data seeding
+    # Automatically apply schema migrations through the Builder stage to access necessary typescript TSX hooks, then trigger scripts
     command: npm run migrate:prod
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-openticket_admin}:${POSTGRES_PASSWORD:-supersecurepassword}@db:5432/${POSTGRES_DB:-openticket_prod}

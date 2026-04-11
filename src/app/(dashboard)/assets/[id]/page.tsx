@@ -240,7 +240,7 @@ export default async function AssetDetailPage({
             </div>
           </div>
 
-          <PluginEngineContextRenderer hookType="assetWidgets" payload={{ asset }} />
+          <PluginEngineContextRenderer hookType="assetMainWidgets" payload={{ asset }} />
         </div>
 
         <div className="lg:col-span-2 space-y-6">
@@ -394,7 +394,7 @@ export default async function AssetDetailPage({
             </div>
           </div>
 
-          <PluginEngineContextRenderer hookType="assetWidgets" payload={{ asset }} />
+          <PluginEngineContextRenderer hookType="assetSidebarWidgets" payload={{ asset }} />
         </div>
       </div>
     </div>

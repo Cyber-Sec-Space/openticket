@@ -1,5 +1,4 @@
 import { OpenTicketPlugin } from "../lib/plugins/types"
-import { DemoUIPlugin } from "./demo-ui-plugin";
 
 // Core framework execution target point.
 // Plugins should not be bundled in this core repository. The activePlugins array must remain strictly unoccupied
@@ -14,6 +13,4 @@ const safeRequire = (modFn: () => any) => {
   }
 };
 
-export const activePlugins: OpenTicketPlugin[] = [
-    DemoUIPlugin
-].filter(Boolean) as OpenTicketPlugin[];
+export const activePlugins: OpenTicketPlugin[] = []

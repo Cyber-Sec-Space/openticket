@@ -82,17 +82,25 @@ export type OpenTicketPluginUI = {
 
   // --- NEW: CONTEXT WIDGETS ---
 
-  /** Widgets rendered as cards in the right-hand column of the Incident Detail view */
-  incidentWidgets?: ComponentType<{ incident: any } | Record<string, any>>[];
+  /** Widgets rendered as cards in the main left-hand column of the Incident Detail view */
+  incidentMainWidgets?: ComponentType<{ incident: any } | Record<string, any>>[];
+  /** Widgets rendered as cards in the sidebar right-hand column of the Incident Detail view */
+  incidentSidebarWidgets?: ComponentType<{ incident: any } | Record<string, any>>[];
 
-  /** Widgets rendered as cards in the left-hand column of the Asset Detail view */
-  assetWidgets?: ComponentType<{ asset: any } | Record<string, any>>[];
+  /** Widgets rendered as cards in the main left-hand column of the Asset Detail view */
+  assetMainWidgets?: ComponentType<{ asset: any } | Record<string, any>>[];
+  /** Widgets rendered as cards in the sidebar right-hand column of the Asset Detail view */
+  assetSidebarWidgets?: ComponentType<{ asset: any } | Record<string, any>>[];
 
-  /** Widgets rendered in the Vulnerability Detail view */
-  vulnerabilityWidgets?: ComponentType<{ vulnerability: any } | Record<string, any>>[];
+  /** Widgets rendered in the main left-hand column Vulnerability Detail view */
+  vulnerabilityMainWidgets?: ComponentType<{ vulnerability: any } | Record<string, any>>[];
+  /** Widgets rendered in the sidebar right-hand column Vulnerability Detail view */
+  vulnerabilitySidebarWidgets?: ComponentType<{ vulnerability: any } | Record<string, any>>[];
 
-  /** Widgets rendered in the User Profile / Management view */
-  userWidgets?: ComponentType<{ user: any } | Record<string, any>>[];
+  /** Widgets rendered in the main left-hand column of the User Profile view */
+  userMainWidgets?: ComponentType<{ user: any } | Record<string, any>>[];
+  /** Widgets rendered in the sidebar right-hand column of the User Profile view */
+  userSidebarWidgets?: ComponentType<{ user: any } | Record<string, any>>[];
 
   // --- NEW: FULL PAGE & NAVIGATION ---
 

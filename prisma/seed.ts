@@ -49,7 +49,11 @@ async function main() {
   });
 
   const devopsRole = await prisma.customRole.create({
-    data: { name: 'DevOps Engineer', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_SYSTEM_SETTINGS, Permission.UPDATE_SYSTEM_SETTINGS, Permission.VIEW_PLUGINS, Permission.INSTALL_PLUGINS, Permission.TOGGLE_PLUGINS, Permission.CONFIGURE_PLUGINS, Permission.RESTART_SYSTEM_SERVICES, Permission.MANAGE_INTEGRATIONS, Permission.VIEW_AUDIT_LOGS] }
+    data: { name: 'DevOps Engineer', isSystem: true, permissions: [Permission.VIEW_DASHBOARD, Permission.VIEW_SYSTEM_SETTINGS, Permission.UPDATE_SYSTEM_SETTINGS, Permission.VIEW_PLUGINS, Permission.INSTALL_PLUGINS, Permission.TOGGLE_PLUGINS, Permission.CONFIGURE_PLUGINS, Permission.RESTART_SYSTEM_SERVICES, Permission.MANAGE_INTEGRATIONS, Permission.VIEW_AUDIT_LOGS, Permission.ACCESS_API, Permission.VIEW_API_TOKENS, Permission.ISSUE_API_TOKENS, Permission.REVOKE_API_TOKENS] }
+  });
+
+  const m2mRole = await prisma.customRole.create({
+    data: { name: 'Automation Bot (M2M)', isSystem: true, permissions: [Permission.ACCESS_API, Permission.ISSUE_API_TOKENS] }
   });
 
   const incViewerRole = await prisma.customRole.create({

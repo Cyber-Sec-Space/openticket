@@ -112,8 +112,6 @@ export default async function UserDetailPage({
         </div>
       </div>
 
-      <PluginEngineContextRenderer hookType="userWidgets" payload={{ user }} />
-
       <UserPanels 
          auditLogs={auditLogs}
          totalAuditLogs={totalAuditLogs}
@@ -129,6 +127,15 @@ export default async function UserDetailPage({
          TAKE_INC={TAKE_INC}
          searchParamsRaw={resolvedSearchParams as Record<string, string>}
       />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="md:col-span-2 space-y-6">
+            <PluginEngineContextRenderer hookType="userMainWidgets" payload={{ user }} />
+         </div>
+         <div className="md:col-span-1 space-y-6">
+            <PluginEngineContextRenderer hookType="userSidebarWidgets" payload={{ user }} />
+         </div>
+      </div>
     </div>
   )
 }
