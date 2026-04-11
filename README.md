@@ -9,6 +9,11 @@
 A next-generation Cybersecurity Incident & Inventory Management system for SecOps and IT personnel. Designed to be a lightweight, centralized, and visually stunning alternative to enterprise IT ticketing tools like Jira and ServiceNow.
 
 ## ✨ Key Features
+- **Absolute Zero-Trust Edge Perimeters (L7 DDoS Defense):** Incoming API payloads are proactively intercepted by Next.js Edge Middleware (`proxy.ts`), physically divorcing unauthenticated volumetric traffic from the downstream Node.js core execution thread and PostgreSQL Database.
+- **SSRF & DNS Rebinding Immunity:** Neutralizes complex Time-of-Check Time-of-Use (TOCTOU) DNS rebinding attacks securely freezing IPv4 address resolutions dynamically before fetching webhooks, protecting inner VPC spaces.
+- **Botnet Deflection (Decoupled Auth Limits):** Employs strict in-memory rate limiting completely severing IP enumeration patterns from targeted identity credential stuffing pipelines.
+- **Postgres Full-Text Search (tsvector):** Radically scales Log and Alert dashboard lookups leveraging native structural `tsquery` optimizations over generic DB `O(N)` LIKE queries.
+- **Asynchronous Modal Transactions:** Eradicates synchronous UI blockers (Browser alerts), replacing core operational confirms with seamless Shadcn portaled `<Dialog>` primitives.
 - **Centralized Dashboard:** Real-time analytics, Typology Distributions, and Severity Matrices tracking organizational exposure.
 - **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.

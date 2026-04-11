@@ -10,10 +10,9 @@ export const DemoUIPlugin: OpenTicketPlugin = {
     author: "system",
     description: "Validates Context Widgets, System Tabs, and Routing."
   },
-  lifecycle: {
-    onLoad: async () => {},
-    onEnable: async () => {},
-    onDisable: async () => {},
+  hooks: {
+    onInstall: async () => {},
+    onUninstall: async () => {},
   },
   ui: {
     incidentWidgets: [

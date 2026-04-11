@@ -9,6 +9,11 @@
 專為資安維運 (SecOps) 與 IT 團隊打造的次世代資安事件與資產集中管理系統。作為 Jira 或 ServiceNow 等企業級 IT 工單系統的輕量化、視覺化替代方案而生。
 
 ## ✨ 核心特色
+- **絕對邊界零信任防禦 (L7 DDoS Defense)：** 全部的 API 負載皆受到 Next.js Edge Middleware (`proxy.ts`) 的主動攔截保護。完全杜絕未授權的巨量探測流量實體接觸後端 Node.js 執行緒池與 PostgreSQL 資料庫。
+- **免疫 DNS Rebinding 與 SSRF 阻擊：** 透過「解析截斷」徹底粉碎 Time-of-Check Time-of-Use (TOCTOU) 攻擊的伺服器請求偽造，系統在派發 Webhook 前會完全凍結安全的 IPv4 動態位址，保護您內網的 VPC 空白地帶不被穿透。
+- **針對性機器人阻禦 (分離式限流機制)：** 採用嚴格的 In-Memory 評估，並將 IP 探測頻率與針對固定 Identifier 的帳號撞庫攻擊「去耦合 (Decouple)」，完美瓦解分散式殭屍網路。
+- **Postgres 原生全文檢索 (tsvector)：** 捨棄了效能災難的傳統 `O(N)` 模糊比對查詢，採用 Postgres 內建的 `tsquery` 索引結構，使得超大型資料庫的事件儀表板與日誌搜尋仍能保持毫秒級流暢回傳。
+- **全非同步的對話框介面 (Async Dialog UX)：** 拔除會造成系統阻塞的原生警告視窗，全面重構為 React Portaled `<Dialog>`，實現無縫單頁式的高流暢維運體驗。
 - **集中化儀表板：** 透過即時指標、事件拓樸分佈與嚴重性矩陣，全面掌控組織的曝險狀態。
 - **事件與漏洞雙軌追蹤：** 具備端對端的事件分流管道，能將複雜的資安事件與 CVE 漏洞直接映射到內部受害資產上。
 - **雙因子驗證 (2FA) 安全機制：** 內建基於 TOTP 演算法的 2FA 模組，可完美整合各種標準驗證器應用程式 (如 Google Authenticator, Authy)。更支援系統管理員「一鍵強制全域啟用 2FA」的鎖定功能。

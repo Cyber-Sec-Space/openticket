@@ -208,9 +208,57 @@ graph TD
 
 ---
 
-## 3. 關鍵技術決策 (ADR - Architecture Decision Records)
+## 3. 邊界安全與效能防護 (Edge Security & Boundary Defenses)
+
+為了消除 Time-of-Check Time-of-Use (TOCTOU) DNS 重新綁定漏洞，以及 Layer 7 (應用層) 的巨量 HTTP DDoS 攻擊，OpenTicket 採用了嚴格的雙層防禦邊界，將 Node.js 核心執行緒與潛在的惡意網路拓樸實體隔離。
+
+### 3.1 邊界防火牆 (Layer 7 Defense)
+框架會透過 Next.js Edge Runtimes (`proxy.ts`) 瞬間攔截所有未授權的負載。缺乏有效 Token 或 Session 的惡意連線會直接在邊界被拋棄，完全不會觸碰到核心的 Node.js 運行環境或拖垮 PostgreSQL 連線池。
+
+```mermaid
+graph LR
+    Attacker((惡意殭屍網路)) -.->|巨量探測 GET /api/*| Edge[Next.js Edge Proxy 邊界層]
+    Legitimate((合法使用者操作)) -->|夾帶 Session 憑證| Edge
+    
+    subgraph Edge_Boundary [V8 Isolate / Vercel Edge]
+        Edge --> Bouncer{驗證身分狀態}
+        Bouncer -- "無憑證 / 偽造 Token" --> Reject[HTTP 401 驅逐]
+    end
+    
+    subgraph Secure_Runtime [Node.js 核心運行區塊]
+        Bouncer -- "核可放行" --> REST_API[API 處理節點]
+        REST_API -->|已授權的資料存取| Postgres[(資料庫)]
+    end
+    
+    style Reject fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#fff;
+    style REST_API fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+```
+
+### 3.2 免疫 DNS Rebinding 與 SSRF 阻擊
+為了防堵對內部系統的伺服器端請求偽造 (SSRF，如利用 Webhook 存取被掏空的 EC2 Metadata 或 Loopback IP)，外部請求會在解析前被剝離抽象的 Host 目標。系統會強制將其解析為實體的 IPv4 並短暫凍結在記憶體中進行比對。
+
+```typescript
+// 防禦 TOCTOU SSRF 攻擊的情境切片
+const resolvedIps = await dns.resolve4(parsed.hostname);
+const pinnedIp = resolvedIps[0]; // 凍結物理網路拓樸
+
+if (isPrivateIP(pinnedIp)) {
+    throw new Error("轉發目標解析為內部 RFC1918 / 私密網段，拒絕存取");
+}
+
+// 模擬原生 Host 狀態，但強制打擊已凍結的靜態 IP
+await fetch(`https://${pinnedIp}${parsed.pathname}`, {
+    headers: { "Host": parsed.hostname } // 防止 SNI 與反向代理丟失
+});
+```
+
+---
+
+## 4. 關鍵技術決策 (ADR - Architecture Decision Records)
 
 * **Server Actions 優先於 REST API：** 多數的內部狀態異動直接採用 React 的伺服器動作（標註 `"use server"`），並直接處理 `FormData`。這不僅省去了撰寫 `fetch/axios` 的繁瑣程式碼，還能立刻在後端執行驗證。
+* **PostgreSQL 原生全文檢索 (tsvector)**: 為了徹底消除資料庫在數百萬筆 Log 日誌中執行 `%LIKE%` 模糊比對所產生的災難性 `O(N)` N+1 延遲，架構全面捨棄了傳統的 Wildcard 查詢。我們採用了 Postgres 原生的 `tsvector / tsquery` 全文檢索索引矩陣，實現了突破性的 UI 檢索延遲壓縮與大規模並行能力。
+* **全同步式對話框的退場 (Asynchronous Modal)**: 系統全局拔除了會導致瀏覽器執行緒阻塞與畫面凍結的原生警告區塊 (`window.alert`, `window.confirm`)。我們全面匯入了無阻塞的 React Shadcn Portaled `<Dialog>` 非同步架構，不僅提升了視覺的連續性，更保護了 UI Event-Loop 的狀態免疫力。
 * **動態細粒度權限矩陣 (Dynamic Granular Permission Matrix)：** 我們並未選擇使用多個斷開的布林值（如 `isAdmin`, `isSecops`），而是直接使用 PostgreSQL 關聯表單與 `JSON` 原生結構設計了強大的角色控制總線。這不僅實現了重疊權限分配，也達成讓管理員隨意組合原子操作（例如：單純配發 `CREATE_INCIDENTS`），未來若有新型能力需求，也無須經歷繁瑣的 Database Schema 遷移歷程。
 * **API Token 密碼學儲存機制：** 資料庫拒絕存放明文形式的 `ApiToken` 連線密鑰。當外部系統提出發行請求時，OpenTicket 會呼叫 `crypto.randomBytes(24)` 生成出一組 48 字元的 16 進位字串供操作員複製，並對該字串實施不可逆的 `SHA-256` 雜湊入庫儲存。爾後 API 運行時期的驗證也都透過安全雜湊比對，阻斷任何橫向提權的風險。
 * **元件層級列舉與資料庫列舉對齊：** Prisma 會在不同的應用層以不同的方式解讀字串。我們讓資料庫強制維持原生 PostgreSQL Enum 的命名規範（例如 `IN_PROGRESS`），由於 Next.js React 渲染層不適合顯示帶底線的字串，我們在 UI 層統一呈現無底線字串（例如 `IN PROGRESS`），並在傳回 Server Action 時自動重新組合，以兼容資料庫。

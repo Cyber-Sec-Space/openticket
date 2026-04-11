@@ -207,9 +207,58 @@ graph TD
 
 ---
 
-## 3. Key Technical Decisions (ADR)
+## 3. Edge Security & Boundary Defenses (Zero-Trust)
+
+To neutralize Time-of-Check Time-of-Use (TOCTOU) DNS rebinding and Layer 7 Volumetric HTTP attacks, OpenTicket employs a strictly bifurcated defense perimeter isolating the Node.js Thread Pool from malicious topologies.
+
+### 3.1 Edge Middleware Firewall (Layer 7 Defense)
+The framework intercepts unauthenticated payloads instantaneously via Next.js Edge Runtimes (`proxy.ts`), dropping connection streams physically severed from the core Node.js runtime and PostgreSQL connections.
+
+```mermaid
+graph LR
+    Attacker((Malicious Botnet)) -.->|Massive Volumetric GET /api/*| Edge[Next.js Edge Proxy Layer]
+    Legitimate((Valid UI State)) -->|Session Bearer| Edge
+    
+    subgraph Edge_Boundary [V8 Isolate / Vercel Edge]
+        Edge --> Bouncer{Check Auth State}
+        Bouncer -- "No Session / Invalid Token" --> Reject[HTTP 401 Purge]
+    end
+    
+    subgraph Secure_Runtime [Node.js Core Execution]
+        Bouncer -- "Valid Boundary" --> REST_API[API Handlers]
+        REST_API -->|Authenticated execution| Postgres[(Database)]
+    end
+    
+    style Reject fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#fff;
+    style REST_API fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+```
+
+### 3.2 DNS Rebinding Immunity & SSRF Mitigation
+To prevent internal Server-Side Request Forgery pivot attacks (via webhooks to compromised EC2 metadata or Loopbacks), external requests natively strip abstract Host targets, resolving strictly mapped IPv4 topologies frozen in a transient dictionary mapping.
+
+```typescript
+// Conceptual snapshot mapping TOCTOU SSRF Defense
+const resolvedIps = await dns.resolve4(parsed.hostname);
+const pinnedIp = resolvedIps[0]; // Freeze topology
+
+if (isPrivateIP(pinnedIp)) {
+    throw new Error("Target pivot resolved to an internal RFC1918 / Private space");
+}
+
+// Emulate Host logic but strike explicitly pinned IP vector
+await fetch(`https://${pinnedIp}${parsed.pathname}`, {
+    headers: { "Host": parsed.hostname } // Defeat SNI dropping
+});
+```
+
+---
+
+## 4. Key Technical Decisions (ADR)
+
 
 * **Server Actions over REST:** Most internal state mutations leverage React Server Actions (`"use server"`) directly accepting `FormData`. This cuts out the `fetch/axios` boilerplate and handles backend validations instantly.
+* **PostgreSQL Full-Text Search (tsvector)**: To circumvent catastrophic Database N+1 drag causing O(N) evaluations across multi-million row log tables during Incident filtering, the architecture inherently discards standard `%LIKE%` syntax in favor of Postgres native `tsvector / tsquery` indexing matrices, massively boosting structural UI scaling.
+* **Asynchronous Modal Transitions**: Ripped out volatile and visually disruptive synchronous browser OS-blocks (`window.alert`, `window.confirm`) exchanging them globally with non-blocking React Shadcn Portaled `<Dialog>` constructs, shielding UI event-loop state mutations naturally.
 * **Dynamic Granular Permission Matrix:** Instead of restrictive monolithic enums (e.g., `isAdmin`, `isSecops`), we natively support many-to-many custom roles linking dynamic `JSON` capability arrays within PostgreSQL. This enables fine-grained customizable administrative structures (e.g., granting `CREATE_INCIDENTS` without full system override) adapting universally to distinct SOC environments natively linked to `UserCustomRoles`.
 * **API Token Cryptography:** The database explicitly refuses to store raw `ApiToken` identities. When an integration mints keys, OpenTicket invokes `crypto.randomBytes(24)` to mint a 48-character Hex payload, and unilaterally stores a one-way `SHA-256` hash. Subsequent REST invocations compare hashes safely to prevent exposure during compromise.
 * **Component-Level Enums & Database Enums:** Prisma stringifies the values differently across layers. The database enforces constraints (`IN_PROGRESS`), while the Application rendering layer strips special characters (e.g. `IN PROGRESS`) to present unified UI strings, re-injecting them contextually inside Server Actions.
