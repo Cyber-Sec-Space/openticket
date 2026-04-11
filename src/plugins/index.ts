@@ -1,11 +1,20 @@
-import externalgithubissuesPlugin from "./external-github-issues";
-import externaluiinjectiondemoPlugin from "./external-ui-injection-demo";
 import { OpenTicketPlugin } from "../lib/plugins/types"
 
 // Core framework execution target point.
 // Plugins should not be bundled in this core repository. The activePlugins array must remain strictly unoccupied
 // prior to dynamic external injections via the PluginState Engine or separate distribution architectures.
 
+const safeRequire = (modFn: () => any) => {
+  try {
+    return modFn().default;
+  } catch (err) {
+    console.error(`[Plugin System] Critical Isolation: A plugin threw an exception during initialization and was safely contained.`, err);
+    return null;
+  }
+};
+
 export const activePlugins: OpenTicketPlugin[] = [
-  externalgithubissuesPlugin,
-  externaluiinjectiondemoPlugin,];
+  safeRequire(() => require("./external-github-issues")),
+  safeRequire(() => require("./external-ui-injection-demo")),
+  safeRequire(() => require("./external-broken")),
+].filter(Boolean);

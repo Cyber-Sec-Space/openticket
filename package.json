@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
+    "plugin:reset": "node scripts/plugin-safe-mode.js",
     "upgrade:0.4.0": "tsx scripts/upgrade-to-0.4.0.ts",
     "upgrade:0.5.0": "tsx scripts/upgrade-to-0.5.0.ts",
     "migrate:prod": "npm run upgrade:0.4.0 && npm run upgrade:0.5.0"

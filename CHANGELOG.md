@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Production & Infrastructure
 - **Server Execution Stabilization**: Eliminated a fatal synchronized Denial-of-Service (DoS) defect within the Settings Page where modifying SLA thresholds intentionally blocked Node threads natively attempting iterative SLA metadata rebuilds on millions of unresolved generic tickets, gracefully encapsulating massive SQL scanning tasks in non-blocking event-loop sequences.
+- **Plugin Architecture Resilience**: Completely decoupled Host UI processes from external Plugin execution crashes. Deployed Native React `Error Boundaries` (`error.tsx`) catching severe rendering logic exceptions dynamically without disrupting neighboring global widgets. Ingested `ignoreBuildErrors` blocking strict Plugin TS-rules from maliciously halting Docker production compilation. Engineered an emergency out-of-band CLI executable (`npm run plugin:reset`) enabling instant system rehabilitation without manual AST unlinking.
 
 ## 0.5.1
 ### Fixed
