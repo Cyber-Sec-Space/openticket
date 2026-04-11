@@ -10,6 +10,11 @@ interface RegistryPluginVersion {
   sourceType: "npm" | "registry";
   packageName?: string;
   configSchema: any[];
+  requestedPermissions?: string[];
+  options?: any;
+  dependsOn?: string[];
+  signature?: string;
+  supportedPluginApiVersion?: string[];
 }
 
 interface RegistryPlugin {
