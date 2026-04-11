@@ -3,7 +3,7 @@ export type { Incident, Asset, User };
 import { ComponentType } from "react";
 import { PluginSdkContext } from "./sdk-context";
 
-export const PLUGIN_API_VERSION = "1.0.0";
+export const PLUGIN_API_VERSION = "1.1.0";
 
 
 export type OpenTicketPluginHooks = {
@@ -83,16 +83,16 @@ export type OpenTicketPluginUI = {
   // --- NEW: CONTEXT WIDGETS ---
 
   /** Widgets rendered as cards in the right-hand column of the Incident Detail view */
-  incidentContextWidgets?: ComponentType<{ incident: any }>[];
+  incidentWidgets?: ComponentType<{ incident: any } | Record<string, any>>[];
 
   /** Widgets rendered as cards in the left-hand column of the Asset Detail view */
-  assetContextWidgets?: ComponentType<{ asset: any }>[];
+  assetWidgets?: ComponentType<{ asset: any } | Record<string, any>>[];
 
   /** Widgets rendered in the Vulnerability Detail view */
-  vulnerabilityContextWidgets?: ComponentType<{ vulnerability: any }>[];
+  vulnerabilityWidgets?: ComponentType<{ vulnerability: any } | Record<string, any>>[];
 
   /** Widgets rendered in the User Profile / Management view */
-  userContextWidgets?: ComponentType<{ user: any }>[];
+  userWidgets?: ComponentType<{ user: any } | Record<string, any>>[];
 
   // --- NEW: FULL PAGE & NAVIGATION ---
 
@@ -125,7 +125,12 @@ export interface OpenTicketPlugin {
     name: string;
     description: string;
     version: string;
+    author?: string;
     requestedPermissions?: import("@prisma/client").Permission[];
+    supportedPluginApiVersion?: string[];
+    options?: any;
+    dependsOn?: string[];
+    signature?: string;
   };
   
   hooks?: OpenTicketPluginHooks;
