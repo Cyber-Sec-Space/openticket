@@ -29,18 +29,14 @@ export default auth((req) => {
   }
 
   if (isOnLoginPage || isOnRegisterPage || isOnSetupPage) {
-       // Loop Escape Hatch & URL Sanitizer
        if (req.nextUrl.searchParams.has('clearsession')) {
-          const res = NextResponse.redirect(new URL('/login', req.nextUrl));
-          const cookiesToClear = [
-             "authjs.session-token", 
-             "__Secure-authjs.session-token",
-             "next-auth.session-token",
-             "__Secure-next-auth.session-token"
-          ];
-          for (const name of cookiesToClear) {
-              res.cookies.set(name, "", { maxAge: 0, path: "/" });
-              res.cookies.delete(name);
+          const res = NextResponse.next();
+          const allCookies = req.cookies.getAll();
+          for (const cookie of allCookies) {
+              if (cookie.name.includes("session-token")) {
+                  res.cookies.set(cookie.name, "", { maxAge: 0, path: "/" });
+                  res.cookies.delete(cookie.name);
+              }
           }
           return res;
        }

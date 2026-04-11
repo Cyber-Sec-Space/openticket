@@ -1,12 +1,13 @@
 "use client"
 
+import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, LayoutDashboard, ToyBrick, Key } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export function Sidebar({ userPermissions }: { userPermissions?: string[] }) {
+export function Sidebar({ userPermissions, enabledPlugins = [] }: { userPermissions?: string[], enabledPlugins?: string[] }) {
   const pathname = usePathname()
   
 
@@ -38,6 +39,29 @@ export function Sidebar({ userPermissions }: { userPermissions?: string[] }) {
   if (userPermissions?.includes('VIEW_PLUGINS') || userPermissions?.includes('INSTALL_PLUGINS') || userPermissions?.includes('TOGGLE_PLUGINS') || userPermissions?.includes('CONFIGURE_PLUGINS')) {
     adminNavItems.push({ name: "Plugins", href: "/settings/plugins", icon: ToyBrick })
   }
+
+  // --- PLUGIN NAVIGATION INJECTION ---
+  const [pluginNavItems, setPluginNavItems] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (enabledPlugins.length > 0) {
+      import("@/plugins").then(({ activePlugins }) => {
+         const items: any[] = [];
+         activePlugins.forEach(p => {
+            if (enabledPlugins.includes(p.manifest.id) && p.ui?.pages) {
+               p.ui.pages.forEach(page => {
+                 items.push({
+                   name: page.title,
+                   href: `/plugins/${p.manifest.id}/${page.routeUrl}`,
+                   icon: page.icon || ToyBrick
+                 });
+               });
+            }
+         });
+         setPluginNavItems(items);
+      }).catch(err => console.error("Failed to load plugin navigation:", err));
+    }
+  }, [enabledPlugins]);
 
   const personalNavItems = [
     { name: "Settings", href: "/settings", icon: Settings }
@@ -85,6 +109,7 @@ export function Sidebar({ userPermissions }: { userPermissions?: string[] }) {
       <nav className="flex-1 py-6 px-4 overflow-y-auto custom-scrollbar">
         <NavGroup items={coreNavItems} />
         <NavGroup items={adminNavItems} title="Administration" />
+        <NavGroup items={pluginNavItems} title="Extensions" />
         <NavGroup items={personalNavItems} title="Personal" />
       </nav>
 

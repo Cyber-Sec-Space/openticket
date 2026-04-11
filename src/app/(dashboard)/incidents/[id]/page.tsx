@@ -21,6 +21,7 @@ import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload, Tag as TagIcon } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
+import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 
 export default async function IncidentDetailPage({
   params,
@@ -855,6 +856,8 @@ export default async function IncidentDetailPage({
               )}
             </div>
           )}
+          
+          <PluginEngineContextRenderer hookType="incidentWidgets" payload={{ incident }} />
         </div>
       </div>
     </div>

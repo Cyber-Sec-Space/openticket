@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useRouter } from "next/navigation"
 import { bulkDeleteUsersAction, bulkUpdateRolesAction, toggleUserStatusAction } from "./actions"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 export function UserTableClient({ users, sessionUserId, allCustomRoles }: { users: any[], sessionUserId: string, allCustomRoles?: any[] }) {
   const router = useRouter()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [bulkRoles, setBulkRoles] = useState<string[]>(["REPORTER"])
+  const [bulkRoles, setBulkRoles] = useState<string[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
 
   const toggleAll = () => {
@@ -33,29 +34,54 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
     setSelectedIds(newSet)
   }
 
-  const handleBulkDelete = async () => {
-    if (!confirm("Are you sure you want to delete these users? Orphaned records will be retained.")) return
-    setIsProcessing(true)
-    await bulkDeleteUsersAction(Array.from(selectedIds))
-    setSelectedIds(new Set())
-    setIsProcessing(false)
+  const [confirmConfig, setConfirmConfig] = useState<{isOpen: boolean, title: string, message: string, onConfirm: () => void}>({
+    isOpen: false, title: "", message: "", onConfirm: () => {}
+  })
+
+  const handleBulkDelete = () => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Confirm Deletion",
+      message: "Are you sure you want to delete these users? Orphaned records will be retained.",
+      onConfirm: async () => {
+        setIsProcessing(true)
+        await bulkDeleteUsersAction(Array.from(selectedIds))
+        setSelectedIds(new Set())
+        setIsProcessing(false)
+        setConfirmConfig(p => ({ ...p, isOpen: false }))
+      }
+    })
   }
 
-  const handleBulkRoleUpdate = async () => {
+  const handleBulkRoleUpdate = () => {
     const roleNames = bulkRoles.map(id => allCustomRoles?.find(r => r.id === id)?.name || id)
-    if (!confirm(`Update Roles to [${roleNames.join(', ')}] for selected users?`)) return
-    setIsProcessing(true)
-    await bulkUpdateRolesAction(Array.from(selectedIds), bulkRoles as any)
-    setSelectedIds(new Set())
-    setIsProcessing(false)
+    setConfirmConfig({
+      isOpen: true,
+      title: "Confirm Role Update",
+      message: `Update Roles to [${roleNames.join(', ')}] for selected users?`,
+      onConfirm: async () => {
+        setIsProcessing(true)
+        await bulkUpdateRolesAction(Array.from(selectedIds), bulkRoles as any)
+        setSelectedIds(new Set())
+        setIsProcessing(false)
+        setConfirmConfig(p => ({ ...p, isOpen: false }))
+      }
+    })
   }
 
-  const handleDisableToggle = async (id: string, currentlyDisabled: boolean, e: React.MouseEvent) => {
+  const handleDisableToggle = (id: string, currentlyDisabled: boolean, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm(currentlyDisabled ? "Restore this operator's platform access?" : "Suspend this operator and revoke active sessions?")) return
-    setIsProcessing(true)
-    await toggleUserStatusAction(id, !currentlyDisabled)
-    setIsProcessing(false)
+    setConfirmConfig({
+      isOpen: true,
+      title: currentlyDisabled ? "Restore Access" : "Suspend Operator",
+      message: currentlyDisabled ? "Restore this operator's platform access?" : "Suspend this operator and revoke active sessions?",
+      onConfirm: async () => {
+        setIsProcessing(true)
+        await toggleUserStatusAction(id, !currentlyDisabled)
+        setIsProcessing(false)
+        setConfirmConfig(p => ({ ...p, isOpen: false }))
+      }
+    })
   }
 
   return (
@@ -226,6 +252,25 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={confirmConfig.isOpen} onOpenChange={(open) => setConfirmConfig(p => ({ ...p, isOpen: open }))}>
+        <DialogContent className="sm:max-w-[425px] bg-black/95 border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-white">{confirmConfig.title}</DialogTitle>
+            <DialogDescription className="text-muted-foreground pt-2">
+              {confirmConfig.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
+            <Button variant="outline" className="bg-transparent border-white/10 hover:bg-white/5 hover:text-white" onClick={() => setConfirmConfig(p => ({ ...p, isOpen: false }))}>
+              Cancel
+            </Button>
+            <Button disabled={isProcessing} onClick={confirmConfig.onConfirm} className={`${confirmConfig.title.includes("Delete") || confirmConfig.title.includes("Suspend") ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>
+               {isProcessing ? "Processing..." : "Confirm Execution"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

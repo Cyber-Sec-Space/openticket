@@ -3,8 +3,9 @@ import { db } from "@/lib/db"
 import { ShieldAlert } from "lucide-react"
 import Link from "next/link"
 
-export default async function RegisterPage({ searchParams }: { searchParams: { invite?: string } }) {
-  const inviteToken = searchParams.invite
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ invite?: string }> }) {
+  const params = await searchParams
+  const inviteToken = params.invite
   let invitationRecord: any = null
 
   if (inviteToken) {

@@ -13,6 +13,7 @@ import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { updateVulnAssetStatusAction, deleteVulnerabilityAction, addAssigneesAction, removeAssigneeAction, postVulnCommentAction, linkVulnAssetAction, unlinkVulnAssetAction } from "./actions"
 import Link from "next/link"
 import { Users, MessageSquare } from "lucide-react"
+import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 
 interface MatchProps {
   params: Promise<{ id: string }>
@@ -425,6 +426,8 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
               )}
             </div>
           </div>
+          
+          <PluginEngineContextRenderer hookType="vulnerabilityWidgets" payload={{ vulnerability: vuln }} />
         </div>
       </div>
     </div>

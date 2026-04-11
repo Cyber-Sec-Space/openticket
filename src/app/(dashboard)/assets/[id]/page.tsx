@@ -12,6 +12,7 @@ import { Trash2, Edit3, Server, Network, AlertTriangle, ShieldAlert, Bug } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 
 export default async function AssetDetailPage({
   params,
@@ -390,6 +391,8 @@ export default async function AssetDetailPage({
               )}
             </div>
           </div>
+
+          <PluginEngineContextRenderer hookType="assetWidgets" payload={{ asset }} />
         </div>
       </div>
     </div>

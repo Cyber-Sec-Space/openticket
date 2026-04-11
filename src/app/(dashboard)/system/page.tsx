@@ -1,8 +1,9 @@
+import React from "react"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { hasPermission } from "@/lib/auth-utils"
-import { Sliders, ShieldCheck, UserPlus, Fingerprint, ShieldAlert, Mail, Activity, ArrowRight, Scale } from "lucide-react"
+import { Sliders, ShieldCheck, UserPlus, Fingerprint, ShieldAlert, Mail, Activity, ArrowRight, Scale, ToyBrick } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +16,10 @@ import { SystemTabsLayout } from "./system-tabs-layout"
 import { PLUGIN_API_VERSION } from "@/lib/plugins/types"
 import packageJson from "../../../../package.json"
 import { Badge } from "@/components/ui/badge"
+
+import { activePlugins } from "@/plugins"
+import { parsePluginConfig } from "@/lib/plugins/crypto"
+import { createPluginContext } from "@/lib/plugins/sdk-context"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
@@ -39,6 +44,36 @@ export default async function SystemSettingsPage() {
       slaInfoHours: 720
     }
   })
+
+  const activePluginStates = await db.pluginState.findMany({ where: { isActive: true } });
+  const dynamicTabs: any[] = [];
+  const dynamicChildren: Record<string, React.ReactNode> = {};
+
+  for (const plugin of activePlugins) {
+    const state = activePluginStates.find(s => s.id === plugin.manifest.id);
+    if (!state || !plugin.ui?.systemConfigTabs) continue;
+    
+    const config = state.configJson ? parsePluginConfig(state.configJson) : {};
+    const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name);
+
+    plugin.ui.systemConfigTabs.forEach((tab) => {
+       const tabKey = `plugin_${plugin.manifest.id}_${tab.tabId}`;
+       dynamicTabs.push({
+         id: tabKey,
+         label: tab.label,
+         icon: tab.icon ? <tab.icon className="w-4 h-4" /> : <ToyBrick className="w-4 h-4" />
+       });
+       
+       const Component = tab.component;
+       dynamicChildren[tabKey] = (
+          <div className="pt-4 animate-in fade-in slide-in-from-bottom-2">
+            <React.Suspense fallback={<div className="h-32 bg-black/20 animate-pulse rounded-xl border border-white/5" />}>
+              <Component api={context.api} config={config} />
+            </React.Suspense>
+          </div>
+       );
+    });
+  }
 
   return (
     <div className="w-full p-6 md:p-10 max-w-[1200px] mx-auto space-y-8 animate-fade-in-up">
@@ -65,8 +100,10 @@ export default async function SystemSettingsPage() {
                 { id: "sla", label: "SLA Policies", icon: <Activity className="w-4 h-4" /> },
                 { id: "smtp", label: "Mail Relay", icon: <Mail className="w-4 h-4" /> },
                 { id: "legal", label: "Legal & Licenses", icon: <Scale className="w-4 h-4" /> },
+                ...dynamicTabs
               ]}
               children={{
+                ...dynamicChildren,
                 "general": (
                   <div className="space-y-6 pt-4 animate-in fade-in slide-in-from-bottom-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

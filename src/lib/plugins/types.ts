@@ -79,6 +79,44 @@ export type OpenTicketPluginUI = {
   
   /** Complex React panels to inject securely into the Operator Settings Tab */
   settingsPanels?: ComponentType<any>[];
+
+  // --- NEW: CONTEXT WIDGETS ---
+
+  /** Widgets rendered as cards in the right-hand column of the Incident Detail view */
+  incidentContextWidgets?: ComponentType<{ incident: any }>[];
+
+  /** Widgets rendered as cards in the left-hand column of the Asset Detail view */
+  assetContextWidgets?: ComponentType<{ asset: any }>[];
+
+  /** Widgets rendered in the Vulnerability Detail view */
+  vulnerabilityContextWidgets?: ComponentType<{ vulnerability: any }>[];
+
+  /** Widgets rendered in the User Profile / Management view */
+  userContextWidgets?: ComponentType<{ user: any }>[];
+
+  // --- NEW: FULL PAGE & NAVIGATION ---
+
+  /** 
+   * Inject new full-page routes into the platform. 
+   * These pages will be automatically registered in the Sidebar under the "Plugins" group or interspersed based on config.
+   * They will be mapped automatically to `/plugins/[pluginId]/[routeUrl]`
+   */
+  pages?: {
+    routeUrl: string;                // e.g., 'metrics' => /plugins/my-plugin/metrics
+    title: string;                   // Text displayed in sidebar
+    icon?: ComponentType<any>;       // Lucide / custom icon component for the sidebar
+    component: ComponentType<any>;   // The full page component to render
+  }[];
+
+  // --- NEW: SYSTEM CONFIG EXTENSION ---
+
+  /** New horizontal Tabs injected natively into the Global "System Configuration" (/system) dashboard */
+  systemConfigTabs?: {
+    tabId: string;                   // Unique ID for the tab URL hash
+    label: string;                   // Text displayed on the Tab button
+    icon?: ComponentType<any>;       // Lucide / custom icon for the Tab button
+    component: ComponentType<any>;   // The Setting Panel to render inside the tab
+  }[];
 };
 
 export interface OpenTicketPlugin {

@@ -58,14 +58,20 @@ export default async function DashboardLayout({
     )
   }
   
+  const activePluginStates = await db.pluginState.findMany({ 
+    where: { isActive: true },
+    select: { id: true }
+  })
+  const enabledPlugins = activePluginStates.map(s => s.id)
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <BrowserNotifier isEnabled={userConfig.browserNotificationsEnabled || false} />
       <div className="block md:hidden">
-        <MobileNav userPermissions={session?.user?.permissions as string[]} />
+        <MobileNav userPermissions={session?.user?.permissions as string[]} enabledPlugins={enabledPlugins} />
       </div>
       <div className="flex w-full min-h-screen">
-        <Sidebar userPermissions={session?.user?.permissions as string[]} />
+        <Sidebar userPermissions={session?.user?.permissions as string[]} enabledPlugins={enabledPlugins} />
         <main className="flex-1 w-full min-w-0 md:pl-64 flex flex-col relative animate-fade-in-up min-h-[100dvh]">
           <div className="flex-1 flex flex-col w-full h-full">
             {children}
