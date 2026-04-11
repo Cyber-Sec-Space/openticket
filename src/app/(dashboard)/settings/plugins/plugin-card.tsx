@@ -45,7 +45,9 @@ export function PluginCard({
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const activePermissions = isLocal ? manifest.requestedPermissions : (versions && versions[selectedVersion]?.requestedPermissions);
+  const activePermissions = manifest.requestedPermissions 
+    || (versions && versions[selectedVersion]?.requestedPermissions) 
+    || [];
 
   const handleToggleClick = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
