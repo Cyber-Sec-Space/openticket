@@ -239,6 +239,8 @@ export default async function AssetDetailPage({
               )}
             </div>
           </div>
+
+          <PluginEngineContextRenderer hookType="assetWidgets" payload={{ asset }} />
         </div>
 
         <div className="lg:col-span-2 space-y-6">

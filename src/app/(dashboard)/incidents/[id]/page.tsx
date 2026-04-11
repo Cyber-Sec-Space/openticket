@@ -568,6 +568,8 @@ export default async function IncidentDetailPage({
             </div>
           </div>
 
+          <PluginEngineContextRenderer hookType="incidentWidgets" payload={{ incident }} />
+
           <div className="glass-card rounded-xl overflow-hidden shadow-2xl relative border-t-2 border-t-blue-500/30">
             <CardHeader className="border-b border-border/50 bg-black/10 p-5">
               <CardTitle className="text-blue-400 font-semibold tracking-wide flex items-center">

@@ -212,7 +212,10 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                  </Button>
                </form>
              )}
+             )}
           </div>
+
+          <PluginEngineContextRenderer hookType="vulnerabilityWidgets" payload={{ vulnerability: vuln }} />
 
           <div className="glass-card rounded-xl p-6 border border-border mt-8 shadow-2xl relative">
              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full pointer-events-none" />
