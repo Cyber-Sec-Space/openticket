@@ -1,7 +1,11 @@
+import React from "react"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { hasPermission } from "@/lib/auth-utils"
+import { activePlugins } from "@/plugins"
+import { parsePluginConfig } from "@/lib/plugins/crypto"
+import { createPluginContext } from "@/lib/plugins/sdk-context"
 import { ShieldCheck, UserCog, Mail } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -17,6 +21,8 @@ export default async function SettingsPage() {
   if (!session?.user?.id) { redirect("/login"); return null; }
 
   const user = await db.user.findUnique({ where: { id: session.user.id }, include: { customRoles: { select: { name: true } } } })
+  const activePluginStates = await db.pluginState.findMany({ where: { isActive: true } });
+  
   if (!user) {
     return (
       <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in-up">
@@ -96,6 +102,25 @@ export default async function SettingsPage() {
             <NotificationPanel user={user} />
           </div>
         </div>
+      </div>
+
+      {/* Dynamic Plugin Settings Panels */}
+      <div className="space-y-8 mt-8">
+        {await Promise.all(activePlugins.map(async plugin => {
+          const state = activePluginStates.find(s => s.id === plugin.manifest.id);
+          if (!state || !plugin.ui?.settingsPanels) return null;
+
+          const config = state.configJson ? parsePluginConfig(state.configJson) : {};
+          const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name);
+
+          return (
+            <React.Fragment key={plugin.manifest.id}>
+              {plugin.ui.settingsPanels.map((Panel, idx) => (
+                <Panel key={`${plugin.manifest.id}-panel-${idx}`} api={context.api} config={config} />
+              ))}
+            </React.Fragment>
+          )
+        }))}
       </div>
     </div>
   )

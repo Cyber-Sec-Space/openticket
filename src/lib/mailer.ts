@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer"
 import { db } from "./db"
+import { decryptString } from "./plugins/crypto"
 
 async function getTransporter() {
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
@@ -14,7 +15,7 @@ async function getTransporter() {
     secure: settings.smtpPort === 465, // true for 465, false for other ports
     auth: {
       user: settings.smtpUser,
-      pass: settings.smtpPassword,
+      pass: decryptString(settings.smtpPassword),
     },
   })
 }

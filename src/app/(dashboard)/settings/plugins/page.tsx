@@ -14,7 +14,8 @@ export default async function PluginManagementPage() {
 
   const dbStates = await db.pluginState.findMany();
 
-  const installedPlugins = activePlugins;
+  // Filter out globally undefined or malformed configurations to prevent rendering exceptions
+  const installedPlugins = activePlugins.filter(p => p && p.manifest && p.manifest.id);
 
   return (
     <div className="space-y-4">

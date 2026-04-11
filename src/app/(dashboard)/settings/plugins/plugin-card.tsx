@@ -273,6 +273,12 @@ export function PluginCard({
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
+              {errorMsg && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-md flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-red-400 font-medium whitespace-pre-wrap">{errorMsg}</p>
+                </div>
+              )}
               {installStep === 0 ? (
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-semibold text-neutral-400">Target Version</label>

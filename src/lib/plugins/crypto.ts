@@ -53,3 +53,39 @@ export function parsePluginConfig(rawConfigStr: string): any {
     return {};
   }
 }
+
+export function encryptString(text: string): string {
+  if (!text) return text;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(ALGO, getKey(), iv);
+  
+  let encrypted = cipher.update(text, "utf8", "base64");
+  encrypted += cipher.final("base64");
+  const authTag = cipher.getAuthTag().toString("base64");
+
+  return `${PREFIX}${iv.toString("base64")}.${authTag}.${encrypted}`;
+}
+
+export function decryptString(rawStr: string): string {
+  if (!rawStr || !rawStr.startsWith(PREFIX)) return rawStr;
+  
+  try {
+    const parts = rawStr.slice(PREFIX.length).split(".");
+    if (parts.length !== 3) return rawStr;
+
+    const [ivB64, authTagB64, encryptedB64] = parts;
+    const iv = Buffer.from(ivB64, "base64");
+    const authTag = Buffer.from(authTagB64, "base64");
+    
+    const decipher = crypto.createDecipheriv(ALGO, getKey(), iv);
+    decipher.setAuthTag(authTag);
+    
+    let decrypted = decipher.update(encryptedB64, "base64", "utf8");
+    decrypted += decipher.final("utf8");
+    
+    return decrypted;
+  } catch (err) {
+    console.error("[Plugin Crypto] String decryption failed.", err);
+    return rawStr;
+  }
+}

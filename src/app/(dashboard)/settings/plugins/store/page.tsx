@@ -80,9 +80,9 @@ export default async function PluginStorePage() {
       {registryPlugins.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 animate-fade-in-up">
           {registryPlugins.map(plugin => {
-            const state = dbStates.find(s => s.id === plugin.id);
+            const state = dbStates.find(s => s?.id === plugin?.id);
             // It is considered 'available locally' if it exists in the activePlugins list bundle
-            const isLocal = !!activePlugins.find(p => p.manifest.id === plugin.id);
+            const isLocal = !!activePlugins.find(p => p?.manifest?.id === plugin?.id);
 
             return (
               <PluginCard 

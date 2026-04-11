@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.2
+### Security
+- **System Module Hardening**: Sealed a latent plaintext storage vulnerability affecting Native SMTP Passwords by integrating dynamic AES-256-GCM Encryption (`crypto.ts`) over the `SystemSetting.smtpPassword` column natively, successfully thwarting credential leakage from systemic Database breaches. Hardened internal Webhook configuration parsing with strict defensive SSRF boundary evaluations.
+- **Logic Validation Stabilization**: Resolved a rigorous configuration nullification exception that rendered generic SMTP Passwords and Default Role settings permanently undeletable post-definition out-of-the-box. Implemented absolute array overrides natively resolving false object-spreading behavior.
+
+### Production & Infrastructure
+- **Server Execution Stabilization**: Eliminated a fatal synchronized Denial-of-Service (DoS) defect within the Settings Page where modifying SLA thresholds intentionally blocked Node threads natively attempting iterative SLA metadata rebuilds on millions of unresolved generic tickets, gracefully encapsulating massive SQL scanning tasks in non-blocking event-loop sequences.
+
 ## 0.5.1
 ### Fixed
 - **Turbopack Build Stabilization**: Eliminated a stealth environment OS trailing-space bug (`vuln-form-client 2.tsx`) aggressively crashing production compiler states by restructuring module resolutions.
