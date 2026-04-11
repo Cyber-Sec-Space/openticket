@@ -8,6 +8,7 @@ import { ConfirmForm } from "@/components/ui/confirm-form"
 import { toggleUserStatusAction, deleteUserAction } from "../actions"
 import { UserPanels } from "./user-panels"
 import { hasPermission } from "@/lib/auth-utils"
+import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 
 export default async function UserDetailPage({
   params,
@@ -110,6 +111,8 @@ export default async function UserDetailPage({
           )}
         </div>
       </div>
+
+      <PluginEngineContextRenderer hookType="userWidgets" payload={{ user }} />
 
       <UserPanels 
          auditLogs={auditLogs}
