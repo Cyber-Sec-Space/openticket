@@ -10,6 +10,11 @@ interface RegistryPluginVersion {
   sourceType: "npm" | "registry";
   packageName?: string;
   configSchema: any[];
+  requestedPermissions?: string[];
+  options?: any;
+  dependsOn?: string[];
+  signature?: string;
+  supportedPluginApiVersion?: string[];
 }
 
 interface RegistryPlugin {
@@ -80,14 +85,22 @@ export default async function PluginStorePage() {
       {registryPlugins.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 animate-fade-in-up">
           {registryPlugins.map(plugin => {
-            const state = dbStates.find(s => s.id === plugin.id);
-            // It is considered 'available locally' if it exists in the activePlugins list bundle
-            const isLocal = !!activePlugins.find(p => p.manifest.id === plugin.id);
+            const state = dbStates.find(s => s?.id === plugin?.id);
+            // Locate the true execution node if it exists locally
+            const activePluginNode = activePlugins.find(p => p?.manifest?.id === plugin?.id);
+            const isLocal = !!activePluginNode;
+
+            // Merge registry metadata upwards to perfectly match the expected `OpenTicketPlugin['manifest']` shape for PluginCard
+            const cardManifest = activePluginNode ? activePluginNode.manifest : {
+              ...plugin,
+              version: plugin.latestVersion,
+              requestedPermissions: plugin.versions[plugin.latestVersion]?.requestedPermissions || []
+            };
 
             return (
               <PluginCard 
                 key={plugin.id} 
-                manifest={plugin as any} // Pass registry manifest natively
+                manifest={cardManifest as any} 
                 isActive={state?.isActive || false} 
                 configJson={state?.configJson || null}
                 layout="grid"

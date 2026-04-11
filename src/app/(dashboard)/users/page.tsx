@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { UserTableClient } from "./user-table-client"
 import { hasPermission } from "@/lib/auth-utils"
+import { InviteModal } from "./invite-modal"
 
 export default async function UsersPage() {
   const session = await auth()
@@ -35,7 +36,8 @@ export default async function UsersPage() {
           </h1>
           <p className="text-muted-foreground mt-2 text-sm">Assign structural responsibilities shaping the defense-in-depth model.</p>
         </div>
-        <div>
+        <div className="flex items-center gap-3">
+          <InviteModal />
           {canCreate && (
             <Link href="/users/new">
               <Button className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]">

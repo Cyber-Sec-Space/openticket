@@ -9,13 +9,20 @@
 A next-generation Cybersecurity Incident & Inventory Management system for SecOps and IT personnel. Designed to be a lightweight, centralized, and visually stunning alternative to enterprise IT ticketing tools like Jira and ServiceNow.
 
 ## ✨ Key Features
+- **Absolute Zero-Trust Edge Perimeters (L7 DDoS Defense):** Incoming API payloads are proactively intercepted by Next.js Edge Middleware (`proxy.ts`), physically divorcing unauthenticated volumetric traffic from the downstream Node.js core execution thread and PostgreSQL Database.
+- **SSRF & DNS Rebinding Immunity:** Neutralizes complex Time-of-Check Time-of-Use (TOCTOU) DNS rebinding attacks securely freezing IPv4 address resolutions dynamically before fetching webhooks, protecting inner VPC spaces.
+- **Botnet Deflection (Decoupled Auth Limits):** Employs strict in-memory rate limiting completely severing IP enumeration patterns from targeted identity credential stuffing pipelines.
+- **Postgres Full-Text Search (tsvector):** Radically scales Log and Alert dashboard lookups leveraging native structural `tsquery` optimizations over generic DB `O(N)` LIKE queries.
+- **Asynchronous Modal Transactions:** Eradicates synchronous UI blockers (Browser alerts), replacing core operational confirms with seamless Shadcn portaled `<Dialog>` primitives.
 - **Centralized Dashboard:** Real-time analytics, Typology Distributions, and Severity Matrices tracking organizational exposure.
 - **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
 - **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
 - **Enterprise High-Availability (HA):** Natively embeds a `PgBouncer` Sidecar topology enforcing Transactional Connection Pooling. Effectively eradicates multi-node horizontal scaling starvation, ensuring massive concurrent Database throughput underneath load balancers.
+- **Zero-Trust M2M Identities:** Rigidly decouples automated Machine-to-Machine API interactions from human Administrator roles. Systematically assigns independent `Automation Bot (M2M)` boundaries to API Tokens, ensuring token-based authentications cannot escalate or inherit UI administration privileges even within compromised CI/CD scripts.
 - **Dynamic Granular Permission Matrix:** Platform Administrators can leverage fine-grained access control by defining "Custom Privilege Tiers" bounding exact atomic actions (e.g., `CREATE_INCIDENTS`, `VIEW_ASSETS`, `INSTALL_PLUGINS`). Operators can be assigned multiple discrete roles simultaneously, enabling true Zero-Trust (ZT) organizational flexibility natively mapped to PostgreSQL matrices.
-- **Zero-Trust EventBus & Plugins:** Equipped with a heavily-fortified background EventBus. External third-party dependencies are natively sandboxed via distinct isolation layers including: Promise `Time-Bomb` execution caps (5000ms), `Thundering Herd` query neutralization caching, and `End-to-End AES-256-GCM` configuration storage. Administrators browse the Plugin Registry and explicitly grant bounded Sandbox Permissions via an embedded immersive UI authorization flow. Registry plugins can safely inject Remote React `settingsPanels` natively extending frontend capabilities.
+- **Zero-Trust EventBus & Plugins:** Equipped with a heavily-fortified background EventBus. External third-party dependencies are natively sandboxed via distinct isolation layers including: Promise `Time-Bomb` execution caps (5000ms), `Thundering Herd` query neutralization caching, and `End-to-End AES-256-GCM` configuration storage. Administrators browse the Plugin Registry and explicitly grant bounded Sandbox Permissions via an embedded immersive UI authorization flow. Registry plugins safely inject Remote React `settingsPanels` natively extending frontend capabilities, and undergo rigorous **Pre-flight AST Syntax validations** resolving devastating source code malformations completely pre-deployment.
+- **Granular Plugin UI Extensibility:** Exposes surgically precise UI hooks (e.g., `*MainWidgets` and `*SidebarWidgets`), allowing external plugins to seamlessly embed specialized cards and displays strictly into the primary timelines or secondary data columns across Incident, Vulnerability, Asset, and User Profile architectures without breaking Core UI integrity.
 - **Omni-channel Notifications:** Natively handles email transmission via configurable SMTP configurations, accompanied by an HTML5 Desktop Push Notification center operating persistently in background tabs via highly-efficient Server-Sent Events (SSE) filtering specifically for Critical/High system incidents.
 - **Security-First Paradigm:** Defends against credential stuffing with in-memory Brute Force Rate Limiting across authentication pipelines. Ensures strict BOLA (Broken Object Level Authorization) evaluations actively rejecting unauthorized object-level manipulation.
 - **Transparent Dual-Licensing:** Natively surfaces dual-licensing modes (AGPL-3.0 / Enterprise) directly within the dashboard infrastructure, ensuring enterprise deployments maintain strict licensing hygiene and regulatory compliance.
@@ -98,14 +105,14 @@ This `.tar.gz` archive contains the compiled `.next/standalone` output, drastica
 
 ```bash
 # 1. Download the latest standalone bundle from GitHub Releases
-wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.1/openticket-standalone-v0.5.1.tar.gz
+wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.2/openticket-standalone-v0.5.2.tar.gz
 
 # (Optional) Verify Cryptographic Integrity (SHA-512)
-# Expected: 1c299acd4a99dd6c25ec550c7756aeacbe59c59de4e840a387619291775d13ebb022897c090a692ae6db1729a7bbce4e1332cd1be752b7941c335d5170a0958d
-shasum -a 512 openticket-standalone-v0.5.1.tar.gz
+# Expected: (SHA-512 Hash for v0.5.2 will be published upon build pipeline completion)
+shasum -a 512 openticket-standalone-v0.5.2.tar.gz
 
 # Extract
-tar -xzf openticket-standalone-v0.5.1.tar.gz
+tar -xzf openticket-standalone-v0.5.2.tar.gz
 cd openticket-standalone
 
 # 2. Configure your specific environment parameters

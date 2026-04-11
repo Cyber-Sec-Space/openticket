@@ -1,7 +1,11 @@
+import React from "react"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import Link from "next/link"
 import { redirect } from "next/navigation"
+import { activePlugins } from "@/plugins"
+import { parsePluginConfig } from "@/lib/plugins/crypto"
+import { createPluginContext } from "@/lib/plugins/sdk-context"
 import { ShieldAlert, Server, Activity, Users, AlertTriangle, BarChart3, ScanFace, Target, Bug, ChevronLeft, ChevronRight, LayoutList, Clock, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react"
 import { DashboardCharts } from "@/components/dashboard-charts"
 import { TrendChart } from "@/components/trend-chart"
@@ -27,6 +31,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   if (!hasPermission(session as any, 'VIEW_DASHBOARD')) {
     redirect("/incidents")
   }
+
+  const activePluginStates = await db.pluginState.findMany({ where: { isActive: true } });
 
   const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL');
   const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED');
@@ -219,6 +225,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       HIGH: forType.filter(inc => inc.severity === 'HIGH').length,
       MEDIUM: forType.filter(inc => inc.severity === 'MEDIUM').length,
       LOW: forType.filter(inc => inc.severity === 'LOW').length,
+      INFO: forType.filter(inc => inc.severity === 'INFO').length,
       total: forType.length
     };
   });
@@ -235,7 +242,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const vulnSeverityData = await db.vulnerability.groupBy({
     by: ['severity'], _count: { severity: true }, where: { status: { not: 'RESOLVED' } }
   })
-  const vulnSeverityMatrix = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => {
+  const vulnSeverityMatrix = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'].map(sev => {
     const found = vulnSeverityData.find(d => d.severity === sev)
     return { severity: sev, count: found ? found._count.severity : 0 }
   })
@@ -255,6 +262,25 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           </div>
         </div>
       </header>
+
+      {/* Dynamic Plugin Widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {await Promise.all(activePlugins.map(async plugin => {
+          const state = activePluginStates.find(s => s.id === plugin.manifest.id);
+          if (!state || !plugin.ui?.dashboardWidgets) return null;
+
+          const config = state.configJson ? parsePluginConfig(state.configJson) : {};
+          const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name);
+
+          return (
+            <React.Fragment key={plugin.manifest.id}>
+              {plugin.ui.dashboardWidgets.map((Widget, idx) => (
+                <Widget key={`${plugin.manifest.id}-widget-${idx}`} api={context.api} config={config} />
+              ))}
+            </React.Fragment>
+          )
+        }))}
+      </div>
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

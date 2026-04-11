@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   const session = await auth();
-  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 });
+  if (!session?.user || session.user.requires2FASetup) return new NextResponse("Unauthorized", { status: 401 });
 
   const stream = new ReadableStream({
     async start(controller) {

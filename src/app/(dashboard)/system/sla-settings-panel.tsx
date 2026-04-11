@@ -12,13 +12,14 @@ type SlaConfig = {
   high: number;
   medium: number;
   low: number;
+  info: number;
 }
 
 const TEMPLATES: Record<string, SlaConfig> = {
-  "NIST_IR": { critical: 4, high: 24, medium: 72, low: 168 },
-  "ISO_27001": { critical: 2, high: 12, medium: 48, low: 120 },
-  "GDPR_STRICT": { critical: 1, high: 24, medium: 48, low: 72 },
-  "RELAXED_INTERNAL": { critical: 8, high: 48, medium: 168, low: 336 }
+  "NIST_IR": { critical: 4, high: 24, medium: 72, low: 168, info: 720 },
+  "ISO_27001": { critical: 2, high: 12, medium: 48, low: 120, info: 720 },
+  "GDPR_STRICT": { critical: 1, high: 24, medium: 48, low: 72, info: 336 },
+  "RELAXED_INTERNAL": { critical: 8, high: 48, medium: 168, low: 336, info: 1440 }
 }
 
 export function SlaSettingsPanel({ defaultSla }: { defaultSla: SlaConfig }) {
@@ -120,6 +121,8 @@ export function SlaSettingsPanel({ defaultSla }: { defaultSla: SlaConfig }) {
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">HRS</span>
           </div>
         </div>
+
+
       </div>
     </div>
   )

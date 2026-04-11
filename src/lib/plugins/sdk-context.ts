@@ -216,14 +216,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
         if (!data.title || typeof data.title !== 'string') throw new Error("SDK Input Exception: Incident 'title' is required.");
         if (!data.description || typeof data.description !== 'string') throw new Error("SDK Input Exception: Incident 'description' is required.");
         
-        let targetSlaDate = new Date();
+        let targetSlaDate: Date | null = new Date();
+        const settings = await db.systemSetting.findFirst();
         const effectiveSeverity = data.severity ?? 'LOW';
         switch (effectiveSeverity) {
-          case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + 4); break;
-          case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + 24); break;
-          case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + 72); break;
-          case 'LOW':
-          default:         targetSlaDate.setHours(targetSlaDate.getHours() + 168); break;
+          case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
+          case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaHighHours ?? 24)); break;
+          case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaMediumHours ?? 72)); break;
+          case 'LOW':      targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaLowHours ?? 168)); break;
+          case 'INFO':
+          default:         targetSlaDate = null; break; // INFO has no SLA
         }
 
         try {

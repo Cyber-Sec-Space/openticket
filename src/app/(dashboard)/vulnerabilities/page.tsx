@@ -33,10 +33,12 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
   if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.severity = resolvedParams.severity;
 
   if (resolvedParams.q) {
+    const parsedTsQuery = resolvedParams.q.trim().split(/\s+/).join(' & ')
     filterParams.OR = [
-      { title: { contains: resolvedParams.q, mode: "insensitive" } },
-      { cveId: { contains: resolvedParams.q, mode: "insensitive" } },
-      { id: { contains: resolvedParams.q, mode: "insensitive" } }
+      { title: { search: parsedTsQuery } },
+      // Exact checks for bounded IDS
+      { cveId: { equals: resolvedParams.q } },
+      { id: { equals: resolvedParams.q } }
     ]
   }
 
@@ -65,6 +67,7 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
     if (severity === 'CRITICAL') return "border-red-500/50 text-red-500 bg-red-500/10"
     if (severity === 'HIGH') return "border-orange-500/50 text-orange-500 bg-orange-500/10"
     if (severity === 'MEDIUM') return "border-yellow-500/50 text-yellow-500 bg-yellow-500/10"
+    if (severity === 'INFO') return "border-cyan-500/50 text-cyan-400 bg-cyan-500/10"
     return "border-emerald-500/50 text-emerald-500 bg-emerald-500/10"
   }
 
@@ -136,6 +139,7 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
               </SelectTrigger>
               <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
                 <SelectItem value="ALL">All Severities</SelectItem>
+                <SelectItem value="INFO" className="text-cyan-400 font-bold">Info</SelectItem>
                 <SelectItem value="LOW">Low</SelectItem>
                 <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
                 <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>

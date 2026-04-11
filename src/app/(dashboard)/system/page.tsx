@@ -1,8 +1,9 @@
+import React from "react"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { hasPermission } from "@/lib/auth-utils"
-import { Sliders, ShieldCheck, UserPlus, Fingerprint, ShieldAlert, Mail, Activity, ArrowRight, Scale } from "lucide-react"
+import { Sliders, ShieldCheck, UserPlus, Fingerprint, ShieldAlert, Mail, Activity, ArrowRight, Scale, ToyBrick } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,10 +11,15 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateSystemSettings } from "./actions"
 import { SlaSettingsPanel } from "./sla-settings-panel"
+import { SmtpTestButton } from "./smtp-test-button"
 import { SystemTabsLayout } from "./system-tabs-layout"
 import { PLUGIN_API_VERSION } from "@/lib/plugins/types"
 import packageJson from "../../../../package.json"
 import { Badge } from "@/components/ui/badge"
+
+import { activePlugins } from "@/plugins"
+import { parsePluginConfig } from "@/lib/plugins/crypto"
+import { createPluginContext } from "@/lib/plugins/sdk-context"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
@@ -34,9 +40,40 @@ export default async function SystemSettingsPage() {
       slaCriticalHours: 4,
       slaHighHours: 24,
       slaMediumHours: 72,
-      slaLowHours: 168
+      slaLowHours: 168,
+      slaInfoHours: 720
     }
   })
+
+  const activePluginStates = await db.pluginState.findMany({ where: { isActive: true } });
+  const dynamicTabs: any[] = [];
+  const dynamicChildren: Record<string, React.ReactNode> = {};
+
+  for (const plugin of activePlugins) {
+    const state = activePluginStates.find(s => s.id === plugin.manifest.id);
+    if (!state || !plugin.ui?.systemConfigTabs) continue;
+    
+    const config = state.configJson ? parsePluginConfig(state.configJson) : {};
+    const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name);
+
+    plugin.ui.systemConfigTabs.forEach((tab) => {
+       const tabKey = `plugin_${plugin.manifest.id}_${tab.tabId}`;
+       dynamicTabs.push({
+         id: tabKey,
+         label: tab.label,
+         icon: tab.icon ? <tab.icon className="w-4 h-4" /> : <ToyBrick className="w-4 h-4" />
+       });
+       
+       const Component = tab.component;
+       dynamicChildren[tabKey] = (
+          <div className="pt-4 animate-in fade-in slide-in-from-bottom-2">
+            <React.Suspense fallback={<div className="h-32 bg-black/20 animate-pulse rounded-xl border border-white/5" />}>
+              <Component api={context.api} config={config} />
+            </React.Suspense>
+          </div>
+       );
+    });
+  }
 
   return (
     <div className="w-full p-6 md:p-10 max-w-[1200px] mx-auto space-y-8 animate-fade-in-up">
@@ -63,8 +100,10 @@ export default async function SystemSettingsPage() {
                 { id: "sla", label: "SLA Policies", icon: <Activity className="w-4 h-4" /> },
                 { id: "smtp", label: "Mail Relay", icon: <Mail className="w-4 h-4" /> },
                 { id: "legal", label: "Legal & Licenses", icon: <Scale className="w-4 h-4" /> },
+                ...dynamicTabs
               ]}
               children={{
+                ...dynamicChildren,
                 "general": (
                   <div className="space-y-6 pt-4 animate-in fade-in slide-in-from-bottom-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -220,6 +259,7 @@ export default async function SystemSettingsPage() {
                             <SelectValue placeholder="Select Trigger Level" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="INFO" className="text-blue-400 font-bold">INFO</SelectItem>
                             <SelectItem value="LOW">LOW</SelectItem>
                             <SelectItem value="MEDIUM">MEDIUM</SelectItem>
                             <SelectItem value="HIGH">HIGH</SelectItem>
@@ -242,7 +282,8 @@ export default async function SystemSettingsPage() {
                         critical: settings.slaCriticalHours, 
                         high: settings.slaHighHours, 
                         medium: settings.slaMediumHours, 
-                        low: settings.slaLowHours 
+                        low: settings.slaLowHours,
+                        info: settings.slaInfoHours
                       }} />
                     </div>
                   </div>
@@ -262,68 +303,82 @@ export default async function SystemSettingsPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
                         {/* SMTP Connection Settings */}
-                        <div className="space-y-5 bg-black/30 p-6 rounded-lg border border-white/5">
-                          <h4 className="text-sm font-bold tracking-widest uppercase text-primary/70 mb-4">Connection Credentials</h4>
+                        <div className="w-full lg:w-[calc(50%-1rem)] flex-shrink-0 space-y-5 bg-black/30 p-6 rounded-lg border border-white/5 relative overflow-hidden">
+                          <h4 className="text-sm font-bold tracking-widest uppercase text-primary/70 mb-4 truncate">Connection Credentials</h4>
                           
-                          <div className="space-y-3">
+                          <div className="flex flex-col gap-3">
                             <Label htmlFor="smtpHost" className="text-sm text-foreground/80">SMTP Host</Label>
-                            <Input id="smtpHost" name="smtpHost" defaultValue={settings.smtpHost || ""} placeholder="smtp.example.com" className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary" />
+                            <div className="relative w-full">
+                              <Input key={`host-${settings.smtpHost}`} id="smtpHost" name="smtpHost" defaultValue={settings.smtpHost || ""} placeholder="smtp.example.com" className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary w-full text-ellipsis" />
+                            </div>
                           </div>
                           
-                          <div className="space-y-3">
+                          <div className="flex flex-col gap-3">
                             <Label htmlFor="smtpPort" className="text-sm text-foreground/80">Port</Label>
-                            <Input id="smtpPort" name="smtpPort" type="number" defaultValue={settings.smtpPort || 587} placeholder="587" className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary" />
+                            <div className="relative w-full">
+                              <Input key={`port-${settings.smtpPort}`} id="smtpPort" name="smtpPort" type="number" defaultValue={settings.smtpPort || 587} placeholder="587" className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary w-full" />
+                            </div>
                           </div>
                           
-                          <div className="space-y-3">
+                          <div className="flex flex-col gap-3">
                             <Label htmlFor="smtpUser" className="text-sm text-foreground/80">User / Identity</Label>
-                            <Input id="smtpUser" name="smtpUser" defaultValue={settings.smtpUser || ""} placeholder="alerts@example.com" className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary" />
+                            <div className="relative w-full">
+                              <Input key={`user-${settings.smtpUser}`} id="smtpUser" name="smtpUser" defaultValue={settings.smtpUser || ""} placeholder="alerts@example.com" className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary w-full text-ellipsis" />
+                            </div>
                           </div>
                           
-                          <div className="space-y-3">
+                          <div className="flex flex-col gap-3">
                             <Label htmlFor="smtpPassword" className="text-sm text-foreground/80">Password (Leave blank to keep current)</Label>
-                            <Input id="smtpPassword" name="smtpPassword" type="password" placeholder="••••••••" className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary" />
+                            <div className="relative w-full">
+                              <Input key={`pass-${settings.smtpPassword}`} id="smtpPassword" name="smtpPassword" type="password" placeholder="••••••••" className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary w-full" />
+                            </div>
                           </div>
                           
-                          <div className="space-y-3 pt-2">
+                          <div className="flex flex-col gap-3 pt-2">
                             <Label htmlFor="smtpFrom" className="text-sm text-foreground/80">From Address Display Name</Label>
-                            <Input id="smtpFrom" name="smtpFrom" defaultValue={settings.smtpFrom || ""} placeholder='"OpenTicket SOC" <noreply@openticket.local>' className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary" />
+                            <div className="relative w-full">
+                              <Input key={`from-${settings.smtpFrom}`} id="smtpFrom" name="smtpFrom" defaultValue={settings.smtpFrom || ""} placeholder='"OpenTicket SOC" <noreply@openticket.local>' className="bg-black/60 border-white/10 font-mono focus-visible:ring-primary w-full text-ellipsis" />
+                            </div>
+                          </div>
+                          
+                          <div className="pt-4 mt-4 border-t border-white/10">
+                            <SmtpTestButton />
                           </div>
                         </div>
 
                         {/* Automated Triggers */}
-                        <div className="space-y-5 bg-black/30 p-6 rounded-lg border border-white/5">
-                          <h4 className="text-sm font-bold tracking-widest uppercase text-emerald-400/70 mb-4">Automated Trigger Mapping</h4>
+                        <div className="w-full lg:w-[calc(50%-1rem)] flex-shrink-0 space-y-5 bg-black/30 p-6 rounded-lg border border-white/5 relative overflow-hidden">
+                          <h4 className="text-sm font-bold tracking-widest uppercase text-emerald-400/70 mb-4 truncate">Automated Trigger Mapping</h4>
                           
                           <div className="flex flex-col gap-4">
-                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors">
-                              <Checkbox id="smtpTriggerOnCritical" name="smtpTriggerOnCritical" value="on" defaultChecked={settings.smtpTriggerOnCritical} />
-                              <Label htmlFor="smtpTriggerOnCritical" className="text-sm cursor-pointer select-none">Dispatch on CRITICAL Escalations</Label>
+                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors min-w-0">
+                              <Checkbox key={`crit-${settings.smtpTriggerOnCritical}`} id="smtpTriggerOnCritical" name="smtpTriggerOnCritical" value="on" defaultChecked={settings.smtpTriggerOnCritical} className="flex-shrink-0" />
+                              <Label htmlFor="smtpTriggerOnCritical" className="text-sm cursor-pointer select-none truncate">Dispatch on CRITICAL Escalations</Label>
                             </div>
-                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors">
-                              <Checkbox id="smtpTriggerOnHigh" name="smtpTriggerOnHigh" value="on" defaultChecked={settings.smtpTriggerOnHigh} />
-                              <Label htmlFor="smtpTriggerOnHigh" className="text-sm cursor-pointer select-none">Dispatch on HIGH Escalations</Label>
+                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors min-w-0">
+                              <Checkbox key={`high-${settings.smtpTriggerOnHigh}`} id="smtpTriggerOnHigh" name="smtpTriggerOnHigh" value="on" defaultChecked={settings.smtpTriggerOnHigh} className="flex-shrink-0" />
+                              <Label htmlFor="smtpTriggerOnHigh" className="text-sm cursor-pointer select-none truncate">Dispatch on HIGH Escalations</Label>
                             </div>
-                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors">
-                              <Checkbox id="smtpTriggerOnAssign" name="smtpTriggerOnAssign" value="on" defaultChecked={settings.smtpTriggerOnAssign} />
-                              <Label htmlFor="smtpTriggerOnAssign" className="text-sm cursor-pointer select-none text-emerald-300">Dispatch on Operator Assignment</Label>
+                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors min-w-0">
+                              <Checkbox key={`assign-${settings.smtpTriggerOnAssign}`} id="smtpTriggerOnAssign" name="smtpTriggerOnAssign" value="on" defaultChecked={settings.smtpTriggerOnAssign} className="flex-shrink-0" />
+                              <Label htmlFor="smtpTriggerOnAssign" className="text-sm cursor-pointer select-none text-emerald-300 truncate">Dispatch on Operator Assignment</Label>
                             </div>
-                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors">
-                              <Checkbox id="smtpTriggerOnResolution" name="smtpTriggerOnResolution" value="on" defaultChecked={settings.smtpTriggerOnResolution} />
-                              <Label htmlFor="smtpTriggerOnResolution" className="text-sm cursor-pointer select-none">Dispatch to Reporter on RESOLVED/CLOSED</Label>
+                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors min-w-0">
+                              <Checkbox key={`res-${settings.smtpTriggerOnResolution}`} id="smtpTriggerOnResolution" name="smtpTriggerOnResolution" value="on" defaultChecked={settings.smtpTriggerOnResolution} className="flex-shrink-0" />
+                              <Label htmlFor="smtpTriggerOnResolution" className="text-sm cursor-pointer select-none truncate">Dispatch to Reporter on RESOLVED/CLOSED</Label>
                             </div>
-                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-rose-500/20 transition-colors">
-                              <Checkbox id="smtpTriggerOnAssetCompromise" name="smtpTriggerOnAssetCompromise" value="on" defaultChecked={settings.smtpTriggerOnAssetCompromise} />
+                            <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-rose-500/20 transition-colors min-w-0">
+                              <Checkbox key={`comp-${settings.smtpTriggerOnAssetCompromise}`} id="smtpTriggerOnAssetCompromise" name="smtpTriggerOnAssetCompromise" value="on" defaultChecked={settings.smtpTriggerOnAssetCompromise} />
                               <Label htmlFor="smtpTriggerOnAssetCompromise" className="text-sm cursor-pointer select-none text-rose-300">Dispatch to SECOPS on Asset COMPROMISED</Label>
                             </div>
                             <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors">
-                              <Checkbox id="smtpTriggerOnNewUser" name="smtpTriggerOnNewUser" value="on" defaultChecked={settings.smtpTriggerOnNewUser} />
+                              <Checkbox key={`user2-${settings.smtpTriggerOnNewUser}`} id="smtpTriggerOnNewUser" name="smtpTriggerOnNewUser" value="on" defaultChecked={settings.smtpTriggerOnNewUser} />
                               <Label htmlFor="smtpTriggerOnNewUser" className="text-sm cursor-pointer select-none">Dispatch to ADMIN on New User Registration</Label>
                             </div>
                             <div className="flex items-center space-x-3 p-3 rounded bg-black/20 hover:bg-black/40 border border-transparent hover:border-white/5 transition-colors">
-                              <Checkbox id="smtpTriggerOnNewVulnerability" name="smtpTriggerOnNewVulnerability" value="on" defaultChecked={settings.smtpTriggerOnNewVulnerability} />
+                              <Checkbox key={`vuln-${settings.smtpTriggerOnNewVulnerability}`} id="smtpTriggerOnNewVulnerability" name="smtpTriggerOnNewVulnerability" value="on" defaultChecked={settings.smtpTriggerOnNewVulnerability} />
                               <Label htmlFor="smtpTriggerOnNewVulnerability" className="text-sm cursor-pointer select-none text-orange-300">Dispatch to ADMIN on New Vulnerability</Label>
                             </div>
                           </div>

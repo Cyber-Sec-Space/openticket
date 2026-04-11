@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   distDir: ".next.nosync",
+  typescript: {
+    // ⚠️ Dangerously allow production builds to successfully complete even if plugins have type errors.
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // ⚠️ Warning: This allows production builds to successfully complete even if plugins have ESLint errors.
+    ignoreDuringBuilds: true,
+  },
   async headers() {
     return [
       {

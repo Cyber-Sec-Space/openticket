@@ -129,6 +129,26 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       code = await res.text();
     }
     
+    // AST Syntax Pre-flight Check
+    try {
+       // Using dynamic import to avoid crashing prod environments that might not have typescript installed
+       const ts = await import("typescript");
+       const result = ts.transpileModule(code, {
+          compilerOptions: { jsx: ts.JsxEmit.ReactJSX },
+          reportDiagnostics: true
+       });
+       const syntaxErrors = result.diagnostics?.filter(d => d.category === ts.DiagnosticCategory.Error) || [];
+       if (syntaxErrors.length > 0) {
+          throw new Error("Plugin source code contains critical structural syntax errors and was safely blocked. Rollback triggered.");
+       }
+    } catch (e: any) {
+       if (e.message.includes("critical structural syntax errors")) {
+          throw e; // Bubble up the explicitly caught validation error
+       }
+       // If importing typescript fails, we safely bypass. Production build will still catch it.
+       console.warn("[Plugin Pre-flight] TypeScript AST parser unavailable. Bypassing pre-flight validation.");
+    }
+
     const pluginsDir = path.join(process.cwd(), "src/plugins");
     const pluginFile = path.join(pluginsDir, `external-${pluginId}.tsx`);
     

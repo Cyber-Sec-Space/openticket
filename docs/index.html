@@ -4,86 +4,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenTicket | Open Source Security Operations Platform</title>
-  <meta name="description"
-    content="OpenTicket is a next-generation open-source SOC and Security Operations platform integrating incident management, threat vectors, and SOAR automation.">
-  <meta name="keywords"
-    content="SOC, Security Operations, Incident Response, SOAR, Cybersecurity, Open Source, Threat Intelligence, SIEM">
+  <title>OpenTicket | Cybersecurity Incident & Operations Platform</title>
+  <meta name="description" content="An enterprise-grade open-source security operations platform uniting zero-trust edge protection, asynchronous incident tracking, and machine-to-machine integrations.">
+  <meta name="keywords" content="OpenTicket, Cybersecurity, Zero-Trust, Incident Management, Cybersec Operations, Assets, Open Source, Plugin Registry, Next.js, Role Based Access, Authjs, Cyber Security Platform">
   <meta name="author" content="Cyber Sec Space">
+  <link rel="canonical" href="https://openticket.cyber-sec.space/" />
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://cyber-sec-space.github.io/openticket/">
-  <meta property="og:title" content="OpenTicket | Open Source SecOps Platform">
-  <meta property="og:description"
-    content="An enterprise-grade open-source security operations platform uniting incident tracking, machine-to-machine integrations, and real-time collaboration.">
-  <meta property="og:image" content="https://cyber-sec-space.github.io/openticket/assets/hero-dashboard.png">
+  <meta property="og:url" content="https://openticket.cyber-sec.space/">
+  <meta property="og:title" content="OpenTicket | Cybersecurity Incident & Operations Platform">
+  <meta property="og:description" content="An enterprise-grade open-source security operations platform uniting zero-trust edge protection, asynchronous incident tracking, and machine-to-machine integrations.">
+  <meta property="og:image" content="https://openticket.cyber-sec.space/assets/dashboard-main.png">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://cyber-sec-space.github.io/openticket/">
-  <meta property="twitter:title" content="OpenTicket | Open Source SecOps Platform">
-  <meta property="twitter:description"
-    content="An enterprise-grade open-source security operations platform uniting incident tracking, machine-to-machine integrations, and real-time collaboration.">
-  <meta property="twitter:image" content="https://cyber-sec-space.github.io/openticket/assets/hero-dashboard.png">
+  <meta property="twitter:url" content="https://openticket.cyber-sec.space/">
+  <meta property="twitter:title" content="OpenTicket | Cybersecurity Incident & Operations Platform">
+  <meta property="twitter:description" content="An enterprise-grade open-source security operations platform uniting zero-trust edge protection, asynchronous incident tracking, and machine-to-machine integrations.">
+  <meta property="twitter:image" content="https://openticket.cyber-sec.space/assets/dashboard-main.png">
 
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
-  <!-- Modern Typography -->
+  <!-- Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800;900&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="canonical" href="https://openticket.cyber-sec.space/" />
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "OpenTicket",
-    "operatingSystem": "Web, Server",
-    "applicationCategory": "SecurityApplication",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "description": "An enterprise-grade open-source security operations platform uniting incident tracking, machine-to-machine integrations, and real-time collaboration."
-  }
-  </script>
 </head>
 
-<body class="dark-theme">
-  <!-- Glowing Background Orbs -->
+<body>
+  <!-- Ambient Background -->
   <div class="glow-orb orb-1"></div>
   <div class="glow-orb orb-2"></div>
   <div class="glow-orb orb-3"></div>
 
-  <!-- Navigation -->
+  <!-- Main Navigation -->
   <nav class="navbar glass">
     <div class="nav-container">
       <div class="logo">
-        <img src="assets/openticket_banner_trans.png" alt="OpenTicket Logo" class="logo-img">
+        <h2 class="text-gradient" style="font-family: 'Outfit'; font-weight: 800; letter-spacing: -1px;">OPENTICKET</h2>
       </div>
       <div class="nav-links">
-        <a href="index.html#features">Features</a>
-        <a href="index.html#architecture">Architecture</a>
-        <a href="plugins-guide.html">Plugins</a>
-        <a href="installation.html">Installation</a>
+        <a href="index.html#features">Architecture</a>
+        <a href="plugins-guide.html">Plugin Ecosystem</a>
+        <a href="installation.html">Deploy</a>
       </div>
       <div class="nav-actions">
-        <a href="https://github.com/Cyber-Sec-Space/openticket" target="_blank" class="github-star-btn"
-          aria-label="GitHub">
-          <svg height="20" viewBox="0 0 16 16" width="20" fill="currentColor">
-            <path
-              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
-            </path>
-          </svg>
-          <span>Star on GitHub</span>
+        <a href="https://github.com/Cyber-Sec-Space/openticket" class="btn btn-outline" style="border-radius: 2rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom; display: inline-block;"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg> Star on GitHub
         </a>
       </div>
     </div>
@@ -91,204 +62,148 @@
 
   <!-- Hero Section -->
   <section class="hero content-wrapper">
-    <div class="hero-content reveal">
-      <div class="badge glass">Open Source SecOps</div>
-      <h1 class="hero-title">Cybersecurity Operations.<br><span class="text-gradient">Elevated.</span></h1>
+    <div class="reveal">
+      <div class="badge">Version 0.5.2 • Zero-Trust Edge Release</div>
+      <h1 class="hero-title">Cybersecurity Operations,<br><span class="text-gradient">Secured at the Edge.</span></h1>
       <p class="hero-subtitle">
-        An enterprise-grade platform unifying incident tracking, machine-to-machine integrations, and real-time
-        collaboration. Automate responses, track SLAs, and take control of your SOC.
+        A visually stunning, unified SecOps platform designed for extreme resilience. Defeat incoming DDoS cascades with Next.js Edge Middlewares, intercept SSRF threats dynamically, and triage alerts instantly with our blazing-fast native Postgres Full-Text Search matrices.
       </p>
       <div class="hero-actions">
-        <a href="https://github.com/Cyber-Sec-Space/openticket" class="btn btn-primary btn-lg shadow-glow">
-          Deploy Now
-        </a>
+        <a href="installation.html" class="btn btn-primary btn-lg">Deploy Infrastructure</a>
+        <a href="#features" class="btn btn-outline btn-lg">Explore Architecture</a>
       </div>
     </div>
 
-    <!-- Hero Image Placeholder -->
-    <div class="hero-image-wrapper glass reveal delay-1">
-      <div class="mac-window-controls">
-        <span></span><span></span><span></span>
+    <!-- Main Dashboard Hero Mockup -->
+    <div class="mac-window reveal delay-1">
+      <div class="mac-header">
+        <div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div>
       </div>
-      <img src="assets/hero-dashboard.png" alt="OpenTicket Dashboard Overview" class="hero-img">
+      <!-- Expects: docs/assets/dashboard-main.png -->
+      <img src="assets/dashboard-main.png" class="hero-mockup-img" alt="OpenTicket High Density Dashboard" onerror="this.outerHTML='<div class=\'placeholder-box\' style=\'min-height:600px;\'><i data-lucide=\'layout-dashboard\' style=\'width:48px;height:48px;\'></i><span>AWAITING FILE: docs/assets/dashboard-main.png</span></div>'">
     </div>
   </section>
 
-  <!-- Features / Bento Grid Section -->
-  <section id="features" class="features content-wrapper section-padding">
+  <!-- Architectural Bento Grid -->
+  <section id="features" class="content-wrapper section-padding">
     <div class="section-header reveal">
-      <h2 class="section-title">Designed for Modern <span class="text-gradient">Defenders</span></h2>
-      <p class="section-subtitle">Everything you need to orchestrate security workflows in one highly customizable
-        platform.</p>
+      <h2 class="section-title">Engineered for <span class="text-gradient">Hostile Environments</span></h2>
+      <p class="section-subtitle">OpenTicket abandons legacy bottlenecks. We've shifted our core protective boundaries to the network edge and decoupled massive logging queries into optimal indexing engines.</p>
     </div>
 
     <div class="bento-grid">
-      <!-- Bento Item 1: Threat Vector (Large) -->
-      <div class="bento-card glass reveal item-1">
-        <div class="bento-icon"><i data-lucide="radar"></i></div>
-        <h3>Threat Vector Intelligence</h3>
-        <p>Visually assess your organizational risk through dynamic, real-time radar charting of active vulnerabilities
-          spanning CRITICAL to LOW severities.</p>
-        <div class="img-placeholder relative-overflow">
-          <img src="assets/incident-management.png" alt="Incident Management" class="bento-img">
-        </div>
-      </div>
-
-      <!-- Bento Item 2: SLA Tracking -->
-      <div class="bento-card glass reveal delay-1 item-2">
-        <div class="bento-icon"><i data-lucide="clock"></i></div>
-        <h3>Strict SLA Monitoring</h3>
-        <p>Configurable resolution timelines ensure high-priority incidents never slip through the cracks, complete with
-          automated escalation.</p>
-      </div>
-
-      <!-- Bento Item 3: Extensible Hooks -->
-      <div class="bento-card glass reveal delay-2 item-3">
-        <div class="bento-icon"><i data-lucide="webhook"></i></div>
-        <h3>Hook Engine</h3>
-        <p>A decoupled event-bus architecture routing <code>onIncidentCreated</code> and <code>onAssetCompromise</code>
-          logic across your entire SOC perimeter.</p>
-      </div>
-
-      <!-- Bento Item 4: Plug & Play (Large) -->
-      <div class="bento-card glass reveal item-4">
-        <div class="bento-icon"><i data-lucide="blocks"></i></div>
-        <h3>Hybrid Orchestration & Multi-Version Protocol</h3>
-        <p>Build and configure your own native integrations inside the Next.js runtime. Administrators can browse the
-          built-in Plugin Store to install remote GitHub extensions asynchronously with <strong>Zero-Downtime Hot Reload
-            capabilities</strong>. Everything is rigidly constrained by our isolated <code>PLUGIN_API_VERSION</code> Multi-Version sandbox protocol, preventing dependency collisions across generations.</p>
-        <div class="img-placeholder relative-overflow border-top">
-          <img src="assets/plugin-store.gif" alt="Plugin Store Grid" class="bento-img">
-        </div>
-      </div>
-
-      <!-- Bento Item 5: Asset Inventory (Large) -->
-      <div class="bento-card glass reveal delay-1 item-5">
-        <div class="bento-icon"><i data-lucide="server"></i></div>
-        <h3>Comprehensive Asset Inventory</h3>
-        <p>Maintain a real-time, searchable database of your organization's digital assets. Automatically map
-          relationships and track system metadata so your SOC perfectly understands the environment before engaging a
-          threat.</p>
-        <div class="img-placeholder relative-overflow border-top">
-          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
-          <img src="assets/asset-inventory-placeholder.png" alt="[Insert Asset Inventory Screenshot Here]"
-            class="bento-img">
-        </div>
-      </div>
-
-      <!-- Bento Item 6: Vulnerability Correlation -->
-      <div class="bento-card glass reveal delay-2 item-6">
+      
+      <!-- Feature 1: Edge Defense (Wide) -->
+      <div class="bento-card glass reveal item-wide">
         <div class="bento-icon"><i data-lucide="shield-alert"></i></div>
-        <h3>Vulnerability Correlation</h3>
-        <p>Automatically map known CVEs and security flaws directly to your active devices and applications. Prioritize
-          patching based on concrete environmental exposure rather than generic CVSS scores.</p>
-      </div>
-
-      <!-- Bento Item 7: Zero-Trust RBAC (Full Width) -->
-      <div class="bento-card glass reveal item-7">
-        <div class="bento-icon"><i data-lucide="shield-check"></i></div>
-        <h3>Zero-Trust Granular Permissions & Plugin Consent</h3>
-        <p>A dynamic Permission Matrix enabling Custom Roles mapped to atomic operations (e.g.,
-          <code>CREATE_INCIDENTS</code>, <code>VIEW_ASSETS</code>). Extends to external extensions via a
-          <strong>Dual-Layer OAuth-style Plugin Consent Modal</strong> protecting the core DB against malicious internal
-          code installations automatically.</p>
-        <div class="img-placeholder relative-overflow border-top" style="min-height: 400px;">
-          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
-          <img src="assets/rbac-placeholder.png" alt="[Insert Multi-Role RBAC Settings Screenshot Here]"
-            class="bento-img">
+        <h3>Absolute Zero-Trust Edge Perimeters</h3>
+        <p>Volumetric DDoS shouldn't crash your Database. Incoming unauthenticated payloads are proactively intercepted by the <strong>Next.js Edge Middleware</strong>, dropping connection streams strictly before they even touch the core Node.js runtime.</p>
+        <div class="bento-image-container">
+          <!-- Expects: docs/assets/edge-firewall.png -->
+          <img src="assets/edge-firewall.png" class="bento-img" alt="Edge Firewall Architecture Diagram" onerror="this.outerHTML='<div class=\'placeholder-box\'><i data-lucide=\'network\'></i><span>AWAITING FILE: docs/assets/edge-firewall.png</span></div>'">
         </div>
       </div>
 
-      <!-- Bento Item 8: Bank-Grade Crypto (Large) -->
-      <div class="bento-card glass reveal delay-1 item-8">
-        <div class="bento-icon"><i data-lucide="lock"></i></div>
-        <h3>Bank-Grade Storage At Rest</h3>
-        <p>Your external intelligence APIs (like Splunk or Jira tokens) are strictly encrypted locally with
-          <code>AES-256-GCM</code> derived directly from Server Entropy before being saved to PostgreSQL, preventing
-          token theft against database breaches.</p>
-        <div class="img-placeholder relative-overflow border-top">
-          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
-          <img src="assets/encryption-placeholder.png" alt="[Insert Encryption Architecture Settings Here]"
-            class="bento-img">
+      <!-- Feature 2: FTS (Compact) -->
+      <div class="bento-card glass reveal delay-1">
+        <div class="bento-icon"><i data-lucide="database-zap"></i></div>
+        <h3>Native Postgres Full-Text Search</h3>
+        <p>We eliminated catastrophic <code>O(N)</code> `%LIKE%` lookups. OpenTicket now parses multi-million row SIEM logs directly onto strictly indexed <code>tsvector/tsquery</code> PostgreSQL engines, boosting incident timeline rendering speeds.</p>
+        <div class="alert-box cyan">
+          <p style="font-size: 0.85rem; margin: 0;"><i data-lucide="gauge" style="width:14px; display:inline-block; margin-bottom:-2px;"></i> Massive Scale Log Reduction</p>
         </div>
       </div>
 
-      <!-- Bento Item 9: Sandbox -->
-      <div class="bento-card glass reveal delay-2 item-9 border-amber-500/30">
-        <div class="bento-icon"><i data-lucide="zap-off" class="text-amber-500"></i></div>
-        <h3>Resilient DoS Sandboxing (Async)</h3>
-        <p>External Plugin execution is wrapped in a strict <code>5000ms</code> time-bomb to sever hanging network requests. <strong>Architecture Warning:</strong> Plugins run natively in the primary Node.js V8 Isolate. While async paths are sandboxed, <i>synchronous infinite loops (e.g. <code>while(true)</code>) will deadlock the Event Loop globally.</i> Developers must ensure all heavy-lifting is strictly yielded.</p>
-      </div>
-
-      <!-- Bento Item 10: High Availability (Full Width) -->
-      <div class="bento-card glass reveal item-10" style="grid-column: 1 / -1;">
-        <div class="bento-icon"><i data-lucide="network"></i></div>
-        <h3>Enterprise High-Availability & Production Isolation</h3>
-        <p>Natively embeds a <strong>PgBouncer</strong> Sidecar topology enforcing Transactional Connection Pooling.
-          Effectively eradicates multi-node horizontal scaling starvation, while isolating unpredictable Database
-          Migration schemas strictly into dedicated transient containers decoupled from active web nodes.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Architecture Section -->
-  <section id="architecture" class="architecture content-wrapper section-padding">
-    <div class="reveal">
-      <h2 class="section-title">Built on a <span class="text-gradient">Zero-Trust Enterprise Architecture</span></h2>
-      <p class="section-subtitle">OpenTicket is designed from the ground-up for extreme production resilience, featuring High-Availability horizontal scaling and sandboxed extension execution.</p>
-
-      <div class="bento-grid" style="grid-template-columns: 1fr;">
-        <!-- HA Infrastructure Block -->
-        <div class="bento-card glass">
-          <h3>High Availability & Stateful Connection Pooling</h3>
-          <p>The system natively embeds a sidecar <strong>PgBouncer</strong> proxy within the Docker Compose orchestration. This radically optimizes standard Node.js server connections, ensuring thousands of synchronous SOAR inputs don't exhaust PostgreSQL locks, keeping your SOC absolutely stable under overwhelming workloads.</p>
-          <div class="img-placeholder relative-overflow mt-4 border-top" style="min-height: 480px;">
-            <img src="assets/ha-infrastructure.png" alt="OpenTicket High Availability PgBouncer Infrastructure" class="bento-img" style="object-fit: contain; background-color: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
-          </div>
+      <!-- Feature 3: Async Dialogs (Compact) -->
+      <div class="bento-card glass reveal delay-2">
+        <div class="bento-icon"><i data-lucide="app-window"></i></div>
+        <h3>Asynchronous UI Transactions</h3>
+        <p>Ripped out volatile synchronous browser OS-blocks (<code>window.alert</code>). Triage destructive events (like bulk threat deletions) via seamless, non-blocking React <strong>Shadcn Portaled Dialogs</strong> that protect your UI loop.</p>
+        <div class="bento-image-container border-top mt-4">
+           <!-- Expects: docs/assets/incident-dialog.png -->
+           <img src="assets/incident-dialog.png" class="bento-img" alt="Async Triage Dialog UI" onerror="this.outerHTML='<div class=\'placeholder-box\'><i data-lucide=\'mouse-pointer-click\'></i><span>AWAITING FILE: docs/assets/incident-dialog.png</span></div>'">
         </div>
+      </div>
 
-        <!-- Headless API Block -->
-        <div class="bento-card glass">
-          <h3>Headless Machine-to-Machine Integrations</h3>
-          <p>Power your automation flawlessly with our anti-enumeration API Token engine generating secure SHA-256 Bearer authentications for external SOAR/SIEM integration logic.</p>
-          <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
-            <div class="mac-window-controls"><span></span><span></span><span></span></div>
-            <pre><code><span class="keyword">curl</span> -X POST https://soc.openticket.local/api/incidents \
+      <!-- Feature 4: Asset Inventory & DNS Rebinding (Wide) -->
+      <div class="bento-card glass reveal item-wide delay-1">
+        <div class="bento-icon"><i data-lucide="radar"></i></div>
+        <h3>DNS Rebinding Immunity & Asset Tracking</h3>
+        <p>Map your active Servers and end-user Workstations dynamically. When Webhooks fire against your environments, OpenTicket's SSRF protection rigidly strips abstract hosts and resolves explicit IPv4 mappings <em>in-memory</em>—preventing malicious Internal VPC pivoting (TOCTOU attacks).</p>
+        <div class="bento-image-container">
+          <!-- Expects: docs/assets/asset-inventory.png -->
+          <img src="assets/asset-inventory.png" class="bento-img" alt="Digital Asset Threat Overview" onerror="this.outerHTML='<div class=\'placeholder-box\'><i data-lucide=\'server-cog\'></i><span>AWAITING FILE: docs/assets/asset-inventory.png</span></div>'">
+        </div>
+      </div>
+
+      <!-- Feature 5: Decoupled Auth Limits (Full Width row) -->
+      <div class="bento-card glass reveal item-full">
+        <div class="bento-icon"><i data-lucide="bot"></i></div>
+        <h3>Botnet-Decoupled Credential Defense & Plugins</h3>
+        <p>We've completely severed abstract IP enumeration tracking from absolute Identity Authorization pipelines. The in-memory Rate Limiting algorithm seamlessly restricts dispersed zombie-nets without arbitrarily locking out legitimate operators on shared organizational NATs.</p>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top:2rem;">
+          <div class="terminal">
+            <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+            <pre><code><span class="comment">// M2M Automation / SOAR Direct Injection API</span>
+<span class="keyword">curl</span> -X POST https://soc.openticket.local/api/incidents \
   -H <span class="string">"Authorization: Bearer ot_secv2_ab12c3"</span> \
   -H <span class="string">"Content-Type: application/json"</span> \
   -d '{
-    <span class="property">"title"</span>: <span class="string">"Suspicious SSH Login"</span>,
-    <span class="property">"severity"</span>: <span class="string">"HIGH"</span>,
-    <span class="property">"type"</span>: <span class="string">"UNAUTHORIZED_ACCESS"</span>
+    <span class="property">"title"</span>: <span class="string">"Critical SSRF Attempt Overriden"</span>,
+    <span class="property">"severity"</span>: <span class="string">"CRITICAL"</span>,
+    <span class="property">"assetId"</span>: <span class="string">"req_a45b_29"</span>
   }'</code></pre>
+          </div>
+          
+          <div class="bento-image-container" style="margin-top:0;">
+             <!-- Expects: docs/assets/plugin-store.gif or png -->
+             <img src="assets/plugin-store.gif" class="bento-img" alt="Zero-Trust Registry Approvals" onerror="this.outerHTML='<div class=\'placeholder-box\'><i data-lucide=\'boxes\'></i><span>AWAITING FILE: docs/assets/plugin-store.gif</span></div>'">
           </div>
         </div>
       </div>
+
     </div>
   </section>
 
   <!-- CTA Section -->
-  <section class="cta-section section-padding">
-    <div class="cta-container glass reveal">
-      <h2 class="section-title">Ready to Centralize Your SOC?</h2>
-      <p class="section-subtitle">Join the open-source movement redefining security response.</p>
-      <a href="https://github.com/Cyber-Sec-Space/openticket" class="btn btn-primary btn-lg shadow-glow mt-4">
-        View on GitHub
+  <section class="content-wrapper section-padding" style="text-align: center;">
+    <div class="glass reveal" style="max-width: 800px; margin: 0 auto; padding: 4rem; border-radius: 1.5rem;">
+      <h2 class="section-title">Ready to Elevate Your SOC?</h2>
+      <p class="section-subtitle">Dual-Licensed (AGPL-3.0 / Enterprise) and fully encapsulated in Docker logic. Connect your PgBouncer, setup your master admin, and take control.</p>
+      <a href="https://github.com/Cyber-Sec-Space/openticket" class="btn btn-primary btn-lg mt-4" style="border-radius: 2rem;">
+        Deploy Architecture <i data-lucide="arrow-right" style="width: 18px; margin-left: 0.5rem;"></i>
       </a>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="glass border-t">
+  <footer class="glass">
     <div class="content-wrapper footer-content">
-      <div class="footer-logo">
-        <img src="assets/openticket_banner_trans.png" alt="OpenTicket" style="height: 32px;">
+      <div class="logo">
+        <h3 class="text-gradient" style="font-family: 'Outfit'; font-weight: 800;">OPENTICKET</h3>
       </div>
-      <p class="text-muted">© 2026 Cyber Sec Space. Open Core dual-licensed under AGPL-3.0 & Enterprise.</p>
+      <p class="text-muted" style="font-size: 0.9rem;">© 2026 Cyber Sec Space. The Next-Gen Open Source SecOps Platform.</p>
     </div>
   </footer>
 
-  <script src="script.js"></script>
-</body>
+  <script>
+    // Initialize Icons
+    lucide.createIcons();
 
+    // Scroll Reveal Hook
+    function reveal() {
+      var reveals = document.querySelectorAll(".reveal");
+      for (var i = 0; i < reveals.length; i++) {
+        var windowHeight = window.innerHeight;
+        var elementTop = reveals[i].getBoundingClientRect().top;
+        if (elementTop < windowHeight - 50) {
+          reveals[i].classList.add("active");
+        }
+      }
+    }
+    window.addEventListener("scroll", reveal);
+    window.onload = reveal;
+  </script>
+</body>
 </html>

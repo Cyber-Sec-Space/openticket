@@ -80,6 +80,7 @@ export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: bo
                      <SelectValue placeholder="Assess Initial Threat Level..." />
                    </SelectTrigger>
                    <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
+                     <SelectItem value="INFO" className="text-cyan-400 font-bold">Info</SelectItem>
                      <SelectItem value="LOW">Low</SelectItem>
                      <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
                      <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>

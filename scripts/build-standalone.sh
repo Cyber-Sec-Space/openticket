@@ -35,9 +35,10 @@ cd ..
 
 echo "✅ Standalone package created at: release-standalone/openticket-standalone-v$VERSION.tar.gz"
 echo ""
-echo "📝 Instructions for users to run this package:"
+echo "📝 Instructions for operations to run this package:"
 echo "1. tar -xzvf openticket-standalone-v$VERSION.tar.gz"
 echo "2. cd openticket"
-echo "3. npm install prisma --no-save (If they need to migrate DB)"
-echo "4. npx prisma migrate deploy"
+echo "3. cp .env.example .env (Edit DATABASE_URL connection details)"
+echo "4. IMPORTANT: Strict RBAC structure schema mappings natively require TypeScript."
+echo "   You MUST have executed 'npm run migrate:prod' from the main repository AT LEAST ONCE to seed the IAM structure for this database."
 echo "5. node server.js"

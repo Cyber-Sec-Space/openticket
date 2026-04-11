@@ -21,6 +21,7 @@ import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload, Tag as TagIcon } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
+import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 
 export default async function IncidentDetailPage({
   params,
@@ -152,13 +153,13 @@ export default async function IncidentDetailPage({
         const isManualDateOverride = targetSlaDateRaw !== currentIsoSlice;
 
         if (!isManualDateOverride) {
-          let autoDate = new Date();
+          let autoDate: Date | null = new Date();
           switch (finalSeverity) {
             case 'CRITICAL': autoDate.setHours(autoDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
             case 'HIGH':     autoDate.setHours(autoDate.getHours() + (settings?.slaHighHours ?? 24)); break;
             case 'MEDIUM':   autoDate.setHours(autoDate.getHours() + (settings?.slaMediumHours ?? 72)); break;
-            case 'LOW':
-            default:         autoDate.setHours(autoDate.getHours() + (settings?.slaLowHours ?? 168)); break;
+            case 'LOW':      autoDate.setHours(autoDate.getHours() + (settings?.slaLowHours ?? 168)); break;
+            default:         autoDate = null; break; // INFO has no SLA
           }
           finalSlaDate = autoDate;
         } else if (targetSlaDateRaw && targetSlaDateRaw.trim() !== "") {
@@ -260,9 +261,10 @@ export default async function IncidentDetailPage({
       if (settings?.soarAutoQuarantineEnabled) {
          // Telemetry SOAR mapping via system settings override threshold
          let meetsThreshold = false;
-         if (settings.soarAutoQuarantineThreshold === 'CRITICAL' && finalSeverity === 'CRITICAL') meetsThreshold = true;
-         if (settings.soarAutoQuarantineThreshold === 'HIGH' && (finalSeverity === 'CRITICAL' || finalSeverity === 'HIGH')) meetsThreshold = true;
-         if (settings.soarAutoQuarantineThreshold === 'MEDIUM' && (finalSeverity === 'CRITICAL' || finalSeverity === 'HIGH' || finalSeverity === 'MEDIUM')) meetsThreshold = true;
+         const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
+         const currentRank = sevRank[finalSeverity as keyof typeof sevRank] || 0;
+         const thresholdRank = sevRank[(settings.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL'];
+         if (currentRank >= thresholdRank) meetsThreshold = true;
          
          if (meetsThreshold) {
            // BOLA Override protection: Ensure the SOAR Engine executor actively possesses ASSET mutation privileges
@@ -458,7 +460,7 @@ export default async function IncidentDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
-          <Badge className={`px-3 py-1 bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_15px_rgba(255,20,20,0.3)] animate-pulse' : 'border-primary text-primary'}`}>
+          <Badge className={`px-3 py-1 bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_15px_rgba(255,20,20,0.3)] animate-pulse' : (incident.severity === 'INFO' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : 'border-primary text-primary')}`}>
             {incident.severity.replace(/_/g, ' ')}
           </Badge>
           <Badge variant="outline" className="px-3 py-1 border-white/20 text-white/80 bg-black/20 backdrop-blur-sm">{incident.status.replace(/_/g, ' ')}</Badge>
@@ -565,6 +567,8 @@ export default async function IncidentDetailPage({
               )}
             </div>
           </div>
+
+          <PluginEngineContextRenderer hookType="incidentMainWidgets" payload={{ incident }} />
 
           <div className="glass-card rounded-xl overflow-hidden shadow-2xl relative border-t-2 border-t-blue-500/30">
             <CardHeader className="border-b border-border/50 bg-black/10 p-5">
@@ -784,6 +788,7 @@ export default async function IncidentDetailPage({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-black/95 shadow-2xl backdrop-blur-md">
+                        <SelectItem value="INFO" className="text-cyan-400 font-bold">INFO</SelectItem>
                         <SelectItem value="LOW">LOW</SelectItem>
                         <SelectItem value="MEDIUM" className="text-yellow-400">MEDIUM</SelectItem>
                         <SelectItem value="HIGH" className="text-orange-500">HIGH</SelectItem>
@@ -853,6 +858,8 @@ export default async function IncidentDetailPage({
               )}
             </div>
           )}
+          
+          <PluginEngineContextRenderer hookType="incidentSidebarWidgets" payload={{ incident }} />
         </div>
       </div>
     </div>

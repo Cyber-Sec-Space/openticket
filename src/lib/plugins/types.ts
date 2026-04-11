@@ -3,7 +3,7 @@ export type { Incident, Asset, User };
 import { ComponentType } from "react";
 import { PluginSdkContext } from "./sdk-context";
 
-export const PLUGIN_API_VERSION = "1.0.0";
+export const PLUGIN_API_VERSION = "1.1.0";
 
 
 export type OpenTicketPluginHooks = {
@@ -79,6 +79,52 @@ export type OpenTicketPluginUI = {
   
   /** Complex React panels to inject securely into the Operator Settings Tab */
   settingsPanels?: ComponentType<any>[];
+
+  // --- NEW: CONTEXT WIDGETS ---
+
+  /** Widgets rendered as cards in the main left-hand column of the Incident Detail view */
+  incidentMainWidgets?: ComponentType<{ incident: any } | Record<string, any>>[];
+  /** Widgets rendered as cards in the sidebar right-hand column of the Incident Detail view */
+  incidentSidebarWidgets?: ComponentType<{ incident: any } | Record<string, any>>[];
+
+  /** Widgets rendered as cards in the main left-hand column of the Asset Detail view */
+  assetMainWidgets?: ComponentType<{ asset: any } | Record<string, any>>[];
+  /** Widgets rendered as cards in the sidebar right-hand column of the Asset Detail view */
+  assetSidebarWidgets?: ComponentType<{ asset: any } | Record<string, any>>[];
+
+  /** Widgets rendered in the main left-hand column Vulnerability Detail view */
+  vulnerabilityMainWidgets?: ComponentType<{ vulnerability: any } | Record<string, any>>[];
+  /** Widgets rendered in the sidebar right-hand column Vulnerability Detail view */
+  vulnerabilitySidebarWidgets?: ComponentType<{ vulnerability: any } | Record<string, any>>[];
+
+  /** Widgets rendered in the main left-hand column of the User Profile view */
+  userMainWidgets?: ComponentType<{ user: any } | Record<string, any>>[];
+  /** Widgets rendered in the sidebar right-hand column of the User Profile view */
+  userSidebarWidgets?: ComponentType<{ user: any } | Record<string, any>>[];
+
+  // --- NEW: FULL PAGE & NAVIGATION ---
+
+  /** 
+   * Inject new full-page routes into the platform. 
+   * These pages will be automatically registered in the Sidebar under the "Plugins" group or interspersed based on config.
+   * They will be mapped automatically to `/plugins/[pluginId]/[routeUrl]`
+   */
+  pages?: {
+    routeUrl: string;                // e.g., 'metrics' => /plugins/my-plugin/metrics
+    title: string;                   // Text displayed in sidebar
+    icon?: ComponentType<any>;       // Lucide / custom icon component for the sidebar
+    component: ComponentType<any>;   // The full page component to render
+  }[];
+
+  // --- NEW: SYSTEM CONFIG EXTENSION ---
+
+  /** New horizontal Tabs injected natively into the Global "System Configuration" (/system) dashboard */
+  systemConfigTabs?: {
+    tabId: string;                   // Unique ID for the tab URL hash
+    label: string;                   // Text displayed on the Tab button
+    icon?: ComponentType<any>;       // Lucide / custom icon for the Tab button
+    component: ComponentType<any>;   // The Setting Panel to render inside the tab
+  }[];
 };
 
 export interface OpenTicketPlugin {
@@ -87,7 +133,12 @@ export interface OpenTicketPlugin {
     name: string;
     description: string;
     version: string;
+    author?: string;
     requestedPermissions?: import("@prisma/client").Permission[];
+    supportedPluginApiVersion?: string[];
+    options?: any;
+    dependsOn?: string[];
+    signature?: string;
   };
   
   hooks?: OpenTicketPluginHooks;

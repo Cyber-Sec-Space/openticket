@@ -8,6 +8,7 @@ import { ConfirmForm } from "@/components/ui/confirm-form"
 import { toggleUserStatusAction, deleteUserAction } from "../actions"
 import { UserPanels } from "./user-panels"
 import { hasPermission } from "@/lib/auth-utils"
+import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 
 export default async function UserDetailPage({
   params,
@@ -126,6 +127,15 @@ export default async function UserDetailPage({
          TAKE_INC={TAKE_INC}
          searchParamsRaw={resolvedSearchParams as Record<string, string>}
       />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="md:col-span-2 space-y-6">
+            <PluginEngineContextRenderer hookType="userMainWidgets" payload={{ user }} />
+         </div>
+         <div className="md:col-span-1 space-y-6">
+            <PluginEngineContextRenderer hookType="userSidebarWidgets" payload={{ user }} />
+         </div>
+      </div>
     </div>
   )
 }

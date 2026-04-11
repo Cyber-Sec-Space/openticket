@@ -3,11 +3,22 @@ import { db } from "@/lib/db"
 import { ShieldAlert } from "lucide-react"
 import Link from "next/link"
 
-export default async function RegisterPage() {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ invite?: string }> }) {
+  const params = await searchParams
+  const inviteToken = params.invite
+  let invitationRecord: any = null
+
+  if (inviteToken) {
+    invitationRecord = await db.invitation.findUnique({ where: { token: inviteToken } })
+    if (invitationRecord && invitationRecord.expiresAt < new Date()) {
+      invitationRecord = null // expired
+    }
+  }
+
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   const allowRegistration = settings?.allowRegistration ?? true
 
-  if (!allowRegistration) {
+  if (!allowRegistration && !invitationRecord) {
     return (
       <div className="flex h-screen w-full relative overflow-hidden bg-background">
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
@@ -45,10 +56,10 @@ export default async function RegisterPage() {
               OpenTicket
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              New Operator Initialization
+              {invitationRecord ? "Accepting Personal Invitation" : "New Operator Initialization"}
             </p>
           </div>
-          <RegisterForm />
+          <RegisterForm inviteToken={invitationRecord?.token} forcedEmail={invitationRecord?.email} />
         </div>
       </div>
     </div>

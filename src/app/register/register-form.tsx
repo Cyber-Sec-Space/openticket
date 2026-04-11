@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export function RegisterForm() {
+export function RegisterForm({ inviteToken, forcedEmail }: { inviteToken?: string; forcedEmail?: string }) {
   const [errorMessage, dispatch, isPending] = useActionState(attemptRegistration, undefined)
 
   return (
     <form action={dispatch} className="space-y-6 mt-8 relative">
+      {inviteToken && <input type="hidden" name="inviteToken" value={inviteToken} />}
       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
         <div className="space-y-2">
           <Label htmlFor="name" className="text-muted-foreground">Operator Moniker (Name)</Label>
@@ -25,13 +26,16 @@ export function RegisterForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="email" className="text-muted-foreground">Operational Email</Label>
+          {forcedEmail && <input type="hidden" name="email" value={forcedEmail} />}
           <Input 
             id="email" 
-            name="email" 
+            name={forcedEmail ? undefined : "email"}
             type="email" 
             placeholder="operator@openticket.local" 
             className="bg-black/20 border-white/10 text-white placeholder:text-muted-foreground focus-visible:ring-primary backdrop-blur-md"
             required 
+            defaultValue={forcedEmail}
+            disabled={!!forcedEmail}
           />
         </div>
         <div className="space-y-2">

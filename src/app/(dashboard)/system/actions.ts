@@ -4,6 +4,8 @@ import { db } from "@/lib/db"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
+import { encryptString, decryptString } from "@/lib/plugins/crypto"
+import nodemailer from "nodemailer"
 
 export async function updateSystemSettings(formData: FormData) {
   const session = await auth()
@@ -15,10 +17,15 @@ export async function updateSystemSettings(formData: FormData) {
   const allowRegistration = formData.get("allowRegistration") === "on"
   const requireGlobal2FA = formData.get("requireGlobal2FA") === "on"
   const requireEmailVerification = formData.get("requireEmailVerification") === "on"
-  const systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
+  
+  let systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
+  try { new URL(systemPlatformUrl); } catch { systemPlatformUrl = "http://localhost:3000"; }
+  
   const defaultRoleName = formData.get("defaultRoleId") as string
-  let rolePayload = undefined
-  if (defaultRoleName && defaultRoleName !== "NONE") {
+  let rolePayload: any = undefined
+  if (defaultRoleName === "NONE") {
+    rolePayload = { set: [] }
+  } else if (defaultRoleName) {
     const role = await db.customRole.findUnique({ where: { name: defaultRoleName } })
     if (role) {
       rolePayload = { set: [{ id: role.id }] }
@@ -26,7 +33,10 @@ export async function updateSystemSettings(formData: FormData) {
   }
 
   const webhookEnabled = formData.get("webhookEnabled") === "on"
-  const webhookUrl = formData.get("webhookUrl") as string || ""
+  let webhookUrl = formData.get("webhookUrl") as string || ""
+  if (webhookUrl) {
+    try { new URL(webhookUrl); } catch { webhookUrl = ""; }
+  }
 
   const ptCrit = parseInt(formData.get("slaCriticalHours") as string, 10)
   const slaCriticalHours = isNaN(ptCrit) ? 4 : ptCrit
@@ -39,6 +49,9 @@ export async function updateSystemSettings(formData: FormData) {
   
   const ptLow = parseInt(formData.get("slaLowHours") as string, 10)
   const slaLowHours = isNaN(ptLow) ? 168 : ptLow
+  
+  const ptInfo = parseInt(formData.get("slaInfoHours") as string, 10)
+  const slaInfoHours = isNaN(ptInfo) ? 720 : ptInfo
 
   // Rate Limiting Config
   const rateLimitEnabled = formData.get("rateLimitEnabled") === "on"
@@ -58,6 +71,13 @@ export async function updateSystemSettings(formData: FormData) {
   const smtpUser = formData.get("smtpUser") as string || null
   const smtpPasswordRaw = formData.get("smtpPassword") as string || null
   const smtpFrom = formData.get("smtpFrom") as string || null
+  
+  let passwordPayload: any = undefined
+  if (smtpPasswordRaw === "<CLEAR>") {
+    passwordPayload = { smtpPassword: null }
+  } else if (smtpPasswordRaw) {
+    passwordPayload = { smtpPassword: encryptString(smtpPasswordRaw) }
+  }
 
   const smtpTriggerOnCritical = formData.get("smtpTriggerOnCritical") === "on"
   const smtpTriggerOnHigh = formData.get("smtpTriggerOnHigh") === "on"
@@ -71,6 +91,10 @@ export async function updateSystemSettings(formData: FormData) {
   const soarAutoQuarantineEnabled = formData.get("soarAutoQuarantineEnabled") === "on"
   const soarAutoQuarantineThresholdRaw = formData.get("soarAutoQuarantineThreshold") as string
   const soarAutoQuarantineThreshold = (soarAutoQuarantineThresholdRaw || "CRITICAL") as any
+
+  // Detect state change for email verification
+  const currentSettings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const wasEmailVerificationRequired = currentSettings?.requireEmailVerification ?? false
 
   await db.systemSetting.upsert({
     where: { id: "global" },
@@ -86,6 +110,7 @@ export async function updateSystemSettings(formData: FormData) {
       slaHighHours,
       slaMediumHours,
       slaLowHours,
+      slaInfoHours,
       rateLimitEnabled,
       rateLimitWindowMs,
       rateLimitMaxAttempts,
@@ -93,7 +118,7 @@ export async function updateSystemSettings(formData: FormData) {
       smtpHost,
       smtpPort,
       smtpUser,
-      ...(smtpPasswordRaw ? { smtpPassword: smtpPasswordRaw } : {}),
+      ...(passwordPayload ? passwordPayload : {}),
       smtpFrom,
       smtpTriggerOnCritical,
       smtpTriggerOnHigh,
@@ -118,6 +143,7 @@ export async function updateSystemSettings(formData: FormData) {
       slaHighHours,
       slaMediumHours,
       slaLowHours,
+      slaInfoHours,
       rateLimitEnabled,
       rateLimitWindowMs,
       rateLimitMaxAttempts,
@@ -125,7 +151,7 @@ export async function updateSystemSettings(formData: FormData) {
       smtpHost,
       smtpPort,
       smtpUser,
-      smtpPassword: smtpPasswordRaw,
+      ...(passwordPayload ? passwordPayload : {}),
       smtpFrom,
       smtpTriggerOnCritical,
       smtpTriggerOnHigh,
@@ -139,41 +165,98 @@ export async function updateSystemSettings(formData: FormData) {
     }
   })
 
+  // If email verification was freshly turned ON, grandfather in all existing accounts by forcefully marking them as verified
+  if (!wasEmailVerificationRequired && requireEmailVerification) {
+    await db.user.updateMany({
+      where: { emailVerified: null },
+      data: { emailVerified: new Date() }
+    })
+  }
+
   const { fireHook } = await import("@/lib/plugins/hook-engine");
   const updatedSettings = await db.systemSetting.findUnique({ where: { id: "global" } });
   await fireHook("onSystemSettingsUpdated", updatedSettings);
 
 
   // Retroactively patch SLA dates for unresolved incidents and vulnerabilities
-  try {
-    await db.$executeRawUnsafe(`
-      UPDATE "Incident"
-      SET "targetSlaDate" = "createdAt" + (
-        CASE "severity"::text
-          WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
-          WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
-          WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
-          WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
-        END
-      )
-      WHERE "status"::text IN ('NEW', 'IN_PROGRESS', 'PENDING_INFO')
-    `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours)
-    
-    await db.$executeRawUnsafe(`
-      UPDATE "Vulnerability"
-      SET "targetSlaDate" = "createdAt" + (
-        CASE "severity"::text
-          WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
-          WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
-          WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
-          WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
-        END
-      )
-      WHERE "status"::text IN ('OPEN', 'MITIGATED')
-    `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours)
-  } catch (e) {
-    console.error("Failed to retroactively update SLA dates:", e)
-  }
+  setTimeout(async () => {
+    try {
+      await db.$executeRawUnsafe(`
+        UPDATE "Incident"
+        SET "targetSlaDate" = "createdAt" + (
+          CASE "severity"::text
+            WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
+            WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
+            WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
+            WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
+            WHEN 'INFO'     THEN $5::int * INTERVAL '1 hour'
+          END
+        )
+        WHERE "status"::text IN ('NEW', 'IN_PROGRESS', 'PENDING_INFO')
+      `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours, slaInfoHours)
+      
+      await db.$executeRawUnsafe(`
+        UPDATE "Vulnerability"
+        SET "targetSlaDate" = "createdAt" + (
+          CASE "severity"::text
+            WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
+            WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
+            WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
+            WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
+            WHEN 'INFO'     THEN $5::int * INTERVAL '1 hour'
+          END
+        )
+        WHERE "status"::text IN ('OPEN', 'MITIGATED')
+      `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours, slaInfoHours)
+    } catch (e) {
+      console.error("Failed to retroactively update SLA dates:", e)
+    }
+  }, 0)
 
   revalidatePath("/system")
+}
+
+export async function testSmtpConnection(formData: FormData) {
+  const session = await auth()
+  if (!session?.user || !hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')) {
+    return { error: "Unauthorized" }
+  }
+
+  const smtpHost = formData.get("smtpHost") as string || ""
+  const smtpPortStr = formData.get("smtpPort") as string || ""
+  const smtpUser = formData.get("smtpUser") as string || ""
+  const smtpPasswordRaw = formData.get("smtpPassword") as string || ""
+  
+  if (!smtpHost) return { error: "SMTP Host is required for testing." }
+
+  let finalPassword = smtpPasswordRaw
+  if (!finalPassword) {
+    // If empty, try to fetch the existing securely stored password
+    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    if (settings?.smtpPassword) {
+      finalPassword = decryptString(settings.smtpPassword)
+    }
+  }
+
+  const port = parseInt(smtpPortStr, 10) || 587
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: port,
+      secure: port === 465,
+      auth: (smtpUser || finalPassword) ? {
+        user: smtpUser,
+        pass: finalPassword,
+      } : undefined,
+      tls: {
+        rejectUnauthorized: false
+      }
+    })
+
+    await transporter.verify()
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || "Connection failed to verify." }
+  }
 }

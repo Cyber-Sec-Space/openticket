@@ -5,62 +5,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OpenTicket | Security Plugin Development Guide</title>
-  <meta name="description"
-    content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions for the OpenTicket SecOps platform.">
+  <meta name="description" content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions for the OpenTicket SecOps platform.">
   <meta name="keywords" content="OpenTicket Plugins, SOAR Integrations, Security Automation, Webhooks, API">
   <meta name="author" content="Cyber Sec Space">
+  <link rel="canonical" href="https://openticket.cyber-sec.space/plugins-guide.html" />
 
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://cyber-sec-space.github.io/openticket/plugins-guide.html">
-  <meta property="og:title" content="Plugins & Hooks | OpenTicket">
-  <meta property="og:description"
-    content="Learn how to build and integrate custom native plugins for the OpenTicket security operations platform within the Next.js runtime.">
-  <meta property="og:image" content="https://cyber-sec-space.github.io/openticket/assets/plugin-store.gif">
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://openticket.cyber-sec.space/plugins-guide.html">
+  <meta property="og:title" content="OpenTicket | Security Plugin Development Guide">
+  <meta property="og:description" content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions.">
+  <meta property="og:image" content="https://openticket.cyber-sec.space/assets/plugin-ui-injection.png">
 
+  <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://cyber-sec-space.github.io/openticket/plugins-guide.html">
-  <meta property="twitter:title" content="Plugins & Hooks | OpenTicket">
-  <meta property="twitter:description"
-    content="Learn how to build and integrate custom native plugins for the OpenTicket security operations platform within the Next.js runtime.">
-  <meta property="twitter:image" content="https://cyber-sec-space.github.io/openticket/assets/plugin-store.gif">
+  <meta property="twitter:url" content="https://openticket.cyber-sec.space/plugins-guide.html">
+  <meta property="twitter:title" content="OpenTicket | Security Plugin Development Guide">
+  <meta property="twitter:description" content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions.">
+  <meta property="twitter:image" content="https://openticket.cyber-sec.space/assets/plugin-ui-injection.png">
 
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800;900&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <link rel="canonical" href="https://openticket.cyber-sec.space/plugins-guide.html" />
 </head>
 
-<body class="dark-theme">
+<body>
   <div class="glow-orb orb-1"></div>
   <div class="glow-orb orb-2"></div>
+  <div class="glow-orb orb-3"></div>
 
   <!-- Navigation -->
   <nav class="navbar glass">
     <div class="nav-container">
       <div class="logo">
-        <a href="index.html"><img src="assets/openticket_banner_trans.png" alt="OpenTicket Logo" class="logo-img"></a>
+        <a href="index.html" style="text-decoration: none;"><h2 class="text-gradient" style="font-family: 'Outfit'; font-weight: 800; letter-spacing: -1px; margin-bottom: 0;">OPENTICKET</h2></a>
       </div>
       <div class="nav-links">
-        <a href="index.html#features">Features</a>
-        <a href="index.html#architecture">Architecture</a>
-        <a href="plugins-guide.html" class="active">Plugins</a>
-        <a href="installation.html">Installation</a>
+        <a href="index.html#features">Architecture</a>
+        <a href="plugins-guide.html" style="color: var(--foreground); font-weight: 600;">Plugin Ecosystem</a>
+        <a href="installation.html">Deploy</a>
       </div>
       <div class="nav-actions">
-        <a href="https://github.com/Cyber-Sec-Space/openticket" target="_blank" class="github-star-btn"
-          aria-label="GitHub">
-          <svg height="20" viewBox="0 0 16 16" width="20" fill="currentColor">
-            <path
-              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
-            </path>
-          </svg>
-          <span>Star on GitHub</span>
+        <a href="https://github.com/Cyber-Sec-Space/openticket" target="_blank" class="btn btn-outline" style="border-radius: 2rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom; display: inline-block;"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg> Star on GitHub
         </a>
       </div>
     </div>
@@ -68,217 +60,223 @@
 
   <main class="content-wrapper section-padding" style="margin-top: 100px;">
     <div class="reveal">
-      <h1 class="hero-title" style="font-size: 3rem; margin-bottom: 1rem;">Hook Engine <span
-          class="text-gradient">Plugins</span></h1>
-      <p class="section-subtitle" style="text-align: left; margin-bottom: 3rem;">
-        Integrate seamlessly with your existing SOC infrastructure using zero-config extensions.
+      <h1 class="hero-title" style="font-size: clamp(3rem, 5vw, 4rem); margin-bottom: 1rem;">Hook Engine <span class="text-gradient">Plugins</span></h1>
+      <p class="section-subtitle" style="text-align: left; margin-bottom: 4rem; max-width: 800px; margin-left: 0;">
+        Integrate seamlessly with your existing SOC infrastructure using robust, zero-config external extensions perfectly mapped to OpenTicket's sandbox.
       </p>
+    </div>
 
-      <div class="bento-card glass" style="margin-bottom: 2rem;">
-        <h3>The Hybrid Plugin Architecture</h3>
-        <p>OpenTicket plugins operate as dynamic external modules. Since this is an edge-compatible application, plugins interact purely with the centralized Hook Engine and EventBus rather than polluting core logic.</p>
-        <p class="mt-4"><strong>Hybrid Orchestration:</strong> You no longer need to write code to install plugins! Administrators can browse the <strong>Plugin Store</strong> inside their dashboard and install remote capabilities directly via our Server-Side Registry Orchestration logic.</p>
-      </div>
+    <!-- START BENTO GRID -->
+    <div class="bento-grid">
 
-      <div class="bento-card glass" style="margin-bottom: 2rem;">
-        <h3>How to Develop a Zero-Trust Plugin (SDK v0.5.0+)</h3>
-        <p>A plugin is simply a TypeScript object conforming to the <code>OpenTicketPlugin</code> interface. With our new <strong>Zero-Trust architecture</strong>, plugins must explicitly declare the privileges they require via the <code>requestedPermissions</code> array. Administrators will review and consent to these permissions via an OAuth-style UI before the plugin can interact with the SOC Database.</p>
-        <div class="consent-mockup mt-4" style="background: rgba(10,15,25,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-            <div style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.4);">
-              <i data-lucide="shield-alert" class="text-blue-400"></i>
-            </div>
-            <div>
-              <h4 style="margin: 0; font-size: 1.2rem; color: #fff;">Authorization Required</h4>
-              <p style="margin: 0; font-size: 0.9rem; color: #9ca3af;"><strong>Jira Two-Way Sync</strong> is requesting access to your workspace</p>
-            </div>
+      <!-- ITEM 1: Architecture Overview (Full Width) -->
+      <div class="bento-card glass item-full reveal delay-1">
+        <div style="display: flex; gap: 2rem; align-items: center;">
+          <div style="flex: 1;">
+            <div class="bento-icon"><i data-lucide="layers"></i></div>
+            <h3>The Hybrid Plugin Architecture</h3>
+            <p>OpenTicket plugins operate as dynamic external modules. Since this is an edge-compatible Next.js application, plugins interact purely with the centralized Hook Engine (<code>CorePluginLoader</code>) and EventBus rather than polluting core monolithic logic.</p>
+            <p class="mt-4"><strong>SaaS Orchestration:</strong> You no longer need to write code to install plugins into the server! Administrators browse the <strong>Plugin Registry</strong> inside their dashboard and orchestrate remote capabilities dynamically via our API endpoints.</p>
           </div>
-          <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <p style="margin-top: 0; margin-bottom: 0.75rem; font-weight: 600; font-size: 0.85rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Requested Privileges (2)</p>
-            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
-              <li style="display: flex; align-items: flex-start; gap: 0.75rem;">
-                <i data-lucide="check" style="width: 16px; margin-top: 2px;" class="text-green-500"></i> 
-                <div>
-                  <code style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa;">VIEW_INCIDENTS_ALL</code>
-                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Read access to all incidents within the organization.</div>
-                </div>
-              </li>
-              <li style="display: flex; align-items: flex-start; gap: 0.75rem;">
-                <i data-lucide="check" style="width: 16px; margin-top: 2px;" class="text-green-500"></i> 
-                <div>
-                  <code style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa;">ADD_COMMENTS</code>
-                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Post and append comments on existing incidents.</div>
-                </div>
-              </li>
-            </ul>
-          </div>
-          <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-            <button style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;">Deny</button>
-            <button style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">Authorize</button>
+          <div style="flex: 1;" class="terminal">
+            <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+            <pre><code><span class="comment">// 0.5.2 Internal Event Bus Pipeline</span>
+<span class="keyword">await</span> eventBus.emit(<span class="string">'onIncidentResolved'</span>, {  
+  <span class="property">targetId</span>: <span class="string">'inc_992x'</span>,
+  <span class="property">trigger</span>: <span class="string">'AUTOMATION'</span>
+});
+<span class="comment">// Handed over securely to isolated plugins</span></code></pre>
           </div>
         </div>
-        <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
-          <pre><code><span class="keyword">import</span> { OpenTicketPlugin } <span class="keyword">from</span> <span class="string">'@openticket/core'</span>;
+      </div>
 
-<span class="keyword">export const</span> myJiraIntegration: OpenTicketPlugin = {
+      <!-- ITEM 2: Developing (Wide) -->
+      <div class="bento-card glass item-wide reveal">
+        <div class="bento-icon"><i data-lucide="code"></i></div>
+        <h3>Zero-Trust Standard (API Version 1.1.0)</h3>
+        <p>A plugin is simply a TypeScript object conforming to the <code>OpenTicketPlugin</code> definition. With our hardened architecture, plugins must explicitly declare the privileges they require via the <code>requestedPermissions</code> array, and all network manifests must pass an <code>integritySha256</code> cryptographic check before loading into memory.</p>
+        
+        <div class="terminal mt-4">
+          <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+          <pre><code><span class="keyword">export const</span> jiraSyncPlugin: OpenTicketPlugin = {
   manifest: {
     id: <span class="string">'jira-bridge'</span>,
-    name: <span class="string">'Jira Two-Way Sync'</span>,
-    description: <span class="string">'Automatically syncs high-severity incidents to Jira.'</span>,
+    name: <span class="string">'Jira M2M Sync'</span>,
     version: <span class="string">'1.0.0'</span>,
-    requestedPermissions: [<span class="string">'VIEW_INCIDENTS_ALL'</span>, <span class="string">'ADD_COMMENTS'</span>] <span class="comment">// Must be explicitly declared</span>
+    supportedPluginApiVersion: [<span class="string">'1.1.0'</span>], <span class="comment">// Enforcement Lock</span>
+    requestedPermissions: [<span class="string">'VIEW_INCIDENTS_ALL'</span>, <span class="string">'ADD_COMMENTS'</span>]
   },
   hooks: {
     <span class="keyword">onIncidentCreated</span>: <span class="keyword">async</span> (payload, config, context) => {
       <span class="keyword">if</span> (payload.severity !== <span class="string">'CRITICAL'</span>) <span class="keyword">return</span>;
-      
-      <span class="comment">// 1. Call external API securely using encrypted config secrets</span>
-      <span class="keyword">const</span> res = <span class="keyword">await</span> fetch(<span class="string">'https://api.mycorp.atlassian.net/rest/api/2/issue'</span>, {
-        method: <span class="string">'POST'</span>,
-        headers: { <span class="string">'Authorization'</span>: <span class="string">`Bearer ${config.jiraApiToken}`</span> },
-        body: JSON.stringify({ summary: payload.title })
-      });
-      
-      <span class="keyword">const</span> jiraData = <span class="keyword">await</span> res.json();
-
-      <span class="comment">// 2. Use the isolated Sandbox context to safely write back to the SOC DB</span>
-      <span class="keyword">await</span> context.api.addComment(payload.id, <span class="string">`Jira Ticket Created: ${jiraData.key}`</span>);
+      <span class="comment">// Utilizing the strictly scoped context API Sandbox</span>
+      <span class="keyword">await</span> context.api.addComment(payload.id, <span class="string">'Ticket escalated to SIEM.'</span>);
     }
   }
 };</code></pre>
         </div>
       </div>
-      
-      <!-- Permissions Matrix Reference Section -->
-      <div class="bento-card glass" style="margin-bottom: 2rem; border-width: 1px; border-color: rgba(59, 130, 246, 0.3);">
-        <h3><i data-lucide="key" style="display: inline-block; width: 20px; vertical-align: text-bottom; margin-right: 8px;" class="text-blue-400"></i> Complete Permissions Dictionary</h3>
-        <p>When developing plugins, reference the exact `requestedPermissions` string identifiers required for SDK interaction. The engine uses strict validation against these scopes.</p>
+
+      <!-- ITEM 3: Execution Context -->
+      <div class="bento-card glass reveal delay-1">
+        <div class="bento-icon"><i data-lucide="lock-keyhole"></i></div>
+        <h3>Cryptography Engine</h3>
+        <p>You cannot import raw database providers! You are strictly restricted to the <code>context.api</code> module Sandbox. If your plugin calls <code>api.deleteIncident()</code> but lacked <code>DELETE_INCIDENTS</code> consent, the Node Promise will instantly reject.</p>
+        <div class="alert-box cyan mt-4" style="margin-top: 2rem;">
+          <p style="font-size: 0.85rem; margin: 0;"><strong>AES-256-GCM Storage:</strong> All user-supplied API credentials configured in the UI are securely encrypted at REST protecting keys during database breaches.</p>
+        </div>
+      </div>
+
+      <!-- ITEM 4: Required Authority Mockup (Wide) -->
+      <div class="bento-card glass item-wide reveal" style="border-color: rgba(59, 130, 246, 0.3);">
+        <div class="bento-icon"><i data-lucide="shield-check"></i></div>
+        <h3>OAuth-style Registry Consent</h3>
+        <p>Administrators will review and actively consent to plugin boundaries dynamically via our built-in OAuth-style UI before anything executes on your Edge.</p>
         
-        <div style="margin-top: 1.5rem; display: grid; gap: 1rem;">
+        <!-- The pure HTML Consent Mockup from previous version -->
+        <div class="consent-mockup mt-4" style="background: rgba(10,15,25,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; max-width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <div style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.4);">
+              <i data-lucide="shield-alert" style="color: #60a5fa;"></i>
+            </div>
+            <div>
+              <h4 style="margin: 0; font-size: 1.2rem; color: #fff;">Authorization Required</h4>
+              <p style="margin: 0; font-size: 0.9rem; color: #9ca3af;"><strong>Jira Two-Way Sync</strong> is requesting system access</p>
+            </div>
+          </div>
+          <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <p style="margin-top: 0; margin-bottom: 0.75rem; font-weight: 600; font-size: 0.85rem; color: #9ca3af; text-transform: uppercase;">Requested Scope Approvals (2)</p>
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+              <li style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <i data-lucide="check" style="width: 16px; margin-top: 2px; color: #10b981;"></i> 
+                <div>
+                  <code style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa; border: 1px solid rgba(255,255,255,0.1);">VIEW_INCIDENTS_ALL</code>
+                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Read access to all incidents within the organization.</div>
+                </div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                <i data-lucide="check" style="width: 16px; margin-top: 2px; color: #10b981;"></i> 
+                <div>
+                  <code style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa; border: 1px solid rgba(255,255,255,0.1);">ADD_COMMENTS</code>
+                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Post and append automation logs on instances.</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+            <button style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 500;">Reject Source</button>
+            <button style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">Authorize Signature</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEM 5: UI Injection (Standard) -->
+      <div class="bento-card glass reveal delay-2">
+        <div class="bento-icon"><i data-lucide="layout-template"></i></div>
+        <h3>Settings Injection</h3>
+        <p>Don't force users to write JSON. By declaring <code>ui: { settingsPanels: [...] }</code>, plugins dynamically broadcast their own React form components over the internal APIs. Administrators interface with visual switches, dropping config inputs straight into the securely vaulted DB.</p>
+        <div class="bento-image-container mt-4" style="min-height: 150px; background: transparent; border: none;">
+          <!-- Expects: docs/assets/plugin-ui-injection.png -->
+          <img src="assets/plugin-ui-injection.png" class="bento-img" style="border-radius: 6px; border: 1px solid var(--glass-border);" alt="Plugin Settings Panel UI" onerror="this.outerHTML='<div class=\'placeholder-box\'><i data-lucide=\'component\'></i><span>AWAITING FILE: docs/assets/plugin-ui-injection.png</span></div>'">
+        </div>
+      </div>
+
+      <!-- ITEM 6: PERMISSION DICTIONARY (Full Width) -->
+      <div class="bento-card glass item-full reveal">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+           <div>
+             <h3>Permission Matrix Lexicon</h3>
+             <p>Reference these strict identifiers when formatting your network manifest.</p>
+           </div>
+           <div class="bento-icon" style="margin: 0;"><i data-lucide="key"></i></div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+          
           <!-- Incidents -->
-          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; border-left: 3px solid #ef4444;">
-            <h5 style="margin: 0 0 0.5rem 0; color: #ef4444; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">Incidents</h5>
+          <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #ef4444;">
+            <h5 style="color: #ef4444; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">Core Incident Scopes</h5>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_INCIDENTS_ALL</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_INCIDENTS_ASSIGNED</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_INCIDENTS_UNASSIGNED</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_INCIDENTS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_INCIDENTS_METADATA</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_INCIDENT_STATUS_RESOLVE</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_INCIDENT_STATUS_CLOSE</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_INCIDENTS_SELF</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_INCIDENTS_OTHERS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">LINK_INCIDENT_TO_ASSET</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPLOAD_INCIDENT_ATTACHMENTS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_INCIDENT_ATTACHMENTS</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_INCIDENTS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">EXPORT_INCIDENTS</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ADD_COMMENTS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_OWN_COMMENTS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_ANY_COMMENTS</code>
             </div>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">And 12 more granular resolution bindings.</p>
           </div>
           
-          <!-- Vulnerabilities & Assets -->
-          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; border-left: 3px solid #f59e0b;">
-            <h5 style="margin: 0 0 0.5rem 0; color: #f59e0b; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">Assets & Vulnerabilities</h5>
+          <!-- Vulnerabilities -->
+          <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #f59e0b;">
+            <h5 style="color: #f59e0b; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">Asset Topology</h5>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_ASSETS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_ASSETS</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_ASSETS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_ASSETS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_VULNERABILITIES</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_VULNERABILITIES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_VULNERABILITIES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_VULNERABILITIES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_VULNERABILITIES_SELF</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_VULNERABILITIES_OTHERS</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">LINK_VULN_TO_ASSET</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPLOAD_VULN_ATTACHMENTS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_VULN_ATTACHMENTS</code>
             </div>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">Allows mapping external SOC IPs directly to internal vectors.</p>
           </div>
 
-          <!-- Users & System -->
-          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; border-left: 3px solid #8b5cf6;">
-            <h5 style="margin: 0 0 0.5rem 0; color: #8b5cf6; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;">Access & Settings (High Privilege)</h5>
+          <!-- Admins -->
+          <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #8b5cf6;">
+            <h5 style="color: #8b5cf6; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">High Privilege Tiers</h5>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_USERS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_USERS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_USER_PROFILE</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ASSIGN_USER_ROLES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">RESET_USER_PASSWORDS</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">SUSPEND_USERS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_USERS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_ROLES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_ROLES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_ROLES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_ROLES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_DASHBOARD</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_SYSTEM_SETTINGS</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_SYSTEM_SETTINGS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">MANAGE_INTEGRATIONS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_PLUGINS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">INSTALL_PLUGINS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">TOGGLE_PLUGINS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CONFIGURE_PLUGINS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">RESTART_SYSTEM_SERVICES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_AUDIT_LOGS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ACCESS_API</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_API_TOKENS</code>
               <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ISSUE_API_TOKENS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">REVOKE_API_TOKENS</code>
             </div>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">Requires master admin elevated authorization during Plugin Setup.</p>
           </div>
+
+        </div>
+      </div>
+
+       <!-- ITEM 7: Syntax Constraints (Wide) -->
+       <div class="bento-card glass item-wide reveal delay-1" style="border-color: rgba(239, 68, 68, 0.4);">
+        <div class="bento-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);"><i data-lucide="triangle-alert"></i></div>
+        <h3>AST Sandbox Verification</h3>
+        <p>Bad plugins crash mono-repos. To protect the Host container's stability, OpenTicket embeds an <strong>AST Pre-flight Syntax Checker</strong> utilizing the isolated context during runtime installation flow. Any code triggering a `DiagnosticCategory.Error` throws an immediate uninstallation lock preserving Node loops.</p>
+        
+        <div style="background: rgba(239,68,68,0.1); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); padding: 1.5rem; margin-top: 1.5rem;">
+           <h5 style="color: #fca5a5; font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase;">Recovery Protocols</h5>
+           <p style="font-size: 0.95rem; margin-bottom: 1rem;">If you bypass Node guards and somehow trigger a fatal recursive 502 crash loop locally, run the manual unlinking procedure:</p>
+           <div class="terminal" style="background: #000; border: none;"><pre style="padding: 1rem;"><code class="string">npm run plugin:reset</code></pre></div>
+           <p style="font-size: 0.85rem; color: #9ca3af; margin-top: 1rem; margin-bottom: 0;">This isolates corrupt payloads from the Prisma mappings and regenerates clean Node execution clusters.</p>
         </div>
       </div>
       
-      <div class="bento-card glass" style="margin-bottom: 2rem;">
-        <h3>Understanding the execution Context & Cryptography</h3>
-        <p>In standard monolithic platforms, plugins are dangerous because they can import raw database modules. In OpenTicket 0.5.0+, you are legally restricted interacting only via the <code>context.api</code> Sandbox constraint. If your plugin attempts to call <code>context.api.deleteIncident()</code> but did not request <code>DELETE_INCIDENTS</code> in its manifest, the Engine will unconditionally reject the Promise.</p>
-        <p class="mt-4">Furthermore, all credentials (such as <code>config.jiraApiToken</code> mentioned above) are encrypted at rest using <code>AES-256-GCM</code>. Your server secret entropy ensures that if the database is backed-up or compromised, third-party authentication tokens remain secure.</p>
-      </div>
-
-      <div class="bento-card glass" style="margin-bottom: 2rem;">
-        <h3>UI Component Injection (settingsPanels)</h3>
-        <p>Plugins aren't just limited to backend asynchronous hooks. In OpenTicket 0.5.0+, plugins can natively broadcast bespoke React components, seamlessly bridging the barrier between external Registry Logic and the OpenTicket Settings Dashboard.</p>
-        <div class="img-placeholder relative-overflow border-top mt-4 mb-4" style="min-height: 250px;">
-          <!-- 截圖預留位置 (Placeholder for Screenshot) -->
-          <img src="assets/plugin-ui-injection.png" alt="[Insert Plugin UI Settings Injection Screenshot Here]" class="bento-img" style="object-fit: cover;">
-        </div>
-        <p class="mt-4">By declaring <code>ui: { settingsPanels: [...] }</code>, your plugin securely transports interactive forms into the frontend configuration modal. Administrators can edit your deeply nested <code>configJson</code> parameters fluidly without writing raw configuration schemas, all whilst maintaining absolute isolation from other core DOM elements.</p>
-      </div>
-
-      <div class="bento-card glass">
-        <h3>How to Register Custom Plugins Manually</h3>
-        <p>If you prefer not to use the OpenTicket Registry and want to deploy a highly-sensitive internal air-gapped integration, you can still statically register it. Open
-          <code>src/plugins/index.ts</code> and add your plugin to the <code>activePlugins</code> array.
-        </p>
-        <div class="terminal glass cursor-pointer mt-4" style="background: rgba(0,0,0,0.5);">
-          <pre><code><span class="keyword">import</span> { myCustomPlugin } <span class="keyword">from</span> <span class="string">'./my-custom/index'</span>;
-
-<span class="keyword">export const</span> activePlugins: OpenTicketPlugin[] = [
-  <span class="comment">// Add your plugin here</span>
-  myCustomPlugin
-];</code></pre>
-        </div>
-        <p class="mt-4 text-sm text-muted">Rebuild the application via `npm run build` or `docker-compose build` to
-          apply your changes manually.</p>
-      </div>
     </div>
   </main>
 
   <!-- Footer -->
-  <footer class="glass border-t">
+  <footer class="glass mt-4">
     <div class="content-wrapper footer-content">
-      <div class="footer-logo">
-        <img src="assets/openticket_banner_trans.png" alt="OpenTicket" style="height: 32px;">
+      <div class="logo">
+        <h3 class="text-gradient" style="font-family: 'Outfit'; font-weight: 800; margin-bottom: 0;">OPENTICKET</h3>
       </div>
-      <p class="text-muted">© 2026 Cyber Sec Space. Open Core dual-licensed under AGPL-3.0 & Enterprise.</p>
+      <p class="text-muted" style="font-size: 0.9rem;">© 2026 Cyber Sec Space. The Next-Gen Open Source SecOps Platform.</p>
     </div>
   </footer>
 
-  <script src="script.js"></script>
-</body>
+  <script>
+    // Initialize Icons
+    lucide.createIcons();
 
+    // Scroll Reveal Hook
+    function reveal() {
+      var reveals = document.querySelectorAll(".reveal");
+      for (var i = 0; i < reveals.length; i++) {
+        var windowHeight = window.innerHeight;
+        var elementTop = reveals[i].getBoundingClientRect().top;
+        if (elementTop < windowHeight - 50) {
+          reveals[i].classList.add("active");
+        }
+      }
+    }
+    window.addEventListener("scroll", reveal);
+    window.onload = reveal;
+  </script>
+</body>
 </html>

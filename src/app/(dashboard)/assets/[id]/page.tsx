@@ -12,6 +12,7 @@ import { Trash2, Edit3, Server, Network, AlertTriangle, ShieldAlert, Bug } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 
 export default async function AssetDetailPage({
   params,
@@ -238,6 +239,8 @@ export default async function AssetDetailPage({
               )}
             </div>
           </div>
+
+          <PluginEngineContextRenderer hookType="assetMainWidgets" payload={{ asset }} />
         </div>
 
         <div className="lg:col-span-2 space-y-6">
@@ -278,7 +281,7 @@ export default async function AssetDetailPage({
                         {incident.title}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`bg-transparent border text-[10px] ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive' : 'border-primary/50 text-primary/80'}`}>
+                        <Badge className={`bg-transparent border text-[10px] ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive' : (incident.severity === 'INFO' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : 'border-primary/50 text-primary/80')}`}>
                           {incident.severity.replace(/_/g, ' ')}
                         </Badge>
                       </TableCell>
@@ -355,8 +358,8 @@ export default async function AssetDetailPage({
                         {vuln.title}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge className={`bg-transparent border text-[10px] ${vuln.severity === 'CRITICAL' ? 'border-destructive text-destructive' : 'border-primary/50 text-primary/80'}`}>
-                          {vuln.cvssScore ? vuln.cvssScore.toFixed(1) : vuln.severity}
+                        <Badge className={`bg-transparent border text-[10px] ${vuln.severity === 'CRITICAL' ? 'border-destructive text-destructive' : (vuln.severity === 'INFO' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : 'border-primary/50 text-primary/80')}`}>
+                          {vuln.cvssScore ? vuln.cvssScore.toFixed(1) : vuln.severity.replace(/_/g, ' ')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -390,6 +393,8 @@ export default async function AssetDetailPage({
               )}
             </div>
           </div>
+
+          <PluginEngineContextRenderer hookType="assetSidebarWidgets" payload={{ asset }} />
         </div>
       </div>
     </div>

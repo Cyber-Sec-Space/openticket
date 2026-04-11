@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     // If user has CREATE_INCIDENTS, they are allowed to set initial target asset and severity
     const finalAssetId = hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null;
     
-    const VALID_SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    const VALID_SEVERITIES = ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
     let finalSeverity = severity || 'LOW';
     if (!VALID_SEVERITIES.includes(finalSeverity)) {
       return new NextResponse(`Invalid Severity. Accepted values: ${VALID_SEVERITIES.join(', ')}`, { status: 400 })
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
 
     // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation
     const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
-    const sevRank = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 }
+    const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
     const currentRank = sevRank[newIncident.severity as keyof typeof sevRank] || 0
     const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
 
