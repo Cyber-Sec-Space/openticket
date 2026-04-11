@@ -51,10 +51,15 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   if (resolvedParams.severity && resolvedParams.severity !== "ALL") filterParams.AND.push({ severity: resolvedParams.severity });
 
   if (resolvedParams.q) {
+    // Postgres Full-Text Search Optimization (Phase 3 System Patch)
+    // Convert spaced queries into Postgres required tsquery syntax: "token1 & token2"
+    const parsedTsQuery = resolvedParams.q.trim().split(/\s+/).join(' & ')
+    
     const searchOr = [
-      { title: { contains: resolvedParams.q, mode: "insensitive" } },
-      { description: { contains: resolvedParams.q, mode: "insensitive" } },
-      { id: { contains: resolvedParams.q, mode: "insensitive" } },
+      { title: { search: parsedTsQuery } },
+      { description: { search: parsedTsQuery } },
+      // Direct exact matches for bounded properties
+      { id: { equals: resolvedParams.q } },
       { tags: { hasSome: [resolvedParams.q, `#${resolvedParams.q}`] } }
     ]
     filterParams.AND.push({ OR: searchOr })
@@ -152,6 +157,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
               </SelectTrigger>
               <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
                 <SelectItem value="ALL">All Severities</SelectItem>
+                <SelectItem value="INFO" className="text-cyan-400 font-bold">Info</SelectItem>
                 <SelectItem value="LOW">Low</SelectItem>
                 <SelectItem value="MEDIUM" className="text-yellow-400">Medium</SelectItem>
                 <SelectItem value="HIGH" className="text-orange-500">High</SelectItem>
@@ -222,7 +228,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge className={`bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_10px_rgba(255,50,50,0.2)] animate-pulse' : 'border-primary text-primary'}`}>
+                  <Badge className={`bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_10px_rgba(255,50,50,0.2)] animate-pulse' : (incident.severity === 'INFO' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : 'border-primary text-primary')}`}>
                     {incident.severity.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>

@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import crypto from "crypto"
-import { hasPermission } from "@/lib/auth-utils"
+import { hasPermission, assertSecureSession } from "@/lib/auth-utils"
 
 export async function createApiTokenAction(formData: FormData) {
   const session = await auth()
@@ -45,6 +45,7 @@ export async function createApiTokenAction(formData: FormData) {
 
 export async function deleteApiTokenAction(tokenId: string) {
   const session = await auth()
+  assertSecureSession(session)
   if (!session?.user) throw new Error("Forbidden")
 
   // Ensure user owns token

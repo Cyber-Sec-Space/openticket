@@ -26,8 +26,8 @@ export async function apiAuth() {
         return null // Token expired
       }
 
-      // Async update lastUsedAt to not block the request
-      db.apiToken.update({
+      // Async update lastUsedAt, awaited to prevent Serverless hibernation truncation
+      await db.apiToken.update({
         where: { id: apiToken.id },
         data: { lastUsedAt: new Date() }
       }).catch(console.error)

@@ -10,6 +10,7 @@ export function hasPermission(
   permission: keyof typeof Permission | (keyof typeof Permission)[]
 ): boolean {
   if (!session?.user?.permissions) return false;
+  if (session.user.requires2FASetup) return false;
 
   const userPermissions = session.user.permissions;
 
@@ -20,4 +21,14 @@ export function hasPermission(
   }
   
   return userPermissions.includes(permission);
+}
+
+/**
+ * Asserts that the session is natively secure and fully authenticated.
+ * Throws an explicit error if the user is trapped in an MFA setup phase,
+ * structurally blocking unauthorized standalone API calls.
+ */
+export function assertSecureSession(session: Session | null | undefined) {
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (session.user.requires2FASetup) throw new Error("Security Interlock: Action Thwarted. MFA Setup Requirement Pending.");
 }

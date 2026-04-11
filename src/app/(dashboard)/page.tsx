@@ -225,6 +225,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
       HIGH: forType.filter(inc => inc.severity === 'HIGH').length,
       MEDIUM: forType.filter(inc => inc.severity === 'MEDIUM').length,
       LOW: forType.filter(inc => inc.severity === 'LOW').length,
+      INFO: forType.filter(inc => inc.severity === 'INFO').length,
       total: forType.length
     };
   });
@@ -241,7 +242,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
   const vulnSeverityData = await db.vulnerability.groupBy({
     by: ['severity'], _count: { severity: true }, where: { status: { not: 'RESOLVED' } }
   })
-  const vulnSeverityMatrix = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map(sev => {
+  const vulnSeverityMatrix = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'].map(sev => {
     const found = vulnSeverityData.find(d => d.severity === sev)
     return { severity: sev, count: found ? found._count.severity : 0 }
   })

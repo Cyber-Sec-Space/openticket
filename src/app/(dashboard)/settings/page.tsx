@@ -20,7 +20,8 @@ export default async function SettingsPage() {
   const session = await auth()
   if (!session?.user?.id) { redirect("/login"); return null; }
 
-  const user = await db.user.findUnique({ where: { id: session.user.id }, include: { customRoles: { select: { name: true } } } })
+  const user = await db.user.findUnique({ where: { id: session.user.id }, include: { customRoles: { select: { name: true, permissions: true } } } })
+
   const activePluginStates = await db.pluginState.findMany({ where: { isActive: true } });
   
   if (!user) {
@@ -33,6 +34,9 @@ export default async function SettingsPage() {
       </div>
     )
   }
+
+  // Flatten and dedup permissions
+  const allPermissions = Array.from(new Set(user.customRoles.flatMap(r => r.permissions)))
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in-up">
@@ -83,11 +87,42 @@ export default async function SettingsPage() {
               <Input name="name" defaultValue={user.name || ""} className="bg-black/30 border-primary/20 focus:ring-primary/50 font-semibold" required />
             </div>
 
-            <div className="space-y-3">
-              <Label className="uppercase text-xs tracking-widest text-muted-foreground">Operational Privilege Tier</Label>
-              <div className="p-3 bg-black/20 rounded-lg border border-white/5 font-mono text-xs flex justify-between items-center text-muted-foreground">
-                <span>{user.customRoles.map(r => r.name).join(', ')}</span>
-                {hasPermission(session as any, 'VIEW_SYSTEM_SETTINGS') && <ShieldCheck className="w-4 h-4 text-primary" />}
+            <div className="space-y-4">
+              <Label className="uppercase text-xs tracking-widest text-muted-foreground flex justify-between items-center">
+                <span>Operational Privilege Tier</span>
+                {hasPermission(session as any, 'VIEW_SYSTEM_SETTINGS') && (
+                  <span className="flex items-center text-primary text-xs gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Core Staff
+                  </span>
+                )}
+              </Label>
+              <div className="p-5 bg-black/20 rounded-lg border border-white/5 space-y-4">
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs uppercase tracking-widest text-muted-foreground/60 font-semibold">Active Roles</span>
+                  <div className="flex flex-wrap gap-2">
+                    {user.customRoles.map(r => (
+                      <span key={r.name} className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md text-xs font-mono font-medium tracking-wide">
+                        {r.name}
+                      </span>
+                    ))}
+                    {user.customRoles.length === 0 && (
+                      <span className="text-xs text-muted-foreground italic">No assigned roles</span>
+                    )}
+                  </div>
+                </div>
+                
+                {allPermissions.length > 0 && (
+                  <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+                    <span className="text-xs uppercase tracking-widest text-muted-foreground/60 font-semibold">Effective Capabilities</span>
+                    <div className="flex flex-wrap gap-2">
+                      {allPermissions.map(p => (
+                        <span key={p} className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-mono tracking-wider">
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

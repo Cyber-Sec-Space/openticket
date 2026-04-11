@@ -15,6 +15,7 @@ interface IncidentRadarData {
   HIGH: number;
   MEDIUM: number;
   LOW: number;
+  INFO: number;
   total: number;
 }
 
@@ -57,6 +58,10 @@ export function IncidentRadarChart({ data }: { data: IncidentRadarData[] }) {
             <div className="flex justify-between items-center text-xs">
               <span className="text-yellow-500/70 font-semibold">Medium</span>
               <span className="text-yellow-400 font-bold">{dataPoint.MEDIUM}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-cyan-500/70 font-semibold">Info</span>
+              <span className="text-cyan-400 font-bold">{dataPoint.INFO}</span>
             </div>
           </div>
         </div>

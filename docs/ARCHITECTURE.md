@@ -89,7 +89,7 @@ erDiagram
         String id PK
         String title
         Enum status "NEW, IN_PROGRESS..."
-        Enum severity "CRITICAL, HIGH, MEDIUM, LOW"
+        Enum severity "CRITICAL, HIGH, MEDIUM, LOW, INFO"
         DateTime targetSlaDate
         String assetId FK
     }

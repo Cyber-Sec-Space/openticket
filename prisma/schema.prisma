@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
@@ -153,6 +154,7 @@ model User {
   auditLogs         AuditLog[]
   attachments       Attachment[]
   notifications     UserNotification[]
+  createdInvitations Invitation[] @relation("UserCreatesInvitations")
 }
 
 model UserNotification {
@@ -203,6 +205,7 @@ model SystemSetting {
   slaHighHours     Int @default(24)
   slaMediumHours   Int @default(72)
   slaLowHours      Int @default(168)
+  slaInfoHours     Int @default(720)
 
   // Rate Limiting Config
   rateLimitEnabled     Boolean @default(true)
@@ -342,6 +345,7 @@ model Vulnerability {
 }
 
 enum Severity {
+  INFO
   LOW
   MEDIUM
   HIGH
@@ -484,3 +488,15 @@ model MetricSnapshot {
   @@unique([timestamp, scopeType, scopeId])
   @@index([timestamp])
 }
+
+model Invitation {
+  id          String   @id @default(cuid())
+  email       String?
+  token       String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  createdById String
+
+  createdBy   User     @relation("UserCreatesInvitations", fields: [createdById], references: [id], onDelete: Cascade)
+}
+

@@ -11,6 +11,7 @@ export const authConfig = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.permissions = token.permissions as string[]
+        session.user.requires2FASetup = token.requires2FASetup as boolean
       }
       return session
     }

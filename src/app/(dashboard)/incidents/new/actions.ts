@@ -43,13 +43,13 @@ export async function createIncident(prevState: any, formData: FormData) {
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   const effectiveSeverity = severity as any || 'LOW'
   
-  let targetSlaDate = new Date()
-  switch (effectiveSeverity) {
+  let targetSlaDate: Date | null = new Date()
+  switch(severity) {
     case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
     case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaHighHours ?? 24)); break;
     case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaMediumHours ?? 72)); break;
-    case 'LOW':
-    default:         targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaLowHours ?? 168)); break;
+    case 'LOW':      targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaLowHours ?? 168)); break;
+    default:         targetSlaDate = null; break; // INFO has no SLA requirement
   }
 
   const newIncident = await db.incident.create({
@@ -67,7 +67,7 @@ export async function createIncident(prevState: any, formData: FormData) {
   })
 
   // Phase 7 & 11: SOAR Automations (Auto-Quarantine)
-  const sevRank = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 }
+  const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
   const currentRank = sevRank[effectiveSeverity as keyof typeof sevRank] || 0
   const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
 

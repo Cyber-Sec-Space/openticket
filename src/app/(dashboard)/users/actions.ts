@@ -243,3 +243,51 @@ export async function bulkUpdateRolesAction(userIds: string[], roleIds: string[]
 
   revalidatePath("/users")
 }
+
+export async function createInvitation(formData: FormData) {
+  const session = await auth()
+  if (!session?.user) throw new Error("Unauthorized")
+  
+  if (!hasPermission(session as any, 'CREATE_USERS')) {
+    throw new Error("Insufficient Permissions")
+  }
+
+  const emailRaw = formData.get("email") as string
+  const email = emailRaw ? emailRaw.trim() : null
+
+  // Rate limiting (max 20 per hour for this user)
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+  const recentCount = await db.invitation.count({
+    where: { createdById: session.user.id, createdAt: { gte: oneHourAgo } }
+  })
+  
+  if (recentCount >= 20) {
+    throw new Error("Rate limit exceeded. Try again later.")
+  }
+
+  const crypto = await import("crypto")
+  const token = crypto.randomBytes(32).toString("hex")
+  const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000) // 72 hours
+
+  await db.invitation.create({
+    data: {
+      email,
+      token,
+      expiresAt,
+      createdById: session.user.id
+    }
+  })
+
+  // Get system URL for the link
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const baseUrl = settings?.systemPlatformUrl || "http://localhost:3000"
+  const joinUrl = `${baseUrl}/register?invite=${token}`
+
+  // If email was provided, dispatch email
+  if (email && settings?.smtpEnabled) {
+    const { sendOperatorInvitationEmail } = await import("@/lib/mailer")
+    await sendOperatorInvitationEmail(email, joinUrl, session.user.name || "Unknown")
+  }
+
+  return { success: true, joinUrl }
+}

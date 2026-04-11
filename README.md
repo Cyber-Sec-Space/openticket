@@ -98,14 +98,14 @@ This `.tar.gz` archive contains the compiled `.next/standalone` output, drastica
 
 ```bash
 # 1. Download the latest standalone bundle from GitHub Releases
-wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.1/openticket-standalone-v0.5.1.tar.gz
+wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.2/openticket-standalone-v0.5.2.tar.gz
 
 # (Optional) Verify Cryptographic Integrity (SHA-512)
-# Expected: 1c299acd4a99dd6c25ec550c7756aeacbe59c59de4e840a387619291775d13ebb022897c090a692ae6db1729a7bbce4e1332cd1be752b7941c335d5170a0958d
-shasum -a 512 openticket-standalone-v0.5.1.tar.gz
+# Expected: (SHA-512 Hash for v0.5.2 will be published upon build pipeline completion)
+shasum -a 512 openticket-standalone-v0.5.2.tar.gz
 
 # Extract
-tar -xzf openticket-standalone-v0.5.1.tar.gz
+tar -xzf openticket-standalone-v0.5.2.tar.gz
 cd openticket-standalone
 
 # 2. Configure your specific environment parameters

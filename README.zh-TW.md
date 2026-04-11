@@ -98,14 +98,14 @@ npm run dev
 
 ```bash
 # 1. 從 GitHub Releases 下載 Standalone 獨立壓縮包
-wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.1/openticket-standalone-v0.5.1.tar.gz
+wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.2/openticket-standalone-v0.5.2.tar.gz
 
 # (可選步驟) 驗證下載檔案的完整性 (SHA-512)
-# 預期輸出: 1c299acd4a99dd6c25ec550c7756aeacbe59c59de4e840a387619291775d13ebb022897c090a692ae6db1729a7bbce4e1332cd1be752b7941c335d5170a0958d
-shasum -a 512 openticket-standalone-v0.5.1.tar.gz
+# 預期輸出: (SHA-512 Hash 將在建置管線佈署後正式公佈)
+shasum -a 512 openticket-standalone-v0.5.2.tar.gz
 
 # 解壓縮
-tar -xzf openticket-standalone-v0.5.1.tar.gz
+tar -xzf openticket-standalone-v0.5.2.tar.gz
 cd openticket-standalone
 
 # 2. 設定您的環境變數 (.env)

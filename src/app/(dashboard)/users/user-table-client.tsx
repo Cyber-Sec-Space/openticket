@@ -60,6 +60,8 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
 
   return (
     <div className="space-y-4">
+
+
       {/* BULK ACTIONS BAR */}
       {selectedIds.size > 0 && (
         <div className="bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-4">
@@ -174,15 +176,28 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
                     )}
                   </TableCell>
 
-                   <TableCell className="text-center hidden sm:table-cell">
-                     <Badge variant="outline" className={`bg-transparent border truncate ${
-                       user.customRoles?.some((r:any) => r.name.includes('Admin') || r.isSystem) ? 'border-primary/50 text-primary bg-primary/10' :
-                       user.customRoles?.some((r:any) => r.name.includes('SecOps')) ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
-                       'border-muted-foreground/30 text-muted-foreground bg-black/20'
-                     }`}>
-                       {user.customRoles?.map((r:any) => r.name).join(', ') || 'NONE'}
-                    {user.customRoles?.some((r:any) => r.name.includes('Admin')) && <ShieldCheck className="w-3 h-3 ml-1 inline" />}
-                     </Badge>
+                   <TableCell className="hidden sm:table-cell">
+                     <div className="flex flex-wrap gap-1.5 justify-center items-center">
+                       {user.customRoles && user.customRoles.length > 0 ? (
+                         user.customRoles.map((r: any) => (
+                           <Badge 
+                             key={r.id || r.name} 
+                             variant="outline" 
+                             className={`truncate max-w-[160px] ${
+                               r.name.includes('Admin') || r.isSystem ? 'border-primary/50 text-primary bg-primary/10' :
+                               r.name.includes('SecOps') ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
+                               'border-muted-foreground/30 text-muted-foreground bg-black/20'
+                             }`}
+                             title={r.name}
+                           >
+                             <span className="truncate">{r.name}</span>
+                             {r.name.includes('Admin') && <ShieldCheck className="w-3 h-3 ml-1 flex-shrink-0" />}
+                           </Badge>
+                         ))
+                       ) : (
+                         <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground bg-black/20">NONE</Badge>
+                       )}
+                     </div>
                   </TableCell>
 
                   <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>

@@ -278,7 +278,7 @@ export default async function AssetDetailPage({
                         {incident.title}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`bg-transparent border text-[10px] ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive' : 'border-primary/50 text-primary/80'}`}>
+                        <Badge className={`bg-transparent border text-[10px] ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive' : (incident.severity === 'INFO' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : 'border-primary/50 text-primary/80')}`}>
                           {incident.severity.replace(/_/g, ' ')}
                         </Badge>
                       </TableCell>
@@ -355,8 +355,8 @@ export default async function AssetDetailPage({
                         {vuln.title}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge className={`bg-transparent border text-[10px] ${vuln.severity === 'CRITICAL' ? 'border-destructive text-destructive' : 'border-primary/50 text-primary/80'}`}>
-                          {vuln.cvssScore ? vuln.cvssScore.toFixed(1) : vuln.severity}
+                        <Badge className={`bg-transparent border text-[10px] ${vuln.severity === 'CRITICAL' ? 'border-destructive text-destructive' : (vuln.severity === 'INFO' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : 'border-primary/50 text-primary/80')}`}>
+                          {vuln.cvssScore ? vuln.cvssScore.toFixed(1) : vuln.severity.replace(/_/g, ' ')}
                         </Badge>
                       </TableCell>
                       <TableCell>

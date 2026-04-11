@@ -79,7 +79,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
              <Badge variant="outline" className={`font-mono bg-black/50 ${cvssColor} border-${cvssColor.replace('text-', '')}/30`}>
                 CVSS: {vuln.cvssScore !== null ? vuln.cvssScore.toFixed(1) : 'N/A'}
              </Badge>
-             <Badge variant={vuln.severity === 'CRITICAL' ? 'destructive' : 'secondary'} className="font-mono bg-black/50">
+             <Badge variant={vuln.severity === 'CRITICAL' ? 'destructive' : 'secondary'} className={`font-mono bg-black/50 ${vuln.severity === 'INFO' ? 'text-cyan-400 border-cyan-500/30' : ''}`}>
                 {vuln.severity.replace(/_/g, ' ')}
              </Badge>
              <Badge variant="outline" className="font-mono bg-blue-950/30 text-blue-400 border-blue-500/30">

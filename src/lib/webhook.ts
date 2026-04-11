@@ -8,28 +8,28 @@ interface WebhookPayload {
   url: string
 }
 
-async function isTargetSecure(urlStr: string): Promise<boolean> {
+async function isTargetSecure(urlStr: string): Promise<{ isSecure: boolean, address?: string, parsed?: URL }> {
   try {
     const parsed = new URL(urlStr);
-    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+    if (!['http:', 'https:'].includes(parsed.protocol)) return { isSecure: false };
     
     const hn = parsed.hostname;
     // Initial string check
     if (/^127\./.test(hn) || hn === 'localhost' || hn === '0.0.0.0' || hn === '169.254.169.254' || /^192\.168\./.test(hn) || /^10\./.test(hn) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hn) || hn.includes("::1") || hn === '[::]' || hn === '::') {
-      return false;
+      return { isSecure: false };
     }
     
     // DNS Resolution for actual remote IP bounds check
     const { address } = await dns.promises.lookup(hn);
     
     if (/^127\./.test(address) || address === '0.0.0.0' || address === '169.254.169.254' || /^192\.168\./.test(address) || /^10\./.test(address) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(address) || address.includes("::1")) {
-      return false;
+      return { isSecure: false };
     }
 
-    return true;
+    return { isSecure: true, address, parsed };
   } catch (error) {
     // If DNS resolution fails, implicitly block outbound connection
-    return false;
+    return { isSecure: false };
   }
 }
 
@@ -40,7 +40,9 @@ export async function dispatchWebhook(payload: WebhookPayload) {
       return
     }
 
-    if (!(await isTargetSecure(settings.webhookUrl))) {
+    // SSRF FIX: Validate and freeze the IP address from a single DNS lookup
+    const { isSecure, address, parsed } = await isTargetSecure(settings.webhookUrl);
+    if (!isSecure || !address || !parsed) {
       console.warn(`[WEBHOOK_ERROR] Inhibited webhook dispatch. Target violates SSRF security boundaries: ${settings.webhookUrl}`)
       return;
     }
@@ -63,10 +65,16 @@ export async function dispatchWebhook(payload: WebhookPayload) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s tarpit barrier
 
+    // SSRF FIX: Rewrite the URL to use the frozen resolved IP, but manually supply the Host header
+    const safeUrl = `${parsed.protocol}//${address}${parsed.port ? `:${parsed.port}` : ''}${parsed.pathname}${parsed.search}`;
+
     try {
-      await fetch(settings.webhookUrl, {
+      await fetch(safeUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Host': parsed.hostname 
+        },
         body: JSON.stringify(body),
         signal: controller.signal
       })

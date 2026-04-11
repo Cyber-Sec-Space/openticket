@@ -23,6 +23,7 @@ export function DashboardCharts({ data }: { data: ChartData[] }) {
     HIGH: "url(#colorHigh)", 
     MEDIUM: "url(#colorMedium)", 
     LOW: "url(#colorLow)", 
+    INFO: "url(#colorInfo)", 
   }
 
   const mappedData = data.map(d => ({
@@ -36,7 +37,7 @@ export function DashboardCharts({ data }: { data: ChartData[] }) {
         <div className="bg-black/80 border border-white/10 p-4 rounded-xl shadow-[0_0_30px_rgba(0,0,0,1)] backdrop-blur-xl">
           <p className="text-white/50 text-[10px] font-bold mb-1 tracking-[0.2em] uppercase">{label}</p>
           <p className="text-white font-black text-3xl flex items-center">
-             <span className="w-2.5 h-2.5 rounded-full mr-3 shadow-[0_0_10px_currentColor]" style={{ backgroundColor: payload[0].payload.fill.includes('Critical') ? '#ef4444' : payload[0].payload.fill.includes('High') ? '#f97316' : payload[0].payload.fill.includes('Medium') ? '#eab308' : '#10b981', color: payload[0].payload.fill.includes('Critical') ? '#ef4444' : payload[0].payload.fill.includes('High') ? '#f97316' : payload[0].payload.fill.includes('Medium') ? '#eab308' : '#10b981' }} />
+             <span className="w-2.5 h-2.5 rounded-full mr-3 shadow-[0_0_10px_currentColor]" style={{ backgroundColor: payload[0].payload.fill.includes('Critical') ? '#ef4444' : payload[0].payload.fill.includes('High') ? '#f97316' : payload[0].payload.fill.includes('Medium') ? '#eab308' : payload[0].payload.fill.includes('Info') ? '#06b6d4' : '#10b981', color: payload[0].payload.fill.includes('Critical') ? '#ef4444' : payload[0].payload.fill.includes('High') ? '#f97316' : payload[0].payload.fill.includes('Medium') ? '#eab308' : payload[0].payload.fill.includes('Info') ? '#06b6d4' : '#10b981' }} />
              {payload[0].value} <span className="text-xs font-medium text-white/30 ml-2 tracking-wide uppercase">Active</span>
           </p>
         </div>
@@ -68,6 +69,10 @@ export function DashboardCharts({ data }: { data: ChartData[] }) {
             <linearGradient id="colorLow" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#10b981" stopOpacity={1}/>
               <stop offset="95%" stopColor="#064e3b" stopOpacity={0.6}/>
+            </linearGradient>
+            <linearGradient id="colorInfo" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#06b6d4" stopOpacity={1}/>
+              <stop offset="95%" stopColor="#164e63" stopOpacity={0.6}/>
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
