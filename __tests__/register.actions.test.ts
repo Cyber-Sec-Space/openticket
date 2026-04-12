@@ -3,8 +3,8 @@ import { db } from "../src/lib/db"
 import bcrypt from "bcrypt"
 import { redirect } from "next/navigation"
 
-jest.mock("../src/lib/db", () => ({
-  db: {
+jest.mock("../src/lib/db", () => {
+  const dbMock = {
     systemSetting: {
       findUnique: jest.fn(),
     },
@@ -15,9 +15,15 @@ jest.mock("../src/lib/db", () => ({
     },
     verificationToken: {
       create: jest.fn(),
+    },
+    invitation: {
+      findUnique: jest.fn(),
+      delete: jest.fn(),
     }
-  },
-}));
+  };
+  (dbMock as any).$transaction = jest.fn(async (cb) => cb(dbMock));
+  return { db: dbMock };
+});
 
 jest.mock("../src/lib/mailer", () => ({
   sendNewRegistrationAlertEmail: jest.fn(),
@@ -35,11 +41,15 @@ jest.mock("next/navigation", () => ({
 describe("attemptRegistration", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    global.setTimeout = jest.fn((cb) => cb()) as any;
   });
 
   it("returns REGISTRATION_DISABLED if allowRegistration is false", async () => {
     (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: false });
     const fd = new FormData();
+    fd.append("name", "Test");
+    fd.append("email", "test@example.com");
+    fd.append("password", "longpassword");
     const result = await attemptRegistration(undefined, fd);
     expect(result).toBe("REGISTRATION_DISABLED");
   });

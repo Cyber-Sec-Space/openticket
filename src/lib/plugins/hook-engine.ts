@@ -58,8 +58,7 @@ export async function fireHook<K extends keyof OpenTicketPluginHooks>(
     if (plugin.hooks && plugin.hooks[event]) {
       const hookFn = plugin.hooks[event] as any
       // Pre-parsed cache extraction eliminates synchronous JSON.parse event loop blocking
-      /* istanbul ignore next */
-      const config = parsedConfigs[plugin.manifest.id] || {};
+      const config = parsedConfigs[plugin.manifest.id];
 
       promises.push(
         (async () => {

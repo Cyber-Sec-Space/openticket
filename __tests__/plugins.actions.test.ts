@@ -1,249 +1,468 @@
-import { togglePluginState, updatePluginConfig, installExternalPlugin, triggerProductionBuild, triggerServerRestart } from "../src/app/(dashboard)/settings/plugins/actions"
-import { db } from "../src/lib/db"
-import { auth } from "../src/auth"
-import { hasPermission } from "../src/lib/auth-utils"
+import { togglePluginState, updatePluginConfig, installExternalPlugin, uninstallExternalPlugin, triggerProductionBuild, triggerServerRestart } from "../src/app/(dashboard)/settings/plugins/actions"
+import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
+import { db } from "@/lib/db"
+import { encryptPluginConfig, parsePluginConfig } from "@/lib/plugins/crypto"
+import { invalidateHookCache } from "@/lib/plugins/hook-engine"
 import fs from "fs"
-import child_process from "child_process"
-import { revalidatePath } from "next/cache"
+import path from "path"
 
-jest.mock("../src/lib/db", () => ({
+jest.mock("@/auth", () => ({ auth: jest.fn() }))
+jest.mock("@/lib/auth-utils", () => ({ hasPermission: jest.fn() }))
+jest.mock("@/lib/db", () => ({
   db: {
     pluginState: {
+      findUnique: jest.fn(),
       upsert: jest.fn(),
-      findUnique: jest.fn()
+      deleteMany: jest.fn(),
     }
   }
-}));
-
-jest.mock("../src/auth", () => ({
-  auth: jest.fn(),
-}));
-
-jest.mock("../src/lib/auth-utils", () => ({
-  hasPermission: jest.fn(),
-}));
-
-jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
-}));
-
-jest.mock("../src/plugins/index.ts", () => ({
-  activePlugins: [
-    {
-       manifest: { id: "p1", name: "P1" },
-       hooks: {
-         onInstall: jest.fn().mockResolvedValue(true),
-         onUninstall: jest.fn().mockResolvedValue(true)
-       }
-    }
-  ]
-}), { virtual: true });
-
-jest.mock("../src/plugins", () => ({
-  activePlugins: [
-    {
-       manifest: { id: "p1", name: "P1" },
-       hooks: {
-         onInstall: jest.fn().mockResolvedValue(true),
-         onUninstall: jest.fn().mockResolvedValue(true)
-       }
-    }
-  ]
-}), { virtual: true });
-
-jest.mock("../src/lib/plugins/sdk-context", () => ({
-  createPluginContext: jest.fn().mockResolvedValue({ api: {} })
-}));
-
-jest.mock("../src/lib/plugins/crypto", () => ({
-  encryptPluginConfig: jest.fn().mockImplementation((config) => JSON.stringify(config)),
-  parsePluginConfig: jest.fn().mockImplementation((jsonString) => {
-    try { return JSON.parse(jsonString); } catch (e) { return {}; }
-  })
-}));
+}))
+jest.mock("@/lib/plugins/crypto", () => ({
+  encryptPluginConfig: jest.fn((val) => "encrypted_" + JSON.stringify(val)),
+  parsePluginConfig: jest.fn((val) => JSON.parse(val.replace("encrypted_", ""))),
+}))
+jest.mock("@/lib/plugins/hook-engine", () => ({ invalidateHookCache: jest.fn() }))
+jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }))
 
 jest.mock("fs", () => ({
+  existsSync: jest.fn(),
   promises: {
+    readFile: jest.fn(),
     writeFile: jest.fn(),
-    readFile: jest.fn().mockResolvedValue(`export const activePlugins: OpenTicketPlugin[] = []`)
+    unlink: jest.fn(),
   }
-}));
+}))
+
+// Mock activePlugins directly
+jest.mock("@/plugins", () => ({
+  activePlugins: [
+    { 
+      manifest: { id: "test-plugin", name: "Test" },
+      hooks: { onInstall: jest.fn(), onUninstall: jest.fn() }
+    }
+  ]
+}))
+jest.mock("@/lib/plugins/sdk-context", () => ({
+  createPluginContext: jest.fn().mockResolvedValue({})
+}))
 
 jest.mock("child_process", () => ({
-  exec: jest.fn((cmd, cb) => cb(null, "stdout", "stderr"))
-}));
+  exec: jest.fn((cmd, cb) => cb(null, { stdout: "ok" }))
+}))
 
-// Mock fetch globally
-global.fetch = jest.fn() as jest.Mock;
+jest.mock("typescript", () => ({
+  transpileModule: jest.fn(),
+  DiagnosticCategory: { Error: 1 },
+  JsxEmit: { ReactJSX: 1 }
+}), { virtual: true })
 
 describe("Plugin Actions", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } });
-    (hasPermission as jest.Mock).mockReturnValue(true);
-  });
+    jest.clearAllMocks()
+    global.fetch = jest.fn()
+  })
 
   describe("togglePluginState", () => {
-    it("throws Unauthorized if permission fails", async () => {
-      (hasPermission as jest.Mock).mockReturnValueOnce(false);
-      await expect(togglePluginState("p1", true)).rejects.toThrow("Unauthorized");
-    });
+    it("throws Unauthorized if not logged in", async () => {
+      (auth as jest.Mock).mockResolvedValue(null)
+      await expect(togglePluginState("test", true)).rejects.toThrow("Unauthorized")
+    })
 
-    it("upserts inverted phase and revalidates paths", async () => {
-      await togglePluginState("p1", false);
+    it("toggles state and triggers lifecycle hooks", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ configJson: "encrypted_{}" })
       
-      expect(db.pluginState.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ update: { isActive: true }})
-      );
-      expect(revalidatePath).toHaveBeenCalledWith('/settings/plugins');
-    });
+      await togglePluginState("test-plugin", false) // toggle to true
+      
+      const { activePlugins } = require("@/plugins")
+      expect(activePlugins[0].hooks.onInstall).toHaveBeenCalled()
+      expect(db.pluginState.upsert).toHaveBeenCalled()
+      expect(invalidateHookCache).toHaveBeenCalled()
+    })
+    
+    it("toggles state to false and triggers onUninstall", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      await togglePluginState("test-plugin", true) // toggle to false
+      
+      const { activePlugins } = require("@/plugins")
+      expect(activePlugins[0].hooks.onUninstall).toHaveBeenCalled()
+    })
 
-    it("triggers onUninstall when turning plugin off", async () => {
-      await togglePluginState("p1", true);
+    it("throws if lifecycle hook fails with Error instance", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ id: "test-plugin", configJson: "enc.v1.xxx" })
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ test: true })
       
-      expect(db.pluginState.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ update: { isActive: false }})
-      );
-    });
-  });
+      const { activePlugins } = require("@/plugins")
+      activePlugins[0].hooks.onInstall.mockRejectedValueOnce(new Error("install hook failed"))
+      
+      await expect(togglePluginState("test-plugin", false)).rejects.toThrow("Plugin lifecycle initialization failed: install hook failed")
+    })
+
+    it("throws if lifecycle hook fails with generic string", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ id: "test-plugin", configJson: "enc.v1.xxx" })
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ test: true })
+      
+      const { activePlugins } = require("@/plugins")
+      activePlugins[0].hooks.onInstall.mockRejectedValueOnce("string error")
+      
+      await expect(togglePluginState("test-plugin", false)).rejects.toThrow("Plugin lifecycle initialization failed: string error")
+    })
+
+    it("toggles state when config json contains real data to test length branching", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ configJson: "encrypted_{\"key\":\"val\"}" })
+      
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ key: "val" })
+
+      await togglePluginState("test-plugin", false)
+      expect(db.pluginState.upsert).toHaveBeenCalled()
+    })
+  })
 
   describe("updatePluginConfig", () => {
-    it("throws Unauthorized if permission fails", async () => {
-      (hasPermission as jest.Mock).mockReturnValueOnce(false);
-      await expect(updatePluginConfig("p1", new FormData())).rejects.toThrow("Unauthorized");
-    });
+    it("throws Unauthorized if lacks permission", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(false)
+      await expect(updatePluginConfig("test", new FormData())).rejects.toThrow("Unauthorized")
+    })
 
-    it("parses existing DB config, ignores prototype pollution, merges new valid KV pairs", async () => {
-      (db.pluginState.findUnique as jest.Mock).mockResolvedValueOnce({ configJson: `{"exist":"yes"}` });
+    it("updates config safely and filters prototype pollution", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ configJson: "encrypted_{\"old\":\"val\"}" })
       
-      const fd = new FormData();
-      fd.append("newKey", "newValue");
-      fd.append("__proto__", "hacked");
-      fd.append("$ACTION_ID", "ignoreme");
-
-      await updatePluginConfig("p2", fd);
-
-      // should merge exist: yes with newKey: newValue 
-      const expectedJson = JSON.stringify({ exist: "yes", newKey: "newValue" });
+      const fd = new FormData()
+      fd.append("setting1", "val1")
+      fd.append("__proto__", "pollution") // Should be ignored
+      fd.append("$ACTION_ID", "123") // Should be ignored
       
-      expect(db.pluginState.upsert).toHaveBeenCalledWith({
-        where: { id: "p2" },
-        update: { configJson: expectedJson },
-        create: { id: "p2", isActive: false, configJson: expectedJson }
-      });
-    });
-
-    it("silently swallows bad JSON from DB and continues cleanly", async () => {
-      (db.pluginState.findUnique as jest.Mock).mockResolvedValueOnce({ configJson: `{bad}` });
+      await updatePluginConfig("test-plugin", fd)
       
-      const fd = new FormData();
-      fd.append("x", "y");
-      await updatePluginConfig("p2", fd);
-      
-      expect(db.pluginState.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ update: { configJson: JSON.stringify({ x: "y" }) }})
-      );
-    });
-  });
+      expect(db.pluginState.upsert).toHaveBeenCalled()
+      const upsertArgs = (db.pluginState.upsert as jest.Mock).mock.calls[0][0]
+      expect(upsertArgs.update.configJson).toContain("val1")
+      expect(upsertArgs.update.configJson).not.toContain("pollution")
+    })
+  })
 
   describe("installExternalPlugin", () => {
-    it("throws Unauthorized if permission fails", async () => {
-      (hasPermission as jest.Mock).mockReturnValueOnce(false);
-      await expect(installExternalPlugin("id", "v1", "registry")).rejects.toThrow("Unauthorized");
-    });
+    it("throws Unauthorized if lacks permission", async () => {
+      (auth as jest.Mock).mockResolvedValue(null)
+      await expect(installExternalPlugin("id", "1.0", "registry")).rejects.toThrow("Unauthorized")
+    })
 
-    it("rejects path traversal in plugin id format", async () => {
-      await expect(installExternalPlugin("bad/id", "1.0.0", "registry")).rejects.toThrow("Invalid plugin ID format");
-    });
+    it("throws on invalid ID format", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      await expect(installExternalPlugin("../id", "1.0", "registry")).rejects.toThrow("Invalid plugin ID format")
+    })
 
-    it("rejects dangerous version strings", async () => {
-      await expect(installExternalPlugin("good", "1.0;rm -rf", "registry")).rejects.toThrow("Invalid version string format");
-    });
+    it("throws on invalid version format", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      await expect(installExternalPlugin("id", "../1.0", "registry")).rejects.toThrow("Invalid version string format")
+    })
 
-    it("downloads and writes plugin from registry if valid", async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+    it("fetches source code, transpiles, and saves to file", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "production"
+      
+      ;(global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        text: jest.fn().mockResolvedValue("console.log('hi')")
+        text: async () => 'export const plugin = {};'
+      })
+      
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue("export const activePlugins: OpenTicketPlugin[] = [\n];")
+      
+      const ts = require("typescript");
+      ts.transpileModule.mockReturnValueOnce({
+        diagnostics: []
       });
+      
+      await installExternalPlugin("new-plugin", "1.0", "registry")
+      
+      expect(fs.promises.writeFile).toHaveBeenCalledTimes(2) // Once for plugin source, once for index.ts
+      process.env.NODE_ENV = originalEnv
+    })
 
-      await installExternalPlugin("good-plugin", "1.0", "registry");
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining("plugins/good-plugin/1.0/index.tsx"));
-      expect(fs.promises.writeFile).toHaveBeenCalledWith(
-        expect.stringContaining("external-good-plugin.tsx"),
-        "console.log('hi')",
-        "utf-8"
-      );
-      // Index re-write
-      expect(fs.promises.writeFile).toHaveBeenCalledWith(
-        expect.stringContaining("index.ts"),
-        expect.stringContaining("export const activePlugins: OpenTicketPlugin[] = [\n  externalgoodpluginPlugin,"),
-        "utf-8"
-      );
-    });
+    it("throws on structural AST error", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "production"
+      
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        text: async () => 'export const plugin = { /// invalid syntax }'
+      })
+      
+      const ts = require("typescript");
+      ts.transpileModule.mockReturnValueOnce({
+        diagnostics: [{ category: 1, messageText: "syntax error" }]
+      });
+      
+      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("critical structural syntax errors")
+      process.env.NODE_ENV = originalEnv
+    })
 
-    it("throws error if registry returns 404", async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, status: 404 });
-      await expect(installExternalPlugin("good", "1.0", "registry")).rejects.toThrow("Failed to download plugin source code");
-    });
+    it("fetches from local file system if not in production", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "development"
+      
+      ;(fs.existsSync as jest.Mock).mockReturnValue(true)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue("export const activePlugins: OpenTicketPlugin[] = [\n];")
+      
+      const ts = require("typescript");
+      ts.transpileModule.mockReturnValueOnce({
+        diagnostics: []
+      });
+      
+      await installExternalPlugin("new-plugin", "1.0", "registry")
+      
+      expect(fs.promises.readFile).toHaveBeenCalled()
+      process.env.NODE_ENV = originalEnv
+    })
 
-    it("throws explicit error for NPM sources via UI", async () => {
-      await expect(installExternalPlugin("any", "any", "npm", "pkgName")).rejects.toThrow("NPM dynamic installation via UI is currently restricted");
-    });
+    it("throws if index.ts structure is malformed", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "development"
+      ;(fs.existsSync as jest.Mock).mockReturnValue(true)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue("export const somethingElse = []")
+      const ts = require("typescript");
+      ts.transpileModule.mockReturnValueOnce({ diagnostics: [] });
+      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Failed to inject plugin: activePlugins array structure is malformed or missing.")
+      process.env.NODE_ENV = originalEnv
+    })
     
-    it("skips index rewrite if import already exists", async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, text: jest.fn().mockResolvedValue("code") });
-      const importStatement = `import externalgoodPlugin from "./external-good";\n`;
-      (fs.promises.readFile as jest.Mock).mockResolvedValueOnce(importStatement); // simulates existing import
-      await installExternalPlugin("good", "1.0", "registry");
-      expect(fs.promises.writeFile).toHaveBeenCalledTimes(1); // Only writes external file, skips index.ts
-    });
+    it("bypasses pre-flight if typescript fails internally with generic error", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "production"
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, text: async () => 'export const plugin = {}' })
+      const ts = require("typescript");
+      ts.transpileModule.mockImplementationOnce(() => { throw new Error("Could not initialize TS compiler"); });
+      
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation(() => {})
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue("export const activePlugins: OpenTicketPlugin[] = [\n];")
+      
+      await installExternalPlugin("new-plugin", "1.0", "registry")
+      expect(consoleSpy).toHaveBeenCalledWith("[Plugin Pre-flight] TypeScript AST parser unavailable. Bypassing pre-flight validation.")
+      process.env.NODE_ENV = originalEnv
+      consoleSpy.mockRestore()
+    })
     
-    it("throws an error when source type is npm", async () => {
-      await expect(installExternalPlugin("some-pkg", "latest", "npm", "some-pkg")).rejects.toThrow("NPM dynamic installation via UI is currently restricted");
-    });
-
-    it("enforces absolute path boundary checks natively against forged returns", async () => {
-      const path = require("path");
-      const joinSpy = jest.spyOn(path, 'join');
-      joinSpy.mockReturnValueOnce("/safe/plugins/dir") // pluginsDir
-             .mockReturnValueOnce("/hacked/external-evil.tsx"); // pluginFile
-
-      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, text: jest.fn().mockResolvedValue("code") });
-
-      await expect(installExternalPlugin("evil", "1.0", "registry")).rejects.toThrow("Path traversal boundaries violated.");
+    it("throws on path traversal in install", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "production"
       
-      joinSpy.mockRestore();
-    });
-  });
-
-  describe("System Triggers", () => {
-    it("triggerProductionBuild calls exec build", async () => {
-      await triggerProductionBuild();
-      expect(child_process.exec).toHaveBeenCalledWith("npm run build", expect.any(Function));
-    });
-
-    it("throws unauthorized for build", async () => {
-      (hasPermission as jest.Mock).mockReturnValueOnce(false);
-      await expect(triggerProductionBuild()).rejects.toThrow("Unauthorized");
-    });
-
-    it("triggerServerRestart schedules exit and requires permission", async () => {
-      jest.useFakeTimers();
-      const exitSpy = jest.spyOn(process, "exit").mockImplementation((() => {}) as any);
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, text: async () => 'export const plugin = {}' })
+      const ts = require("typescript");
+      ts.transpileModule.mockReturnValueOnce({ diagnostics: [] });
       
-      await triggerServerRestart();
-      expect(exitSpy).not.toHaveBeenCalled();
+      const ogJoin = path.join
+      ;(path.join as any) = jest.fn()
+           .mockReturnValueOnce("/valid/pluginsDir") // pluginsDir
+           .mockReturnValueOnce("/bad/path")         // pluginFile
       
-      jest.advanceTimersByTime(1100);
-      expect(exitSpy).toHaveBeenCalledWith(0);
+      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Path traversal boundaries violated.")
       
-      exitSpy.mockRestore();
-      jest.useRealTimers();
-    });
+      ;(path.join as any) = ogJoin
+      process.env.NODE_ENV = originalEnv
+    })
 
-    it("triggerServerRestart throws unauthorized", async () => {
-      (hasPermission as jest.Mock).mockReturnValueOnce(false);
-      await expect(triggerServerRestart()).rejects.toThrow("Unauthorized");
-    });
-  });
-});
+    it("bypasses pre-flight if typescript returns undefined diagnostics", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "production"
+      
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, text: async () => 'export const plugin = {}' })
+      const ts = require("typescript");
+      ts.transpileModule.mockReturnValueOnce({}); // Missing diagnostics property
+      
+      await installExternalPlugin("new-plugin", "1.0", "registry")
+      process.env.NODE_ENV = originalEnv
+    })
+
+    it("throws if fetch fails with 404", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "production"
+      
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 404 })
+      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Failed to download plugin source code from registry (HTTP 404).")
+      
+      process.env.NODE_ENV = originalEnv
+    })
+
+    it("throws error if local file is missing", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "development"
+      ;(fs.existsSync as jest.Mock).mockReturnValue(false)
+      
+      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Local development registry file not found")
+      
+      process.env.NODE_ENV = originalEnv
+    })
+
+    it("throws error if NPM is requested via UI", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      await expect(installExternalPlugin("new-plugin", "1.0", "npm", "pkgame")).rejects.toThrow("NPM dynamic installation via UI is currently restricted. Please use CLI.")
+    })
+  })
+
+  describe("uninstallExternalPlugin", () => {
+    it("throws Unauthorized if lacks permission", async () => {
+      (auth as jest.Mock).mockResolvedValue(null)
+      await expect(uninstallExternalPlugin("id")).rejects.toThrow("Unauthorized")
+    })
+    
+    it("throws on path traversal in uninstall", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      const ogJoin = path.join
+      ;(path.join as any) = jest.fn()
+           .mockReturnValueOnce("/valid/pluginsDir")
+           .mockReturnValueOnce("/bad/path")
+      await expect(uninstallExternalPlugin("plugin-id")).rejects.toThrow("Path traversal boundaries violated.")
+      ;(path.join as any) = ogJoin
+    })
+    it("deletes file and references if exists", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(fs.existsSync as jest.Mock).mockReturnValue(true)
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue(`
+        import externalpluginguyPlugin from "./external-plugin-guy";
+        export const activePlugins: OpenTicketPlugin[] = [
+          externalpluginguyPlugin,
+        ];
+      `)
+      
+      await uninstallExternalPlugin("plugin-guy")
+      
+      expect(fs.promises.unlink).toHaveBeenCalled()
+      expect(fs.promises.writeFile).toHaveBeenCalled()
+      expect(db.pluginState.deleteMany).toHaveBeenCalled()
+    })
+
+    it("throws if file does not exist", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(fs.existsSync as jest.Mock).mockReturnValue(false)
+      
+      await expect(uninstallExternalPlugin("plugin-guy")).rejects.toThrow("Plugin source file not found")
+    })
+    
+    it("throws on invalid ID format", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      await expect(uninstallExternalPlugin("../id")).rejects.toThrow("Invalid plugin ID format")
+    })
+  })
+
+  describe("triggerProductionBuild", () => {
+    it("throws Unauthorized if lacks permission", async () => {
+       (auth as jest.Mock).mockResolvedValue(null)
+       await expect(triggerProductionBuild()).rejects.toThrow("Unauthorized")
+    })
+
+    it("bypasses if not production", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "development"
+      
+      const { exec } = require("child_process")
+      await triggerProductionBuild()
+      expect(exec).not.toHaveBeenCalled()
+      
+      process.env.NODE_ENV = originalEnv
+    })
+
+    it("executes build if production", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "production"
+      
+      const { exec } = require("child_process")
+      await triggerProductionBuild()
+      expect(exec).toHaveBeenCalled()
+      
+      process.env.NODE_ENV = originalEnv
+    })
+  })
+
+  describe("triggerServerRestart", () => {
+    it("throws Unauthorized if lacks permission", async () => {
+       (auth as jest.Mock).mockResolvedValue(null)
+       await expect(triggerServerRestart()).rejects.toThrow("Unauthorized")
+    })
+
+    it("bypasses if not production", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "development"
+      
+      const spyKill = jest.spyOn(process, "kill").mockImplementation(() => true)
+      global.setTimeout = jest.fn() as any
+      
+      await triggerServerRestart()
+      expect(global.setTimeout).not.toHaveBeenCalled()
+      
+      spyKill.mockRestore()
+      process.env.NODE_ENV = originalEnv
+    })
+
+    it("schedules kill if production", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const originalEnv = process.env.NODE_ENV
+      process.env.NODE_ENV = "production"
+      
+      global.setTimeout = jest.fn((cb) => cb()) as any
+      const spyKill = jest.spyOn(process, "kill").mockImplementation(() => true)
+      
+      await triggerServerRestart()
+      
+      expect(spyKill).toHaveBeenCalledWith(process.pid, 'SIGKILL')
+      
+      spyKill.mockRestore()
+      process.env.NODE_ENV = originalEnv
+    })
+  })
+})

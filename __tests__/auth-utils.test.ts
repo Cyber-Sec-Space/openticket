@@ -1,33 +1,37 @@
-import { hasPermission } from "../src/lib/auth-utils"
-import { Session } from "next-auth"
-import { Permission } from "@prisma/client"
+import { assertSecureSession, hasPermission } from "../src/lib/auth-utils"
 
 describe("auth-utils", () => {
-  it("returns false if session is missing", () => {
-    expect(hasPermission(null, "VIEW_INCIDENTS" as any)).toBe(false)
+  describe("hasPermission", () => {
+    it("returns false if no session or user", () => {
+      expect(hasPermission(null, "VIEW_PLUGINS")).toBe(false)
+      expect(hasPermission({} as any, "VIEW_PLUGINS")).toBe(false)
+    })
+    it("returns false if requires 2FA", () => {
+      expect(hasPermission({ user: { requires2FASetup: true, permissions: ["VIEW_PLUGINS"] } } as any, "VIEW_PLUGINS")).toBe(false)
+    })
+    it("returns true for correct single permission", () => {
+      expect(hasPermission({ user: { requires2FASetup: false, permissions: ["VIEW_PLUGINS"] } } as any, "VIEW_PLUGINS")).toBe(true)
+    })
+    it("handles array OR logic correctly", () => {
+      expect(hasPermission({ user: { requires2FASetup: false, permissions: ["A"] } } as any, ["A", "B"] as any)).toBe(true)
+      expect(hasPermission({ user: { requires2FASetup: false, permissions: ["C"] } } as any, ["A", "B"] as any)).toBe(false)
+    })
   })
 
-  it("returns false if user is missing", () => {
-    expect(hasPermission({} as Session, "VIEW_INCIDENTS" as any)).toBe(false)
-  })
+  describe("assertSecureSession", () => {
+    it("throws Unauthorized if no session or user", () => {
+      expect(() => assertSecureSession(null)).toThrow("Unauthorized")
+      expect(() => assertSecureSession({} as any)).toThrow("Unauthorized")
+    })
 
-  it("returns false if permissions array is missing", () => {
-    expect(hasPermission({ user: {} } as Session, "VIEW_INCIDENTS" as any)).toBe(false)
-  })
+    it("throws MFA error if user requires 2FA setup", () => {
+      const session: any = { user: { id: "1", requires2FASetup: true } }
+      expect(() => assertSecureSession(session)).toThrow("Security Interlock: Action Thwarted. MFA Setup Requirement Pending.")
+    })
 
-  it("returns true if single permission is included", () => {
-    expect(hasPermission({ user: { permissions: ["VIEW_INCIDENTS", "MANAGE_USERS"] } } as unknown as Session, "VIEW_INCIDENTS" as any)).toBe(true)
-  })
-
-  it("returns false if single permission is missing", () => {
-    expect(hasPermission({ user: { permissions: ["MANAGE_USERS"] } } as unknown as Session, "VIEW_INCIDENTS" as any)).toBe(false)
-  })
-
-  it("returns true if ANY of the array permissions match", () => {
-    expect(hasPermission({ user: { permissions: ["VIEW_INCIDENTS"] } } as unknown as Session, ["VIEW_INCIDENTS", "MANAGE_SYSTEM"] as any)).toBe(true)
-  })
-
-  it("returns false if NONE of the array permissions match", () => {
-    expect(hasPermission({ user: { permissions: ["MANAGE_USERS", "CREATE_INCIDENT"] } } as unknown as Session, ["VIEW_INCIDENTS", "MANAGE_SYSTEM"] as any)).toBe(false)
+    it("passes cleanly if session is secure and valid", () => {
+      const session: any = { user: { id: "1", requires2FASetup: false } }
+      expect(() => assertSecureSession(session)).not.toThrow()
+    })
   })
 })

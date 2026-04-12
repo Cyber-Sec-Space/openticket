@@ -10,6 +10,11 @@ jest.mock('@/auth', () => ({
   auth: jest.fn().mockResolvedValue({ user: { id: "user1", permissions: ['VIEW_PLUGINS'] } })
 }))
 
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn().mockReturnValue({ push: jest.fn(), refresh: jest.fn() }),
+  redirect: jest.fn(),
+}))
+
 jest.mock('@/lib/auth-utils', () => ({
   hasPermission: jest.fn().mockReturnValue(true)
 }))
@@ -27,6 +32,7 @@ global.fetch = jest.fn()
 describe('PluginStorePage Server Component', () => {
   beforeEach(() => {
     (global.fetch as jest.Mock).mockClear()
+    process.env.NODE_ENV = "production"
   })
 
   it('renders Cannot Connect to Plugin Registry when fetch fails or returns invalid structurally', async () => {
