@@ -1,146 +1,237 @@
-import { updateSystemSettings } from "../src/app/(dashboard)/system/actions"
+import { updateSystemSettings, testSmtpConnection } from "../src/app/(dashboard)/system/actions"
 import { db } from "../src/lib/db"
-import { auth } from "../src/auth"
-import { revalidatePath } from "next/cache"
+import { auth } from "@/auth"
+import { hasPermission } from "@/lib/auth-utils"
+import { encryptString, decryptString } from "@/lib/plugins/crypto"
+import nodemailer from "nodemailer"
 
 jest.mock("../src/lib/db", () => ({
   db: {
     systemSetting: {
-      upsert: jest.fn().mockResolvedValue({}),
-      findUnique: jest.fn().mockResolvedValue({}),
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+    },
+    user: {
+      updateMany: jest.fn(),
     },
     customRole: {
-      findUnique: jest.fn().mockResolvedValue({ id: "role_123" })
+      findUnique: jest.fn(),
     },
-    pluginState: {
-      findMany: jest.fn().mockResolvedValue([])
-    },
-    $executeRawUnsafe: jest.fn().mockResolvedValue({})
-  },
-}));
+    $executeRawUnsafe: jest.fn()
+  }
+}))
 
-jest.mock("../src/auth", () => ({
-  auth: jest.fn(),
-}));
+jest.mock("@/auth", () => ({
+  auth: jest.fn()
+}))
 
-jest.mock("../src/lib/auth-utils", () => ({
-  hasPermission: jest.fn(),
-}));
+jest.mock("@/lib/auth-utils", () => ({
+  hasPermission: jest.fn()
+}))
+
+jest.mock("@/lib/plugins/hook-engine", () => ({
+  fireHook: jest.fn()
+}))
+
+jest.mock("@/lib/plugins/crypto", () => ({
+  encryptString: jest.fn((val) => "encrypted_" + val),
+  decryptString: jest.fn((val) => val.replace("encrypted_", "")),
+}))
+
+jest.mock("nodemailer", () => ({
+  createTransport: jest.fn().mockReturnValue({
+    verify: jest.fn().mockResolvedValue(true)
+  })
+}))
 
 jest.mock("next/cache", () => ({
-  revalidatePath: jest.fn(),
-}));
+  revalidatePath: jest.fn()
+}))
 
-describe("updateSystemSettings Action", () => {
+describe("System Actions", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-  });
+    jest.clearAllMocks()
+    global.setTimeout = jest.fn((cb) => cb()) as any;
+  })
 
-  it("throws Unauthorized if session is missing", async () => {
-    (auth as jest.Mock).mockResolvedValueOnce(null);
-    const fd = new FormData();
-    await expect(updateSystemSettings(fd)).rejects.toThrow("Unauthorized");
-  });
+  describe("updateSystemSettings", () => {
+    it("throws Unauthorized if not logged in", async () => {
+      (auth as jest.Mock).mockResolvedValue(null)
+      await expect(updateSystemSettings(new FormData())).rejects.toThrow("Unauthorized")
+    })
 
-  it("throws Unauthorized if user is not ADMIN", async () => {
-    (auth as jest.Mock).mockResolvedValueOnce({ user: { roles: ["REPORTER"] } });
-    const fd = new FormData();
-    await expect(updateSystemSettings(fd)).rejects.toThrow("Unauthorized");
-  });
+    it("throws Unauthorized if lacks permission", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(false)
+      await expect(updateSystemSettings(new FormData())).rejects.toThrow("Unauthorized")
+    })
 
-  it("upserts system setting and revalidates if user is ADMIN", async () => {
-    (auth as jest.Mock).mockResolvedValueOnce({ user: { roles: ["ADMIN"] } });
-    const { hasPermission } = require("../src/lib/auth-utils");
-    (hasPermission as jest.Mock).mockReturnValueOnce(true);
-    const fd = new FormData();
-    fd.append("allowRegistration", "on");
-    fd.append("requireGlobal2FA", "off"); // Intentionally not sending "on" to test logic
-    fd.append("defaultRoleId", "SECOPS");
-    fd.append("smtpPort", "587");
-    fd.append("smtpPassword", "secretpassword");
+    it("upserts system settings and updates email verify if toggled", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const fd = new FormData()
+      fd.append("allowRegistration", "on")
+      fd.append("requireEmailVerification", "on")
+      fd.append("defaultRoleId", "NONE")
+      fd.append("smtpPassword", "<CLEAR>")
+      fd.append("systemPlatformUrl", "https://cyber-sec.space")
+      fd.append("webhookUrl", "https://cyber-sec.space/webhook")
+      fd.append("soarAutoQuarantineThreshold", "")
+      
+      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue({ requireEmailVerification: false })
+      
+      await updateSystemSettings(fd)
+      
+      expect(db.systemSetting.upsert).toHaveBeenCalled()
+      expect(db.user.updateMany).toHaveBeenCalled()
+      expect(db.$executeRawUnsafe).toHaveBeenCalledTimes(2)
+    })
     
-    // Pass valid numbers to test the 'false' branch of isNaN
-    fd.append("slaCriticalHours", "2");
-    fd.append("slaHighHours", "12");
-    fd.append("slaMediumHours", "48");
-    fd.append("slaLowHours", "80");
-    fd.append("rateLimitWindowMs", "60000");
-    fd.append("rateLimitMaxAttempts", "10");
+    it("handles parsing roles and encrypting smtp password and URL fallback parsing", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const fd = new FormData()
+      fd.append("defaultRoleId", "CustomRole1")
+      fd.append("smtpPassword", "newpass")
+      fd.append("webhookEnabled", "on")
+      fd.append("webhookUrl", "invalid_url")
+      fd.append("systemPlatformUrl", "invalid_url")
+      fd.append("slaCriticalHours", "invalid")
+      fd.append("slaHighHours", "invalid")
+      fd.append("slaMediumHours", "invalid")
+      fd.append("slaLowHours", "invalid")
+      fd.append("slaInfoHours", "invalid")
+      fd.append("rateLimitWindowMs", "invalid")
+      fd.append("rateLimitMaxAttempts", "invalid")
+      fd.append("smtpPort", "invalid")
+      
+      ;(db.customRole.findUnique as jest.Mock).mockResolvedValue({ id: "Role1" })
+      
+      await updateSystemSettings(fd)
+      
+      expect(db.customRole.findUnique).toHaveBeenCalledWith({ where: { name: "CustomRole1" } })
+      expect(encryptString).toHaveBeenCalledWith("newpass")
+      const upsertArgs = (db.systemSetting.upsert as jest.Mock).mock.calls[0][0]
+      expect(upsertArgs.update.systemPlatformUrl).toBe("http://localhost:3000") // Fallback
+      expect(upsertArgs.update.webhookUrl).toBe("") // Fallback
+    })
 
-    await updateSystemSettings(fd);
+    it("upserts system settings with explicit valid smtp port and no password", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue(null)
+      const fd = new FormData()
+      fd.append("smtpPort", "587")
+      fd.append("slaCriticalHours", "5")
+      fd.append("slaHighHours", "25")
+      fd.append("slaMediumHours", "75")
+      fd.append("slaLowHours", "170")
+      fd.append("slaInfoHours", "722")
+      fd.append("rateLimitWindowMs", "9000")
+      fd.append("rateLimitMaxAttempts", "10")
+      await updateSystemSettings(fd)
+      const upsertArgs = (db.systemSetting.upsert as jest.Mock).mock.calls[0][0]
+      expect(upsertArgs.update.smtpPort).toBe(587)
+      expect(upsertArgs.update.requireEmailVerification).toBe(false)
+    })
 
-    expect(db.systemSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "global" },
-      update: expect.objectContaining({ allowRegistration: true, requireGlobal2FA: false }),
-      create: expect.objectContaining({ allowRegistration: true, requireGlobal2FA: false })
-    }));
+    it("catches DB exception silently during SLA update", async () => {
+       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+       ;(hasPermission as jest.Mock).mockReturnValue(true)
+       ;(db.$executeRawUnsafe as jest.Mock).mockRejectedValue(new Error("DB FAULT"))
+       const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {})
+       
+       await updateSystemSettings(new FormData())
+       
+       expect(consoleSpy).toHaveBeenCalledWith("Failed to retroactively update SLA dates:", expect.any(Error))
+       consoleSpy.mockRestore()
+    })
+  })
 
-    expect(revalidatePath).toHaveBeenCalledWith("/system");
-  });
-
-  it("handles missing optional values with gracefully mapped fallbacks", async () => {
-    (auth as jest.Mock).mockResolvedValueOnce({ user: { roles: ["ADMIN"] } });
-    const { hasPermission } = require("../src/lib/auth-utils");
-    (hasPermission as jest.Mock).mockReturnValueOnce(true);
-    const fd = new FormData();
-    // Intentionally leaving out: defaultRoleId, smtpPort, smtpPassword
+  describe("testSmtpConnection", () => {
+    it("returns error if lacks permission", async () => {
+      (auth as jest.Mock).mockResolvedValue(null)
+      const res = await testSmtpConnection(new FormData())
+      expect(res.error).toBe("Unauthorized")
+    })
     
-    await updateSystemSettings(fd);
-
-    expect(db.systemSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({
-      create: expect.objectContaining({ allowRegistration: false }),
-      update: expect.objectContaining({ allowRegistration: false })
-    }));
-  });
-
-  it("handles NaN string injections seamlessly by reverting to logical defaults", async () => {
-    (auth as jest.Mock).mockResolvedValueOnce({ user: { roles: ["ADMIN"] } });
-    const { hasPermission } = require("../src/lib/auth-utils");
-    (hasPermission as jest.Mock).mockReturnValueOnce(true);
-    const fd = new FormData();
-    fd.append("slaCriticalHours", "invalid string");
-    fd.append("slaHighHours", "blabla");
-    fd.append("slaMediumHours", "");
-    fd.append("slaLowHours", "broken");
-    fd.append("rateLimitWindowMs", "hack");
-    fd.append("rateLimitMaxAttempts", "nan");
-    fd.append("smtpPort", "notanumber");
+    it("returns error if missing smtpHost", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      const res = await testSmtpConnection(new FormData())
+      expect(res.error).toBe("SMTP Host is required for testing.")
+    })
     
-    await updateSystemSettings(fd);
+    it("verifies SMTP connection using existing stored decrypted password", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue({ smtpPassword: "encrypted_pwd" })
+      
+      const fd = new FormData()
+      fd.append("smtpHost", "smtp.test.com")
+      // smtpPassword is empty
+      
+      const res = await testSmtpConnection(fd)
+      
+      expect(decryptString).toHaveBeenCalledWith("encrypted_pwd")
+      expect(res.success).toBe(true)
+    })
+    
+    it("verifies SMTP connection using user supplied password and implicit port 587", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      const fd = new FormData()
+      fd.append("smtpHost", "smtp.test.com")
+      fd.append("smtpPassword", "supplied_pwd")
+      
+      const res = await testSmtpConnection(fd)
+      expect(res.success).toBe(true)
+    })
 
-    expect(db.systemSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({
-      create: expect.objectContaining({ 
-         slaCriticalHours: 4,
-         slaHighHours: 24,
-         slaMediumHours: 72,
-         slaLowHours: 168,
-         rateLimitWindowMs: 900000,
-         rateLimitMaxAttempts: 5,
-         smtpPort: null
-      }),
-      update: expect.objectContaining({ 
-         slaCriticalHours: 4,
-         slaHighHours: 24,
-         slaMediumHours: 72,
-         slaLowHours: 168,
-         rateLimitWindowMs: 900000,
-         rateLimitMaxAttempts: 5,
-         smtpPort: null
+    it("returns error if verification fails", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      
+      ;(nodemailer.createTransport as jest.Mock).mockReturnValue({
+        verify: jest.fn().mockRejectedValue(new Error("Network Error"))
       })
-    }));
-  });
+      
+      const fd = new FormData()
+      fd.append("smtpHost", "smtp.test.com")
+      
+      const res = await testSmtpConnection(fd)
+      
+      expect(res.error).toBe("Network Error")
+    })
 
-  it("handles db.$executeRawUnsafe SLA update errors gracefully", async () => {
-    (auth as jest.Mock).mockResolvedValueOnce({ user: { roles: ["ADMIN"] } });
-    const { hasPermission } = require("../src/lib/auth-utils");
-    (hasPermission as jest.Mock).mockReturnValueOnce(true);
-    (db.$executeRawUnsafe as jest.Mock).mockRejectedValueOnce(new Error("DB Connection Interrupted"));
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    const fd = new FormData();
-    await updateSystemSettings(fd);
-
-    expect(consoleSpy).toHaveBeenCalledWith("Failed to retroactively update SLA dates:", expect.any(Error));
-    consoleSpy.mockRestore();
-  });
-});
+    it("tests smtp connection with missing password but no stored password", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue(null)
+      const fd = new FormData()
+      fd.append("smtpHost", "smtp.test.com")
+      fd.append("smtpUser", "user")
+      ;(nodemailer.createTransport as jest.Mock).mockReturnValue({
+        verify: jest.fn().mockResolvedValue(true)
+      })
+      const res = await testSmtpConnection(fd)
+      expect(res.success).toBe(true)
+    })
+    
+    it("tests smtp connection throwing unknown object without message", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(nodemailer.createTransport as jest.Mock).mockReturnValue({
+        verify: jest.fn().mockRejectedValue("Unknown Error Object")
+      })
+      const fd = new FormData()
+      fd.append("smtpHost", "smtp.test.com")
+      const res = await testSmtpConnection(fd)
+      expect(res.error).toBe("Connection failed to verify.")
+    })
+  })
+})

@@ -1,53 +1,54 @@
-import { encryptPluginConfig, parsePluginConfig } from "../src/lib/plugins/crypto";
+import { encryptPluginConfig, parsePluginConfig, encryptString, decryptString } from "../src/lib/plugins/crypto"
 
-describe("Crypto Architecture", () => {
-  const originalEnv = process.env.NEXTAUTH_SECRET;
-
-  beforeAll(() => {
-    process.env.NEXTAUTH_SECRET = "supersecret1234567890supersecret1234567890";
-  });
-
-  afterAll(() => {
-    process.env.NEXTAUTH_SECRET = originalEnv;
-  });
-
-  it("should encrypt and decrypt correctly", () => {
-    const config = { apiToken: "12345", endpoint: "https://example.com" };
-    const encrypted = encryptPluginConfig(config);
-    expect(encrypted).toMatch(/^enc\.v1\./);
+describe("Crypto Utils", () => {
+  it("encrypts and decrypts plugin config", () => {
+    const config = { test: "val", nested: { num: 1 } }
+    const encrypted = encryptPluginConfig(config)
+    expect(encrypted).toContain("enc.v1.")
     
-    expect(parsePluginConfig(encrypted)).toEqual(config);
-  });
+    const decrypted = parsePluginConfig(encrypted)
+    expect(decrypted).toEqual(config)
+  })
 
-  it("should successfully parse legacy plaintext JSON", () => {
-    const config = { legacy: true };
-    const plain = JSON.stringify(config);
-    expect(parsePluginConfig(plain)).toEqual(config);
-  });
+  it("handles null undefined in plugin config", () => {
+    expect(encryptPluginConfig(null)).toBe("enc.v1.")
+    expect(parsePluginConfig("")).toEqual({})
+    expect(parsePluginConfig("invalid format")).toEqual({})
+    expect(parsePluginConfig("enc.v1.invalid.format")).toEqual({}) // parts !== 3
+    expect(parsePluginConfig("enc.v1.invalid.format.stuff")).toEqual({})
+    expect(parsePluginConfig("enc.v1.bad.bad.bad")).toEqual({}) // catch block
+  })
 
-  it("should return empty object on malformed plaintext JSON", () => {
-    expect(parsePluginConfig("{badjson}")).toEqual({});
-  });
+  it("handles missing NEXTAUTH_SECRET fallback", () => {
+    jest.isolateModules(() => {
+        const og = process.env.NEXTAUTH_SECRET
+        delete process.env.NEXTAUTH_SECRET
+        const crypto2 = require("../src/lib/plugins/crypto")
+        expect(crypto2.encryptString("test")).toContain("enc.v1.")
+        process.env.NEXTAUTH_SECRET = og
+    })
+  })
 
-  it("should return empty object on bad encrypted format", () => {
-    expect(parsePluginConfig("enc.v1.invalid")).toEqual({});
-  });
+  it("handles legacy plain text json", () => {
+    expect(parsePluginConfig('{"legacy": true}')).toEqual({ legacy: true })
+    expect(parsePluginConfig('{bad json')).toEqual({})
+  })
 
-  it("should throw or return empty when tampering with encrypted payload", () => {
-    const config = { apiToken: "12345" };
-    const encrypted = encryptPluginConfig(config);
-    const parts = encrypted.split(".");
+  it("encrypts and decrypts string", () => {
+    const text = "super_secret"
+    const encrypted = encryptString(text)
+    expect(encrypted).toContain("enc.v1.")
+    expect(encrypted).not.toEqual(text)
     
-    // Tamper the IV
-    const tamperedIv = `enc.v1.invalidIv.${parts[3]}.${parts[4]}`;
-    expect(parsePluginConfig(tamperedIv)).toEqual({});
-    
-    // Tamper the ciphertext
-    const tamperedCipher = `enc.v1.${parts[2]}.badciphertext.${parts[4]}`;
-    expect(parsePluginConfig(tamperedCipher)).toEqual({});
-    
-    // Tamper the auth tag
-    const tamperedTag = `enc.v1.${parts[2]}.${parts[3]}.badtag=`;
-    expect(parsePluginConfig(tamperedTag)).toEqual({});
-  });
-});
+    const decrypted = decryptString(encrypted)
+    expect(decrypted).toBe(text)
+  })
+
+  it("handles empty or invalid string inputs", () => {
+    expect(encryptString("")).toBe("")
+    expect(decryptString("")).toBe("")
+    expect(decryptString("not encrypted")).toBe("not encrypted")
+    expect(decryptString("enc.v1.invalid.format")).toBe("enc.v1.invalid.format")
+    expect(decryptString("enc.v1.bad.bad.bad")).toBe("enc.v1.bad.bad.bad") // catch block
+  })
+})

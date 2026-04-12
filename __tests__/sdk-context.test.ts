@@ -25,6 +25,9 @@ jest.mock("../src/lib/db", () => ({
     },
     pluginState: {
       findMany: jest.fn().mockResolvedValue([])
+    },
+    systemSetting: {
+      findFirst: jest.fn().mockResolvedValue({ slaCriticalHours: 4 })
     }
   }
 }));
