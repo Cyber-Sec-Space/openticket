@@ -1,6 +1,9 @@
 import crypto from "crypto";
 
-const SECRET = process.env.NEXTAUTH_SECRET || "00000000000000000000000000000000";
+const SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || (() => {
+  console.error("[CRITICAL SECURITY] Neither AUTH_SECRET nor NEXTAUTH_SECRET is set. Plugin config encryption is using an INSECURE fallback key. Set AUTH_SECRET in your environment immediately.");
+  return "INSECURE_FALLBACK_DO_NOT_USE_IN_PRODUCTION";
+})();
 const ALGO = "aes-256-gcm";
 const PREFIX = "enc.v1.";
 

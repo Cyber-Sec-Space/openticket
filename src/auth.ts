@@ -69,10 +69,14 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
         
         const email = credentials.email as string;
         
-        // Securely identify the network boundary of the requester
+        // Securely identify the network boundary of the requester.
+        // SECURITY: Prefer x-real-ip (set by trusted reverse proxy like Nginx/Traefik)
+        // over x-forwarded-for (easily spoofable by clients without a trusted proxy).
+        // In production, configure your reverse proxy to set x-real-ip from the
+        // actual TCP connection source, and strip any client-supplied x-real-ip headers.
         const requestHeaders = await headers();
-        const requestIp = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() 
-                       || requestHeaders.get("x-real-ip") 
+        const requestIp = requestHeaders.get("x-real-ip") 
+                       || requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() 
                        || "127.0.0.1";
         
         // Fetch global directives (Moved up for early evaluation)

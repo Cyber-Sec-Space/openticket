@@ -250,7 +250,8 @@ export async function testSmtpConnection(formData: FormData) {
         pass: finalPassword,
       } : undefined,
       tls: {
-        rejectUnauthorized: false
+        // Match production mailer: validate TLS certs by default
+        rejectUnauthorized: true
       }
     })
 

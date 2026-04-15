@@ -23,6 +23,14 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
     return "PASSWORD_TOO_SHORT"
   }
 
+  // CWE-407 DoS Mitigation: Limits payload lengths before Bcrypt processing
+  if (password.length > 72) {
+    return "PASSWORD_TOO_LONG"
+  }
+  if (name.length > 255 || email.length > 255) {
+    return "MISSING_FIELDS"
+  }
+
   // Anti-bruteforce / Anti-enumeration delay (Constant time mitigation)
   await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
 
@@ -42,7 +50,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
   const existingUser = await db.user.findUnique({ where: { email } })
   
   // Enforce constant-time execution to prevent timing-based Account Enumeration
-  const passwordHash = await bcrypt.hash(password, 10)
+  const passwordHash = await bcrypt.hash(password, 12)
 
   if (existingUser) {
     // SECURITY: We pretend it failed normally AFTER spending the bcrypt CPU cycles

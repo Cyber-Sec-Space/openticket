@@ -127,6 +127,35 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       const res = await fetch(`https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/plugins/${pluginId}/${version}/index.tsx`);
       if (!res.ok) throw new Error(`Failed to download plugin source code from registry (HTTP ${res.status}).`);
       code = await res.text();
+
+      // SECURITY: Verify downloaded code integrity against registry signature.
+      // Fetch the registry manifest to get the expected signature for this version.
+      try {
+        const registryRes = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { cache: "no-store" });
+        if (registryRes.ok) {
+          const registry = await registryRes.json();
+          const registryPlugin = Array.isArray(registry) ? registry.find((p: any) => p.id === pluginId) : null;
+          const versionMeta = registryPlugin?.versions?.[version];
+          if (versionMeta?.signature) {
+            const crypto = await import("crypto");
+            const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+            if (codeHash !== versionMeta.signature) {
+              throw new Error(
+                `INTEGRITY CHECK FAILED: Downloaded plugin code hash (${codeHash.substring(0, 12)}...) does not match registry signature (${versionMeta.signature.substring(0, 12)}...). ` +
+                `This may indicate a supply-chain attack. Installation blocked.`
+              );
+            }
+            console.log(`[Plugin Install] ✅ Integrity verified for ${pluginId}@${version} (SHA-256: ${codeHash.substring(0, 16)}...)`);
+          } else {
+            console.warn(`[Plugin Install] ⚠️ No signature found in registry for ${pluginId}@${version}. Skipping integrity check.`);
+          }
+        }
+      } catch (integrityError: any) {
+        if (integrityError.message.includes("INTEGRITY CHECK FAILED")) {
+          throw integrityError; // Bubble up integrity failures — do not allow installation
+        }
+        console.warn("[Plugin Install] Could not verify plugin integrity:", integrityError.message);
+      }
     }
     
     // AST Syntax Pre-flight Check

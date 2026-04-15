@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.3
+### Security
+- **Cryptographic Key Material Hardening**: Eliminated a hardcoded all-zeros AES-256-GCM fallback key (`crypto.ts`) that silently activated when `NEXTAUTH_SECRET` was unset. The module now reads `AUTH_SECRET` (next-auth v5 standard) with `NEXTAUTH_SECRET` as secondary, and emits a critical runtime warning on insecure fallback usage.
+- **Docker Secret Synchronization**: Resolved a silent encryption bypass in Docker deployments where `AUTH_SECRET` (set in `docker-compose.yml`) diverged from `NEXTAUTH_SECRET` (consumed by `crypto.ts`). The compose file now explicitly syncs both variables from a single source, enforced via `${AUTH_SECRET:?}` required-variable syntax.
+- **Email Template XSS Prevention**: Applied comprehensive HTML entity escaping (`escapeHtml()`) to all user-supplied dynamic content (titles, descriptions, names, emails, IPs) across 7 email template functions in `mailer.ts`, preventing stored XSS via HTML-rendering email clients.
+- **CSV Injection Prevention (CWE-1236)**: Introduced a centralized `sanitizeCsvCell()` utility in the data export route that prefixes formula-trigger characters (`=`, `+`, `-`, `@`) with a single quote, neutralizing formula injection when exported CSVs are opened in Excel or LibreOffice.
+- **CWE-407 Registration DoS Boundary**: Added the missing 72-byte Bcrypt password length cap to the public registration flow (`register/actions.ts`), matching the existing protection in the setup wizard. Also added 255-character bounds for name and email fields.
+- **Bcrypt Cost Factor Normalization**: Unified Bcrypt hash cost from `10` to `12` across all credential hashing paths (registration now matches the setup wizard), increasing brute-force resistance by approximately 4x.
+- **SMTP TLS Certificate Validation**: Changed the default SMTP TLS policy from `rejectUnauthorized: false` to `true` across both the production mailer and the SMTP test function, preventing Man-in-the-Middle attacks on email delivery. A DB-backed override is available for environments with self-signed certificates.
+- **Plugin Webhook Authentication**: Introduced optional HMAC-SHA256 signature verification for plugin webhooks (`api/plugins/webhook/[pluginId]/route.ts`). Incoming webhook requests can now be authenticated using a `X-Webhook-Signature` header matched against a plugin-configured secret, preventing arbitrary third-party payload injection.
+- **Registry Download Integrity**: Enforced strict SHA-256 integrity validation during external plugin installations. Downloaded plugin source code is now hashed and verified against the official OpenTicket Registry manifest signature, blocking upstream supply-chain tampering.
+- **IP Spoofing Protection**: Hardened rate-limiter IP extraction (`auth.ts`) by correctly prioritizing the `x-real-ip` header (trusted reverse-proxy bound) over the easily manipulated `x-forwarded-for` header, mitigating localized botnet spoofing attempts.
+
+### Infrastructure
+- **Docker Compose Security Hardening**: Removed the weak `AUTH_SECRET` fallback string and replaced it with a mandatory `${AUTH_SECRET:?}` declaration that fatally aborts container startup if unset. Bound PostgreSQL (`5432`) and PgBouncer (`6432`) ports exclusively to `127.0.0.1`, preventing external network exposure. Removed the deprecated `version: '3.8'` key.
+- **PgBouncer Health Check**: Added a dedicated `pg_isready` health check to the PgBouncer service and upgraded the app dependency from `service_started` to `service_healthy`, ensuring the application only boots after the connection pool is fully operational.
+
 ## 0.5.2
 ### Security
 - **Absolute Zero-Trust Edge Perimeters (L7 DDoS Defense)**: Shifted massive load boundaries to the Next.js Edge Middleware layer natively (`proxy.ts`). Incoming HTTP payloads hitting API routes without structurally valid Bearer tokens or Session Cookies are instantly purged at the Edge, effectively shielding the Node js Thread Pool from volumetric unauthenticated DoS.

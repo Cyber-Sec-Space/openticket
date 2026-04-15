@@ -82,6 +82,8 @@ The simplest way to run OpenTicket is via Docker Compose, which automatically pr
 ```bash
 # Ensure you copy your secure production configuration first
 cp .env.example .env
+# IMPORTANT: You MUST set AUTH_SECRET in .env before starting.
+# Generate one with: openssl rand -base64 33
 
 docker-compose up -d --build
 ```
@@ -117,7 +119,7 @@ cd openticket-standalone
 
 # 2. Configure your specific environment parameters
 cp .env.example .env
-nano .env # Explicitly set your DATABASE_URL and NEXTAUTH_SECRET
+nano .env # Explicitly set your DATABASE_URL and AUTH_SECRET (also aliased as NEXTAUTH_SECRET)
 
 # 3. Apply schema mechanisms to your active database
 npx prisma migrate deploy

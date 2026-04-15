@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
@@ -11,8 +9,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-openticket_prod}
     volumes:
       - openticket_data:/var/lib/postgresql/data
+    # Security: Only expose DB port to localhost, not to all interfaces
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -29,11 +28,17 @@ services:
       DEFAULT_POOL_SIZE: "20"
       POOL_MODE: "transaction"
       IGNORE_STARTUP_PARAMETERS: "extra_float_digits"
+      AUTH_TYPE: "scram-sha-256"
     ports:
-      - "6432:5432"
+      - "127.0.0.1:6432:5432"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   migrator:
     build:
@@ -60,12 +65,16 @@ services:
     environment:
       # Use PgBouncer connection for the main application querying and attach ?pgbouncer=true parameter for Prisma
       - DATABASE_URL=postgresql://${POSTGRES_USER:-openticket_admin}:${POSTGRES_PASSWORD:-supersecurepassword}@pgbouncer:5432/${POSTGRES_DB:-openticket_prod}?pgbouncer=true
-      - AUTH_SECRET=${AUTH_SECRET:-generate_a_strong_secret_in_production_environments}
+      # Security: AUTH_SECRET MUST be set in .env — no weak fallback allowed
+      - AUTH_SECRET=${AUTH_SECRET:?ERROR: AUTH_SECRET must be set in .env file. Generate one with: openssl rand -base64 33}
+      # Sync NEXTAUTH_SECRET for plugin encryption compatibility
+      - NEXTAUTH_SECRET=${AUTH_SECRET:?}
+      - AUTH_TRUST_HOST=true
     depends_on:
       migrator:
         condition: service_completed_successfully
       pgbouncer:
-        condition: service_started
+        condition: service_healthy
     # Server will boot natively according to Dockerfile CMD after migrator completes
 
 volumes:
