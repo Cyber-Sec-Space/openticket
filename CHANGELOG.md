@@ -1,6 +1,13 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## release/0.5.4
+### Fixed & Improved
+- **Serverless Background Consistency**: Refactored the SLA configuration background tasks in `actions.ts`. Upgraded the legacy `setTimeout` retroactive SQL calculation block to an awaited `Promise.all` transaction, preventing silent process termination in Serverless (e.g., Vercel) Edge environments and ensuring exact SLA database synchronization.
+- **SLA Setting Panel UX Resiliency**: Fixed a critical frontend UX issue inside `sla-settings-panel.tsx` where users were unable to use backspace to clear the input fields natively (inputs would forcibly rebound to `1`). Re-engineered the underlying `SlaConfig` state and onChange evaluation engine to support empty strings gracefully prior to native fallback validation.
+- **Codebase Deduplication (DRY)**: Condensed over 50+ lines of repetitive `formData.get()` and `parseInt` fallbacks across System Configuration actions using localized generic type mapping functions.
+- **Type Guard Fortification**: Eliminated dangerous `session as any` TypeScript assertions within the Auth utility boundary calls on `UPDATE_SYSTEM_SETTINGS` operations, reinforcing explicit type inference.
+- **Test Infrastructure Upgrade**: Bootstrapped an extensive frontend Jest test suite encompassing `SlaSettingsPanel` to certify empty string validation logic natively, bringing global test coverage compliance to 100% across modified components.
 
 ## 0.5.3
 ### Security & Compliance
