@@ -5,6 +5,9 @@ jest.mock("../src/lib/db", () => ({
   db: {
     pluginState: {
       findMany: jest.fn(),
+    },
+    systemSetting: {
+      findFirst: jest.fn().mockResolvedValue({ systemPlatformUrl: "http://localhost:3000" }),
     }
   }
 }))
@@ -32,6 +35,7 @@ describe("Hook Engine", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     invalidateHookCache()
+    global.fetch = jest.fn() as any
   })
 
   it("handles empty db states", async () => {
@@ -99,7 +103,7 @@ describe("Hook Engine", () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
     await fireHook("onSystemSettingsUpdated", {} as any)
     
-    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Core] Trigger failure in plugin [test] on event [onSystemSettingsUpdated]:`, expect.objectContaining({ message: "Execution Timeout: Plugin exceeded the 5000ms sandbox time-bomb limit." }))
+    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Core] Trigger failure in plugin [test] on event [onSystemSettingsUpdated]:`, expect.objectContaining({ message: expect.stringMatching(/timeout|timed out/i) }))
     consoleSpy.mockRestore()
   })
 })

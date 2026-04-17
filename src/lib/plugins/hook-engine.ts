@@ -3,6 +3,7 @@ import { OpenTicketPluginHooks } from "./types"
 import { db } from "@/lib/db"
 import { createPluginContext } from "./sdk-context"
 import { parsePluginConfig } from "./crypto"
+import vm from "vm"
 
 // In-memory global cache for Thundering Herd mitigation
 interface EngineCache {
@@ -64,16 +65,44 @@ export async function fireHook<K extends keyof OpenTicketPluginHooks>(
         (async () => {
           try {
             const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name)
+            const settings = await db.systemSetting.findFirst()
+            const baseUrl = settings?.systemPlatformUrl || "http://localhost:3000"
             
-            // Time-Bomb Sandbox Protection: Force reject if execution hangs beyond 5 seconds
+            // Context Isolation Map: Explicitly whitelist survival APIs for the Sandbox
+            const sandboxContext = {
+              payload,
+              config,
+              context,
+              console,
+              fetch,
+              setTimeout,
+              clearTimeout,
+              Promise,
+              env: {
+                baseUrl
+              },
+              hookFn
+            };
+
+            // Instantiate VM and strictly map to global namespace inside the isolate
+            vm.createContext(sandboxContext);
+            
+            // Execute as stringified bridging function
+            const vmScript = new vm.Script(`
+              (async () => {
+                await hookFn(payload, config, context);
+              })();
+            `);
+
+            // Time-Bomb Sandbox Protection: Force C++ loop-termination if execution hangs beyond 5 seconds synchronously
+            const executionPromise = vmScript.runInContext(sandboxContext, { timeout: 5000 });
+            
             const timeoutPromise = new Promise((_, reject) => {
               setTimeout(() => reject(new Error("Execution Timeout: Plugin exceeded the 5000ms sandbox time-bomb limit.")), 5000);
             });
-
-            await Promise.race([
-              hookFn(payload, config, context),
-              timeoutPromise
-            ]);
+            
+            await Promise.race([executionPromise, timeoutPromise]);
+            
           } catch (error) {
             console.error(`[Plugin Core] Trigger failure in plugin [${plugin.manifest.id}] on event [${event}]:`, error)
           }

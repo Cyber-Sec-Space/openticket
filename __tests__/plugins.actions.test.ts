@@ -315,12 +315,12 @@ describe("Plugin Actions", () => {
       process.env.NODE_ENV = "production"
       
       ;(global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 404 })
-      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Failed to download plugin source code from registry (HTTP 404).")
+      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Failed to download plugin source code from remote registry (HTTP 404).")
       
       process.env.NODE_ENV = originalEnv
     })
 
-    it("throws error if local file is missing", async () => {
+    it("warns and falls back to remote if local file is missing", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
@@ -328,8 +328,16 @@ describe("Plugin Actions", () => {
       process.env.NODE_ENV = "development"
       ;(fs.existsSync as jest.Mock).mockReturnValue(false)
       
-      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Local development registry file not found")
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {})
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, text: async () => 'export const plugin = {}' })
+      const ts = require("typescript");
+      ts.transpileModule.mockReturnValueOnce({ diagnostics: [] });
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue("export const activePlugins: OpenTicketPlugin[] = [\n];")
       
+      await installExternalPlugin("new-plugin", "1.0", "registry")
+      
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining("Falling back to remote production registry"))
+      consoleWarnSpy.mockRestore()
       process.env.NODE_ENV = originalEnv
     })
 
