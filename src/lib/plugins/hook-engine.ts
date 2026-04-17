@@ -5,17 +5,8 @@ import { createPluginContext } from "./sdk-context"
 import { parsePluginConfig } from "./crypto"
 import vm from "vm"
 
-// In-memory global cache for Thundering Herd mitigation
-interface EngineCache {
-  dbStates: any[];
-  parsedConfigs: Record<string, any>;
-  expiresAt: number;
-}
-let __engineCache: EngineCache | null = null;
-
-// Allow external actions (like UI toggles or Config updates) to instantly invalidate the cache
 export function invalidateHookCache() {
-  __engineCache = null;
+  // Deprecated: Cache is removed for Serverless consistency
 }
 
 export async function fireHook<K extends keyof OpenTicketPluginHooks>(
@@ -25,28 +16,22 @@ export async function fireHook<K extends keyof OpenTicketPluginHooks>(
 ): Promise<void> {
   const promises = []
 
-  // Efficient In-Memory Cache implementation (10s TTL)
-  const now = Date.now();
-  if (!__engineCache || now > __engineCache.expiresAt) {
-    try {
-      const states = await db.pluginState.findMany();
-      const parsed: Record<string, any> = {};
-      for (const s of states) {
-        if (s.configJson) {
-           /* istanbul ignore next */
-           try { parsed[s.id] = parsePluginConfig(s.configJson); } catch (e) { parsed[s.id] = {}; }
-        } else {
-           parsed[s.id] = {};
-        }
-      }
-      __engineCache = { dbStates: states, parsedConfigs: parsed, expiresAt: now + 10000 };
-    } catch (err) {
-      console.error("[Plugin Core] Failed to query PluginState from DB.", err);
-      if (!__engineCache) __engineCache = { dbStates: [], parsedConfigs: {}, expiresAt: 0 };
-    }
-  }
+  let dbStates: any[] = [];
+  const parsedConfigs: Record<string, any> = {};
 
-  const { dbStates, parsedConfigs } = __engineCache;
+  try {
+    dbStates = await db.pluginState.findMany();
+    for (const s of dbStates) {
+      if (s.configJson) {
+         /* istanbul ignore next */
+         try { parsedConfigs[s.id] = parsePluginConfig(s.configJson); } catch (e) { parsedConfigs[s.id] = {}; }
+      } else {
+         parsedConfigs[s.id] = {};
+      }
+    }
+  } catch (err) {
+    console.error("[Plugin Core] Failed to query PluginState from DB.", err);
+  }
 
   for (const plugin of activePlugins) {
     const state = dbStates.find(s => s.id === plugin.manifest.id)

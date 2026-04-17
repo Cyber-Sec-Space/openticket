@@ -21,3 +21,16 @@ export class PluginInputError extends Error {
     Object.setPrototypeOf(this, PluginInputError.prototype);
   }
 }
+
+export function withPluginErrorHandling<T extends (...args: any[]) => Promise<any>>(fn: T): T {
+  return (async (...args: Parameters<T>) => {
+    try {
+      return await fn(...args);
+    } catch (error) {
+      if (error instanceof PluginSystemError || error instanceof PluginPermissionError || error instanceof PluginInputError) {
+        throw error; // Re-throw known plugin errors to avoid double wrapping
+      }
+      throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`);
+    }
+  }) as T;
+}

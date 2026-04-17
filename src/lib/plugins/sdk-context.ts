@@ -83,34 +83,21 @@ async function provisionPluginBotUser(pluginId: string, customName: string, requ
   return newBot.id
 }
 
-// Global In-Memory Cache for Bot Credentials Context (10s TTL)
-interface BotContextCache { id: string; permissions: Permission[]; expiresAt: number; }
-const __botContextCache = new Map<string, BotContextCache>();
-
 export async function createPluginContext(pluginId: string, defaultPluginName: string): Promise<PluginSdkContext> {
   let botUserId: string | null = null;
   let botPermissions: Permission[] = [];
   
-  const now = Date.now();
-  const cached = __botContextCache.get(pluginId);
-  
-  if (cached && cached.expiresAt > now) {
-    botUserId = cached.id;
-    botPermissions = cached.permissions;
-  } else {
-    const existingBot = await db.user.findUnique({
-      where: { botPluginIdentifier: pluginId },
-      select: { 
-        id: true,
-        customRoles: { select: { permissions: true } }
-      }
-    });
-    
-    if (existingBot) {
-      botUserId = existingBot.id;
-      botPermissions = existingBot.customRoles.flatMap(r => r.permissions);
-      __botContextCache.set(pluginId, { id: botUserId, permissions: botPermissions, expiresAt: now + 10000 });
+  const existingBot = await db.user.findUnique({
+    where: { botPluginIdentifier: pluginId },
+    select: { 
+      id: true,
+      customRoles: { select: { permissions: true } }
     }
+  });
+  
+  if (existingBot) {
+    botUserId = existingBot.id;
+    botPermissions = existingBot.customRoles.flatMap(r => r.permissions);
   }
 
   const requireBotUser = (requiredPermission?: Permission) => {
@@ -146,7 +133,6 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
         const nameToUse = customName || defaultPluginName;
         botUserId = await provisionPluginBotUser(pluginId, nameToUse, requestedPermissions);
         botPermissions = requestedPermissions;
-        __botContextCache.set(pluginId, { id: botUserId, permissions: botPermissions, expiresAt: Date.now() + 10000 });
       },
       
       ...createIncidentApi(ctx),

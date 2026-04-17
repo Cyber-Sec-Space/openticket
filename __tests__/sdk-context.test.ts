@@ -60,11 +60,15 @@ describe("Plugin SDK Context", () => {
           title: "Test Incident",
           type: "OTHER",
           severity: "LOW",
-          reporterId: "bot-123"
+          reporterId: "bot-123",
+          auditLogs: {
+            create: expect.objectContaining({
+              action: "[PLUGIN:test] INCIDENT_CREATED"
+            })
+          }
         })
       });
 
-      expect(db.auditLog.create).toHaveBeenCalled();
       expect(res).toEqual({ id: "inc-1" });
     });
 

@@ -3,7 +3,7 @@ export type { Incident, Asset, User };
 import { ComponentType } from "react";
 import { PluginSdkContext } from "./sdk-context";
 
-export const PLUGIN_API_VERSION = "1.3.0";
+export const PLUGIN_API_VERSION = "1.4.0";
 
 
 export type OpenTicketPluginHooks = {
