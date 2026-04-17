@@ -55,6 +55,11 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
     return "REGISTRATION_FAILED"
   }
   
+  let verificationToken: string | null = null;
+  if (settings?.requireEmailVerification && settings?.smtpEnabled) {
+    verificationToken = crypto.randomBytes(32).toString("hex")
+  }
+
   try {
     const defaultRoles = (settings && settings.defaultUserRoles && settings.defaultUserRoles.length > 0) 
       ? { connect: settings.defaultUserRoles.map(r => ({ id: r.id })) } 
@@ -82,6 +87,16 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
           changes: { details: `New user account registered${inviteToken ? ' via invitation token' : ''}.` }
         }
       })
+
+      if (verificationToken) {
+        await tx.verificationToken.create({
+          data: {
+            identifier: email,
+            token: verificationToken,
+            expires: new Date(Date.now() + 1000 * 60 * 60 * 24) // 24 hours
+          }
+        })
+      }
     })
   } catch (error: any) {
     if (error.code === 'P2002' || error.code === 'P2025') {
@@ -99,17 +114,8 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
   }
 
   // Phase 11: Identity Verification
-  if (settings?.requireEmailVerification && settings?.smtpEnabled) {
-    const verificationToken = crypto.randomBytes(32).toString("hex")
-    await db.verificationToken.create({
-      data: {
-        identifier: email,
-        token: verificationToken,
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24) // 24 hours
-      }
-    })
-    
-    const tokenUrl = `${settings.systemPlatformUrl}/api/auth/verify?token=${verificationToken}&email=${encodeURIComponent(email)}`
+  if (verificationToken) {
+    const tokenUrl = `${settings?.systemPlatformUrl || "http://localhost:3000"}/api/auth/verify?token=${verificationToken}&email=${encodeURIComponent(email)}`
     await sendVerificationEmail(email, name, tokenUrl)
     redirect("/login?registered=verify")
   }

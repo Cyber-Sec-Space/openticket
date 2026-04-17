@@ -1,3 +1,4 @@
+import externalwebhooktoticketPlugin from "./external-webhook-to-ticket";
 import { OpenTicketPlugin } from "../lib/plugins/types"
 
 // Core framework execution target point.
@@ -13,4 +14,5 @@ const safeRequire = (modFn: () => any) => {
   }
 };
 
-export const activePlugins: OpenTicketPlugin[] = []
+export const activePlugins: OpenTicketPlugin[] = [
+  externalwebhooktoticketPlugin,]

@@ -29,16 +29,17 @@ export async function sendResetLink(prevState: any, formData: FormData) {
     return { success: true }
   }
   
-  // Wipe previous tokens if any to prevent clutter/re-use window extensions
-  await db.passwordResetToken.deleteMany({ where: { email } })
-
-  await db.passwordResetToken.create({
-    data: {
-      email,
-      token: resetToken,
-      expires: new Date(Date.now() + 1000 * 60 * 15) // Strictly 15 minutes window
-    }
-  })
+  // Wipe previous tokens if any to prevent clutter/re-use window extensions and create new token atomically
+  await db.$transaction([
+    db.passwordResetToken.deleteMany({ where: { email } }),
+    db.passwordResetToken.create({
+      data: {
+        email,
+        token: resetToken,
+        expires: new Date(Date.now() + 1000 * 60 * 15) // Strictly 15 minutes window
+      }
+    })
+  ])
 
   // Transmit payload
   const tokenUrl = `${settings.systemPlatformUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`

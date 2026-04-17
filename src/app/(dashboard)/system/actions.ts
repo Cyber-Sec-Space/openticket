@@ -21,7 +21,10 @@ export async function updateSystemSettings(formData: FormData) {
   const requireEmailVerification = formData.get("requireEmailVerification") === "on"
   
   let systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
-  try { new URL(systemPlatformUrl); } catch { systemPlatformUrl = "http://localhost:3000"; }
+  try { 
+    const parsed = new URL(systemPlatformUrl); 
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error();
+  } catch { systemPlatformUrl = "http://localhost:3000"; }
   
   const defaultRoleName = formData.get("defaultRoleId") as string
   let rolePayload: any = undefined
@@ -37,7 +40,10 @@ export async function updateSystemSettings(formData: FormData) {
   const webhookEnabled = formData.get("webhookEnabled") === "on"
   let webhookUrl = formData.get("webhookUrl") as string || ""
   if (webhookUrl) {
-    try { new URL(webhookUrl); } catch { webhookUrl = ""; }
+    try { 
+      const parsed = new URL(webhookUrl); 
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error();
+    } catch { webhookUrl = ""; }
   }
 
   const ptCrit = parseInt(formData.get("slaCriticalHours") as string, 10)

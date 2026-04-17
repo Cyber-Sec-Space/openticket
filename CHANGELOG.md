@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## 0.5.3
 ### Security & Compliance
+- **Database Consistency (Identity & Auth)**: Fortified the `forgot-password` and `register` identity pipelines by explicitly wrapping Token lifecycle functions (`deleteMany`, `create`) directly inside PostgreSQL `$transaction` boundaries, absolutely eliminating TOCTOU race conditions and preventing phantom token states during mass concurrent requests.
+- **Strict Protocol Validation (SSRF/XSS Defense)**: Expanded the `System Configuration` action parsers to mathematically assert URL Protocol schemes (`http:`, `https:`). The System Settings Engine now automatically rejects and reverts arbitrary URI injections (e.g., `javascript:`, `file:`, `ftp:`) designed to trigger Cross-Site Scripting (XSS) via SMTP templates or execute Server-Side Request Forgeries (SSRF) via Webhook event listeners.
 - **Decoupled Vulnerability SLA Architecture**: Added `vulnSla*` fields to the `SystemSetting` Prisma model to enable independent patching lifecycle management separately from general Incident SLAs.
 - **Compliance-Based SLA Templates**: Implemented dynamic templates (`CISA_BOD_22_01`, `PCI_DSS_V4`, `FEDRAMP_MODERATE`, `STANDARD_ENTERPRISE`) to map severity matrices directly to industry and federal regulations natively inside the UI.
 - **Audit-Ready Configuration**: Validated SLA limits, correctly aligning the `FEDRAMP_MODERATE` low-risk vulnerability SLA to 180 days (4320 hours) to fulfill FedRAMP SI-2 compliance controls.
