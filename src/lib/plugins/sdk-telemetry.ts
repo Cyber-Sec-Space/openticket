@@ -1,26 +1,26 @@
 import { db } from "@/lib/db"
 import { PluginSystemError, PluginInputError, withPluginErrorHandling } from './errors'
 import { SdkExecutionContext } from './sdk-types'
+import { NotificationCreateSchema } from './schemas'
+import { z } from "zod"
+
+const IdSchema = z.string().min(1, "ID is required");
 
 export function createTelemetryApi(ctx: SdkExecutionContext) {
   return {
     pushNotification: withPluginErrorHandling(async (targetUserId: string, title: string, body: string, link?: string) => {
       ctx.requireBotUser(); // Base communication capability
-      if (!targetUserId || !title || !body) throw new PluginInputError("SDK Input Exception: target, title, and body are required.");
-
-      // Input truncations for Notification length safety
-      const safeTitle = title.substring(0, 100);
-      const safeBody = body.substring(0, 500);
+      const parsedData = NotificationCreateSchema.parse({ targetUserId, title, body, link });
 
       return await db.userNotification.create({
-        data: { userId: targetUserId, title: safeTitle, body: safeBody, link }
+        data: { userId: parsedData.targetUserId, title: parsedData.title, body: parsedData.body, link: parsedData.link }
       });
     }),
 
-    logPluginMetric: async (metricName: string, value: number, payload?: any) => {
+    logPluginMetric: async (metricName: string, value: number, payload?: Record<string, unknown>) => {
       // Intentionally not wrapped in withPluginErrorHandling because failures should be silent
       ctx.requireBotUser(); // Base telemetry capability
-      if (!metricName) throw new PluginInputError("SDK Input Exception: Metric name required");
+      const validMetric = z.string().min(1).parse(metricName);
 
       try {
         const now = new Date();
@@ -30,7 +30,7 @@ export function createTelemetryApi(ctx: SdkExecutionContext) {
 
         const safePayload = JSON.stringify({ 
            value, 
-           ...(typeof payload === 'object' ? payload : {}) 
+           ...(payload || {}) 
         });
 
         // Insert directly as user-scoped metrics tied solely to the plugin identifier
@@ -38,7 +38,7 @@ export function createTelemetryApi(ctx: SdkExecutionContext) {
           data: {
             timestamp: roundedTime,
             scopeType: 'USER', 
-            scopeId: `PLUGIN_${ctx.pluginId}_${metricName}`,
+            scopeId: `PLUGIN_${ctx.pluginId}_${validMetric}`,
             payload: safePayload.length > 5000 ? safePayload.substring(0, 5000) : safePayload
           }
         });
@@ -48,24 +48,25 @@ export function createTelemetryApi(ctx: SdkExecutionContext) {
       }
     },
 
-    logAudit: withPluginErrorHandling(async (action: string, entityType: string, entityId: string, changes: any) => {
+    logAudit: withPluginErrorHandling(async (action: string, entityType: string, entityId: string, changes: Record<string, unknown>) => {
       const id = ctx.requireBotUser(); 
-      if (!action || typeof action !== 'string') throw new PluginInputError("SDK Input Exception: Audit 'action' required.");
-      if (!entityType || typeof entityType !== 'string') throw new PluginInputError("SDK Input Exception: Audit 'entityType' required.");
-      if (!entityId || typeof entityId !== 'string') throw new PluginInputError("SDK Input Exception: Audit 'entityId' required.");
+      const validAction = z.string().min(1).parse(action);
+      const validEntityType = z.string().min(1).parse(entityType);
+      const validEntityId = z.string().min(1).parse(entityId);
+      const validChanges = z.record(z.string(), z.unknown()).parse(changes || {});
 
-      const prefixedAction = action.startsWith(`[PLUGIN:${ctx.pluginId}]`) ? action : `[PLUGIN:${ctx.pluginId}] ${action.trim()}`;
+      const prefixedAction = validAction.startsWith(`[PLUGIN:${ctx.pluginId}]`) ? validAction : `[PLUGIN:${ctx.pluginId}] ${validAction.trim()}`;
       return await db.auditLog.create({
-        data: { action: prefixedAction, entityType, entityId, userId: id, changes }
+        data: { action: prefixedAction, entityType: validEntityType, entityId: validEntityId, userId: id, changes: validChanges }
       });
     }),
 
     deleteComment: withPluginErrorHandling(async (commentId: string) => {
       // Enforce basic deletion minimum. A plugin only deletes what it owns unless it has ANY_COMMENTS.
       const id = ctx.requireBotUser('DELETE_OWN_COMMENTS');
-      if (!commentId) throw new PluginInputError("SDK Input Exception: Comment ID required.");
+      const validCommentId = IdSchema.parse(commentId);
 
-      const comment = await db.comment.findUnique({ where: { id: commentId } });
+      const comment = await db.comment.findUnique({ where: { id: validCommentId } });
       if (!comment) return null; // Idempotent
 
       // Zero-Trust Check: if the plugin didn't author it, verify DELETE_ANY_COMMENTS
@@ -74,12 +75,13 @@ export function createTelemetryApi(ctx: SdkExecutionContext) {
       }
 
       const [deleted] = await db.$transaction([
-        db.comment.delete({ where: { id: commentId } }),
+        db.comment.delete({ where: { id: validCommentId } }),
         db.auditLog.create({
-           data: { action: `[PLUGIN:${ctx.pluginId}] COMMENT_DELETED`, entityType: "Comment", entityId: commentId, userId: id, changes: { "status": "purged" } }
+           data: { action: `[PLUGIN:${ctx.pluginId}] COMMENT_DELETED`, entityType: "Comment", entityId: validCommentId, userId: id, changes: { status: "purged" } }
         })
       ]);
       return deleted;
     })
   }
 }
+

@@ -2,18 +2,27 @@ import { db } from "@/lib/db"
 import { AssetType, AssetStatus } from "@prisma/client"
 import { PluginSystemError, PluginInputError, withPluginErrorHandling } from './errors'
 import { SdkExecutionContext } from './sdk-types'
+import { AssetCreateSchema, AssetSearchSchema, AssetUpdateSchema } from './schemas'
+import { z } from "zod"
+
+const IdSchema = z.string().min(1, "ID is required");
 
 export function createAssetApi(ctx: SdkExecutionContext) {
   return {
-    createAsset: withPluginErrorHandling(async (name: string, type: AssetType, ipAddress?: string, externalId?: string, metadata?: any) => {
+    createAsset: withPluginErrorHandling(async (name: string, type: AssetType, ipAddress?: string, externalId?: string, metadata?: Record<string, unknown>) => {
       const id = ctx.requireBotUser('CREATE_ASSETS');
-      if (!name || typeof name !== 'string') throw new PluginInputError("SDK Input Exception: Asset name required");
+      
+      const parsedData = AssetCreateSchema.parse({ name, type, ipAddress, externalId, metadata });
 
       const asset = await db.asset.create({
         data: { 
-          name, type, ipAddress, externalId, metadata: metadata || {},
+          name: parsedData.name, 
+          type: parsedData.type as AssetType, 
+          ipAddress: parsedData.ipAddress, 
+          externalId: parsedData.externalId, 
+          metadata: parsedData.metadata,
           auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] ASSET_CREATED`, userId: id, changes: { name, type, ipAddress, externalId } }
+            create: { action: `[PLUGIN:${ctx.pluginId}] ASSET_CREATED`, userId: id, changes: { name: parsedData.name, type: parsedData.type, ipAddress: parsedData.ipAddress, externalId: parsedData.externalId } }
           }
         }
       });
@@ -24,49 +33,51 @@ export function createAssetApi(ctx: SdkExecutionContext) {
 
     getAsset: withPluginErrorHandling(async (assetId: string) => {
       ctx.requireBotUser('VIEW_ASSETS');
-      if (!assetId) throw new PluginInputError("SDK Input Exception: Asset ID required.");
+      const validId = IdSchema.parse(assetId);
       
-      return await db.asset.findUnique({ where: { id: assetId } });
+      return await db.asset.findUnique({ where: { id: validId } });
     }),
 
     getAssetByIp: withPluginErrorHandling(async (ipAddress: string) => {
       ctx.requireBotUser('VIEW_ASSETS');
-      if (!ipAddress || typeof ipAddress !== 'string') throw new PluginInputError("SDK Input Exception: IP address required.");
+      const validIp = z.string().min(1).parse(ipAddress);
 
       return await db.asset.findFirst({
-        where: { ipAddress }
+        where: { ipAddress: validIp }
       });
     }),
 
     getAssetByIdentifier: withPluginErrorHandling(async (identifier: string) => {
       ctx.requireBotUser('VIEW_ASSETS');
-      if (!identifier || typeof identifier !== 'string') throw new PluginInputError("SDK Input Exception: Identifier required.");
+      const validId = z.string().min(1).parse(identifier);
 
       return await db.asset.findFirst({
-        where: { externalId: identifier }
+        where: { externalId: validId }
       });
     }),
 
     searchAssets: withPluginErrorHandling(async (query?: { type?: AssetType, status?: AssetStatus, limit?: number }) => {
       ctx.requireBotUser('VIEW_ASSETS');
-      const limit = Math.min(query?.limit || 50, 100);
+      const parsedQuery = query ? AssetSearchSchema.parse(query) : { limit: 50 };
+      
       const conditions: any = {};
-      if (query?.type) conditions.type = query.type;
-      if (query?.status) conditions.status = query.status;
+      if (parsedQuery.type) conditions.type = parsedQuery.type;
+      if (parsedQuery.status) conditions.status = parsedQuery.status;
 
-      return await db.asset.findMany({ where: conditions, take: limit });
+      return await db.asset.findMany({ where: conditions, take: parsedQuery.limit });
     }),
 
     updateAssetDetails: withPluginErrorHandling(async (assetId: string, updates: { name?: string, type?: AssetType, ipAddress?: string | null, externalId?: string | null }) => {
       const id = ctx.requireBotUser('UPDATE_ASSETS');
-      if (!assetId) throw new PluginInputError("SDK Input Exception: Asset ID required.");
+      const validId = IdSchema.parse(assetId);
+      const parsedUpdates = AssetUpdateSchema.parse(updates);
 
       const updated = await db.asset.update({
-        where: { id: assetId },
+        where: { id: validId },
         data: {
-          ...updates,
+          ...parsedUpdates,
           auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] ASSET_UPDATED`, userId: id, changes: updates }
+            create: { action: `[PLUGIN:${ctx.pluginId}] ASSET_UPDATED`, userId: id, changes: parsedUpdates }
           }
         }
       });
@@ -77,10 +88,11 @@ export function createAssetApi(ctx: SdkExecutionContext) {
 
     updateAssetStatus: withPluginErrorHandling(async (assetId: string, status: AssetStatus) => {
       const id = ctx.requireBotUser('UPDATE_ASSETS');
-      if (!assetId || !status) throw new PluginInputError("SDK Input Exception: AssetId and Status are required.");
+      const validId = IdSchema.parse(assetId);
+      z.string().min(1).parse(status);
 
       const updated = await db.asset.update({
-        where: { id: assetId },
+        where: { id: validId },
         data: { 
           status,
           auditLogs: {
@@ -93,24 +105,25 @@ export function createAssetApi(ctx: SdkExecutionContext) {
       return updated;
     }),
 
-    updateAssetMetadata: withPluginErrorHandling(async (assetId: string, metadataPatch: any) => {
+    updateAssetMetadata: withPluginErrorHandling(async (assetId: string, metadataPatch: Record<string, unknown>) => {
       const userId = ctx.requireBotUser('UPDATE_ASSETS');
-      if (!assetId || typeof metadataPatch !== 'object') throw new PluginInputError("SDK Input Exception: Asset ID and object patch required");
+      const validId = IdSchema.parse(assetId);
+      const parsedPatch = z.record(z.string(), z.unknown()).parse(metadataPatch);
 
-      const asset = await db.asset.findUnique({ where: { id: assetId } });
+      const asset = await db.asset.findUnique({ where: { id: validId } });
       if (!asset) throw new PluginSystemError("SDK Relation Error: Asset not found.");
 
       const mergedMetadata = {
          ...(asset.metadata && typeof asset.metadata === 'object' ? asset.metadata : {}),
-         ...metadataPatch
+         ...parsedPatch
       };
 
       const updated = await db.asset.update({
-        where: { id: assetId },
+        where: { id: validId },
         data: { 
           metadata: mergedMetadata,
           auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] METADATA_PATCHED`, userId, changes: metadataPatch }
+            create: { action: `[PLUGIN:${ctx.pluginId}] METADATA_PATCHED`, userId, changes: parsedPatch }
           }
         }
       });
@@ -121,16 +134,17 @@ export function createAssetApi(ctx: SdkExecutionContext) {
 
     deleteAsset: withPluginErrorHandling(async (id: string) => {
       const userId = ctx.requireBotUser('DELETE_ASSETS');
-      if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: ID must be a string");
+      const validId = IdSchema.parse(id);
       
       const [del] = await db.$transaction([
-        db.asset.delete({ where: { id } }),
+        db.asset.delete({ where: { id: validId } }),
         db.auditLog.create({
-           data: { action: `[PLUGIN:${ctx.pluginId}] ENTITY_DELETED`, entityType: "Asset", entityId: id, userId, changes: { status: "PURGED" } }
+           data: { action: `[PLUGIN:${ctx.pluginId}] ENTITY_DELETED`, entityType: "Asset", entityId: validId, userId, changes: { status: "PURGED" } }
         })
       ]);
-      await ctx.triggerHook('onAssetDestroyed', id);
+      await ctx.triggerHook('onAssetDestroyed', validId);
       return del;
     })
   }
 }
+

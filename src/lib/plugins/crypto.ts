@@ -18,7 +18,7 @@ const getSecret = () => {
 const getKey = () => crypto.createHash("sha256").update(getSecret()).digest();
 const getLegacyFallbackKey = () => crypto.createHash("sha256").update(LEGACY_FALLBACK_SECRET).digest();
 
-export function encryptPluginConfig(configObject: any): string {
+export function encryptPluginConfig(configObject: Record<string, unknown> | null | undefined): string {
   if (!configObject) return PREFIX;
   const jsonStr = JSON.stringify(configObject);
   const iv = crypto.randomBytes(12); // Standard 96-bit for GCM
@@ -32,7 +32,7 @@ export function encryptPluginConfig(configObject: any): string {
   return `${PREFIX}${iv.toString("base64")}.${authTag}.${encrypted}`;
 }
 
-export function parsePluginConfig(rawConfigStr: string): any {
+export function parsePluginConfig(rawConfigStr: string): Record<string, unknown> {
   if (!rawConfigStr) return {};
   
   if (!rawConfigStr.startsWith(PREFIX)) {
