@@ -10,7 +10,7 @@ import nodemailer from "nodemailer"
 export async function updateSystemSettings(formData: FormData) {
   try {
     const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')) {
+  if (!session?.user || !hasPermission(session, 'UPDATE_SYSTEM_SETTINGS')) {
     throw new Error("Unauthorized")
   }
 
@@ -46,35 +46,23 @@ export async function updateSystemSettings(formData: FormData) {
     } catch { webhookUrl = ""; }
   }
 
-  const ptCrit = parseInt(formData.get("slaCriticalHours") as string, 10)
-  const slaCriticalHours = isNaN(ptCrit) ? 4 : ptCrit
-  
-  const ptHigh = parseInt(formData.get("slaHighHours") as string, 10)
-  const slaHighHours = isNaN(ptHigh) ? 24 : ptHigh
-  
-  const ptMed = parseInt(formData.get("slaMediumHours") as string, 10)
-  const slaMediumHours = isNaN(ptMed) ? 72 : ptMed
-  
-  const ptLow = parseInt(formData.get("slaLowHours") as string, 10)
-  const slaLowHours = isNaN(ptLow) ? 168 : ptLow
-  
-  const ptInfo = parseInt(formData.get("slaInfoHours") as string, 10)
-  const slaInfoHours = isNaN(ptInfo) ? 720 : ptInfo
+  // Helper for parsing SLA hours safely
+  const parseSla = (key: string, defaultVal: number) => {
+    const val = parseInt(formData.get(key) as string, 10)
+    return isNaN(val) ? defaultVal : val
+  }
 
-  const ptVulnCrit = parseInt(formData.get("vulnSlaCriticalHours") as string, 10)
-  const vulnSlaCriticalHours = isNaN(ptVulnCrit) ? 12 : ptVulnCrit
-  
-  const ptVulnHigh = parseInt(formData.get("vulnSlaHighHours") as string, 10)
-  const vulnSlaHighHours = isNaN(ptVulnHigh) ? 48 : ptVulnHigh
-  
-  const ptVulnMed = parseInt(formData.get("vulnSlaMediumHours") as string, 10)
-  const vulnSlaMediumHours = isNaN(ptVulnMed) ? 168 : ptVulnMed
-  
-  const ptVulnLow = parseInt(formData.get("vulnSlaLowHours") as string, 10)
-  const vulnSlaLowHours = isNaN(ptVulnLow) ? 336 : ptVulnLow
-  
-  const ptVulnInfo = parseInt(formData.get("vulnSlaInfoHours") as string, 10)
-  const vulnSlaInfoHours = isNaN(ptVulnInfo) ? 720 : ptVulnInfo
+  const slaCriticalHours = parseSla("slaCriticalHours", 4)
+  const slaHighHours = parseSla("slaHighHours", 24)
+  const slaMediumHours = parseSla("slaMediumHours", 72)
+  const slaLowHours = parseSla("slaLowHours", 168)
+  const slaInfoHours = parseSla("slaInfoHours", 720)
+
+  const vulnSlaCriticalHours = parseSla("vulnSlaCriticalHours", 12)
+  const vulnSlaHighHours = parseSla("vulnSlaHighHours", 48)
+  const vulnSlaMediumHours = parseSla("vulnSlaMediumHours", 168)
+  const vulnSlaLowHours = parseSla("vulnSlaLowHours", 336)
+  const vulnSlaInfoHours = parseSla("vulnSlaInfoHours", 720)
 
   // Rate Limiting Config
   const rateLimitEnabled = formData.get("rateLimitEnabled") === "on"
@@ -234,9 +222,9 @@ export async function updateSystemSettings(formData: FormData) {
 
 
   // Retroactively patch SLA dates for unresolved incidents and vulnerabilities
-  setTimeout(async () => {
-    try {
-      await db.$executeRawUnsafe(`
+  try {
+    await Promise.all([
+      db.$executeRawUnsafe(`
         UPDATE "Incident"
         SET "targetSlaDate" = "createdAt" + (
           CASE "severity"::text
@@ -248,9 +236,9 @@ export async function updateSystemSettings(formData: FormData) {
           END
         )
         WHERE "status"::text IN ('NEW', 'IN_PROGRESS', 'PENDING_INFO')
-      `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours, slaInfoHours)
+      `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours, slaInfoHours),
       
-      await db.$executeRawUnsafe(`
+      db.$executeRawUnsafe(`
         UPDATE "Vulnerability"
         SET "targetSlaDate" = "createdAt" + (
           CASE "severity"::text
@@ -263,10 +251,10 @@ export async function updateSystemSettings(formData: FormData) {
         )
         WHERE "status"::text IN ('OPEN', 'MITIGATED')
       `, vulnSlaCriticalHours, vulnSlaHighHours, vulnSlaMediumHours, vulnSlaLowHours, vulnSlaInfoHours)
-    } catch (e) {
-      console.error("Failed to retroactively update SLA dates:", e)
-    }
-  }, 0)
+    ]);
+  } catch (e) {
+    console.error("Failed to retroactively update SLA dates:", e)
+  }
 
     revalidatePath("/system")
   } catch (e: any) {

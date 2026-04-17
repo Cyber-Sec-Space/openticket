@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Clock, ShieldCheck } from "lucide-react"
 
 type SlaConfig = {
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-  info: number;
+  critical: number | '';
+  high: number | '';
+  medium: number | '';
+  low: number | '';
+  info: number | '';
 }
 
 export const INCIDENT_TEMPLATES: Record<string, SlaConfig> = {
@@ -79,7 +79,7 @@ export function SlaSettingsPanel({ defaultSla, title = "Service Level Agreements
               type="number" 
               min="1" 
               value={sla?.critical ?? ''}
-              onChange={(e) => setSla({...sla, critical: parseInt(e.target.value) || 1})}
+              onChange={(e) => setSla({...sla, critical: e.target.value === '' ? '' : (parseInt(e.target.value) || 1)})}
               className="mt-1 font-mono text-lg bg-black/50 border-destructive/30 focus:border-destructive text-white h-12 w-full pr-12" 
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">HRS</span>
@@ -95,7 +95,7 @@ export function SlaSettingsPanel({ defaultSla, title = "Service Level Agreements
               type="number" 
               min="1" 
               value={sla?.high ?? ''}
-              onChange={(e) => setSla({...sla, high: parseInt(e.target.value) || 1})}
+              onChange={(e) => setSla({...sla, high: e.target.value === '' ? '' : (parseInt(e.target.value) || 1)})}
               className="mt-1 font-mono text-lg bg-black/50 border-orange-500/30 focus:border-orange-500 text-white h-12 w-full pr-12" 
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">HRS</span>
@@ -111,7 +111,7 @@ export function SlaSettingsPanel({ defaultSla, title = "Service Level Agreements
               type="number" 
               min="1" 
               value={sla?.medium ?? ''}
-              onChange={(e) => setSla({...sla, medium: parseInt(e.target.value) || 1})}
+              onChange={(e) => setSla({...sla, medium: e.target.value === '' ? '' : (parseInt(e.target.value) || 1)})}
               className="mt-1 font-mono text-lg bg-black/50 border-yellow-500/30 focus:border-yellow-500 text-white h-12 w-full pr-12" 
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">HRS</span>
@@ -127,7 +127,7 @@ export function SlaSettingsPanel({ defaultSla, title = "Service Level Agreements
               type="number" 
               min="1" 
               value={sla?.low ?? ''}
-              onChange={(e) => setSla({...sla, low: parseInt(e.target.value) || 1})}
+              onChange={(e) => setSla({...sla, low: e.target.value === '' ? '' : (parseInt(e.target.value) || 1)})}
               className="mt-1 font-mono text-lg bg-black/50 border-emerald-500/30 focus:border-emerald-500 text-white h-12 w-full pr-12" 
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">HRS</span>
