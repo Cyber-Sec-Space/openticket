@@ -23,6 +23,9 @@ jest.mock('@/lib/db', () => ({
   db: {
     pluginState: {
       findMany: jest.fn().mockResolvedValue([])
+    },
+    systemSetting: {
+      findUnique: jest.fn().mockResolvedValue({ id: "global", systemPlatformUrl: "http://localhost:3000" })
     }
   }
 }))

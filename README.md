@@ -15,6 +15,7 @@ A next-generation Cybersecurity Incident & Inventory Management system for SecOp
 - **Postgres Full-Text Search (tsvector):** Radically scales Log and Alert dashboard lookups leveraging native structural `tsquery` optimizations over generic DB `O(N)` LIKE queries.
 - **Asynchronous Modal Transactions:** Eradicates synchronous UI blockers (Browser alerts), replacing core operational confirms with seamless Shadcn portaled `<Dialog>` primitives.
 - **Centralized Dashboard:** Real-time analytics, Typology Distributions, and Severity Matrices tracking organizational exposure.
+- **Comprehensive Audit Telemetry:** Enforces complete non-repudiation with 100% audit log coverage across all critical system actions, including RBAC role modifications, plugin state toggles, security configuration changes, and authentication lifecycles.
 - **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
 - **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
 - **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
@@ -82,8 +83,6 @@ The simplest way to run OpenTicket is via Docker Compose, which automatically pr
 ```bash
 # Ensure you copy your secure production configuration first
 cp .env.example .env
-# IMPORTANT: You MUST set AUTH_SECRET in .env before starting.
-# Generate one with: openssl rand -base64 33
 
 docker-compose up -d --build
 ```
@@ -119,7 +118,7 @@ cd openticket-standalone
 
 # 2. Configure your specific environment parameters
 cp .env.example .env
-nano .env # Explicitly set your DATABASE_URL and AUTH_SECRET (also aliased as NEXTAUTH_SECRET)
+nano .env # Explicitly set DATABASE_URL, AUTH_SECRET and NEXTAUTH_SECRET (same strong value recommended)
 
 # 3. Apply schema mechanisms to your active database
 npx prisma migrate deploy

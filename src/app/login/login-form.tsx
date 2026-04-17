@@ -2,9 +2,10 @@
 
 import { useActionState, useState, useEffect } from "react"
 import { authenticate } from "./actions"
+import { signOut } from "next-auth/react"
 import { ScanFace } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -15,6 +16,7 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
   const [persistedPass, setPersistedPass] = useState("")
   
   const searchParams = useSearchParams()
+  const router = useRouter()
   const registeredStatus = searchParams.get("registered")
   const errorStatus = searchParams.get("error")
 
@@ -23,6 +25,17 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
        setShowTwoFactor(true)
     }
   }, [errorMessage])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && searchParams.has("clearsession")) {
+       // Await the destruction of the NextAuth session cookie before mutating the URL,
+       // otherwise the Edge proxy will detect a valid session on the clean /login path
+       // and aggressively bounce the client back to the suspended dashboard (forming an infinite loop).
+       signOut({ redirect: false }).then(() => {
+           router.replace("/login");
+       }).catch(console.error);
+    }
+  }, [searchParams, router])
 
   const onSubmitCapture = (e: React.FormEvent<HTMLFormElement>) => {
      e.preventDefault()
@@ -129,6 +142,7 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
            errorMessage === "GLOBAL_LOCKED" ? "Administrator Enforcement: This endpoint is structurally clamped pending TOTP interlock. Contact SecOps." : 
            errorMessage === "RATE_LIMIT_EXCEEDED" ? "Access Denied: Too many failed network authentication drops. Firewall lockout enabled." :
            errorMessage === "EMAIL_NOT_VERIFIED" ? "Access Denied: Identity verification pending. Check your email for the activation link." :
+           errorMessage === "IDENTITY_SUSPENDED" ? "Account Suspended: Your digital identity has been administratively disabled from the OpenTicket perimeter." :
            errorMessage}
         </div>
       )}

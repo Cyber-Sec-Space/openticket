@@ -15,12 +15,12 @@ npm run build
 # 3. Prepare Standalone Directory
 echo "📂 Preparing standalone artifacts..."
 mkdir -p release-standalone/openticket
-cp -r .next.nosync/standalone/* release-standalone/openticket/
+cp -r .next/standalone/* release-standalone/openticket/
 
 # Copy static assets (standalone doesn't copy these by default)
 cp -r public release-standalone/openticket/
 mkdir -p release-standalone/openticket/.next/static
-cp -r .next.nosync/static/* release-standalone/openticket/.next/static/
+cp -r .next/static/* release-standalone/openticket/.next/static/
 
 # Copy Prisma schema and engine for DB migrations
 cp -r prisma release-standalone/openticket/

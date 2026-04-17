@@ -17,6 +17,9 @@ jest.mock("../src/lib/db", () => ({
     customRole: {
       findUnique: jest.fn(),
     },
+    auditLog: {
+      create: jest.fn(),
+    },
     $executeRawUnsafe: jest.fn()
   }
 }))

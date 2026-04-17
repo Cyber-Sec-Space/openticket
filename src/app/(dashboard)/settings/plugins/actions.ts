@@ -64,6 +64,16 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
     create: { id: pluginId, isActive: newState, configJson: configSavePayload }
   });
 
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      targetType: "PLUGIN",
+      targetId: pluginId,
+      actorId: session?.user?.id || "system",
+      details: `Plugin '${pluginId}' state toggled to ${newState ? "ACTIVE" : "INACTIVE"}.`
+    }
+  });
+
   invalidateHookCache();
 
 
@@ -98,6 +108,16 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
     where: { id: pluginId },
     update: { configJson: encryptPluginConfig(config) },
     create: { id: pluginId, isActive: false, configJson: encryptPluginConfig(config) }
+  });
+
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      targetType: "PLUGIN",
+      targetId: pluginId,
+      actorId: session.user.id,
+      details: `Plugin '${pluginId}' configuration updated.`
+    }
   });
 
   invalidateHookCache();

@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     
     // Security Defect Fix: Prevent "Bearer undefined" from validating successfully if CRON_SECRET is unconfigured
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return new NextResponse('Unauthorized', { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const now = new Date();

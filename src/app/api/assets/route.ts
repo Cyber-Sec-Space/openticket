@@ -5,7 +5,7 @@ import { hasPermission } from "@/lib/auth-utils"
 
 export async function GET(req: Request) {
   const session = await apiAuth()
-  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const hasPrivilege = hasPermission(session as any, 'VIEW_ASSETS')
   if (!hasPrivilege) {
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const session = await apiAuth()
-  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   
   const hasPrivilege = hasPermission(session as any, 'CREATE_ASSETS')
   if (!hasPrivilege) {

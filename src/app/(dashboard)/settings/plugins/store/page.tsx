@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/auth-utils"
 import { redirect } from "next/navigation"
 import { activePlugins } from "@/plugins"
 import { PluginCard } from "../plugin-card"
+import { parsePluginConfig } from "@/lib/plugins/crypto"
 
 // We define the registry interface based on the latest JSON schema
 interface RegistryPluginVersion {
@@ -37,10 +38,13 @@ export default async function PluginStorePage() {
   }
 
   const dbStates = await db.pluginState.findMany();
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
   
   let registryPlugins: RegistryPlugin[] = [];
   try {
     let rawData: any;
+    
+    let fetched = false;
     
     // Developer Sandbox: Resolve from local filesystem if in dev mode
     if (process.env.NODE_ENV !== "production") {
@@ -49,15 +53,18 @@ export default async function PluginStorePage() {
       const localRegistryPath = path.resolve(process.cwd(), "../openticket-plugin-registry/registry.json");
       if (fs.existsSync(localRegistryPath)) {
         rawData = JSON.parse(await fs.promises.readFile(localRegistryPath, "utf-8"));
+        fetched = true;
       } else {
-        console.error("Local dev registry not found at", localRegistryPath);
+        console.warn(`[DEV] Local dev registry not found at ${localRegistryPath}. Falling back to remote production registry...`);
       }
-    } else {
+    }
+    
+    if (!fetched) {
       const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { cache: "no-store" });
       if (res.ok) {
         rawData = await res.json();
       } else {
-        console.error("Failed to fetch registry list", res.status);
+        console.error("Failed to fetch registry list data:", res.status);
       }
     }
       
@@ -102,11 +109,12 @@ export default async function PluginStorePage() {
                 key={plugin.id} 
                 manifest={cardManifest as any} 
                 isActive={state?.isActive || false} 
-                configJson={state?.configJson || null}
+                configJson={state?.configJson ? JSON.stringify(parsePluginConfig(state.configJson)) : null}
                 layout="grid"
                 versions={plugin.versions}
                 latestVersion={plugin.latestVersion}
                 isLocal={isLocal}
+                systemPlatformUrl={settings?.systemPlatformUrl || "http://localhost:3000"}
               />
             )
           })}

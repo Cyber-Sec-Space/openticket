@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateSystemSettings } from "./actions"
-import { SlaSettingsPanel } from "./sla-settings-panel"
+import { SlaSettingsPanel, VULN_TEMPLATES } from "./sla-settings-panel"
 import { SmtpTestButton } from "./smtp-test-button"
 import { SystemTabsLayout } from "./system-tabs-layout"
 import { PLUGIN_API_VERSION } from "@/lib/plugins/types"
@@ -41,7 +41,12 @@ export default async function SystemSettingsPage() {
       slaHighHours: 24,
       slaMediumHours: 72,
       slaLowHours: 168,
-      slaInfoHours: 720
+      slaInfoHours: 720,
+      vulnSlaCriticalHours: 12,
+      vulnSlaHighHours: 48,
+      vulnSlaMediumHours: 168,
+      vulnSlaLowHours: 336,
+      vulnSlaInfoHours: 720
     }
   })
 
@@ -272,19 +277,35 @@ export default async function SystemSettingsPage() {
                   </div>
                 ),
                 "sla": (
-                  <div className="pt-4 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="pt-4 space-y-6 animate-in fade-in slide-in-from-bottom-2">
                     <div className="p-6 border border-white/10 rounded-xl bg-black/40 shadow-inner">
-                      <div className="mb-6">
-                        <h3 className="text-xl font-bold tracking-wide text-white mb-2">Service Level Agreements (SLA)</h3>
-                        <p className="text-sm text-muted-foreground">Configure the automated countdown timers assigned to incidents based on their initial severity classifications.</p>
-                      </div>
-                      <SlaSettingsPanel defaultSla={{ 
-                        critical: settings.slaCriticalHours, 
-                        high: settings.slaHighHours, 
-                        medium: settings.slaMediumHours, 
-                        low: settings.slaLowHours,
-                        info: settings.slaInfoHours
-                      }} />
+                      <SlaSettingsPanel 
+                        title="Incident SLA Framework"
+                        description="Configure countdown timers assigned to Incidents (Operational Threats)."
+                        namePrefix="sla"
+                        defaultSla={{ 
+                          critical: settings.slaCriticalHours, 
+                          high: settings.slaHighHours, 
+                          medium: settings.slaMediumHours, 
+                          low: settings.slaLowHours,
+                          info: settings.slaInfoHours
+                        }} 
+                      />
+                    </div>
+                    <div className="p-6 border border-white/10 rounded-xl bg-black/40 shadow-inner">
+                      <SlaSettingsPanel 
+                        title="Vulnerability SLA Framework"
+                        description="Configure countdown timers assigned to Vulnerabilities (Infrastructural Flaws)."
+                        namePrefix="vulnSla"
+                        templates={VULN_TEMPLATES}
+                        defaultSla={{ 
+                          critical: settings.vulnSlaCriticalHours, 
+                          high: settings.vulnSlaHighHours, 
+                          medium: settings.vulnSlaMediumHours, 
+                          low: settings.vulnSlaLowHours,
+                          info: settings.vulnSlaInfoHours
+                        }} 
+                      />
                     </div>
                   </div>
                 ),

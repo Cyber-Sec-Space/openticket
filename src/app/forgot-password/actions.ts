@@ -43,6 +43,16 @@ export async function sendResetLink(prevState: any, formData: FormData) {
   // Transmit payload
   const tokenUrl = `${settings.systemPlatformUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`
   await sendPasswordResetEmail(email, tokenUrl)
+  
+  await db.auditLog.create({
+    data: {
+      action: "CREATE",
+      targetType: "USER",
+      targetId: user.id,
+      actorId: user.id,
+      details: "Password reset sequence initiated. Security payload transmitted."
+    }
+  })
 
   // Absolute Timing Padding to mask Network I/O
   const elapsed = Date.now() - startTime

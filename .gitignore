@@ -48,6 +48,7 @@ next-env.d.ts
 .vscode/*
 
 /private/*
-/.next.nosync/
+/.next/
+.next/*
 release-standalone/
 package-lock 2.json

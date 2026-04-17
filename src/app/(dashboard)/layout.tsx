@@ -12,7 +12,9 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
+  console.log(`[LAYOUT] Session User ID: ${session?.user?.id || 'null'}`);
   if (!session?.user?.id) {
+    console.log(`[LAYOUT] Redirecting to clearsession...`);
     redirect("/login?clearsession=true")
   }
 

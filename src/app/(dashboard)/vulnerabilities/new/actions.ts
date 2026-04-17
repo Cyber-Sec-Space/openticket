@@ -31,6 +31,17 @@ export async function createVulnerabilityAction(formData: FormData) {
     return { error: "Validation structural error: missing foundational CVE markers." }
   }
 
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  
+  let targetSlaDate: Date | null = new Date()
+  switch (severity) {
+    case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaCriticalHours ?? 12)); break;
+    case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaHighHours ?? 48)); break;
+    case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaMediumHours ?? 168)); break;
+    case 'LOW':      targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaLowHours ?? 336)); break;
+    default:         targetSlaDate = null; break; // INFO has no SLA requirement
+  }
+
   const newVuln = await db.vulnerability.create({
     data: {
       title,
@@ -38,6 +49,7 @@ export async function createVulnerabilityAction(formData: FormData) {
       description,
       cvssScore,
       severity,
+      targetSlaDate,
       vulnerabilityAssets: hasPermission(session as any, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
         ? { create: assetIds.map(id => ({ assetId: id, status: 'AFFECTED' })) }
         : undefined
@@ -58,7 +70,6 @@ export async function createVulnerabilityAction(formData: FormData) {
     }
   })
 
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   if (settings?.smtpTriggerOnNewVulnerability) {
     const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_VULNERABILITIES', 'VIEW_VULNERABILITIES'] } } }, email: { not: null } }, select: { email: true } })
     await sendNewVulnerabilityAlertEmail(newVuln.title, newVuln.severity, admins.map(a => a.email as string))

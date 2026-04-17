@@ -21,6 +21,9 @@ interface PluginEngineContextRendererProps {
  * and inject context-aware UI widgets dynamically during App Router render cycles.
  */
 export async function PluginEngineContextRenderer({ hookType, payload = {} }: PluginEngineContextRendererProps) {
+  // #region agent log
+  fetch('http://127.0.0.1:7451/ingest/93e51d37-4838-4ded-8cc4-6cd156753e67',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'33383f'},body:JSON.stringify({sessionId:'33383f',runId:'initial',hypothesisId:'H3',location:'src/components/plugins/plugin-context-renderer.tsx:entry',message:'PluginEngineContextRenderer render start',data:{hookType,hasPayload:!!payload && Object.keys(payload).length > 0},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   // Query all actively running plugins in the database
   const activePluginStates = await db.pluginState.findMany({ 
     where: { isActive: true },
@@ -40,11 +43,22 @@ export async function PluginEngineContextRenderer({ hookType, payload = {} }: Pl
       }
 
       // Initialize execution context cryptographically
-      const config = state.configJson ? parsePluginConfig(state.configJson) : {};
+      let config: Record<string, any> = {};
+      try {
+        config = state.configJson ? parsePluginConfig(state.configJson) : {};
+      } catch (error: any) {
+        // #region agent log
+        fetch('http://127.0.0.1:7451/ingest/93e51d37-4838-4ded-8cc4-6cd156753e67',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'33383f'},body:JSON.stringify({sessionId:'33383f',runId:'initial',hypothesisId:'H3',location:'src/components/plugins/plugin-context-renderer.tsx:parseConfig:error',message:'plugin config parse failed during render',data:{pluginId:plugin.manifest.id,errorMessage:error?.message || 'unknown'},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        throw error;
+      }
       
       // We don't necessarily want to init API contexts for every plugin on every render if it's heavy,
       // but createPluginContext uses a memory cache, so it's optimized.
       const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name);
+      // #region agent log
+      fetch('http://127.0.0.1:7451/ingest/93e51d37-4838-4ded-8cc4-6cd156753e67',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'33383f'},body:JSON.stringify({sessionId:'33383f',runId:'initial',hypothesisId:'H4',location:'src/components/plugins/plugin-context-renderer.tsx:pluginWidget:ready',message:'plugin widget ready for render',data:{pluginId:plugin.manifest.id,hookType,widgetCount:targetHookArray.length},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
 
       return (
         <React.Fragment key={plugin.manifest.id}>

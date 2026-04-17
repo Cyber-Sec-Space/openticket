@@ -22,12 +22,12 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
 
   // Permission Categories configuration
   const groupedPermissions: Record<string, string[]> = {
-    "Incidents": availablePermissions.filter(p => p.includes("INCIDENT")),
-    "Collaboration": availablePermissions.filter(p => ['VIEW_TEAMS','MANAGE_TEAMS'].includes(p)),
-    "Assets": availablePermissions.filter(p => ['VIEW_ASSETS','CREATE_ASSETS','UPDATE_ASSETS','DELETE_ASSETS'].includes(p)),
+    "Incidents": availablePermissions.filter(p => p.includes("INCIDENT") || p.includes("COMMENT")),
+    "Assets": availablePermissions.filter(p => p.includes("ASSET")),
     "Vulnerabilities": availablePermissions.filter(p => !!p.match(/VULN/)),
     "Identity & Access Management": availablePermissions.filter(p => p.includes("USER") || p.includes("ROLE")),
-    "System Operations": availablePermissions.filter(p => ['VIEW_DASHBOARD','VIEW_SYSTEM_SETTINGS','UPDATE_SYSTEM_SETTINGS','MANAGE_INTEGRATIONS','VIEW_AUDIT_LOGS','EXPORT_DATA'].includes(p)),
+    "System Operations": availablePermissions.filter(p => ['VIEW_DASHBOARD','VIEW_SYSTEM_SETTINGS','UPDATE_SYSTEM_SETTINGS','MANAGE_INTEGRATIONS','VIEW_AUDIT_LOGS','RESTART_SYSTEM_SERVICES'].includes(p)),
+    "Plugins": availablePermissions.filter(p => p.includes("PLUGIN")),
     "API & Bots": availablePermissions.filter(p => !!p.match(/API/))
   }
 
@@ -84,6 +84,7 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
         }
         setIsDialogOpen(false)
       } catch (err: any) {
+        if (typeof err?.message === 'string' && err.message.includes('NEXT_REDIRECT')) throw err;
         setErrorMsg(err.message)
       }
     })
@@ -106,6 +107,7 @@ export function RoleManager({ roles, availablePermissions }: { roles: any[], ava
         await deleteRole(formData)
         setRoleToDelete(null)
       } catch (err: any) {
+        if (typeof err?.message === 'string' && err.message.includes('NEXT_REDIRECT')) throw err;
         setDeleteErrorMsg(err.message)
       }
     })

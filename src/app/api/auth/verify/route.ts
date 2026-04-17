@@ -34,6 +34,16 @@ export async function GET(request: Request) {
       where: { id: user.id },
       data: { emailVerified: new Date() }
     })
+    
+    await db.auditLog.create({
+      data: {
+        action: "UPDATE",
+        targetType: "USER",
+        targetId: user.id,
+        actorId: user.id,
+        details: "User successfully verified their email address."
+      }
+    })
   }
 
   // Wipe the token securely preventing TOCTOU unhandled rejections

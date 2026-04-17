@@ -44,7 +44,7 @@ export async function createRole(formData: FormData) {
   if (!name) throw new Error("Role name is required")
 
   try {
-    await db.customRole.create({
+    const newRole = await db.customRole.create({
       data: {
         name,
         description,
@@ -52,6 +52,17 @@ export async function createRole(formData: FormData) {
         permissions: permissionIds
       }
     })
+    
+    await db.auditLog.create({
+      data: {
+        action: "CREATE",
+        targetType: "ROLE",
+        targetId: newRole.id,
+        actorId: session.user.id,
+        details: `Role '${name}' created with ${permissionIds.length} permissions.`
+      }
+    })
+    
     revalidatePath("/users/roles")
     return { success: true }
   } catch (err: any) {
@@ -74,7 +85,7 @@ export async function updateRole(formData: FormData) {
   if (existingRole.isSystem) throw new Error("System roles cannot be modified")
 
   try {
-    await db.customRole.update({
+    const updatedRole = await db.customRole.update({
       where: { id },
       data: {
         name,
@@ -82,6 +93,17 @@ export async function updateRole(formData: FormData) {
         permissions: permissionIds
       }
     })
+    
+    await db.auditLog.create({
+      data: {
+        action: "UPDATE",
+        targetType: "ROLE",
+        targetId: id,
+        actorId: session.user.id,
+        details: `Role '${name}' updated with ${permissionIds.length} permissions.`
+      }
+    })
+    
     revalidatePath("/users/roles")
     return { success: true }
   } catch (err: any) {
@@ -135,6 +157,16 @@ export async function deleteRole(formData: FormData) {
 
      // 4. Finally delete the role entirely
      await tx.customRole.delete({ where: { id } })
+     
+     await tx.auditLog.create({
+       data: {
+         action: "DELETE",
+         targetType: "ROLE",
+         targetId: id,
+         actorId: session?.user?.id || "system",
+         details: `Role '${existingRole.name}' deleted. Users reassigned to fallback role if applicable.`
+       }
+     })
   })
 
   revalidatePath("/users/roles")

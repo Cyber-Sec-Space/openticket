@@ -3,7 +3,7 @@ export type { Incident, Asset, User };
 import { ComponentType } from "react";
 import { PluginSdkContext } from "./sdk-context";
 
-export const PLUGIN_API_VERSION = "1.1.0";
+export const PLUGIN_API_VERSION = "1.3.0";
 
 
 export type OpenTicketPluginHooks = {
@@ -136,7 +136,15 @@ export interface OpenTicketPlugin {
     author?: string;
     requestedPermissions?: import("@prisma/client").Permission[];
     supportedPluginApiVersion?: string[];
-    options?: any;
+    options?: Array<{
+      key: string;
+      type: 'string' | 'number' | 'boolean' | 'enum' | 'secret' | 'info';
+      label?: string;
+      required?: boolean;
+      options?: string[];
+      defaultValue?: any;
+      content?: string;
+    }>;
     dependsOn?: string[];
     signature?: string;
   };

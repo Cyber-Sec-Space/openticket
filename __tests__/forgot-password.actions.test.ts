@@ -7,7 +7,8 @@ jest.mock("../src/lib/db", () => ({
   db: {
     systemSetting: { findUnique: jest.fn() },
     user: { findUnique: jest.fn() },
-    passwordResetToken: { deleteMany: jest.fn(), create: jest.fn() }
+    passwordResetToken: { deleteMany: jest.fn(), create: jest.fn() },
+    auditLog: { create: jest.fn() }
   }
 }));
 jest.mock("../src/lib/mailer", () => ({ sendPasswordResetEmail: jest.fn() }));

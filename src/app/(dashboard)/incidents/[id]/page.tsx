@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { notFound, redirect } from "next/navigation"
+import { revalidatePath } from "next/cache"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -10,8 +11,7 @@ import { sendIncidentAssignmentEmail, sendResolutionEmail, sendAssetCompromisedE
 import { dispatchAlert, dispatchMassAlert } from "@/lib/notifier"
 import { fireHook } from "@/lib/plugins/hook-engine"
 import { hasPermission } from "@/lib/auth-utils"
-import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
-import { FileUploadBox } from "@/components/file-upload-box"
+import { deleteAttachment } from "@/app/actions/upload"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -22,6 +22,7 @@ import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload, Tag as TagIcon } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
+import { EvidenceUploadForm } from "@/components/evidence-upload-form"
 
 export default async function IncidentDetailPage({
   params,
@@ -607,7 +608,8 @@ export default async function IncidentDetailPage({
                 })
                 await fireHook("onCommentAdded", newComment)
 
-                redirect(`/incidents/${incident!.id}`)
+                revalidatePath(`/incidents/${incident!.id}`)
+                revalidatePath(`/incidents/[id]`, 'page')
               }} className="space-y-3 pb-6 border-b border-border/50">
                 <textarea
                   name="content"
@@ -704,17 +706,7 @@ export default async function IncidentDetailPage({
               </CardTitle>
             </CardHeader>
             <div className="p-5 space-y-4 text-sm z-20">
-              <form action={async (formData) => {
-                "use server"
-                formData.append("incidentId", incident!.id)
-                await uploadAttachment(formData)
-                redirect(`/incidents/${incident!.id}`)
-              }} className="space-y-3 pb-5 border-b border-border/50">
-                <FileUploadBox />
-                <Button type="submit" size="sm" className="w-full bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_15px_rgba(100,0,255,0.2)]">
-                  Attach Evidence
-                </Button>
-              </form>
+              <EvidenceUploadForm incidentId={incident.id} />
 
               {attachments.length > 0 ? (
                 <div className="flex flex-col gap-2 pt-1">
@@ -730,7 +722,8 @@ export default async function IncidentDetailPage({
                       <form action={async () => {
                         "use server"
                         await deleteAttachment(att.id)
-                        redirect(`/incidents/${incident!.id}?commentPage=${commentPage}&filePage=${filePage}`)
+                        revalidatePath(`/incidents/${incident!.id}`)
+                        revalidatePath(`/incidents/[id]`, 'page')
                       }}>
                         <button type="submit" className="p-1.5 rounded-md hover:bg-red-500/20 text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all absolute right-2 top-1/2 -translate-y-1/2" title="Delete evidence">
                            <Trash2 className="w-3.5 h-3.5" />

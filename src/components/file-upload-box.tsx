@@ -1,10 +1,14 @@
 "use client"
 
-import { useState } from "react"
-import { Upload, X } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Upload } from "lucide-react"
 
-export function FileUploadBox() {
+export function FileUploadBox({ resetKey }: { resetKey?: number }) {
   const [fileName, setFileName] = useState<string | null>(null)
+
+  useEffect(() => {
+    setFileName(null)
+  }, [resetKey])
 
   return (
     <div className="relative group rounded-lg border-2 border-dashed border-indigo-500/20 hover:border-indigo-400/50 hover:bg-indigo-500/5 bg-black/20 transition-all flex flex-col items-center justify-center p-4">

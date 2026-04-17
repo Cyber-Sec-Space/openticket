@@ -19,34 +19,41 @@ declare module "next-auth" {
   }
 }
 
-class Missing2FAError extends Error {
+class Missing2FAError extends CredentialsSignin {
   constructor() {
-    super("Missing2FA");
-    this.name = "Missing2FAError";
+    super();
+    this.message = "Missing2FA";
   }
 }
 
-class Invalid2FAError extends Error {
+class Invalid2FAError extends CredentialsSignin {
   constructor() {
-    super("Invalid2FA");
-    this.name = "Invalid2FAError";
+    super();
+    this.message = "Invalid2FA";
   }
 }
 
 
-class EmailNotVerifiedError extends Error {
+class EmailNotVerifiedError extends CredentialsSignin {
   constructor() {
-    super("EmailNotVerified");
-    this.name = "EmailNotVerifiedError";
+    super();
+    this.message = "EmailNotVerified";
+  }
+}
+
+class IdentitySuspendedError extends CredentialsSignin {
+  constructor() {
+    super();
+    this.message = "IdentitySuspended";
   }
 }
 
 // Database-backed distributed rate limit tracking replaces volatile in-memory strategies
 
-class AuthenticationThrottledError extends Error {
+class AuthenticationThrottledError extends CredentialsSignin {
   constructor() {
-    super("AuthenticationThrottled");
-    this.name = "AuthenticationThrottledError";
+    super();
+    this.message = "AuthenticationThrottled";
   }
 }
 
@@ -69,15 +76,14 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
         
         const email = credentials.email as string;
         
-        // Securely identify the network boundary of the requester.
-        // SECURITY: Prefer x-real-ip (set by trusted reverse proxy like Nginx/Traefik)
-        // over x-forwarded-for (easily spoofable by clients without a trusted proxy).
-        // In production, configure your reverse proxy to set x-real-ip from the
-        // actual TCP connection source, and strip any client-supplied x-real-ip headers.
+        // Securely identify the network boundary of the requester
         const requestHeaders = await headers();
-        const requestIp = requestHeaders.get("x-real-ip") 
-                       || requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() 
-                       || "127.0.0.1";
+        const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
+        const xRealIp = requestHeaders.get("x-real-ip")?.trim();
+        const xForwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
+        const requestIp = trustProxyHeaders
+          ? (xRealIp || xForwardedFor || "127.0.0.1")
+          : (xRealIp || "127.0.0.1");
         
         // Fetch global directives (Moved up for early evaluation)
         const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
@@ -138,6 +144,10 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
           return null
         }
         
+        if (user.isDisabled) {
+           if (rateLimitEnabled) await db.loginAttempt.create({ data: { identifier: email, ip: requestIp } });
+           throw new IdentitySuspendedError()
+        }
 
         const requireGlobal2FA = settings?.requireGlobal2FA ?? false
 
@@ -164,6 +174,16 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
         if (rateLimitEnabled) {
             await db.loginAttempt.deleteMany({ where: { identifier: email } });
         }
+        
+        await db.auditLog.create({
+          data: {
+            action: "LOGIN",
+            targetType: "USER",
+            targetId: user.id,
+            actorId: user.id,
+            details: `Successful authentication from IP: ${requestIp}`
+          }
+        });
 
         const perms = Array.from(new Set(user.customRoles.flatMap(r => r.permissions)))
 

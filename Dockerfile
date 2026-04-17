@@ -43,8 +43,15 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Install prisma CLI so we can migrate during startup
+# Install prisma CLI first (creates minimal @prisma scaffold)
 RUN npm install prisma
+
+# Then copy the FULL generated Prisma client on top, so it overwrites the CLI-only stubs.
+# Next.js 16 Turbopack references @prisma/client-<hash> which resolves through these modules.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+RUN mkdir -p /app/private/uploads && chown -R nextjs:nodejs /app/private
 
 USER nextjs
 
@@ -52,9 +59,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Note: We do not run prisma migrate here directly.
-# The entrypoint/startup process should handle `npx prisma migrate deploy`
-# But Next.js standalone doesn't have `npx` available natively sometimes unless node_modules are kept.
-# So we run standalone server. Migration is best done via an init container or script wrapper.
-# For simplicity, we just boot the server.
 CMD ["node", "server.js"]

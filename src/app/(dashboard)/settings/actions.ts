@@ -24,6 +24,16 @@ export async function updateProfile(formData: FormData) {
     where: { id: session.user.id },
     data: { name: name.trim() }
   })
+  
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      targetType: "USER",
+      targetId: session.user.id,
+      actorId: session.user.id,
+      details: "User updated their display profile."
+    }
+  })
 
   const { fireHook } = await import("@/lib/plugins/hook-engine")
   await fireHook("onUserUpdated", updatedUser as any)
@@ -84,6 +94,16 @@ export async function verifyAndEnable2FA(token: string) {
     where: { id: session.user.id },
     data: { isTwoFactorEnabled: true }
   })
+  
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      targetType: "USER",
+      targetId: session.user.id,
+      actorId: session.user.id,
+      details: "Two-Factor Authentication (2FA) successfully enabled and verified."
+    }
+  })
 
   if (session.user.requires2FASetup) {
     await update({ user: { requires2FASetup: false } }) // Flush Edge Middleware stale cache natively.
@@ -106,6 +126,16 @@ export async function disable2FA(password: string) {
   await db.user.update({
     where: { id: session.user.id },
     data: { isTwoFactorEnabled: false, twoFactorSecret: null }
+  })
+  
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      targetType: "USER",
+      targetId: session.user.id,
+      actorId: session.user.id,
+      details: "Two-Factor Authentication (2FA) disabled following password authorization."
+    }
   })
 
   revalidatePath("/settings")
@@ -135,6 +165,16 @@ export async function updateNotificationPreferences(prevState: any, formData: Fo
       notifyOnResolution,
       notifyOnAssetCompromise,
       notifyOnUnassigned
+    }
+  })
+
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      targetType: "USER",
+      targetId: session.user.id,
+      actorId: session.user.id,
+      details: "User updated their notification preferences."
     }
   })
 

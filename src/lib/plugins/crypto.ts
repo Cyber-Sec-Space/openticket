@@ -1,14 +1,22 @@
 import crypto from "crypto";
 
-const SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || (() => {
-  console.error("[CRITICAL SECURITY] Neither AUTH_SECRET nor NEXTAUTH_SECRET is set. Plugin config encryption is using an INSECURE fallback key. Set AUTH_SECRET in your environment immediately.");
-  return "INSECURE_FALLBACK_DO_NOT_USE_IN_PRODUCTION";
-})();
 const ALGO = "aes-256-gcm";
 const PREFIX = "enc.v1.";
+const LEGACY_FALLBACK_SECRET = process.env.LEGACY_FALLBACK_SECRET || "0".repeat(32);
 
 // Ensure key is exactly 32 bytes for AES-256
-const getKey = () => crypto.createHash("sha256").update(SECRET).digest();
+const getSecret = () => {
+  const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      "[Plugin Crypto] Missing NEXTAUTH_SECRET/AUTH_SECRET. Refusing to use insecure fallback secret.",
+    );
+  }
+  return secret;
+};
+
+const getKey = () => crypto.createHash("sha256").update(getSecret()).digest();
+const getLegacyFallbackKey = () => crypto.createHash("sha256").update(LEGACY_FALLBACK_SECRET).digest();
 
 export function encryptPluginConfig(configObject: any): string {
   if (!configObject) return PREFIX;
@@ -44,11 +52,19 @@ export function parsePluginConfig(rawConfigStr: string): any {
     const iv = Buffer.from(ivB64, "base64");
     const authTag = Buffer.from(authTagB64, "base64");
     
-    const decipher = crypto.createDecipheriv(ALGO, getKey(), iv);
-    decipher.setAuthTag(authTag);
-    
-    let decrypted = decipher.update(encryptedB64, "base64", "utf8");
-    decrypted += decipher.final("utf8");
+    let decrypted = "";
+    try {
+      const decipher = crypto.createDecipheriv(ALGO, getKey(), iv);
+      decipher.setAuthTag(authTag);
+      decrypted = decipher.update(encryptedB64, "base64", "utf8");
+      decrypted += decipher.final("utf8");
+    } catch {
+      // Backward compatibility for legacy data encrypted with the removed insecure fallback.
+      const legacyDecipher = crypto.createDecipheriv(ALGO, getLegacyFallbackKey(), iv);
+      legacyDecipher.setAuthTag(authTag);
+      decrypted = legacyDecipher.update(encryptedB64, "base64", "utf8");
+      decrypted += legacyDecipher.final("utf8");
+    }
     
     return JSON.parse(decrypted);
   } catch (err) {

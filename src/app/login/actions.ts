@@ -10,7 +10,12 @@ export async function authenticate(
   formData: FormData,
 ) {
   const reqHeaders = await headers()
-  const ip = reqHeaders.get('x-forwarded-for') || reqHeaders.get('x-real-ip') || 'unknown-ip'
+  const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true"
+  const xRealIp = reqHeaders.get("x-real-ip")?.trim()
+  const xForwardedFor = reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim()
+  const ip = trustProxyHeaders
+    ? (xRealIp || xForwardedFor || "unknown-ip")
+    : (xRealIp || "unknown-ip")
   const email = formData.get('email') as string || 'unknown-email'
 
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
@@ -34,7 +39,10 @@ export async function authenticate(
     await signIn('credentials', { ...payload, redirectTo: '/' })
   } catch (error) {
     if (error instanceof AuthError) {
-      const errMessage = (error.cause?.err as any)?.message;
+      // Extract the custom code injected by our CredentialsSignin subclasses, or fallback to the deep err message payload
+      const customCause = error.cause?.err as any;
+      const errMessage = customCause?.message || customCause?.code || (error as any).code || error.message;
+      
       if (errMessage === "Missing2FA") return "REQUIRES_2FA";
       
       // If it's a real failure, Cleanup old records asynchronously so DB doesn't bloat
@@ -50,6 +58,7 @@ export async function authenticate(
       if (errMessage === "Invalid2FA") return "INVALID_2FA";
       if (errMessage === "Global2FAEnforced") return "GLOBAL_LOCKED";
       if (errMessage === "EmailNotVerified") return "EMAIL_NOT_VERIFIED";
+      if (errMessage === "IdentitySuspended") return "IDENTITY_SUSPENDED";
       
       switch (error.type) {
         case 'CredentialsSignin':

@@ -37,7 +37,7 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
   
   // Unauthenticated users are totally blocked
   if (!session?.user) {
-    return new NextResponse("Unauthorized", { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const { filename } = params

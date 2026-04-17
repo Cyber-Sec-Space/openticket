@@ -11,6 +11,5 @@ README.md
 .env.production.local
 .vscode/*
 /.vscode/
-*.nosync
-*.nosync/*
 docs/*
+/.next/

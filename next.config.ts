@@ -2,15 +2,17 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  distDir: ".next.nosync",
+  experimental: {
+    // Next.js v16 docs in this workspace still wire Server Actions body limit under experimental.serverActions.
+    serverActions: {
+      bodySizeLimit: "50mb",
+    },
+  },
   typescript: {
     // ⚠️ Dangerously allow production builds to successfully complete even if plugins have type errors.
     ignoreBuildErrors: true,
   },
-  eslint: {
-    // ⚠️ Warning: This allows production builds to successfully complete even if plugins have ESLint errors.
-    ignoreDuringBuilds: true,
-  },
+
   async headers() {
     return [
       {

@@ -8,13 +8,19 @@ export default auth((req) => {
   // Legacy 0.3.0 JWT tokens do not contain 'permissions'. 
   // We must fail them at the Edge to prevent an infinite redirect loop between Node.js layout and Edge proxy.
   const isLoggedIn = !!req.auth && Array.isArray(req.auth.user?.permissions);
+  console.log(`[PROXY] Request: ${req.nextUrl.pathname}, isLoggedIn: ${isLoggedIn}`);
   const isOnLoginPage = req.nextUrl.pathname.startsWith('/login');
   const isOnRegisterPage = req.nextUrl.pathname.startsWith('/register');
   const isOnSetupPage = req.nextUrl.pathname.startsWith('/setup');
 
   const isApiRoute = req.nextUrl.pathname.startsWith('/api');
+  const isApiAuthRoute = req.nextUrl.pathname.startsWith('/api/auth');
+  const isApiWebhookRoute = req.nextUrl.pathname.startsWith('/api/plugins/webhook');
 
   if (isApiRoute) {
+    // Whitelist core identity and SSO routes (verify, NextAuth primitives)
+    if (isApiAuthRoute || isApiWebhookRoute) return;
+
     // Edge Defense: If it's an API route, check if they are trying to use a Bearer token
     // If they have a token, we MUST pass it down to the Node.js layer to verify the hash
     const authHeader = req.headers.get("authorization");
@@ -23,22 +29,19 @@ export default auth((req) => {
     }
     // If no Bearer token, they must be authenticated via NextAuth web session
     if (!isLoggedIn) {
-      return new NextResponse("Unauthorized: Edge perimeter rejected unauthenticated request.", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized: Edge perimeter rejected unauthenticated request." }, { status: 401 });
     }
     return; // Authenticated, pass to Node
   }
 
-  if (isOnLoginPage || isOnRegisterPage || isOnSetupPage) {
+  if (isOnSetupPage) {
+       // Expose setup to everyone. It has its own Node.js logic to bounce logged-in users away.
+       return; 
+  }
+
+  if (isOnLoginPage || isOnRegisterPage) {
        if (req.nextUrl.searchParams.has('clearsession')) {
-          const res = NextResponse.next();
-          const allCookies = req.cookies.getAll();
-          for (const cookie of allCookies) {
-              if (cookie.name.includes("session-token")) {
-                  res.cookies.set(cookie.name, "", { maxAge: 0, path: "/" });
-                  res.cookies.delete(cookie.name);
-              }
-          }
-          return res;
+           return; // Let Node.js render the page so the client-side useEffect can execute signOut()
        }
 
     if (isLoggedIn) {

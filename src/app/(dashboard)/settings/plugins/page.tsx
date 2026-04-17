@@ -13,6 +13,7 @@ export default async function PluginManagementPage() {
   }
 
   const dbStates = await db.pluginState.findMany();
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
 
   // Filter out globally undefined or malformed configurations to prevent rendering exceptions
   const installedPlugins = activePlugins.filter(p => p && p.manifest && p.manifest.id);
@@ -31,6 +32,8 @@ export default async function PluginManagementPage() {
                 isActive={state?.isActive || false} 
                 configJson={decryptedConfig ? JSON.stringify(decryptedConfig) : null}
                 layout="grid"
+                clickMode="config"
+                systemPlatformUrl={settings?.systemPlatformUrl || "http://localhost:3000"}
               />
             )
           })}

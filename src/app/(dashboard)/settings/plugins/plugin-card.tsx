@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition, useEffect } from "react"
 import { OpenTicketPlugin } from "@/lib/plugins/types"
 import { Button } from "@/components/ui/button"
 import { togglePluginState, updatePluginConfig, installExternalPlugin, uninstallExternalPlugin, triggerProductionBuild, triggerServerRestart } from "./actions"
@@ -14,6 +14,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 
 export function PluginCard({ 
@@ -23,17 +30,21 @@ export function PluginCard({
   layout = "list",
   versions,
   latestVersion,
-  isLocal = true
+  isLocal = true,
+  clickMode = "details",
+  systemPlatformUrl
 }: { 
   manifest: OpenTicketPlugin["manifest"], 
   isActive: boolean, 
   configJson: string | null,
   layout?: "list" | "grid",
-  versions?: Record<string, { sourceType: string, packageName?: string, requestedPermissions?: string[] }>,
   latestVersion?: string,
-  isLocal?: boolean
+  isLocal?: boolean,
+  clickMode?: "details" | "config",
+  systemPlatformUrl?: string
 }) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [isUpdating, setIsUpdating] = useState(false);
   const [rawConfig, setRawConfig] = useState(configJson ? JSON.parse(configJson) : {});
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -92,11 +103,9 @@ export function PluginCard({
           if (res.ok) {
             clearInterval(poll);
             setUninstallStep(4); // 4 = Success
-            setTimeout(() => {
-              setUninstallStep(0);
-              setIsUninstallModalOpen(false);
-              router.refresh();
-            }, 1500); // Wait 1.5s then soft refresh
+            startTransition(() => {
+               router.refresh();
+            });
           }
         } catch(e) {}
       }, 2000);
@@ -138,11 +147,9 @@ export function PluginCard({
           if (res.ok) {
             clearInterval(poll);
             setInstallStep(4); // 4 = Success
-            setTimeout(() => {
-              setInstallStep(0);
-              setIsInstallModalOpen(false);
-              router.refresh();
-            }, 1500); // Wait 1.5s then soft refresh
+            startTransition(() => {
+               router.refresh();
+            });
           }
         } catch(e) {}
       }, 2000);
@@ -152,6 +159,20 @@ export function PluginCard({
       setErrorMsg("Installation aborted: " + e.message);
     }
   }
+
+  // Ensure modal only closes after Server Component payload arrives
+  useEffect(() => {
+    if (!isPending) {
+      if (installStep === 4) {
+        setInstallStep(0);
+        setIsInstallModalOpen(false);
+      }
+      if (uninstallStep === 4) {
+        setUninstallStep(0);
+        setIsUninstallModalOpen(false);
+      }
+    }
+  }, [isPending, installStep, uninstallStep]);
 
   const renderInstallButton = () => {
     if (isLocal) {
@@ -205,8 +226,8 @@ export function PluginCard({
                             <span className="font-medium text-sm">Orchestrating Next.js Webpack Build...</span>
                           </div>
                           <div className={`flex items-center gap-3 p-3 rounded-lg ${uninstallStep >= 3 ? (uninstallStep === 4 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/10 text-blue-400 border border-blue-500/30') : 'bg-black text-neutral-500 border border-white/10'}`}>
-                            {uninstallStep === 3 ? <Loader2 className="w-5 h-5 animate-spin" /> : (uninstallStep >= 4 ? <CheckCircle2 className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />)}
-                            <span className="font-medium text-sm">{uninstallStep >= 4 ? "System Active. Finalizing..." : "Rebooting Node.js Process..."}</span>
+                            {uninstallStep === 3 || (uninstallStep === 4 && isPending) ? <Loader2 className="w-5 h-5 animate-spin" /> : (uninstallStep >= 4 ? <CheckCircle2 className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />)}
+                            <span className="font-medium text-sm">{uninstallStep >= 4 ? (isPending ? "Synchronizing UI Dashboard..." : "System Active. Finalizing...") : "Rebooting Node.js Process..."}</span>
                           </div>
                         </div>
                       )}
@@ -305,8 +326,8 @@ export function PluginCard({
                     <span className="font-medium text-sm">Orchestrating Next.js Webpack Build...</span>
                   </div>
                   <div className={`flex items-center gap-3 p-3 rounded-lg ${installStep >= 3 ? (installStep === 4 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/10 text-blue-400 border border-blue-500/30') : 'bg-black text-neutral-500 border border-white/10'}`}>
-                    {installStep === 3 ? <Loader2 className="w-5 h-5 animate-spin" /> : (installStep >= 4 ? <CheckCircle2 className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />)}
-                    <span className="font-medium text-sm">{installStep >= 4 ? "System Active. Finalizing..." : "Rebooting Node.js Process..."}</span>
+                    {installStep === 3 || (installStep === 4 && isPending) ? <Loader2 className="w-5 h-5 animate-spin" /> : (installStep >= 4 ? <CheckCircle2 className="w-5 h-5" /> : <RefreshCw className="w-5 h-5" />)}
+                    <span className="font-medium text-sm">{installStep >= 4 ? (isPending ? "Synchronizing UI Dashboard..." : "System Active. Finalizing...") : "Rebooting Node.js Process..."}</span>
                   </div>
                 </div>
               )}
@@ -326,9 +347,11 @@ export function PluginCard({
     }
   }
 
+  const schema = manifest.options || (versions && latestVersion && versions[latestVersion]?.configSchema);
+  const hasConfig = manifest.id.includes('slack') || manifest.id === 'github-issues' || (Array.isArray(schema) && schema.length > 0);
+
   const renderConfigFormsInline = () => {
-    if (!isActive) return null;
-    
+    // Legacy hardcoded slack form
     if (manifest.id.includes('slack')) {
       return (
         <div className="border border-white/10 p-5 rounded-xl bg-black/40 mt-4 space-y-4">
@@ -339,7 +362,9 @@ export function PluginCard({
           </form>
         </div>
       )
-    } else if (manifest.id === 'github-issues') {
+    } 
+    // Legacy hardcoded github-issues form
+    else if (manifest.id === 'github-issues') {
       return (
         <div className="border border-white/10 p-5 rounded-xl bg-black/40 mt-4 space-y-4">
           <h4 className="text-sm font-bold text-white flex items-center"><SettingsIcon className="w-4 h-4 mr-2"/> GitHub Configuration</h4>
@@ -364,8 +389,90 @@ export function PluginCard({
           </form>
         </div>
       )
+    } 
+    // Dynamic Schema based Form Rendering
+    else if (Array.isArray(schema) && schema.length > 0) {
+      return (
+        <div className="border border-white/10 p-5 rounded-xl bg-black/40 mt-4 space-y-4">
+          <h4 className="text-sm font-bold text-white flex items-center"><SettingsIcon className="w-4 h-4 mr-2"/> {manifest.name} Configuration</h4>
+          <form action={async (fd) => { await updatePluginConfig(manifest.id, fd); setIsConfigOpen(false); window.location.reload(); }} className="space-y-4">
+            {schema.map((field: any) => (
+               <div key={field.key}>
+                 {field.type !== 'info' && <label className="text-xs text-neutral-400 mb-1 block">{field.label || field.key}{field.required ? ' *' : ''}</label>}
+                 {field.type === 'info' ? (
+                    <div className="mb-2">
+                       {field.label && <h4 className="text-sm font-semibold text-white mb-2">{field.label}</h4>}
+                       <div 
+                         className="bg-primary/5 border border-primary/20 text-primary p-3 rounded-md text-xs leading-relaxed overflow-x-auto whitespace-normal" 
+                         dangerouslySetInnerHTML={{ __html: field.content?.replace(/\{\{SYSTEM_URL\}\}/g, systemPlatformUrl || '') }} 
+                       />
+                    </div>
+                 ) : field.type === 'boolean' ? (
+                    <Select name={field.key} defaultValue={rawConfig?.[field.key]?.toString() || (field.defaultValue !== undefined ? field.defaultValue.toString() : 'false')}>
+                      <SelectTrigger className="w-full bg-black text-white border-white/20">
+                        <SelectValue placeholder="Select boolean..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                        <SelectItem value="true">True</SelectItem>
+                        <SelectItem value="false">False</SelectItem>
+                      </SelectContent>
+                    </Select>
+                 ) : field.type === 'enum' ? (
+                    <Select name={field.key} defaultValue={rawConfig?.[field.key] || field.defaultValue || ''}>
+                      <SelectTrigger className="w-full bg-black text-white border-white/20">
+                        <SelectValue placeholder="Select option..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-white/20 text-white">
+                        {field.options?.map((opt: string) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                 ) : (
+                    <input 
+                      type={field.type === 'secret' ? 'password' : 'text'} 
+                      name={field.key} 
+                      defaultValue={rawConfig?.[field.key] || field.defaultValue || ''} 
+                      className="w-full bg-black text-white p-2 text-sm border border-white/20 rounded" 
+                      placeholder={field.required ? 'Required field' : 'Optional field'} 
+                      required={field.required}
+                    />
+                 )}
+               </div>
+            ))}
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-black shadow-[0_0_15px_rgba(0,255,200,0.3)] mt-2" onClick={(e) => e.stopPropagation()}>Save Configuration</Button>
+          </form>
+        </div>
+      )
     }
+    
     return null;
+  }
+
+  const renderConfigOnlyDialog = () => {
+    return (
+      <DialogContent className="sm:max-w-[500px] border border-white/10 bg-zinc-950 shadow-[0_0_50px_rgba(0,0,0,0.5)] max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <DialogHeader>
+           <DialogTitle className="flex items-center gap-3 text-white text-xl">
+             <SettingsIcon className="w-5 h-5 text-primary" />
+             {manifest.name} Configuration
+           </DialogTitle>
+        </DialogHeader>
+
+        <div className="py-2">
+          {!hasConfig ? (
+             <div className="bg-black/40 border border-white/10 p-5 rounded-xl text-center mt-2 text-neutral-500 text-sm">
+                <SettingsIcon className="w-5 h-5 mx-auto mb-2 opacity-30" />
+                This plugin does not expose any configurable options.
+             </div>
+          ) : (
+             renderConfigFormsInline()
+          )}
+          
+          <div className="pt-4 mt-4 border-t border-white/10 flex justify-end">
+             <Button variant="outline" onClick={(e) => { e.stopPropagation(); setIsConfigOpen(false); }} className="bg-transparent border-white/20 text-white">Close</Button>
+          </div>
+        </div>
+      </DialogContent>
+    )
   }
 
   const renderDetailsDialog = () => {
@@ -441,11 +548,16 @@ export function PluginCard({
   );
 
   if (layout === "grid") {
+    // Under installed drivers or store, ALWAYS allow clicking so it doesn't feel broken
+    const isClickable = true;
+
     return (
       <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
         <div 
-          onClick={() => setIsConfigOpen(true)}
-          className={`p-5 rounded-xl border ${isActive ? 'bg-primary/5 border-primary/30' : 'bg-black/30 border-white/10'} cursor-pointer hover:border-primary/50 flex flex-col justify-between h-full transition-all hover:bg-white/5 gap-4 shadow-lg`}
+          onClick={() => {
+             if (isClickable) setIsConfigOpen(true);
+          }}
+          className={`p-5 rounded-xl border ${isActive ? 'bg-primary/5 border-primary/30' : 'bg-black/30 border-white/10'} ${isClickable ? 'cursor-pointer hover:border-primary/50 hover:bg-white/5' : ''} flex flex-col justify-between h-full transition-all gap-4 shadow-lg`}
         >
           <div className="flex flex-col gap-3">
             <div className="flex items-start justify-between">
@@ -472,7 +584,7 @@ export function PluginCard({
             {renderInstallButton()}
           </div>
         </div>
-        {renderDetailsDialog()}
+        {clickMode === 'details' ? renderDetailsDialog() : renderConfigOnlyDialog()}
         {renderErrorDialog()}
       </Dialog>
     )

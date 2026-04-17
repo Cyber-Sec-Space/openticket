@@ -5,6 +5,15 @@ import { parsePluginConfig } from "@/lib/plugins/crypto";
 import { createPluginContext } from "@/lib/plugins/sdk-context";
 import crypto from "crypto";
 
+function verifyWebhookSignature(rawBody: string, secret: string, providedSignature: string | null) {
+  if (!providedSignature) return false;
+  const expected = `sha256=${crypto.createHmac("sha256", secret).update(rawBody).digest("hex")}`;
+  const left = Buffer.from(expected);
+  const right = Buffer.from(providedSignature);
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
 export async function POST(req: NextRequest, props: { params: Promise<{ pluginId: string }> }) {
   const params = await props.params;
   const pluginId = params.pluginId;
@@ -29,45 +38,58 @@ export async function POST(req: NextRequest, props: { params: Promise<{ pluginId
   // 4. Decrypt configurations securely
   const config = state.configJson ? parsePluginConfig(state.configJson) : {};
   const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name);
+  const webhookSecret = typeof config.WEBHOOK_SECRET === "string" ? config.WEBHOOK_SECRET.trim() : "";
+  let requestForPlugin: Request = req;
 
-  // 5. HMAC Webhook Signature Verification (optional, enabled when webhookSecret is configured)
-  const webhookSecret = config?.webhookSecret as string | undefined;
   if (webhookSecret) {
+    const rawBody = await req.text();
     const signature = req.headers.get("x-webhook-signature") || req.headers.get("x-hub-signature-256");
-    const body = await req.text();
+    const authHeader = req.headers.get("authorization");
+    const apiKeyHeader = req.headers.get("x-api-key");
     
-    if (!signature) {
-      return NextResponse.json({ error: "Missing webhook signature header (X-Webhook-Signature)." }, { status: 401 });
+    let isValid = false;
+
+    // 1. Cryptographic HMAC Verification (Used by GitHub, Stripe, etc.)
+    if (signature) {
+      isValid = verifyWebhookSignature(rawBody, webhookSecret, signature);
+    }
+    
+    // 2. Static Header Verification (Used by generic API clients, Datadog, Slack, etc.)
+    if (!isValid && (apiKeyHeader === webhookSecret || authHeader === `Bearer ${webhookSecret}`)) {
+      isValid = true;
+    }
+    
+    // 3. Static Body Payload Verification (Used by simpler Webhook dispatchers)
+    if (!isValid) {
+      try {
+        const jsonBody = JSON.parse(rawBody);
+        if (jsonBody && (jsonBody.secret === webhookSecret || jsonBody.token === webhookSecret)) {
+          isValid = true;
+        }
+      } catch (e) {
+        // Not a JSON payload, ignore
+      }
     }
 
-    const expectedSig = "sha256=" + crypto.createHmac("sha256", webhookSecret).update(body).digest("hex");
-    
-    // Timing-safe comparison to prevent timing attacks
-    const sigBuffer = Buffer.from(signature);
-    const expectedBuffer = Buffer.from(expectedSig);
-    
-    if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
-      return NextResponse.json({ error: "Invalid webhook signature. Request rejected." }, { status: 401 });
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid webhook signature." }, { status: 401 });
     }
 
-    // Re-create a new Request with the consumed body so the plugin can still read it
-    const newReq = new NextRequest(req.url, {
+    requestForPlugin = new Request(req.url, {
       method: req.method,
       headers: req.headers,
-      body: body,
+      body: rawBody,
     });
-    // Replace original req reference for downstream
-    req = newReq;
   }
 
-  // 6. Time-Bomb Execution Sandbox (5 Seconds TTL)
+  // 5. Time-Bomb Execution Sandbox (5 Seconds TTL)
   try {
     const timeoutPromise = new Promise<never>((_, reject) => {
        setTimeout(() => reject(new Error("Execution Timeout: Plugin exceeded the 5000ms sandbox time-bomb limit.")), 5000);
     });
 
     const response = await Promise.race([
-      plugin.hooks.onWebhookReceived(req, config, context),
+      plugin.hooks.onWebhookReceived(requestForPlugin, config, context),
       timeoutPromise
     ]);
 

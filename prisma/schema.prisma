@@ -207,6 +207,13 @@ model SystemSetting {
   slaLowHours      Int @default(168)
   slaInfoHours     Int @default(720)
 
+  // Vulnerability SLA Matrix Config (Hours)
+  vulnSlaCriticalHours Int @default(12)
+  vulnSlaHighHours     Int @default(48)
+  vulnSlaMediumHours   Int @default(168)
+  vulnSlaLowHours      Int @default(336)
+  vulnSlaInfoHours     Int @default(720)
+
   // Rate Limiting Config
   rateLimitEnabled     Boolean @default(true)
   rateLimitWindowMs    Int     @default(900000) // 15 minutes default

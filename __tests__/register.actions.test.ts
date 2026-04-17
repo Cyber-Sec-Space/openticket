@@ -11,7 +11,7 @@ jest.mock("../src/lib/db", () => {
     user: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
-      create: jest.fn(),
+      create: jest.fn().mockResolvedValue({ id: "mocked-user-id" }),
     },
     verificationToken: {
       create: jest.fn(),
@@ -19,6 +19,9 @@ jest.mock("../src/lib/db", () => {
     invitation: {
       findUnique: jest.fn(),
       delete: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn(),
     }
   };
   (dbMock as any).$transaction = jest.fn(async (cb) => cb(dbMock));
@@ -69,6 +72,16 @@ describe("attemptRegistration", () => {
     fd.append("password", "short");
     const result = await attemptRegistration(undefined, fd);
     expect(result).toBe("PASSWORD_TOO_SHORT");
+  });
+
+  it("returns PASSWORD_TOO_LONG if password exceeds bcrypt byte-safe limit", async () => {
+    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    const fd = new FormData();
+    fd.append("name", "Test User");
+    fd.append("email", "test@example.com");
+    fd.append("password", "a".repeat(73));
+    const result = await attemptRegistration(undefined, fd);
+    expect(result).toBe("PASSWORD_TOO_LONG");
   });
 
   it("returns REGISTRATION_FAILED if user already exists", async () => {

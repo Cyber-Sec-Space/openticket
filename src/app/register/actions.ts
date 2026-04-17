@@ -6,6 +6,8 @@ import { redirect } from "next/navigation"
 import { sendNewRegistrationAlertEmail, sendVerificationEmail } from "@/lib/mailer"
 import crypto from "crypto"
 
+const BCRYPT_COST = 12
+
 export async function attemptRegistration(prevState: any, formData: FormData) {
   const settings = await db.systemSetting.findUnique({ where: { id: "global" }, include: { defaultUserRoles: true } })
   const allowRegistration = settings?.allowRegistration ?? true
@@ -23,12 +25,8 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
     return "PASSWORD_TOO_SHORT"
   }
 
-  // CWE-407 DoS Mitigation: Limits payload lengths before Bcrypt processing
   if (password.length > 72) {
     return "PASSWORD_TOO_LONG"
-  }
-  if (name.length > 255 || email.length > 255) {
-    return "MISSING_FIELDS"
   }
 
   // Anti-bruteforce / Anti-enumeration delay (Constant time mitigation)
@@ -50,7 +48,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
   const existingUser = await db.user.findUnique({ where: { email } })
   
   // Enforce constant-time execution to prevent timing-based Account Enumeration
-  const passwordHash = await bcrypt.hash(password, 12)
+  const passwordHash = await bcrypt.hash(password, BCRYPT_COST)
 
   if (existingUser) {
     // SECURITY: We pretend it failed normally AFTER spending the bcrypt CPU cycles
@@ -63,7 +61,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
       : undefined
 
     await db.$transaction(async (tx) => {
-      await tx.user.create({
+      const newUser = await tx.user.create({
         data: {
           email,
           name,
@@ -74,6 +72,16 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
       if (inviteToken) {
         await tx.invitation.delete({ where: { token: inviteToken } })
       }
+      
+      await tx.auditLog.create({
+        data: {
+          action: "CREATE",
+          targetType: "USER",
+          targetId: newUser.id,
+          actorId: newUser.id, // Self-created
+          details: `New user account registered${inviteToken ? ' via invitation token' : ''}.`
+        }
+      })
     })
   } catch (error: any) {
     if (error.code === 'P2002' || error.code === 'P2025') {

@@ -9,7 +9,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-openticket_prod}
     volumes:
       - openticket_data:/var/lib/postgresql/data
-    # Security: Only expose DB port to localhost, not to all interfaces
     ports:
       - "127.0.0.1:5432:5432"
     healthcheck:
@@ -31,14 +30,14 @@ services:
       AUTH_TYPE: "scram-sha-256"
     ports:
       - "127.0.0.1:6432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     depends_on:
       db:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   migrator:
     build:
@@ -62,13 +61,13 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    volumes:
+      - openticket_uploads:/app/private/uploads
     environment:
       # Use PgBouncer connection for the main application querying and attach ?pgbouncer=true parameter for Prisma
       - DATABASE_URL=postgresql://${POSTGRES_USER:-openticket_admin}:${POSTGRES_PASSWORD:-supersecurepassword}@pgbouncer:5432/${POSTGRES_DB:-openticket_prod}?pgbouncer=true
-      # Security: AUTH_SECRET MUST be set in .env — no weak fallback allowed
-      - AUTH_SECRET=${AUTH_SECRET:?ERROR: AUTH_SECRET must be set in .env file. Generate one with: openssl rand -base64 33}
-      # Sync NEXTAUTH_SECRET for plugin encryption compatibility
-      - NEXTAUTH_SECRET=${AUTH_SECRET:?}
+      - AUTH_SECRET=${AUTH_SECRET?AUTH_SECRET is required}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET?NEXTAUTH_SECRET is required}
       - AUTH_TRUST_HOST=true
     depends_on:
       migrator:
@@ -79,3 +78,4 @@ services:
 
 volumes:
   openticket_data:
+  openticket_uploads:

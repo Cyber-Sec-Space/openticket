@@ -15,6 +15,9 @@ jest.mock("@/lib/db", () => ({
       findUnique: jest.fn(),
       upsert: jest.fn(),
       deleteMany: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn(),
     }
   }
 }))

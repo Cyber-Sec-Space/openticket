@@ -121,6 +121,8 @@ export async function deleteUserAction(formData: FormData) {
   })
 
   revalidatePath("/users")
+  const { redirect } = await import("next/navigation")
+  redirect("/users")
 }
 
 export async function toggleUserStatusAction(userId: string, isDisabled: boolean) {

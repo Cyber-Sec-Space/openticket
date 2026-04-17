@@ -27,7 +27,7 @@ export default function DashboardError({
       </h1>
       
       <p className="text-muted-foreground max-w-lg mb-8">
-        A critical unhandled exception occurred rendering this interface. If you recently installed a Plugin, the plugin may be structurally corrupt or throwing a fatal render error.
+        A critical unhandled exception occurred rendering this interface. The failure may come from application logic, data validation, infrastructure dependencies, or plugin code.
       </p>
 
       <div className="bg-black/40 border border-red-500/20 text-neutral-300 p-4 rounded-md text-left font-mono text-sm max-w-xl w-full mb-8 overflow-x-auto">

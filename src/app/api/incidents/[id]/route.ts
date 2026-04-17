@@ -8,7 +8,7 @@ export async function GET(
 ) {
   const { id } = await params
   const session = await apiAuth()
-  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   if (!hasPermission(session as any, ['VIEW_INCIDENTS_ALL', 'VIEW_INCIDENTS_ASSIGNED', 'VIEW_INCIDENTS_UNASSIGNED'])) return new NextResponse("Forbidden", { status: 403 })
 
   try {
@@ -55,7 +55,7 @@ export async function PATCH(
 ) {
   const { id } = await params
   const session = await apiAuth()
-  if (!session?.user) return new NextResponse("Unauthorized", { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
     const hasAssignAll = hasPermission(session as any, 'ASSIGN_INCIDENTS_OTHERS')

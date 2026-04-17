@@ -3,25 +3,18 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { hasPermission } from "@/lib/auth-utils"
 
-/**
- * Sanitize a cell value against CSV Injection (CWE-1236).
- * Prefixes formula-trigger characters with a single quote to neutralize
- * formula execution in Excel/LibreOffice when the CSV is opened.
- */
-function sanitizeCsvCell(value: string): string {
-  if (!value) return value;
-  const escaped = value.replace(/"/g, '""');
-  // Prevent CSV injection: prefix formula-trigger characters
-  if (/^[=+\-@\t\r]/.test(escaped)) {
-    return `"'${escaped}"`;
+function sanitizeCsvCell(value: string) {
+  const escaped = value.replace(/"/g, '""')
+  if (/^[=\+\-@\t\r]/.test(escaped)) {
+    return `'${escaped}`
   }
-  return `"${escaped}"`;
+  return escaped
 }
 
 export async function GET(req: Request) {
   const session = await auth()
   if (!session?.user) {
-    return new NextResponse("Unauthorized", { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const { searchParams } = new URL(req.url)
@@ -80,13 +73,13 @@ export async function GET(req: Request) {
       const assigneesStr = incident.assignees.map(a => a.name).join("; ")
       const row = [
         incident.id,
-        sanitizeCsvCell(incident.title),
+        `"${sanitizeCsvCell(incident.title)}"`,
         incident.type,
         incident.severity,
         incident.status,
-        sanitizeCsvCell(incident.asset?.name || "Unlinked"),
-        sanitizeCsvCell(incident.reporter?.name || incident.reporter?.email || "Deleted Operator"),
-        sanitizeCsvCell(assigneesStr),
+        incident.asset?.name || "Unlinked",
+        incident.reporter?.name || incident.reporter?.email || "Deleted Operator",
+        `"${sanitizeCsvCell(assigneesStr)}"`,
         incident.targetSlaDate ? incident.targetSlaDate.toISOString() : "None",
         incident.createdAt.toISOString()
       ]
@@ -121,11 +114,11 @@ export async function GET(req: Request) {
       const row = [
         vuln.id,
         vuln.cveId || "None",
-        sanitizeCsvCell(vuln.title),
+        `"${sanitizeCsvCell(vuln.title)}"`,
         vuln.cvssScore || "0",
         vuln.severity,
         vuln.status,
-        sanitizeCsvCell(assetsStr),
+        `"${sanitizeCsvCell(assetsStr)}"`,
         vuln.targetSlaDate ? vuln.targetSlaDate.toISOString() : "None",
         vuln.createdAt.toISOString()
       ]

@@ -8,7 +8,8 @@ import { encryptString, decryptString } from "@/lib/plugins/crypto"
 import nodemailer from "nodemailer"
 
 export async function updateSystemSettings(formData: FormData) {
-  const session = await auth()
+  try {
+    const session = await auth()
   if (!session?.user || !hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')) {
     throw new Error("Unauthorized")
   }
@@ -52,6 +53,21 @@ export async function updateSystemSettings(formData: FormData) {
   
   const ptInfo = parseInt(formData.get("slaInfoHours") as string, 10)
   const slaInfoHours = isNaN(ptInfo) ? 720 : ptInfo
+
+  const ptVulnCrit = parseInt(formData.get("vulnSlaCriticalHours") as string, 10)
+  const vulnSlaCriticalHours = isNaN(ptVulnCrit) ? 12 : ptVulnCrit
+  
+  const ptVulnHigh = parseInt(formData.get("vulnSlaHighHours") as string, 10)
+  const vulnSlaHighHours = isNaN(ptVulnHigh) ? 48 : ptVulnHigh
+  
+  const ptVulnMed = parseInt(formData.get("vulnSlaMediumHours") as string, 10)
+  const vulnSlaMediumHours = isNaN(ptVulnMed) ? 168 : ptVulnMed
+  
+  const ptVulnLow = parseInt(formData.get("vulnSlaLowHours") as string, 10)
+  const vulnSlaLowHours = isNaN(ptVulnLow) ? 336 : ptVulnLow
+  
+  const ptVulnInfo = parseInt(formData.get("vulnSlaInfoHours") as string, 10)
+  const vulnSlaInfoHours = isNaN(ptVulnInfo) ? 720 : ptVulnInfo
 
   // Rate Limiting Config
   const rateLimitEnabled = formData.get("rateLimitEnabled") === "on"
@@ -111,6 +127,11 @@ export async function updateSystemSettings(formData: FormData) {
       slaMediumHours,
       slaLowHours,
       slaInfoHours,
+      vulnSlaCriticalHours,
+      vulnSlaHighHours,
+      vulnSlaMediumHours,
+      vulnSlaLowHours,
+      vulnSlaInfoHours,
       rateLimitEnabled,
       rateLimitWindowMs,
       rateLimitMaxAttempts,
@@ -144,6 +165,11 @@ export async function updateSystemSettings(formData: FormData) {
       slaMediumHours,
       slaLowHours,
       slaInfoHours,
+      vulnSlaCriticalHours,
+      vulnSlaHighHours,
+      vulnSlaMediumHours,
+      vulnSlaLowHours,
+      vulnSlaInfoHours,
       rateLimitEnabled,
       rateLimitWindowMs,
       rateLimitMaxAttempts,
@@ -171,7 +197,27 @@ export async function updateSystemSettings(formData: FormData) {
       where: { emailVerified: null },
       data: { emailVerified: new Date() }
     })
+    
+    await db.auditLog.create({
+      data: {
+        action: "UPDATE",
+        targetType: "USER",
+        targetId: "all_unverified_users",
+        actorId: session.user.id,
+        details: "Automatically verified unverified users due to system setting change (Email Verification enforced)."
+      }
+    })
   }
+
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      targetType: "SYSTEM_SETTINGS",
+      targetId: "global",
+      actorId: session.user.id,
+      details: "Global system configuration and security settings updated."
+    }
+  })
 
   const { fireHook } = await import("@/lib/plugins/hook-engine");
   const updatedSettings = await db.systemSetting.findUnique({ where: { id: "global" } });
@@ -207,13 +253,18 @@ export async function updateSystemSettings(formData: FormData) {
           END
         )
         WHERE "status"::text IN ('OPEN', 'MITIGATED')
-      `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours, slaInfoHours)
+      `, vulnSlaCriticalHours, vulnSlaHighHours, vulnSlaMediumHours, vulnSlaLowHours, vulnSlaInfoHours)
     } catch (e) {
       console.error("Failed to retroactively update SLA dates:", e)
     }
   }, 0)
 
-  revalidatePath("/system")
+    revalidatePath("/system")
+  } catch (e) {
+    require('fs').writeFileSync('/tmp/open-ticket-error.log', String(e) + '\n\n' + e.stack);
+    console.error("CRITICAL SETTINGS ERROR:", e)
+    throw e
+  }
 }
 
 export async function testSmtpConnection(formData: FormData) {
@@ -250,8 +301,7 @@ export async function testSmtpConnection(formData: FormData) {
         pass: finalPassword,
       } : undefined,
       tls: {
-        // Match production mailer: validate TLS certs by default
-        rejectUnauthorized: true
+        rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false"
       }
     })
 
