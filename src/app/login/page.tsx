@@ -55,6 +55,9 @@ export default async function LoginPage() {
 
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   const allowRegistration = settings?.allowRegistration ?? true
+  const smtpEnabled = settings?.smtpEnabled ?? false
+  const allowPasswordReset = settings?.allowPasswordReset ?? true
+  const canResetPassword = smtpEnabled && allowPasswordReset
 
   return (
     <div className="flex h-screen w-full relative overflow-hidden bg-background">
@@ -74,7 +77,7 @@ export default async function LoginPage() {
               Cybersecurity Incident & Asset Operations
             </p>
           </div>
-          <LoginForm allowRegistration={allowRegistration} />
+          <LoginForm allowRegistration={allowRegistration} allowPasswordReset={canResetPassword} />
         </div>
       </div>
     </div>

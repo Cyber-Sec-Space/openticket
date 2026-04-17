@@ -9,7 +9,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export function LoginForm({ allowRegistration = false }: { allowRegistration?: boolean }) {
+export function LoginForm({ allowRegistration = false, allowPasswordReset = false }: { allowRegistration?: boolean, allowPasswordReset?: boolean }) {
   const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined)
   const [showTwoFactor, setShowTwoFactor] = useState(false)
   const [persistedEmail, setPersistedEmail] = useState("")
@@ -73,7 +73,14 @@ export function LoginForm({ allowRegistration = false }: { allowRegistration?: b
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-muted-foreground">Password</Label>
+            <Label htmlFor="password" className="text-muted-foreground flex justify-between">
+              <span>Password</span>
+              {allowPasswordReset && (
+                <a href="/forgot-password" className="text-xs text-primary/80 hover:text-primary transition-colors underline-offset-4 hover:underline">
+                  Forgot Password?
+                </a>
+              )}
+            </Label>
             <Input 
               id="password" 
               name="password" 

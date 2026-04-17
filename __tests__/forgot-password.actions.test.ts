@@ -22,11 +22,11 @@ describe("sendResetLink", () => {
     expect(res.error).toMatch(/Missing identity/);
   });
 
-  it("returns error if SMTP offline", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ smtpEnabled: false });
+  it("returns error if SMTP offline or password reset disabled", async () => {
+    (require("../src/lib/db").db.systemSetting.findUnique as jest.Mock).mockResolvedValue({ smtpEnabled: false, allowPasswordReset: true });
     const fd = new FormData(); fd.append("email", "test@test.com");
     const res = await sendResetLink(null, fd);
-    expect(res.error).toMatch(/SMTP/);
+    expect(res.error).toMatch(/Password recovery subsystem offline or disabled/);
   });
 
   it("returns success instantly if user not found", async () => {

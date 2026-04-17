@@ -150,6 +150,27 @@ export default async function SystemSettingsPage() {
                           </p>
                         </div>
                       </div>
+
+                      {/* Password Reset Toggle */}
+                      <div className={`flex flex-row items-center space-x-4 rounded-xl border border-white/10 p-5 shadow-sm transition-colors ${settings.smtpEnabled ? "bg-black/40 hover:bg-black/60" : "bg-black/20 opacity-60"}`}>
+                        <Checkbox 
+                          key={`reset-${settings.allowPasswordReset}-${settings.smtpEnabled}`} 
+                          id="allowPasswordReset" 
+                          name="allowPasswordReset" 
+                          value="on" 
+                          defaultChecked={settings.allowPasswordReset && settings.smtpEnabled} 
+                          disabled={!settings.smtpEnabled}
+                        />
+                        <div className="space-y-1.5 leading-none">
+                          <Label htmlFor="allowPasswordReset" className={`text-sm font-semibold tracking-wide flex items-center ${settings.smtpEnabled ? "cursor-pointer text-emerald-400 hover:text-emerald-300" : "cursor-not-allowed text-muted-foreground"} transition-colors`}>
+                            <ShieldCheck className="w-4 h-4 mr-2" /> Allow Password Resets
+                          </Label>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Permit users to initiate password recovery workflows via email. 
+                            {!settings.smtpEnabled && <span className="text-amber-500 font-bold ml-1">(SMTP Relay must be configured and enabled first).</span>}
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

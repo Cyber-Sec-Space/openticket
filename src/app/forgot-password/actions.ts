@@ -9,8 +9,8 @@ export async function sendResetLink(prevState: any, formData: FormData) {
   if (!email) return { error: "Structural Validation Error: Missing identity route" }
 
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
-  if (!settings?.smtpEnabled) {
-    return { error: "Operational Fault: SMTP Subsystem Offline." }
+  if (!settings?.smtpEnabled || settings?.allowPasswordReset === false) {
+    return { error: "Operational Fault: Password recovery subsystem offline or disabled." }
   }
 
   const startTime = Date.now()

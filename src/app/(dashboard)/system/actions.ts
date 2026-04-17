@@ -16,6 +16,7 @@ export async function updateSystemSettings(formData: FormData) {
 
   // base-ui Checkbox with name="allowRegistration" will send "on" if checked, otherwise it won't be in formData
   const allowRegistration = formData.get("allowRegistration") === "on"
+  const allowPasswordReset = formData.get("allowPasswordReset") === "on"
   const requireGlobal2FA = formData.get("requireGlobal2FA") === "on"
   const requireEmailVerification = formData.get("requireEmailVerification") === "on"
   
@@ -116,6 +117,7 @@ export async function updateSystemSettings(formData: FormData) {
     where: { id: "global" },
     update: {
       allowRegistration,
+      allowPasswordReset,
       requireGlobal2FA,
       requireEmailVerification,
       systemPlatformUrl,
@@ -154,6 +156,7 @@ export async function updateSystemSettings(formData: FormData) {
     create: {
       id: "global",
       allowRegistration,
+      allowPasswordReset,
       requireGlobal2FA,
       requireEmailVerification,
       systemPlatformUrl,

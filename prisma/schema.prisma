@@ -192,9 +192,10 @@ model PasswordResetToken {
 // -----------------------------------------------------------------------------
 
 model SystemSetting {
-  id                String  @id @default("global") // Enforce singleton
-  allowRegistration Boolean @default(true)
-  requireGlobal2FA  Boolean @default(false)
+  id                 String  @id @default("global") // Enforce singleton
+  allowRegistration  Boolean @default(true)
+  allowPasswordReset Boolean @default(true)
+  requireGlobal2FA   Boolean @default(false)
   defaultUserRoles  CustomRole[] @relation("DefaultUserRoles")
 
   webhookUrl     String?
