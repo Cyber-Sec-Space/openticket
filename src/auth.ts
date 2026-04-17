@@ -178,10 +178,10 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
         await db.auditLog.create({
           data: {
             action: "LOGIN",
-            targetType: "USER",
-            targetId: user.id,
-            actorId: user.id,
-            details: `Successful authentication from IP: ${requestIp}`
+            entityType: "USER",
+            entityId: user.id,
+            userId: user.id,
+            changes: { details: `Successful authentication from IP: ${requestIp}` }
           }
         });
 

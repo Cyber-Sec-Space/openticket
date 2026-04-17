@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
+import { LocalTime } from "@/components/local-time"
 
 export default async function AssetDetailPage({
   params,
@@ -224,11 +225,11 @@ export default async function AssetDetailPage({
                   )}
                   <div>
                     <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Architecture Record</strong>
-                    <span className="text-foreground/90 font-mono text-xs">{asset.createdAt.toLocaleString()}</span>
+                    <LocalTime date={asset.createdAt} className="text-foreground/90 font-mono text-xs" />
                   </div>
                   <div>
                     <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Last Transmission Sync</strong>
-                    <span className="text-foreground/90 font-mono text-xs">{asset.updatedAt.toLocaleString()}</span>
+                    <LocalTime date={asset.updatedAt} className="text-foreground/90 font-mono text-xs" />
                   </div>
                   <div>
                     <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Historical Incidents</strong>

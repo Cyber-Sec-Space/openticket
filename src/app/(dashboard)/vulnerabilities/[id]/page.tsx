@@ -16,6 +16,7 @@ import { updateVulnAssetStatusAction, deleteVulnerabilityAction, addAssigneesAct
 import Link from "next/link"
 import { Users, MessageSquare } from "lucide-react"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
+import { LocalTime } from "@/components/local-time"
 
 interface MatchProps {
   params: Promise<{ id: string }>
@@ -127,13 +128,13 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
               {vuln.targetSlaDate ? (
                 <span className={`font-mono text-xs font-semibold px-2 py-1 rounded ${new Date() > vuln.targetSlaDate ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
                   <Calendar className="w-3 h-3 inline mr-2" />
-                  Target SLA: {vuln.targetSlaDate.toLocaleString()}
+                  Target SLA: <LocalTime date={vuln.targetSlaDate} />
                 </span>
               ) : (
                 <span className="text-muted-foreground italic text-xs"><Calendar className="w-3 h-3 inline mr-1" /> No Remediation SLA enforced</span>
               )}
               <p className="text-xs text-muted-foreground/30 text-right">
-                Discovered: {new Date(vuln.createdAt).toLocaleString()}
+                Discovered: <LocalTime date={vuln.createdAt} />
               </p>
             </div>
           </div>
@@ -185,7 +186,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                     <div className="flex-1">
                       <div className="flex justify-between items-center mb-1">
                         <span className="font-bold text-sm text-white/90">{comment.author?.name || 'Unknown User'}</span>
-                        <span className="text-xs text-muted-foreground font-mono">{comment.createdAt.toLocaleString()}</span>
+                        <LocalTime date={comment.createdAt} className="text-xs text-muted-foreground font-mono" />
                       </div>
                       <p className="text-sm text-white/80 whitespace-pre-wrap">{comment.content}</p>
                     </div>
@@ -360,7 +361,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                         <Paperclip className="w-3 h-3 mr-2 text-indigo-400/70 group-hover:text-indigo-400 flex-shrink-0" />
                         <div className="flex flex-col min-w-0 pr-1">
                           <span className="text-[11px] font-medium text-white/90 truncate">{att.filename}</span>
-                          <span className="text-[9px] font-mono text-muted-foreground">{att.createdAt.toLocaleDateString()}</span>
+                          <LocalTime date={att.createdAt} format="date" className="text-[9px] font-mono text-muted-foreground" />
                         </div>
                       </a>
                       <form action={async () => {

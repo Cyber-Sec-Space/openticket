@@ -23,6 +23,7 @@ import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Uplo
 import { TagInput } from "@/components/ui/tag-input"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 import { EvidenceUploadForm } from "@/components/evidence-upload-form"
+import { LocalTime } from "@/components/local-time"
 
 export default async function IncidentDetailPage({
   params,
@@ -629,7 +630,7 @@ export default async function IncidentDetailPage({
                         {item.author?.name || 'System'}
                         <span className="opacity-50 text-[10px] font-normal ml-1">({item.type === 'AUDIT' ? 'SYSTEM EVENT' : (item.author?.customRoles?.length ? item.author.customRoles.map((r:any) => r.name).join(', ') : 'OPERATOR')})</span>
                       </span>
-                      <span className="font-mono text-[10px] opacity-70">{item.createdAt.toLocaleString()}</span>
+                      <LocalTime date={item.createdAt} className="font-mono text-[10px] opacity-70" />
                     </div>
                     {item.type === 'AUDIT' ? (
                       <p className="text-xs font-mono text-primary/70 bg-black/40 p-2 rounded block">{item.content}</p>
@@ -683,7 +684,7 @@ export default async function IncidentDetailPage({
               </div>
               <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Record Initialized</strong>
-                <span className="font-mono text-xs text-foreground/80">{incident.createdAt.toLocaleString()}</span>
+                <LocalTime date={incident.createdAt} className="font-mono text-xs text-foreground/80" />
               </div>
               <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target SLA</strong>
@@ -691,7 +692,7 @@ export default async function IncidentDetailPage({
                   <span className={`flex items-center gap-2 font-mono text-xs font-semibold px-2 py-1 rounded w-fit ${isOverdue ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(255,50,50,0.4)] animate-pulse' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
                     <span>
                       <Calendar className="w-3 h-3 inline mr-1" />
-                      {incident.targetSlaDate.toLocaleString()}
+                      <LocalTime date={incident.targetSlaDate} />
                     </span>
                   </span>
                 ) : <span className="text-muted-foreground italic text-xs">No Deadline Set</span>}
@@ -716,7 +717,7 @@ export default async function IncidentDetailPage({
                         <Paperclip className="w-3 h-3 mr-2 text-indigo-400/70 group-hover:text-indigo-400 flex-shrink-0" />
                         <div className="flex flex-col min-w-0 pr-1">
                           <span className="text-[11px] font-medium text-white/90 truncate">{att.filename}</span>
-                          <span className="text-[9px] font-mono text-muted-foreground">{att.createdAt.toLocaleDateString()}</span>
+                          <LocalTime date={att.createdAt} format="date" className="text-[9px] font-mono text-muted-foreground" />
                         </div>
                       </a>
                       <form action={async () => {

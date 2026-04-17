@@ -11,6 +11,7 @@ import { CreateAssetModal } from "./create-asset-modal"
 
 import Form from "next/form";
 import {  notFound , redirect } from "next/navigation"
+import { LocalTime } from "@/components/local-time"
 
 export default async function AssetsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
@@ -176,7 +177,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
                     {asset.status.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right text-muted-foreground font-mono text-xs pr-6">{asset.createdAt.toLocaleDateString()}</TableCell>
+                <TableCell className="text-right text-muted-foreground font-mono text-xs pr-6"><LocalTime date={asset.createdAt} format="date" /></TableCell>
               </TableRow>
             ))}
           </TableBody>

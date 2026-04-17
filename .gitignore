@@ -52,3 +52,4 @@ next-env.d.ts
 .next/*
 release-standalone/
 package-lock 2.json
+.*/

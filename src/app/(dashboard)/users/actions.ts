@@ -291,5 +291,15 @@ export async function createInvitation(formData: FormData) {
     await sendOperatorInvitationEmail(email, joinUrl, session.user.name || "Unknown")
   }
 
+  await db.auditLog.create({
+    data: {
+      action: "CREATE",
+      entityType: "INVITATION",
+      entityId: "new",
+      userId: session.user.id,
+      changes: { details: `Created a new system invitation link. Sent to email: ${email || "None"}.` }
+    }
+  });
+
   return { success: true, joinUrl }
 }

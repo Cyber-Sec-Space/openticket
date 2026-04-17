@@ -28,10 +28,10 @@ export async function updateProfile(formData: FormData) {
   await db.auditLog.create({
     data: {
       action: "UPDATE",
-      targetType: "USER",
-      targetId: session.user.id,
-      actorId: session.user.id,
-      details: "User updated their display profile."
+      entityType: "USER",
+      entityId: session.user.id,
+      userId: session.user.id,
+      changes: { details: "User updated their display profile." }
     }
   })
 
@@ -98,10 +98,10 @@ export async function verifyAndEnable2FA(token: string) {
   await db.auditLog.create({
     data: {
       action: "UPDATE",
-      targetType: "USER",
-      targetId: session.user.id,
-      actorId: session.user.id,
-      details: "Two-Factor Authentication (2FA) successfully enabled and verified."
+      entityType: "USER",
+      entityId: session.user.id,
+      userId: session.user.id,
+      changes: { details: "Two-Factor Authentication (2FA) successfully enabled and verified." }
     }
   })
 
@@ -131,10 +131,10 @@ export async function disable2FA(password: string) {
   await db.auditLog.create({
     data: {
       action: "UPDATE",
-      targetType: "USER",
-      targetId: session.user.id,
-      actorId: session.user.id,
-      details: "Two-Factor Authentication (2FA) disabled following password authorization."
+      entityType: "USER",
+      entityId: session.user.id,
+      userId: session.user.id,
+      changes: { details: "Two-Factor Authentication (2FA) disabled following password authorization." }
     }
   })
 
@@ -171,10 +171,10 @@ export async function updateNotificationPreferences(prevState: any, formData: Fo
   await db.auditLog.create({
     data: {
       action: "UPDATE",
-      targetType: "USER",
-      targetId: session.user.id,
-      actorId: session.user.id,
-      details: "User updated their notification preferences."
+      entityType: "USER",
+      entityId: session.user.id,
+      userId: session.user.id,
+      changes: { details: "User updated their notification preferences." }
     }
   })
 

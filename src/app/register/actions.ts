@@ -76,10 +76,10 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
       await tx.auditLog.create({
         data: {
           action: "CREATE",
-          targetType: "USER",
-          targetId: newUser.id,
-          actorId: newUser.id, // Self-created
-          details: `New user account registered${inviteToken ? ' via invitation token' : ''}.`
+          entityType: "USER",
+          entityId: newUser.id,
+          userId: newUser.id, // Self-created
+          changes: { details: `New user account registered${inviteToken ? ' via invitation token' : ''}.` }
         }
       })
     })

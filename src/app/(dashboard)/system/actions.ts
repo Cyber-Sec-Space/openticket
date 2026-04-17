@@ -204,10 +204,10 @@ export async function updateSystemSettings(formData: FormData) {
     await db.auditLog.create({
       data: {
         action: "UPDATE",
-        targetType: "USER",
-        targetId: "all_unverified_users",
-        actorId: session.user.id,
-        details: "Automatically verified unverified users due to system setting change (Email Verification enforced)."
+        entityType: "USER",
+        entityId: "all_unverified_users",
+        userId: session.user.id,
+        changes: { details: "Automatically verified unverified users due to system setting change (Email Verification enforced)." }
       }
     })
   }
@@ -215,10 +215,10 @@ export async function updateSystemSettings(formData: FormData) {
   await db.auditLog.create({
     data: {
       action: "UPDATE",
-      targetType: "SYSTEM_SETTINGS",
-      targetId: "global",
-      actorId: session.user.id,
-      details: "Global system configuration and security settings updated."
+      entityType: "SYSTEM_SETTINGS",
+      entityId: "global",
+      userId: session.user.id,
+      changes: { details: "Global system configuration and security settings updated." }
     }
   })
 
@@ -263,7 +263,7 @@ export async function updateSystemSettings(formData: FormData) {
   }, 0)
 
     revalidatePath("/system")
-  } catch (e) {
+  } catch (e: any) {
     require('fs').writeFileSync('/tmp/open-ticket-error.log', String(e) + '\n\n' + e.stack);
     console.error("CRITICAL SETTINGS ERROR:", e)
     throw e

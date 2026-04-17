@@ -38,10 +38,10 @@ export async function GET(request: Request) {
     await db.auditLog.create({
       data: {
         action: "UPDATE",
-        targetType: "USER",
-        targetId: user.id,
-        actorId: user.id,
-        details: "User successfully verified their email address."
+        entityType: "USER",
+        entityId: user.id,
+        userId: user.id,
+        changes: { details: "User successfully verified their email address." }
       }
     })
   }

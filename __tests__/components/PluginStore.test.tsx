@@ -35,7 +35,7 @@ global.fetch = jest.fn()
 describe('PluginStorePage Server Component', () => {
   beforeEach(() => {
     (global.fetch as jest.Mock).mockClear()
-    process.env.NODE_ENV = "production"
+    ;(process.env as any).NODE_ENV = "production"
   })
 
   it('renders Cannot Connect to Plugin Registry when fetch fails or returns invalid structurally', async () => {

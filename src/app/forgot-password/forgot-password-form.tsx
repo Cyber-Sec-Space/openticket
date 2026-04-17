@@ -25,13 +25,13 @@ export function ForgotPasswordForm() {
     <form action={dispatch} className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="email" className="text-muted-foreground">Target Email</Label>
-        <Input 
-          id="email" 
-          name="email" 
-          type="email" 
-          placeholder="operator@openticket.local" 
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="operator@openticket.local"
           className="bg-black/20 border-white/10 text-white placeholder:text-muted-foreground focus-visible:ring-primary backdrop-blur-md"
-          required 
+          required
         />
       </div>
 
@@ -41,17 +41,17 @@ export function ForgotPasswordForm() {
         </div>
       )}
 
-      <Button 
-        className="w-full h-12 text-md mt-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(0,100,250,0.3)] transition-all font-bold tracking-wide" 
-        type="submit" 
+      <Button
+        className="w-full h-12 text-md mt-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(0,100,250,0.3)] transition-all font-bold tracking-wide"
+        type="submit"
         disabled={isPending}
       >
         {isPending ? "Generating Override..." : "Initiate Recovery Sequence"}
       </Button>
 
-      <div className="mt-4 flex justify-center w-full pt-4">
-        <a href="/login" className="text-xs text-muted-foreground hover:text-white transition-colors underline underline-offset-4">
-          Abort Sequence
+      <div className="mt-6 flex justify-center w-full border-t border-white/5 pt-4">
+        <a href="/login" className="text-xs font-mono tracking-widest text-primary/60 hover:text-primary transition-colors underline underline-offset-4 border-primary/20 hover:border-primary">
+          [ RETURN TO IDENTITY SELECTION ]
         </a>
       </div>
     </form>

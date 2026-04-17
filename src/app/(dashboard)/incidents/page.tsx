@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { ShieldAlert, Plus, Filter, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CreateIncidentModal } from "./create-incident-modal"
+import { LocalTime } from "@/components/local-time"
 
 export default async function IncidentsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
@@ -252,10 +253,10 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                     : <span className="text-muted-foreground/50 italic">Unassigned</span>}
                 </TableCell>
                 <TableCell className={`font-mono text-sm border-r border-border/20 hidden xl:table-cell ${isOverdue ? 'text-red-500 font-bold' : incident.targetSlaDate ? 'text-muted-foreground' : 'text-muted-foreground/40 italic'}`}>
-                  {incident.targetSlaDate ? incident.targetSlaDate.toLocaleDateString() : '-'}
+                  {incident.targetSlaDate ? <LocalTime date={incident.targetSlaDate} format="date" /> : '-'}
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground text-sm font-mono pr-6">
-                  {incident.createdAt.toLocaleDateString()}
+                  <LocalTime date={incident.createdAt} format="date" />
                 </TableCell>
               </TableRow>
             )})}

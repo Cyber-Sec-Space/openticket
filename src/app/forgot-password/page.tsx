@@ -7,6 +7,11 @@ export const dynamic = "force-dynamic"
 
 export default async function ForgotPasswordPage() {
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  
+  if (settings?.allowPasswordReset === false) {
+      redirect("/login?error=Password reset has been disabled by the administrator.")
+  }
+  
   if (!settings?.smtpEnabled) {
       redirect("/login?error=SMTP Offline. Reset unavailable.")
   }

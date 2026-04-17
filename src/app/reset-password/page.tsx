@@ -14,6 +14,11 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
     redirect("/forgot-password?error=Invalid parameters")
   }
 
+  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  if (settings?.allowPasswordReset === false) {
+      redirect("/login?error=Password reset has been disabled by the administrator.")
+  }
+
   // Pre-validate token
   const resetData = await db.passwordResetToken.findUnique({
     where: { email_token: { email, token } }

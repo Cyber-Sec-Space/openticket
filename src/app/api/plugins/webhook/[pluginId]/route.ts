@@ -104,7 +104,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ pluginId
     console.error(`[Webhook Gateway Router] Critical Sandbox Execution Fault in Plugin [${pluginId}]:`, error);
     return NextResponse.json({ 
       error: "Plugin webhook execution fault or timeout.", 
-      details: error.message || "Unknown error inside plugin." 
+      changes: { details: error.message || "Unknown error inside plugin."  }
     }, { status: 500 });
   }
 }

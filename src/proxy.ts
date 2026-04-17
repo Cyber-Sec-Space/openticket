@@ -8,10 +8,11 @@ export default auth((req) => {
   // Legacy 0.3.0 JWT tokens do not contain 'permissions'. 
   // We must fail them at the Edge to prevent an infinite redirect loop between Node.js layout and Edge proxy.
   const isLoggedIn = !!req.auth && Array.isArray(req.auth.user?.permissions);
-  console.log(`[PROXY] Request: ${req.nextUrl.pathname}, isLoggedIn: ${isLoggedIn}`);
-  const isOnLoginPage = req.nextUrl.pathname.startsWith('/login');
-  const isOnRegisterPage = req.nextUrl.pathname.startsWith('/register');
-  const isOnSetupPage = req.nextUrl.pathname.startsWith('/setup');
+  const ua = req.headers.get("user-agent") || "none";
+  const ref = req.headers.get("referer") || "none";
+  console.log(`[PROXY] Request: ${req.nextUrl.pathname}, isLoggedIn: ${isLoggedIn}, UA: ${ua}, Ref: ${ref}`);
+  const PUBLIC_PAGES = ['/login', '/register', '/setup', '/forgot-password', '/reset-password'];
+  const isPublicPage = PUBLIC_PAGES.some(page => req.nextUrl.pathname.startsWith(page));
 
   const isApiRoute = req.nextUrl.pathname.startsWith('/api');
   const isApiAuthRoute = req.nextUrl.pathname.startsWith('/api/auth');
@@ -34,12 +35,12 @@ export default auth((req) => {
     return; // Authenticated, pass to Node
   }
 
-  if (isOnSetupPage) {
+  if (req.nextUrl.pathname.startsWith('/setup')) {
        // Expose setup to everyone. It has its own Node.js logic to bounce logged-in users away.
        return; 
   }
 
-  if (isOnLoginPage || isOnRegisterPage) {
+  if (isPublicPage) {
        if (req.nextUrl.searchParams.has('clearsession')) {
            return; // Let Node.js render the page so the client-side useEffect can execute signOut()
        }
@@ -51,6 +52,11 @@ export default auth((req) => {
   }
 
   if (!isLoggedIn) {
+     if (req.auth) {
+         // Token exists but is structurally invalid (e.g., missing permissions array).
+         // Force an atomic destruction of the cookie via client-side NextAuth to break the edge-client loop.
+         return Response.redirect(new URL('/login?clearsession=true', req.nextUrl));
+     }
      return Response.redirect(new URL('/login', req.nextUrl));
   }
 })

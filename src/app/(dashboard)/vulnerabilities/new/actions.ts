@@ -33,28 +33,34 @@ export async function createVulnerabilityAction(formData: FormData) {
 
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   
-  let targetSlaDate: Date | null = new Date()
+  let slaHours: number | null = null;
   switch (severity) {
-    case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaCriticalHours ?? 12)); break;
-    case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaHighHours ?? 48)); break;
-    case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaMediumHours ?? 168)); break;
-    case 'LOW':      targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaLowHours ?? 336)); break;
-    default:         targetSlaDate = null; break; // INFO has no SLA requirement
+    case 'CRITICAL': slaHours = settings?.vulnSlaCriticalHours ?? 12; break;
+    case 'HIGH':     slaHours = settings?.vulnSlaHighHours ?? 48; break;
+    case 'MEDIUM':   slaHours = settings?.vulnSlaMediumHours ?? 168; break;
+    case 'LOW':      slaHours = settings?.vulnSlaLowHours ?? 336; break;
+    default:         slaHours = null; break; // INFO has no SLA requirement
   }
 
-  const newVuln = await db.vulnerability.create({
+  let newVuln = await db.vulnerability.create({
     data: {
       title,
       cveId,
       description,
       cvssScore,
       severity,
-      targetSlaDate,
+      targetSlaDate: null,
       vulnerabilityAssets: hasPermission(session as any, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
         ? { create: assetIds.map(id => ({ assetId: id, status: 'AFFECTED' })) }
         : undefined
     }
   })
+
+  if (slaHours !== null) {
+    await db.$executeRaw`UPDATE "Vulnerability" SET "targetSlaDate" = NOW() + (${slaHours} * INTERVAL '1 hour') WHERE id = ${newVuln.id}`;
+    // Re-fetch to guarantee hooks and emails get the absolute exact PostgreSQL timestamp
+    newVuln = await db.vulnerability.findUnique({ where: { id: newVuln.id } }) as any;
+  }
 
   const { fireHook } = await import("@/lib/plugins/hook-engine");
   await fireHook("onVulnerabilityCreated", newVuln);

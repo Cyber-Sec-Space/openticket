@@ -27,7 +27,8 @@ export function LoginForm({ allowRegistration = false, allowPasswordReset = fals
   }, [errorMessage])
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && searchParams.has("clearsession")) {
+    if (typeof window !== 'undefined' && searchParams.has("clearsession") && !(window as any).__hasClearedSession) {
+       (window as any).__hasClearedSession = true;
        // Await the destruction of the NextAuth session cookie before mutating the URL,
        // otherwise the Edge proxy will detect a valid session on the clean /login path
        // and aggressively bounce the client back to the suspended dashboard (forming an infinite loop).

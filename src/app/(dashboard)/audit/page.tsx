@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { FileText, Filter, ChevronLeft, ChevronRight, Search, Activity, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { hasPermission } from "@/lib/auth-utils"
+import { LocalTime } from "@/components/local-time"
 
 export default async function AuditLogPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
@@ -121,7 +122,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
                 className="border-border/50 hover:bg-purple-500/5 transition-colors"
               >
                 <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap pl-6">
-                  {log.createdAt.toLocaleString()}
+                  <LocalTime date={log.createdAt} />
                 </TableCell>
                 
                 <TableCell>

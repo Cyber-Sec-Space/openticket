@@ -47,10 +47,10 @@ export async function sendResetLink(prevState: any, formData: FormData) {
   await db.auditLog.create({
     data: {
       action: "CREATE",
-      targetType: "USER",
-      targetId: user.id,
-      actorId: user.id,
-      details: "Password reset sequence initiated. Security payload transmitted."
+      entityType: "USER",
+      entityId: user.id,
+      userId: user.id,
+      changes: { details: "Password reset sequence initiated. Security payload transmitted." }
     }
   })
 

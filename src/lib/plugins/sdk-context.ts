@@ -221,20 +221,20 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
         if (!data.title || typeof data.title !== 'string') throw new PluginInputError("SDK Input Exception: Incident 'title' is required.");
         if (!data.description || typeof data.description !== 'string') throw new PluginInputError("SDK Input Exception: Incident 'description' is required.");
         
-        let targetSlaDate: Date | null = new Date();
+        let slaHours: number | null = null;
         const settings = await db.systemSetting.findFirst();
         const effectiveSeverity = data.severity ?? 'LOW';
         switch (effectiveSeverity) {
-          case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
-          case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaHighHours ?? 24)); break;
-          case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaMediumHours ?? 72)); break;
-          case 'LOW':      targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaLowHours ?? 168)); break;
+          case 'CRITICAL': slaHours = settings?.slaCriticalHours ?? 4; break;
+          case 'HIGH':     slaHours = settings?.slaHighHours ?? 24; break;
+          case 'MEDIUM':   slaHours = settings?.slaMediumHours ?? 72; break;
+          case 'LOW':      slaHours = settings?.slaLowHours ?? 168; break;
           case 'INFO':
-          default:         targetSlaDate = null; break; // INFO has no SLA
+          default:         slaHours = null; break; // INFO has no SLA
         }
 
         try {
-          const newInc = await db.incident.create({
+          let newInc = await db.incident.create({
             data: {
               title: data.title,
               description: data.description,
@@ -242,11 +242,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
               severity: effectiveSeverity,
               assetId: data.assetId || null,
               status: 'NEW',
-              targetSlaDate,
+              targetSlaDate: null,
               tags: data.tags ?? [],
               reporterId: id
             }
           });
+          
+          if (slaHours !== null) {
+            await db.$executeRaw`UPDATE "Incident" SET "targetSlaDate" = NOW() + (${slaHours} * INTERVAL '1 hour') WHERE id = ${newInc.id}`;
+            newInc = await db.incident.findUnique({ where: { id: newInc.id } }) as any;
+          }
           
           await db.auditLog.create({
              data: { action: `[PLUGIN:${pluginId}] INCIDENT_CREATED`, entityType: "Incident", entityId: newInc.id, userId: id, changes: { title: data.title, severity: effectiveSeverity } }
@@ -342,24 +347,29 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           if (!asset) throw new PluginSystemError(`SDK Relation Error: Assigned targetAssetId '${targetAssetId}' does not exist.`);
 
           const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
-          let targetSlaDate: Date | null = new Date();
+          let slaHours: number | null = null;
           switch (severity) {
-            case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaCriticalHours ?? 12)); break;
-            case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaHighHours ?? 48)); break;
-            case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaMediumHours ?? 168)); break;
-            case 'LOW':      targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaLowHours ?? 336)); break;
-            default:         targetSlaDate = null; break;
+            case 'CRITICAL': slaHours = settings?.vulnSlaCriticalHours ?? 12; break;
+            case 'HIGH':     slaHours = settings?.vulnSlaHighHours ?? 48; break;
+            case 'MEDIUM':   slaHours = settings?.vulnSlaMediumHours ?? 168; break;
+            case 'LOW':      slaHours = settings?.vulnSlaLowHours ?? 336; break;
+            default:         slaHours = null; break;
           }
 
-          const vuln = await db.vulnerability.create({
+          let vuln = await db.vulnerability.create({
             data: {
               title, description, severity, status: 'OPEN',
               cveId: options?.cveId || null,
               cvssScore: options?.cvssScore || null,
-              targetSlaDate,
+              targetSlaDate: null,
               vulnerabilityAssets: { create: { assetId: targetAssetId, status: 'AFFECTED' } }
             }
           });
+
+          if (slaHours !== null) {
+            await db.$executeRaw`UPDATE "Vulnerability" SET "targetSlaDate" = NOW() + (${slaHours} * INTERVAL '1 hour') WHERE id = ${vuln.id}`;
+            vuln = await db.vulnerability.findUnique({ where: { id: vuln.id } }) as any;
+          }
 
           await db.auditLog.create({
             data: { action: `[PLUGIN:${pluginId}] VULNERABILITY_REPORTED`, entityType: "Vulnerability", entityId: vuln.id, userId: id, changes: { title, targetAssetId, severity, cveId: options?.cveId } }

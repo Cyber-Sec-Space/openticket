@@ -56,10 +56,10 @@ export async function createRole(formData: FormData) {
     await db.auditLog.create({
       data: {
         action: "CREATE",
-        targetType: "ROLE",
-        targetId: newRole.id,
-        actorId: session.user.id,
-        details: `Role '${name}' created with ${permissionIds.length} permissions.`
+        entityType: "ROLE",
+        entityId: newRole.id,
+        userId: session.user.id,
+        changes: { details: `Role '${name}' created with ${permissionIds.length} permissions.` }
       }
     })
     
@@ -97,10 +97,10 @@ export async function updateRole(formData: FormData) {
     await db.auditLog.create({
       data: {
         action: "UPDATE",
-        targetType: "ROLE",
-        targetId: id,
-        actorId: session.user.id,
-        details: `Role '${name}' updated with ${permissionIds.length} permissions.`
+        entityType: "ROLE",
+        entityId: id,
+        userId: session.user.id,
+        changes: { details: `Role '${name}' updated with ${permissionIds.length} permissions.` }
       }
     })
     
@@ -112,7 +112,7 @@ export async function updateRole(formData: FormData) {
 }
 
 export async function deleteRole(formData: FormData) {
-  await verifyAdmin('DELETE_ROLES')
+  const session = await verifyAdmin('DELETE_ROLES')
 
   const id = formData.get("id") as string
   
@@ -161,10 +161,10 @@ export async function deleteRole(formData: FormData) {
      await tx.auditLog.create({
        data: {
          action: "DELETE",
-         targetType: "ROLE",
-         targetId: id,
-         actorId: session?.user?.id || "system",
-         details: `Role '${existingRole.name}' deleted. Users reassigned to fallback role if applicable.`
+         entityType: "ROLE",
+         entityId: id,
+         userId: session?.user?.id || "system",
+         changes: { details: `Role '${existingRole.name}' deleted. Users reassigned to fallback role if applicable.` }
        }
      })
   })

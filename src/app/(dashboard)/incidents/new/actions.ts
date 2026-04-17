@@ -43,16 +43,16 @@ export async function createIncident(prevState: any, formData: FormData) {
   const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
   const effectiveSeverity = severity as any || 'LOW'
   
-  let targetSlaDate: Date | null = new Date()
+  let slaHours: number | null = null;
   switch(severity) {
-    case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaCriticalHours ?? 4)); break;
-    case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaHighHours ?? 24)); break;
-    case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaMediumHours ?? 72)); break;
-    case 'LOW':      targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.slaLowHours ?? 168)); break;
-    default:         targetSlaDate = null; break; // INFO has no SLA requirement
+    case 'CRITICAL': slaHours = settings?.slaCriticalHours ?? 4; break;
+    case 'HIGH':     slaHours = settings?.slaHighHours ?? 24; break;
+    case 'MEDIUM':   slaHours = settings?.slaMediumHours ?? 72; break;
+    case 'LOW':      slaHours = settings?.slaLowHours ?? 168; break;
+    default:         slaHours = null; break; // INFO has no SLA requirement
   }
 
-  const newIncident = await db.incident.create({
+  let newIncident = await db.incident.create({
     data: {
       title: safeTitle,
       description: safeDescription,
@@ -61,10 +61,16 @@ export async function createIncident(prevState: any, formData: FormData) {
       reporterId: session.user.id,
       assetId: hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null,
       status: 'NEW',
-      targetSlaDate,
+      targetSlaDate: null,
       tags
     }
   })
+
+  if (slaHours !== null) {
+    await db.$executeRaw`UPDATE "Incident" SET "targetSlaDate" = NOW() + (${slaHours} * INTERVAL '1 hour') WHERE id = ${newIncident.id}`;
+    // Re-fetch to guarantee hooks, emails, and SOA get the absolute exact PostgreSQL timestamp
+    newIncident = await db.incident.findUnique({ where: { id: newIncident.id } }) as any;
+  }
 
   // Phase 7 & 11: SOAR Automations (Auto-Quarantine)
   const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }

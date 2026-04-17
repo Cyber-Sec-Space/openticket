@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { LocalTime } from "@/components/local-time"
 
 interface UserPanelsProps {
   auditLogs: any[]
@@ -72,7 +73,7 @@ export function UserPanels({
                 <div key={log.id} className="p-4 bg-white/5 rounded-xl border border-white/5 text-sm space-y-2 hover:bg-white/10 transition-colors">
                   <div className="flex justify-between items-center pb-2 border-b border-white/10">
                     <span className="font-mono text-emerald-400 font-bold">{log.action}</span>
-                    <span className="text-[10px] text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</span>
+                    <LocalTime date={log.createdAt} className="text-[10px] text-muted-foreground" />
                   </div>
                   <div className="text-muted-foreground text-xs leading-relaxed break-all whitespace-pre-wrap font-mono opacity-80 bg-black/40 p-3 rounded-lg max-h-40 overflow-y-auto mt-2">
                     {!log.changes 
@@ -136,7 +137,7 @@ export function UserPanels({
                 <div key={att.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 group hover:border-blue-400/30 transition-colors">
                   <div className="max-w-[70%]">
                     <p className="text-sm font-mono text-foreground truncate font-semibold">{att.filename}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(att.createdAt).toLocaleDateString()}</p>
+                    <LocalTime date={att.createdAt} format="date" className="text-xs text-muted-foreground" />
                   </div>
                   <a href={att.fileUrl} download>
                     <Button variant="ghost" size="icon" className="h-10 w-10 text-blue-400 hover:bg-blue-400/20 rounded-full">

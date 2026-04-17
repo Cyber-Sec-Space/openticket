@@ -37,15 +37,17 @@ export async function authenticate(
   try {
     const payload = Object.fromEntries(formData)
     await signIn('credentials', { ...payload, redirectTo: '/' })
-  } catch (error) {
-    if (error instanceof AuthError) {
-      // Extract the custom code injected by our CredentialsSignin subclasses, or fallback to the deep err message payload
+  } catch (error: any) {
+    // NextAuth errors might fail instanceof check due to package resolution issues, so we check type or name
+    const isAuthError = error instanceof AuthError || error?.name?.includes('AuthError') || error?.type === 'CredentialsSignin' || error?.type?.includes('Error');
+    
+    if (isAuthError) {
       const customCause = error.cause?.err as any;
-      const errMessage = customCause?.message || customCause?.code || (error as any).code || error.message;
+      const errMessage = customCause?.message || customCause?.code || error.code || error.message;
       
       if (errMessage === "Missing2FA") return "REQUIRES_2FA";
       
-      // If it's a real failure, Cleanup old records asynchronously so DB doesn't bloat
+      // Cleanup old records
       if (errMessage === "Invalid2FA" || error.type === 'CredentialsSignin') {
         if (settings?.rateLimitEnabled) {
           const cleanupWindow = new Date(Date.now() - (settings.rateLimitWindowMs * 2))
@@ -60,13 +62,20 @@ export async function authenticate(
       if (errMessage === "EmailNotVerified") return "EMAIL_NOT_VERIFIED";
       if (errMessage === "IdentitySuspended") return "IDENTITY_SUSPENDED";
       
-      switch (error.type) {
-        case 'CredentialsSignin':
-          return 'Invalid credentials.'
-        default:
-          return 'Something went wrong.'
+      if (error.type === 'CredentialsSignin') {
+        return 'Invalid credentials.'
       }
+      
+      console.error("Authentication Error Details:", { type: error.type, message: error.message, cause: error.cause });
+      return 'Something went wrong.'
     }
-    throw error
+    
+    // If it's a NEXT_REDIRECT error, we MUST throw it so Next.js can perform the redirect!
+    if (error?.message?.includes('NEXT_REDIRECT') || error?.name === 'RedirectError' || (error && typeof error.digest === 'string' && error.digest.startsWith('NEXT_REDIRECT'))) {
+      throw error;
+    }
+    
+    console.error("Unknown Error during authentication:", error);
+    return 'Something went wrong.'
   }
 }

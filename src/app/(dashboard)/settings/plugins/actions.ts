@@ -67,10 +67,10 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
   await db.auditLog.create({
     data: {
       action: "UPDATE",
-      targetType: "PLUGIN",
-      targetId: pluginId,
-      actorId: session?.user?.id || "system",
-      details: `Plugin '${pluginId}' state toggled to ${newState ? "ACTIVE" : "INACTIVE"}.`
+      entityType: "PLUGIN",
+      entityId: pluginId,
+      userId: session?.user?.id || "system",
+      changes: { details: `Plugin '${pluginId}' state toggled to ${newState ? "ACTIVE" : "INACTIVE"}.` }
     }
   });
 
@@ -113,10 +113,10 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
   await db.auditLog.create({
     data: {
       action: "UPDATE",
-      targetType: "PLUGIN",
-      targetId: pluginId,
-      actorId: session.user.id,
-      details: `Plugin '${pluginId}' configuration updated.`
+      entityType: "PLUGIN",
+      entityId: pluginId,
+      userId: session.user.id,
+      changes: { details: `Plugin '${pluginId}' configuration updated.` }
     }
   });
 
@@ -143,7 +143,7 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       throw new Error("Invalid version string format.");
     }
 
-    let code: string;
+    let code: string | undefined;
     
     // Developer Sandbox: Source from local filesystem if in dev mode
     if (process.env.NODE_ENV !== "production") {
@@ -216,6 +216,16 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       indexCode = newCode;
       await fs.promises.writeFile(indexPath, indexCode, "utf-8");
     }
+    await db.auditLog.create({
+      data: {
+        action: "CREATE",
+        entityType: "PLUGIN",
+        entityId: pluginId,
+        userId: session.user.id,
+        changes: { details: `External plugin '${pluginId}' version '${version}' installed from registry.` }
+      }
+    });
+
   } else if (sourceType === "npm" && packageName) {
     /* istanbul ignore next */
     throw new Error("NPM dynamic installation via UI is currently restricted. Please use CLI.");
@@ -268,6 +278,16 @@ export async function uninstallExternalPlugin(pluginId: string) {
   await db.pluginState.deleteMany({ where: { id: pluginId } });
   invalidateHookCache();
   
+  await db.auditLog.create({
+    data: {
+      action: "DELETE",
+      entityType: "PLUGIN",
+      entityId: pluginId,
+      userId: session.user.id,
+      changes: { details: `External plugin '${pluginId}' source and registry entries removed.` }
+    }
+  });
+
   revalidatePath('/settings/plugins');
   revalidatePath('/settings/plugins/store');
 }
@@ -284,6 +304,16 @@ export async function triggerProductionBuild() {
   
   // Execute the production build (Wait asynchronously)
   await execAsync("npm run build");
+
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      entityType: "SYSTEM_SETTINGS",
+      entityId: "build",
+      userId: session.user.id,
+      changes: { details: `Production build manually triggered by user.` }
+    }
+  });
 }
 
 export async function triggerServerRestart() {
@@ -295,6 +325,16 @@ export async function triggerServerRestart() {
     return;
   }
   
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      entityType: "SYSTEM_SETTINGS",
+      entityId: "restart",
+      userId: session.user.id,
+      changes: { details: `System service restart triggered by user. Node.js process terminating.` }
+    }
+  });
+
   // Schedule the process kill out of band so the HTTP response can return success to UI first.
   // Next.js will close gracefully and be brought back up by PM2/Docker restart-policies.
   setTimeout(() => {

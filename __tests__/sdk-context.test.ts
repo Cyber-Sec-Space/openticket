@@ -11,7 +11,8 @@ jest.mock("../src/lib/db", () => ({
     incident: {
       create: jest.fn(),
       update: jest.fn(),
-      findMany: jest.fn()
+      findMany: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({ id: "inc-1" })
     },
     auditLog: {
       create: jest.fn()
@@ -28,7 +29,8 @@ jest.mock("../src/lib/db", () => ({
     },
     systemSetting: {
       findFirst: jest.fn().mockResolvedValue({ slaCriticalHours: 4 })
-    }
+    },
+    $executeRaw: jest.fn().mockResolvedValue(1)
   }
 }));
 

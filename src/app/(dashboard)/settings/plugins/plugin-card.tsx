@@ -39,6 +39,7 @@ export function PluginCard({
   configJson: string | null,
   layout?: "list" | "grid",
   latestVersion?: string,
+  versions?: Record<string, any>,
   isLocal?: boolean,
   clickMode?: "details" | "config",
   systemPlatformUrl?: string
@@ -259,7 +260,7 @@ export function PluginCard({
                      <strong className="text-white">{manifest.name}</strong> is requesting the following core operational privileges to act on behalf of the OpenTicket automated bot instance:
                   </p>
                   <div className="bg-black/50 border border-white/5 rounded-lg p-3 space-y-2 max-h-[200px] overflow-y-auto">
-                     {activePermissions?.map(p => (
+                     {activePermissions?.map((p: any) => (
                         <div key={p} className="flex items-center gap-2 text-sm text-red-300 font-mono tracking-tighter">
                            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                            {p.replace(/_/g, ' ')}
@@ -505,7 +506,7 @@ export function PluginCard({
              <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Requested Kernel Privileges</h4>
              <div className="flex flex-wrap gap-2">
                {activePermissions && activePermissions.length > 0 ? (
-                 activePermissions.map(p => (
+                 activePermissions.map((p: any) => (
                    <span key={p} className="text-[10px] bg-red-950/30 border border-red-500/20 px-2 py-1 rounded text-red-300 font-mono flex items-center">
                      <ShieldAlert className="w-3 h-3 mr-1" />
                      {p.replace(/_/g, ' ')}
