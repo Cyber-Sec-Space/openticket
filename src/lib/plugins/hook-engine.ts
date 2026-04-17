@@ -104,7 +104,23 @@ export async function fireHook<K extends keyof OpenTicketPluginHooks>(
             await Promise.race([executionPromise, timeoutPromise]);
             
           } catch (error) {
-            console.error(`[Plugin Core] Trigger failure in plugin [${plugin.manifest.id}] on event [${event}]:`, error)
+            let errorType = "Plugin Core";
+            let logPrefix = "Trigger logic failure in plugin";
+            
+            if (error && typeof error === 'object' && 'name' in error) {
+              if (error.name === 'PluginSystemError') {
+                errorType = "System Failure";
+                logPrefix = "Underlying system failed during plugin execution";
+              } else if (error.name === 'PluginPermissionError') {
+                errorType = "Plugin Security";
+                logPrefix = "Plugin attempted an unauthorized action";
+              } else if (error.name === 'PluginInputError') {
+                errorType = "Plugin Validation";
+                logPrefix = "Plugin provided invalid input";
+              }
+            }
+            
+            console.error(`[${errorType}] ${logPrefix} [${plugin.manifest.id}] on event [${event}]:`, error);
           }
         })()
       )

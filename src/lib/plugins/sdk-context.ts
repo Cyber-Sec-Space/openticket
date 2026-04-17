@@ -1,3 +1,4 @@
+import { PluginSystemError, PluginPermissionError, PluginInputError } from './errors';
 import { db } from "@/lib/db"
 import { Permission, IncidentStatus, AssetType, Severity, AssetStatus, VulnStatus, VulnAssetStatus } from "@prisma/client"
 import { activePlugins } from "@/plugins"
@@ -13,17 +14,21 @@ async function provisionPluginBotUser(pluginId: string, customName: string, requ
   let roleId: string;
   const existingRole = await db.customRole.findUnique({ where: { name: roleName } });
   
+  // Phase 5 Security Intersect: The plugin code can only receive permissions that its manifest formally declared!
+  const pluginNode = activePlugins.find(p => p.manifest.id === pluginId);
+  const allowedManifestPerms = pluginNode?.manifest?.requestedPermissions || [];
+  const sanitizedPermissions = requestedPermissions.filter(p => allowedManifestPerms.includes(p));
+
   if (existingRole) {
     roleId = existingRole.id;
-    // CRITICAL SECURITY FIX: Do not dynamically mutate existing role permissions.
-    // Plugins cannot arbitrarily elevate their privileges merely by calling initEntity() again.
-    // Admin intervention via UI is definitively required to expand an existing Bot Role.
+    // Fix: Allow dynamic permission upgrades/downgrades, but ONLY if it is an automated Bot Role, avoiding human Role modification exploits.
+    if (existingRole.isSystem && existingRole.name.startsWith("[Plugin]")) {
+       await db.customRole.update({
+         where: { id: roleId },
+         data: { permissions: sanitizedPermissions }
+       });
+    }
   } else {
-    // Phase 5 Security Intersect: The plugin code can only receive permissions that its manifest formally declared!
-    const pluginNode = activePlugins.find(p => p.manifest.id === pluginId);
-    const allowedManifestPerms = pluginNode?.manifest?.requestedPermissions || [];
-    const sanitizedPermissions = requestedPermissions.filter(p => allowedManifestPerms.includes(p));
-
     const newRole = await db.customRole.create({
       data: {
         name: roleName,
@@ -181,11 +186,11 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
 
   const requireBotUser = (requiredPermission?: Permission) => {
     if (!botUserId) {
-      throw new Error("SDK Security Exception: Bot entity not initialized. Plugin must call api.initEntity() during onInstall.");
+      throw new PluginPermissionError("SDK Security Exception: Bot entity not initialized. Plugin must call api.initEntity() during onInstall.");
     }
     
     if (requiredPermission && !botPermissions.includes(requiredPermission)) {
-      throw new Error(`SDK Security Exception: Permission Denied. The plugin bot account lacks the explicitly required scope '${requiredPermission}'.`);
+      throw new PluginPermissionError(`SDK Security Exception: Permission Denied. The plugin bot account lacks the explicitly required scope '${requiredPermission}'.`);
     }
     
     return botUserId;
@@ -212,9 +217,9 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
       createIncident: async (data: IncidentData) => {
         const id = requireBotUser('CREATE_INCIDENTS');
         
-        if (!data || typeof data !== 'object') throw new Error("SDK Input Exception: Incident payload must be an object.");
-        if (!data.title || typeof data.title !== 'string') throw new Error("SDK Input Exception: Incident 'title' is required.");
-        if (!data.description || typeof data.description !== 'string') throw new Error("SDK Input Exception: Incident 'description' is required.");
+        if (!data || typeof data !== 'object') throw new PluginInputError("SDK Input Exception: Incident payload must be an object.");
+        if (!data.title || typeof data.title !== 'string') throw new PluginInputError("SDK Input Exception: Incident 'title' is required.");
+        if (!data.description || typeof data.description !== 'string') throw new PluginInputError("SDK Input Exception: Incident 'description' is required.");
         
         let targetSlaDate: Date | null = new Date();
         const settings = await db.systemSetting.findFirst();
@@ -248,16 +253,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           });
           await triggerHook('onIncidentCreated', newInc);
           return newInc;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       getIncident: async (id: string) => {
         requireBotUser('VIEW_INCIDENTS_ALL');
-        if (!id || typeof id !== 'string') throw new Error("SDK Input Exception: ID must be a string");
+        if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: ID must be a string");
         
         try {
           return await db.incident.findUnique({ where: { id }});
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       updateIncidentStatus: async (id: string, status: IncidentStatus, comment?: string) => {
@@ -267,7 +272,7 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
         else if (status === 'CLOSED') requireBotUser('UPDATE_INCIDENT_STATUS_CLOSE');
         else requireBotUser('UPDATE_INCIDENTS_METADATA');
 
-        if (!id || typeof id !== 'string') throw new Error("SDK Input Exception: Invalid incident ID");
+        if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: Invalid incident ID");
 
         try {
           const updated = await db.incident.update({
@@ -292,13 +297,13 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
             await triggerHook('onIncidentUpdated', updated);
           }
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       addComment: async (incidentId: string, content: string) => {
         const id = requireBotUser('ADD_COMMENTS');
-        if (!incidentId || typeof incidentId !== 'string') throw new Error("SDK Input Exception: Invalid incident ID");
-        if (!content || typeof content !== 'string') throw new Error("SDK Input Exception: Content required");
+        if (!incidentId || typeof incidentId !== 'string') throw new PluginInputError("SDK Input Exception: Invalid incident ID");
+        if (!content || typeof content !== 'string') throw new PluginInputError("SDK Input Exception: Content required");
 
         try {
           const comment = await db.comment.create({
@@ -306,12 +311,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           });
           await triggerHook('onCommentAdded', comment);
           return comment;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       createAsset: async (name: string, type: AssetType, ipAddress?: string, externalId?: string, metadata?: any) => {
         const id = requireBotUser('CREATE_ASSETS');
-        if (!name || typeof name !== 'string') throw new Error("SDK Input Exception: Asset name required");
+        if (!name || typeof name !== 'string') throw new PluginInputError("SDK Input Exception: Asset name required");
 
         try {
           const asset = await db.asset.create({
@@ -324,23 +329,34 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
 
           await triggerHook('onAssetCreated', asset);
           return asset;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       reportVulnerability: async (title: string, description: string, severity: Severity, targetAssetId: string, options?: { cveId?: string, cvssScore?: number }) => {
         const id = requireBotUser('CREATE_VULNERABILITIES');
         
-        if (!title || !description || !targetAssetId) throw new Error("SDK Input Exception: Title, description, and targetAssetId are required.");
+        if (!title || !description || !targetAssetId) throw new PluginInputError("SDK Input Exception: Title, description, and targetAssetId are required.");
 
         try {
           const asset = await db.asset.findUnique({ where: { id: targetAssetId } });
-          if (!asset) throw new Error(`SDK Relation Error: Assigned targetAssetId '${targetAssetId}' does not exist.`);
+          if (!asset) throw new PluginSystemError(`SDK Relation Error: Assigned targetAssetId '${targetAssetId}' does not exist.`);
+
+          const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
+          let targetSlaDate: Date | null = new Date();
+          switch (severity) {
+            case 'CRITICAL': targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaCriticalHours ?? 12)); break;
+            case 'HIGH':     targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaHighHours ?? 48)); break;
+            case 'MEDIUM':   targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaMediumHours ?? 168)); break;
+            case 'LOW':      targetSlaDate.setHours(targetSlaDate.getHours() + (settings?.vulnSlaLowHours ?? 336)); break;
+            default:         targetSlaDate = null; break;
+          }
 
           const vuln = await db.vulnerability.create({
             data: {
               title, description, severity, status: 'OPEN',
               cveId: options?.cveId || null,
               cvssScore: options?.cvssScore || null,
+              targetSlaDate,
               vulnerabilityAssets: { create: { assetId: targetAssetId, status: 'AFFECTED' } }
             }
           });
@@ -351,31 +367,31 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
 
           await triggerHook('onVulnerabilityCreated', vuln);
           return vuln;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       // ======== Phase 3 Elements ========
 
       getUserByEmail: async (email: string) => {
         requireBotUser('VIEW_USERS');
-        if (!email || typeof email !== 'string') throw new Error("SDK Input Exception: Invalid email format");
+        if (!email || typeof email !== 'string') throw new PluginInputError("SDK Input Exception: Invalid email format");
 
         try {
           return await db.user.findUnique({
             where: { email },
             select: { id: true, name: true, email: true, isBot: true, isDisabled: true }
           });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       assignIncident: async (incidentId: string, targetUserId: string) => {
         const id = requireBotUser('ASSIGN_INCIDENTS_OTHERS');
-        if (!incidentId || !targetUserId) throw new Error("SDK Input Exception: IncidentId and TargetUserId are required.");
+        if (!incidentId || !targetUserId) throw new PluginInputError("SDK Input Exception: IncidentId and TargetUserId are required.");
 
         try {
           // Verify user exists first
           const targetUser = await db.user.findUnique({ where: { id: targetUserId }});
-          if (!targetUser) throw new Error(`SDK Relation Error: Target user '${targetUserId}' does not exist.`);
+          if (!targetUser) throw new PluginSystemError(`SDK Relation Error: Target user '${targetUserId}' does not exist.`);
 
           const updated = await db.incident.update({
             where: { id: incidentId },
@@ -388,12 +404,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onIncidentUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       updateAssetStatus: async (assetId: string, status: AssetStatus) => {
         const id = requireBotUser('UPDATE_ASSETS');
-        if (!assetId || !status) throw new Error("SDK Input Exception: AssetId and Status are required.");
+        if (!assetId || !status) throw new PluginInputError("SDK Input Exception: AssetId and Status are required.");
 
         try {
           const updated = await db.asset.update({
@@ -407,12 +423,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onAssetUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       attachEvidenceToIncident: async (incidentId: string, filename: string, fileUrl: string) => {
         const id = requireBotUser('UPLOAD_INCIDENT_ATTACHMENTS');
-        if (!incidentId || !filename || !fileUrl) throw new Error("SDK Input Exception: IncidentId, filename, and fileUrl are required.");
+        if (!incidentId || !filename || !fileUrl) throw new PluginInputError("SDK Input Exception: IncidentId, filename, and fileUrl are required.");
 
         try {
           const attachment = await db.attachment.create({
@@ -425,12 +441,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onEvidenceAttached', attachment);
           return attachment;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       attachEvidenceToVulnerability: async (vulnId: string, filename: string, fileUrl: string) => {
         const id = requireBotUser('UPLOAD_VULN_ATTACHMENTS');
-        if (!vulnId || !filename || !fileUrl) throw new Error("SDK Input Exception: VulnId, filename, and fileUrl are required.");
+        if (!vulnId || !filename || !fileUrl) throw new PluginInputError("SDK Input Exception: VulnId, filename, and fileUrl are required.");
 
         try {
           const attachment = await db.attachment.create({
@@ -443,37 +459,37 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onEvidenceAttached', attachment);
           return attachment;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       // ======== Phase 4 Elements ========
 
       getAssetByIp: async (ipAddress: string) => {
         requireBotUser('VIEW_ASSETS');
-        if (!ipAddress || typeof ipAddress !== 'string') throw new Error("SDK Input Exception: IP address required.");
+        if (!ipAddress || typeof ipAddress !== 'string') throw new PluginInputError("SDK Input Exception: IP address required.");
 
         try {
           return await db.asset.findFirst({
             where: { ipAddress }
           });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       getAssetByIdentifier: async (identifier: string) => {
         requireBotUser('VIEW_ASSETS');
-        if (!identifier || typeof identifier !== 'string') throw new Error("SDK Input Exception: Identifier required.");
+        if (!identifier || typeof identifier !== 'string') throw new PluginInputError("SDK Input Exception: Identifier required.");
 
         try {
           // Checks externalId natively, resolving virtual assets instantly
           return await db.asset.findFirst({
             where: { externalId: identifier }
           });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       updateVulnerabilityStatus: async (vulnId: string, status: VulnStatus) => {
         const id = requireBotUser('UPDATE_VULNERABILITIES');
-        if (!vulnId || !status) throw new Error("SDK Input Exception: vulnId and status are required.");
+        if (!vulnId || !status) throw new PluginInputError("SDK Input Exception: vulnId and status are required.");
 
         try {
           const updated = await db.vulnerability.update({
@@ -487,16 +503,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onVulnerabilityUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       manageIncidentTags: async (incidentId: string, tag: string, action: 'add' | 'remove') => {
         const id = requireBotUser('UPDATE_INCIDENTS_METADATA');
-        if (!incidentId || !tag || !['add', 'remove'].includes(action)) throw new Error("SDK Input Exception: invalid parameters.");
+        if (!incidentId || !tag || !['add', 'remove'].includes(action)) throw new PluginInputError("SDK Input Exception: invalid parameters.");
 
         try {
           const incident = await db.incident.findUnique({ where: { id: incidentId }});
-          if (!incident) throw new Error("SDK Relation Error: Incident not found.");
+          if (!incident) throw new PluginSystemError("SDK Relation Error: Incident not found.");
 
           let newTags = [...incident.tags];
           if (action === 'add' && !newTags.includes(tag)) newTags.push(tag);
@@ -513,12 +529,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onIncidentUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       pushNotification: async (targetUserId: string, title: string, body: string, link?: string) => {
         requireBotUser(); // Base communication capability
-        if (!targetUserId || !title || !body) throw new Error("SDK Input Exception: target, title, and body are required.");
+        if (!targetUserId || !title || !body) throw new PluginInputError("SDK Input Exception: target, title, and body are required.");
 
         // Input truncations for Notification length safety
         const safeTitle = title.substring(0, 100);
@@ -528,7 +544,7 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           return await db.userNotification.create({
             data: { userId: targetUserId, title: safeTitle, body: safeBody, link }
           });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       searchOpenIncidents: async (query?: { severity?: Severity, tags?: string[], limit?: number }) => {
@@ -545,14 +561,14 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
             where: conditions,
             take: limit
           });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       // ======== Phase 6 Elements ========
 
       deleteIncident: async (id: string) => {
         const userId = requireBotUser('DELETE_INCIDENTS');
-        if (!id || typeof id !== 'string') throw new Error("SDK Input Exception: ID must be a string");
+        if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: ID must be a string");
         
         try {
           await db.auditLog.create({
@@ -561,12 +577,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           const del = await db.incident.delete({ where: { id } });
           await triggerHook('onIncidentDestroyed', id);
           return del;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       deleteAsset: async (id: string) => {
         const userId = requireBotUser('DELETE_ASSETS');
-        if (!id || typeof id !== 'string') throw new Error("SDK Input Exception: ID must be a string");
+        if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: ID must be a string");
         
         try {
           await db.auditLog.create({
@@ -575,12 +591,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           const del = await db.asset.delete({ where: { id } });
           await triggerHook('onAssetDestroyed', id);
           return del;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       deleteVulnerability: async (id: string) => {
         const userId = requireBotUser('DELETE_VULNERABILITIES');
-        if (!id || typeof id !== 'string') throw new Error("SDK Input Exception: ID must be a string");
+        if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: ID must be a string");
         
         try {
           await db.auditLog.create({
@@ -589,16 +605,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           const del = await db.vulnerability.delete({ where: { id } });
           await triggerHook('onVulnerabilityDestroyed', id);
           return del;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       updateAssetMetadata: async (assetId: string, metadataPatch: any) => {
         const userId = requireBotUser('UPDATE_ASSETS');
-        if (!assetId || typeof metadataPatch !== 'object') throw new Error("SDK Input Exception: Asset ID and object patch required");
+        if (!assetId || typeof metadataPatch !== 'object') throw new PluginInputError("SDK Input Exception: Asset ID and object patch required");
 
         try {
           const asset = await db.asset.findUnique({ where: { id: assetId } });
-          if (!asset) throw new Error("SDK Relation Error: Asset not found.");
+          if (!asset) throw new PluginSystemError("SDK Relation Error: Asset not found.");
 
           const mergedMetadata = {
              ...(asset.metadata && typeof asset.metadata === 'object' ? asset.metadata : {}),
@@ -616,12 +632,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onAssetUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       logPluginMetric: async (metricName: string, value: number, payload?: any) => {
         requireBotUser(); // Base telemetry capability
-        if (!metricName) throw new Error("SDK Input Exception: Metric name required");
+        if (!metricName) throw new PluginInputError("SDK Input Exception: Metric name required");
 
         try {
           const now = new Date();
@@ -653,7 +669,7 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
 
       createUser: async (email: string, name: string, assignRoleNames?: string[]) => {
         const id = requireBotUser('CREATE_USERS');
-        if (!email || !name) throw new Error("SDK Input Exception: Email and name are required");
+        if (!email || !name) throw new PluginInputError("SDK Input Exception: Email and name are required");
 
         // Validate Roles (Prevent giving out SYSTEM level permissions implicitly without ASSIGN_USER_ROLES)
         let rolesToConnect: any = [];
@@ -682,17 +698,17 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onUserCreated', newUser);
           return newUser;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       suspendUser: async (userId: string) => {
         const id = requireBotUser('SUSPEND_USERS');
-        if (!userId) throw new Error("SDK Input Exception: User ID required.");
+        if (!userId) throw new PluginInputError("SDK Input Exception: User ID required.");
 
         try {
           // You cannot suspend another Bot through the SDK. Too dangerous.
           const target = await db.user.findUnique({ where: { id: userId } });
-          if (target?.isBot) throw new Error("SDK Security Exception: Cannot suspend a System bot.");
+          if (target?.isBot) throw new PluginPermissionError("SDK Security Exception: Cannot suspend a System bot.");
 
           const updated = await db.user.update({
             where: { id: userId },
@@ -705,16 +721,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onUserUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       assignUserRoles: async (userId: string, targetRoleNames: string[]) => {
         const id = requireBotUser('ASSIGN_USER_ROLES');
-        if (!userId || !Array.isArray(targetRoleNames)) throw new Error("SDK Input Exception: User ID and Roles Array required.");
+        if (!userId || !Array.isArray(targetRoleNames)) throw new PluginInputError("SDK Input Exception: User ID and Roles Array required.");
 
         try {
           const target = await db.user.findUnique({ where: { id: userId } });
-          if (target?.isBot) throw new Error("SDK Security Exception: Cannot modify roles of a System bot via SDK.");
+          if (target?.isBot) throw new PluginPermissionError("SDK Security Exception: Cannot modify roles of a System bot via SDK.");
 
           const validRoles = await db.customRole.findMany({ 
              where: { name: { in: targetRoleNames }, isSystem: false }
@@ -731,12 +747,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onUserUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       resetUserMfaSession: async (userId: string) => {
         const id = requireBotUser('UPDATE_USER_PROFILE');
-        if (!userId) throw new Error("SDK Input Exception: User ID required.");
+        if (!userId) throw new PluginInputError("SDK Input Exception: User ID required.");
 
         try {
           const updated = await db.user.update({
@@ -750,14 +766,14 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onUserUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       // ======== Phase 8 Elements ========
 
       updateIncidentDetails: async (incidentId: string, updates: { title?: string, description?: string, severity?: Severity, assetId?: string | null }) => {
         const id = requireBotUser('UPDATE_INCIDENTS_METADATA');
-        if (!incidentId) throw new Error("SDK Input Exception: IncidentId required.");
+        if (!incidentId) throw new PluginInputError("SDK Input Exception: IncidentId required.");
 
         try {
           const updated = await db.incident.update({
@@ -771,16 +787,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onIncidentUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       getVulnerability: async (vulnId: string) => {
         requireBotUser('VIEW_VULNERABILITIES');
-        if (!vulnId) throw new Error("SDK Input Exception: vulnId required.");
+        if (!vulnId) throw new PluginInputError("SDK Input Exception: vulnId required.");
         
         try {
           return await db.vulnerability.findUnique({ where: { id: vulnId }, include: { vulnerabilityAssets: true } });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       searchVulnerabilities: async (query?: { severity?: Severity, status?: VulnStatus, limit?: number }) => {
@@ -792,12 +808,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           if (query?.status) conditions.status = query.status;
 
           return await db.vulnerability.findMany({ where: conditions, take: limit, include: { vulnerabilityAssets: true } });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       updateVulnerabilityDetails: async (vulnId: string, updates: { title?: string, description?: string, severity?: Severity, cveId?: string | null, cvssScore?: number | null }) => {
         const id = requireBotUser('UPDATE_VULNERABILITIES');
-        if (!vulnId) throw new Error("SDK Input Exception: vulnId required.");
+        if (!vulnId) throw new PluginInputError("SDK Input Exception: vulnId required.");
         
         try {
           const updated = await db.vulnerability.update({
@@ -811,12 +827,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onVulnerabilityUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       addCommentToVulnerability: async (vulnId: string, content: string) => {
         const id = requireBotUser('ADD_COMMENTS');
-        if (!vulnId || !content) throw new Error("SDK Input Exception: vulnId and content required.");
+        if (!vulnId || !content) throw new PluginInputError("SDK Input Exception: vulnId and content required.");
 
         try {
           const comment = await db.comment.create({
@@ -824,16 +840,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           });
           await triggerHook('onCommentAdded', comment);
           return comment;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       assignVulnerability: async (vulnId: string, targetUserId: string) => {
         const id = requireBotUser('ASSIGN_VULNERABILITIES_OTHERS');
-        if (!vulnId || !targetUserId) throw new Error("SDK Input Exception: vulnId and targetUserId required.");
+        if (!vulnId || !targetUserId) throw new PluginInputError("SDK Input Exception: vulnId and targetUserId required.");
 
         try {
           const targetUser = await db.user.findUnique({ where: { id: targetUserId }});
-          if (!targetUser) throw new Error(`SDK Relation Error: Target user '${targetUserId}' does not exist.`);
+          if (!targetUser) throw new PluginSystemError(`SDK Relation Error: Target user '${targetUserId}' does not exist.`);
 
           const updated = await db.vulnerability.update({
             where: { id: vulnId },
@@ -846,16 +862,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onVulnerabilityUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       linkVulnerabilityToAsset: async (vulnId: string, assetId: string) => {
         const id = requireBotUser('LINK_VULN_TO_ASSET');
-        if (!vulnId || !assetId) throw new Error("SDK Input Exception: vulnId and assetId required.");
+        if (!vulnId || !assetId) throw new PluginInputError("SDK Input Exception: vulnId and assetId required.");
 
         try {
           const asset = await db.asset.findUnique({ where: { id: assetId } });
-          if (!asset) throw new Error(`SDK Relation Error: Asset '${assetId}' does not exist.`);
+          if (!asset) throw new PluginSystemError(`SDK Relation Error: Asset '${assetId}' does not exist.`);
 
           const link = await db.vulnerabilityAsset.create({
             data: { vulnId, assetId, status: 'AFFECTED' }
@@ -868,12 +884,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           const expandedVuln = await db.vulnerability.findUnique({ where: { id: vulnId }, include: { vulnerabilityAssets: true } });
           await triggerHook('onVulnerabilityUpdated', expandedVuln);
           return link;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       updateVulnerabilityAssetStatus: async (vulnId: string, assetId: string, status: VulnAssetStatus, notes?: string) => {
         const id = requireBotUser('UPDATE_VULNERABILITIES');
-        if (!vulnId || !assetId || !status) throw new Error("SDK Input Exception: vulnId, assetId, and status required.");
+        if (!vulnId || !assetId || !status) throw new PluginInputError("SDK Input Exception: vulnId, assetId, and status required.");
 
         try {
           const updated = await db.vulnerabilityAsset.update({
@@ -888,16 +904,16 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           const expandedVuln = await db.vulnerability.findUnique({ where: { id: vulnId }, include: { vulnerabilityAssets: true } });
           await triggerHook('onVulnerabilityUpdated', expandedVuln);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       getAsset: async (assetId: string) => {
         requireBotUser('VIEW_ASSETS');
-        if (!assetId) throw new Error("SDK Input Exception: Asset ID required.");
+        if (!assetId) throw new PluginInputError("SDK Input Exception: Asset ID required.");
         
         try {
           return await db.asset.findUnique({ where: { id: assetId } });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       searchAssets: async (query?: { type?: AssetType, status?: AssetStatus, limit?: number }) => {
@@ -909,12 +925,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           if (query?.status) conditions.status = query.status;
 
           return await db.asset.findMany({ where: conditions, take: limit });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       updateAssetDetails: async (assetId: string, updates: { name?: string, type?: AssetType, ipAddress?: string | null, externalId?: string | null }) => {
         const id = requireBotUser('UPDATE_ASSETS');
-        if (!assetId) throw new Error("SDK Input Exception: Asset ID required.");
+        if (!assetId) throw new PluginInputError("SDK Input Exception: Asset ID required.");
 
         try {
           const updated = await db.asset.update({
@@ -928,19 +944,19 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onAssetUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       // ======== Phase 9 Elements ========
 
       linkIncidentToAsset: async (incidentId: string, assetId: string) => {
         const id = requireBotUser('LINK_INCIDENT_TO_ASSET');
-        if (!incidentId || !assetId) throw new Error("SDK Input Exception: incidentId and assetId required.");
+        if (!incidentId || !assetId) throw new PluginInputError("SDK Input Exception: incidentId and assetId required.");
 
         try {
           const asset = await db.asset.findUnique({ where: { id: assetId } });
           const incident = await db.incident.findUnique({ where: { id: incidentId } });
-          if (!asset || !incident) throw new Error("SDK Relation Error: Provided Incident or Asset does not exist.");
+          if (!asset || !incident) throw new PluginSystemError("SDK Relation Error: Provided Incident or Asset does not exist.");
 
           const updated = await db.incident.update({
             where: { id: incidentId },
@@ -953,12 +969,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onIncidentUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       unassignIncident: async (incidentId: string, targetUserId: string) => {
         const id = requireBotUser('ASSIGN_INCIDENTS_OTHERS');
-        if (!incidentId || !targetUserId) throw new Error("SDK Input Exception: incidentId and targetUserId required.");
+        if (!incidentId || !targetUserId) throw new PluginInputError("SDK Input Exception: incidentId and targetUserId required.");
 
         try {
           const updated = await db.incident.update({
@@ -972,12 +988,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onIncidentUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       unassignVulnerability: async (vulnId: string, targetUserId: string) => {
         const id = requireBotUser('ASSIGN_VULNERABILITIES_OTHERS');
-        if (!vulnId || !targetUserId) throw new Error("SDK Input Exception: vulnId and targetUserId required.");
+        if (!vulnId || !targetUserId) throw new PluginInputError("SDK Input Exception: vulnId and targetUserId required.");
 
         try {
           const updated = await db.vulnerability.update({
@@ -991,12 +1007,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           
           await triggerHook('onVulnerabilityUpdated', updated);
           return updated;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       unlinkVulnerabilityFromAsset: async (vulnId: string, assetId: string) => {
         const id = requireBotUser('LINK_VULN_TO_ASSET');
-        if (!vulnId || !assetId) throw new Error("SDK Input Exception: vulnId and assetId required.");
+        if (!vulnId || !assetId) throw new PluginInputError("SDK Input Exception: vulnId and assetId required.");
 
         try {
           // Delete the mapping row
@@ -1011,13 +1027,13 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
           const expandedVuln = await db.vulnerability.findUnique({ where: { id: vulnId }, include: { vulnerabilityAssets: true } });
           await triggerHook('onVulnerabilityUpdated', expandedVuln);
           return unlinked;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       deleteComment: async (commentId: string) => {
         // Enforce basic deletion minimum. A plugin only deletes what it owns unless it has ANY_COMMENTS.
         const id = requireBotUser('DELETE_OWN_COMMENTS');
-        if (!commentId) throw new Error("SDK Input Exception: Comment ID required.");
+        if (!commentId) throw new PluginInputError("SDK Input Exception: Comment ID required.");
 
         try {
           const comment = await db.comment.findUnique({ where: { id: commentId } });
@@ -1033,12 +1049,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
              data: { action: `[PLUGIN:${pluginId}] COMMENT_DELETED`, entityType: "Comment", entityId: commentId, userId: id, changes: { "status": "purged" } }
           });
           return deleted;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       deleteIncidentAttachment: async (attachmentId: string) => {
         const id = requireBotUser('DELETE_INCIDENT_ATTACHMENTS');
-        if (!attachmentId) throw new Error("SDK Input Exception: attachmentId required.");
+        if (!attachmentId) throw new PluginInputError("SDK Input Exception: attachmentId required.");
 
         try {
           const deleted = await db.attachment.delete({ where: { id: attachmentId } });
@@ -1046,12 +1062,12 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
              data: { action: `[PLUGIN:${pluginId}] INCIDENT_ATTACHMENT_DELETED`, entityType: "Attachment", entityId: attachmentId, userId: id, changes: { "status": "purged" } }
           });
           return deleted;
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       deleteVulnerabilityAttachment: async (attachmentId: string) => {
          const id = requireBotUser('DELETE_VULN_ATTACHMENTS');
-         if (!attachmentId) throw new Error("SDK Input Exception: attachmentId required.");
+         if (!attachmentId) throw new PluginInputError("SDK Input Exception: attachmentId required.");
  
          try {
            const deleted = await db.attachment.delete({ where: { id: attachmentId } });
@@ -1059,23 +1075,23 @@ export async function createPluginContext(pluginId: string, defaultPluginName: s
               data: { action: `[PLUGIN:${pluginId}] VULN_ATTACHMENT_DELETED`, entityType: "Attachment", entityId: attachmentId, userId: id, changes: { "status": "purged" } }
            });
            return deleted;
-         } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+         } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       },
 
       // ======= Base Capability =======
 
       logAudit: async (action: string, entityType: string, entityId: string, changes: any) => {
         const id = requireBotUser(); 
-        if (!action || typeof action !== 'string') throw new Error("SDK Input Exception: Audit 'action' required.");
-        if (!entityType || typeof entityType !== 'string') throw new Error("SDK Input Exception: Audit 'entityType' required.");
-        if (!entityId || typeof entityId !== 'string') throw new Error("SDK Input Exception: Audit 'entityId' required.");
+        if (!action || typeof action !== 'string') throw new PluginInputError("SDK Input Exception: Audit 'action' required.");
+        if (!entityType || typeof entityType !== 'string') throw new PluginInputError("SDK Input Exception: Audit 'entityType' required.");
+        if (!entityId || typeof entityId !== 'string') throw new PluginInputError("SDK Input Exception: Audit 'entityId' required.");
 
         const prefixedAction = action.startsWith(`[PLUGIN:${pluginId}]`) ? action : `[PLUGIN:${pluginId}] ${action.trim()}`;
         try {
           return await db.auditLog.create({
             data: { action: prefixedAction, entityType, entityId, userId: id, changes }
           });
-        } catch (error) { throw new Error(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
+        } catch (error) { throw new PluginSystemError(`SDK DB Error: ${error instanceof Error ? error.message : "Failure"}`); }
       }
     }
   }
