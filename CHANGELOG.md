@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - **Production Readiness - Serverless Connection Starvation**: Engineered a centralized In-Memory 60-second TTL caching layer (`src/lib/settings.ts`) specifically handling structural Configuration requests. This abstracts `db.systemSetting.findUnique` away from hyper-active endpoints, permanently resolving N+1 Postgres Connection Starvation vulnerabilities in high-scale Serverless deployments.
 - **Production Readiness - XSS Neutralization**: Identified and patched a Cross-Site Scripting (XSS) vulnerability inside the dynamic Plugin Dashboard. Deployed `isomorphic-dompurify` to aggressively sanitize third-party DOM-injected HTML payloads, preventing supply chain configuration attacks via malicious plugin registries.
 - **Production Readiness - Authentication TOCTOU**: Eradicated an Identity revocation Time-of-Check Time-of-Use flaw. Reduced overarching JWT `maxAge` to 1 Hour and mathematically enforced `export const dynamic = 'force-dynamic'` across the unified Dashboard Layout. These configurations guarantee that User Suspensions or Administrative Privilege Modifications are enforced asynchronously by the Database layer natively on every single user request.
+- **Dependency Hardening**: Upgraded `hono` to `v4.12.14` through the `package.json` overrides field to resolve a Cross-Site Scripting (XSS) vulnerability flagged by Snyk.
 
 ## 0.5.3
 ### Security & Compliance
