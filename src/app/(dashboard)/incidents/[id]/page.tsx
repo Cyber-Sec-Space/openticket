@@ -24,6 +24,7 @@ import { TagInput } from "@/components/ui/tag-input"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 import { EvidenceUploadForm } from "@/components/evidence-upload-form"
 import { LocalTime } from "@/components/local-time"
+import { getGlobalSettings } from "@/lib/settings";
 
 export default async function IncidentDetailPage({
   params,
@@ -105,7 +106,7 @@ export default async function IncidentDetailPage({
     const hasPostPrivilege = hasPermission(sessionUrl as any, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(sessionUrl as any, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
-    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    const settings = await getGlobalSettings()
     
     const currentIncident = await db.incident.findUnique({ 
       where: { id: incident!.id },

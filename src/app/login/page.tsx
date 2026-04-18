@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 
 import { AlertCircle, Database, Terminal } from "lucide-react"
+import { getGlobalSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic"
 
@@ -53,7 +54,7 @@ export default async function LoginPage() {
     redirect("/setup")
   }
 
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   const allowRegistration = settings?.allowRegistration ?? true
   const smtpEnabled = settings?.smtpEnabled ?? false
   const allowPasswordReset = settings?.allowPasswordReset ?? true

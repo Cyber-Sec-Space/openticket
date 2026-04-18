@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { togglePluginState, updatePluginConfig, installExternalPlugin, uninstallExternalPlugin, triggerProductionBuild, triggerServerRestart } from "../src/app/(dashboard)/settings/plugins/actions"
 import { auth } from "@/auth"
 import { hasPermission } from "@/lib/auth-utils"

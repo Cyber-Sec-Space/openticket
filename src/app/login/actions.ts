@@ -4,6 +4,7 @@ import { signIn } from "@/auth"
 import { AuthError } from "next-auth"
 import { db } from "@/lib/db"
 import { headers } from "next/headers"
+import { getGlobalSettings } from "@/lib/settings";
 
 export async function authenticate(
   prevState: string | undefined,
@@ -18,7 +19,7 @@ export async function authenticate(
     : (xRealIp || "unknown-ip")
   const email = formData.get('email') as string || 'unknown-email'
 
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   
   if (settings?.rateLimitEnabled) {
     const windowStart = new Date(Date.now() - settings.rateLimitWindowMs)

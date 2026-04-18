@@ -2,6 +2,7 @@ import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { hasPermission } from "@/lib/auth-utils"
+import { getGlobalSettings } from "@/lib/settings";
 
 export async function GET(req: Request) {
   const session = await apiAuth()
@@ -113,7 +114,7 @@ export async function POST(req: Request) {
     })
 
     // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation
-    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    const settings = await getGlobalSettings()
     const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
     const currentRank = sevRank[newIncident.severity as keyof typeof sevRank] || 0
     const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']

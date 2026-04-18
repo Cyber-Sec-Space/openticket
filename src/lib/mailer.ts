@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer"
 import { db } from "./db"
 import { decryptString } from "./plugins/crypto"
+import { getGlobalSettings } from "@/lib/settings";
 
 function escapeHtml(value: string) {
   return value
@@ -12,7 +13,7 @@ function escapeHtml(value: string) {
 }
 
 async function getTransporter() {
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   
   if (!settings?.smtpEnabled || !settings.smtpHost || !settings.smtpPort || !settings.smtpUser || !settings.smtpPassword) {
     return null
@@ -33,7 +34,7 @@ async function getTransporter() {
 }
 
 async function getFromAddress() {
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   return settings?.smtpFrom || '"OpenTicket SOC" <noreply@openticket.local>'
 }
 

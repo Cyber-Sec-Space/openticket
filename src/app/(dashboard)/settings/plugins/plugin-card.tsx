@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
+import DOMPurify from "isomorphic-dompurify"
 
 export function PluginCard({ 
   manifest, 
@@ -405,7 +406,7 @@ export function PluginCard({
                        {field.label && <h4 className="text-sm font-semibold text-white mb-2">{field.label}</h4>}
                        <div 
                          className="bg-primary/5 border border-primary/20 text-primary p-3 rounded-md text-xs leading-relaxed overflow-x-auto whitespace-normal" 
-                         dangerouslySetInnerHTML={{ __html: field.content?.replace(/\{\{SYSTEM_URL\}\}/g, systemPlatformUrl || '') }} 
+                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(field.content?.replace(/\{\{SYSTEM_URL\}\}/g, systemPlatformUrl || '') || '') }} 
                        />
                     </div>
                  ) : field.type === 'boolean' ? (

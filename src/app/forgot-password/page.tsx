@@ -2,11 +2,12 @@ import { db } from "@/lib/db"
 import { ScanFace } from "lucide-react"
 import { ForgotPasswordForm } from "./forgot-password-form"
 import { redirect } from "next/navigation"
+import { getGlobalSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic"
 
 export default async function ForgotPasswordPage() {
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   
   if (settings?.allowPasswordReset === false) {
       redirect("/login?error=Password reset has been disabled by the administrator.")

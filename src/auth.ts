@@ -1,9 +1,10 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { db } from "./lib/db"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import * as OTPAuth from "otpauth"
 import { CredentialsSignin, DefaultSession } from "next-auth"
+import { getGlobalSettings } from "@/lib/settings"
 
 declare module "next-auth" {
   interface User {
@@ -86,7 +87,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
           : (xRealIp || "127.0.0.1");
         
         // Fetch global directives (Moved up for early evaluation)
-        const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+        const settings = await getGlobalSettings()
         
         // --- Distributed Rate Limiting Strategy (Brute Force Protection) ---
         const rateLimitEnabled = settings?.rateLimitEnabled ?? true;
@@ -213,12 +214,12 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
            return null // Returning null instantly destroys the JWT token and logs the user out
         } else {
            token.permissions = Array.from(new Set(dbUser.customRoles.flatMap(r => r.permissions))) // Sync RBAC
-           const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+           const settings = await getGlobalSettings()
            token.requires2FASetup = (settings?.requireGlobal2FA ?? false) && (!dbUser.isTwoFactorEnabled || !dbUser.twoFactorSecret)
         }
       }
       return token
     }
   },
-  session: { strategy: "jwt" }
+  session: { strategy: "jwt", maxAge: 60 * 60 }
 })

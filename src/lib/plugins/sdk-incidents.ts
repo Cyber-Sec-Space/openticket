@@ -2,19 +2,21 @@ import { db } from "@/lib/db"
 import { IncidentStatus, Severity } from "@prisma/client"
 import { PluginSystemError, PluginInputError, withPluginErrorHandling } from './errors'
 import { SdkExecutionContext, IncidentData } from './sdk-types'
+import { IncidentCreateSchema, IncidentUpdateSchema, IncidentSearchSchema } from './schemas'
+import { z } from "zod"
+
+const IdSchema = z.string().min(1, "ID is required");
 
 export function createIncidentApi(ctx: SdkExecutionContext) {
   return {
     createIncident: withPluginErrorHandling(async (data: IncidentData) => {
       const id = ctx.requireBotUser('CREATE_INCIDENTS');
       
-      if (!data || typeof data !== 'object') throw new PluginInputError("SDK Input Exception: Incident payload must be an object.");
-      if (!data.title || typeof data.title !== 'string') throw new PluginInputError("SDK Input Exception: Incident 'title' is required.");
-      if (!data.description || typeof data.description !== 'string') throw new PluginInputError("SDK Input Exception: Incident 'description' is required.");
+      const parsedData = IncidentCreateSchema.parse(data);
       
       let slaHours: number | null = null;
       const settings = await db.systemSetting.findFirst();
-      const effectiveSeverity = data.severity ?? 'LOW';
+      const effectiveSeverity = parsedData.severity as Severity;
       switch (effectiveSeverity) {
         case 'CRITICAL': slaHours = settings?.slaCriticalHours ?? 4; break;
         case 'HIGH':     slaHours = settings?.slaHighHours ?? 24; break;
@@ -26,17 +28,17 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
       let newInc = await db.incident.create({
         data: {
-          title: data.title,
-          description: data.description,
-          type: data.type ?? 'OTHER',
+          title: parsedData.title,
+          description: parsedData.description,
+          type: parsedData.type,
           severity: effectiveSeverity,
-          assetId: data.assetId || null,
+          assetId: parsedData.assetId,
           status: 'NEW',
           targetSlaDate: null,
-          tags: data.tags ?? [],
+          tags: parsedData.tags,
           reporterId: id,
           auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_CREATED`, userId: id, changes: { title: data.title, severity: effectiveSeverity } }
+            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_CREATED`, userId: id, changes: { title: parsedData.title, severity: effectiveSeverity } }
           }
         }
       });
@@ -52,8 +54,8 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
     getIncident: withPluginErrorHandling(async (id: string) => {
       ctx.requireBotUser('VIEW_INCIDENTS_ALL');
-      if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: ID must be a string");
-      return await db.incident.findUnique({ where: { id }});
+      const validId = IdSchema.parse(id);
+      return await db.incident.findUnique({ where: { id: validId }});
     }),
 
     updateIncidentStatus: withPluginErrorHandling(async (id: string, status: IncidentStatus, comment?: string) => {
@@ -63,14 +65,15 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       else if (status === 'CLOSED') ctx.requireBotUser('UPDATE_INCIDENT_STATUS_CLOSE');
       else ctx.requireBotUser('UPDATE_INCIDENTS_METADATA');
 
-      if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: Invalid incident ID");
+      const validId = IdSchema.parse(id);
+      z.string().parse(status);
 
       const updateData: any = { status };
 
       if (comment) {
         ctx.requireBotUser('ADD_COMMENTS');
         updateData.comments = {
-          create: { content: comment, authorId: botId }
+          create: { content: z.string().parse(comment), authorId: botId }
         };
       }
 
@@ -79,7 +82,7 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       };
 
       const updated = await db.incident.update({
-        where: { id },
+        where: { id: validId },
         data: updateData
       });
 
@@ -93,14 +96,15 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
     updateIncidentDetails: withPluginErrorHandling(async (incidentId: string, updates: { title?: string, description?: string, severity?: Severity, assetId?: string | null }) => {
       const id = ctx.requireBotUser('UPDATE_INCIDENTS_METADATA');
-      if (!incidentId) throw new PluginInputError("SDK Input Exception: IncidentId required.");
+      const validId = IdSchema.parse(incidentId);
+      const parsedUpdates = IncidentUpdateSchema.parse(updates);
 
       const updated = await db.incident.update({
-        where: { id: incidentId },
+        where: { id: validId },
         data: {
-          ...updates,
+          ...parsedUpdates,
           auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UPDATED`, userId: id, changes: updates }
+            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UPDATED`, userId: id, changes: parsedUpdates }
           }
         }
       });
@@ -111,17 +115,18 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
     assignIncident: withPluginErrorHandling(async (incidentId: string, targetUserId: string) => {
       const id = ctx.requireBotUser('ASSIGN_INCIDENTS_OTHERS');
-      if (!incidentId || !targetUserId) throw new PluginInputError("SDK Input Exception: IncidentId and TargetUserId are required.");
+      const validIncId = IdSchema.parse(incidentId);
+      const validUserId = IdSchema.parse(targetUserId);
 
-      const targetUser = await db.user.findUnique({ where: { id: targetUserId }});
-      if (!targetUser) throw new PluginSystemError(`SDK Relation Error: Target user '${targetUserId}' does not exist.`);
+      const targetUser = await db.user.findUnique({ where: { id: validUserId }});
+      if (!targetUser) throw new PluginSystemError(`SDK Relation Error: Target user '${validUserId}' does not exist.`);
 
       const updated = await db.incident.update({
-        where: { id: incidentId },
+        where: { id: validIncId },
         data: { 
-          assignees: { connect: { id: targetUserId } },
+          assignees: { connect: { id: validUserId } },
           auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_ASSIGNED`, userId: id, changes: { targetUserId } }
+            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_ASSIGNED`, userId: id, changes: { targetUserId: validUserId } }
           }
         }
       });
@@ -132,14 +137,15 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
     unassignIncident: withPluginErrorHandling(async (incidentId: string, targetUserId: string) => {
       const id = ctx.requireBotUser('ASSIGN_INCIDENTS_OTHERS');
-      if (!incidentId || !targetUserId) throw new PluginInputError("SDK Input Exception: incidentId and targetUserId required.");
+      const validIncId = IdSchema.parse(incidentId);
+      const validUserId = IdSchema.parse(targetUserId);
 
       const updated = await db.incident.update({
-         where: { id: incidentId },
+         where: { id: validIncId },
          data: { 
-           assignees: { disconnect: { id: targetUserId } },
+           assignees: { disconnect: { id: validUserId } },
            auditLogs: {
-             create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UNASSIGNED`, userId: id, changes: { targetUserId } }
+             create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UNASSIGNED`, userId: id, changes: { targetUserId: validUserId } }
            }
          }
       });
@@ -150,17 +156,19 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
     manageIncidentTags: withPluginErrorHandling(async (incidentId: string, tag: string, action: 'add' | 'remove') => {
       const id = ctx.requireBotUser('UPDATE_INCIDENTS_METADATA');
-      if (!incidentId || !tag || !['add', 'remove'].includes(action)) throw new PluginInputError("SDK Input Exception: invalid parameters.");
+      const validId = IdSchema.parse(incidentId);
+      const validTag = z.string().min(1).parse(tag);
+      const validAction = z.enum(['add', 'remove']).parse(action);
 
-      const incident = await db.incident.findUnique({ where: { id: incidentId }});
+      const incident = await db.incident.findUnique({ where: { id: validId }});
       if (!incident) throw new PluginSystemError("SDK Relation Error: Incident not found.");
 
       let newTags = [...incident.tags];
-      if (action === 'add' && !newTags.includes(tag)) newTags.push(tag);
-      if (action === 'remove') newTags = newTags.filter(t => t !== tag);
+      if (validAction === 'add' && !newTags.includes(validTag)) newTags.push(validTag);
+      if (validAction === 'remove') newTags = newTags.filter(t => t !== validTag);
 
       const updated = await db.incident.update({
-        where: { id: incidentId },
+        where: { id: validId },
         data: { 
           tags: newTags,
           auditLogs: {
@@ -175,47 +183,48 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
     searchOpenIncidents: withPluginErrorHandling(async (query?: { severity?: Severity, tags?: string[], limit?: number }) => {
       ctx.requireBotUser('VIEW_INCIDENTS_ALL');
+      const parsedQuery = query ? IncidentSearchSchema.parse(query) : { limit: 50 };
       
-      const limit = Math.min(query?.limit || 50, 100);
       const conditions: any = { status: { notIn: ['RESOLVED', 'CLOSED'] } };
       
-      if (query?.severity) conditions.severity = query.severity;
-      if (query?.tags && query.tags.length > 0) conditions.tags = { hasSome: query.tags };
+      if (parsedQuery.severity) conditions.severity = parsedQuery.severity;
+      if (parsedQuery.tags && parsedQuery.tags.length > 0) conditions.tags = { hasSome: parsedQuery.tags };
 
       return await db.incident.findMany({
         where: conditions,
-        take: limit
+        take: parsedQuery.limit
       });
     }),
 
     deleteIncident: withPluginErrorHandling(async (id: string) => {
       const userId = ctx.requireBotUser('DELETE_INCIDENTS');
-      if (!id || typeof id !== 'string') throw new PluginInputError("SDK Input Exception: ID must be a string");
+      const validId = IdSchema.parse(id);
       
       const [del] = await db.$transaction([
-        db.incident.delete({ where: { id } }),
+        db.incident.delete({ where: { id: validId } }),
         db.auditLog.create({
-          data: { action: `[PLUGIN:${ctx.pluginId}] ENTITY_DELETED`, entityType: "Incident", entityId: id, userId, changes: { status: "PURGED" } }
+          data: { action: `[PLUGIN:${ctx.pluginId}] ENTITY_DELETED`, entityType: "Incident", entityId: validId, userId, changes: { status: "PURGED" } }
         })
       ]);
-      await ctx.triggerHook('onIncidentDestroyed', id);
+      await ctx.triggerHook('onIncidentDestroyed', validId);
       return del;
     }),
 
     linkIncidentToAsset: withPluginErrorHandling(async (incidentId: string, assetId: string) => {
       const id = ctx.requireBotUser('LINK_INCIDENT_TO_ASSET');
-      if (!incidentId || !assetId) throw new PluginInputError("SDK Input Exception: incidentId and assetId required.");
+      const validIncId = IdSchema.parse(incidentId);
+      const validAssetId = IdSchema.parse(assetId);
 
-      const asset = await db.asset.findUnique({ where: { id: assetId } });
-      const incident = await db.incident.findUnique({ where: { id: incidentId } });
+      const asset = await db.asset.findUnique({ where: { id: validAssetId } });
+      const incident = await db.incident.findUnique({ where: { id: validIncId } });
       if (!asset || !incident) throw new PluginSystemError("SDK Relation Error: Provided Incident or Asset does not exist.");
 
       const updated = await db.incident.update({
-        where: { id: incidentId },
+        where: { id: validIncId },
         data: { 
-          assetId,
+          assetId: validAssetId,
           auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_LINKED_TO_ASSET`, userId: id, changes: { assetId } }
+            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_LINKED_TO_ASSET`, userId: id, changes: { assetId: validAssetId } }
           }
         }
       });
@@ -226,14 +235,16 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
     attachEvidenceToIncident: withPluginErrorHandling(async (incidentId: string, filename: string, fileUrl: string) => {
       const id = ctx.requireBotUser('UPLOAD_INCIDENT_ATTACHMENTS');
-      if (!incidentId || !filename || !fileUrl) throw new PluginInputError("SDK Input Exception: IncidentId, filename, and fileUrl are required.");
+      const validIncId = IdSchema.parse(incidentId);
+      const validFileName = z.string().min(1).parse(filename);
+      const validUrl = z.string().url().parse(fileUrl);
 
       const [attachment] = await db.$transaction([
         db.attachment.create({
-          data: { filename, fileUrl, incidentId, uploaderId: id }
+          data: { filename: validFileName, fileUrl: validUrl, incidentId: validIncId, uploaderId: id }
         }),
         db.auditLog.create({
-          data: { action: `[PLUGIN:${ctx.pluginId}] EVIDENCE_ATTACHED`, entityType: "Incident", entityId: incidentId, userId: id, changes: { filename } }
+          data: { action: `[PLUGIN:${ctx.pluginId}] EVIDENCE_ATTACHED`, entityType: "Incident", entityId: validIncId, userId: id, changes: { filename: validFileName } }
         })
       ]);
       
@@ -243,12 +254,12 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
     deleteIncidentAttachment: withPluginErrorHandling(async (attachmentId: string) => {
       const id = ctx.requireBotUser('DELETE_INCIDENT_ATTACHMENTS');
-      if (!attachmentId) throw new PluginInputError("SDK Input Exception: attachmentId required.");
+      const validAttachId = IdSchema.parse(attachmentId);
 
       const [deleted] = await db.$transaction([
-        db.attachment.delete({ where: { id: attachmentId } }),
+        db.attachment.delete({ where: { id: validAttachId } }),
         db.auditLog.create({
-           data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_ATTACHMENT_DELETED`, entityType: "Attachment", entityId: attachmentId, userId: id, changes: { "status": "purged" } }
+           data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_ATTACHMENT_DELETED`, entityType: "Attachment", entityId: validAttachId, userId: id, changes: { status: "purged" } }
         })
       ]);
       return deleted;
@@ -256,14 +267,15 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
     
     addComment: withPluginErrorHandling(async (incidentId: string, content: string) => {
       const id = ctx.requireBotUser('ADD_COMMENTS');
-      if (!incidentId || typeof incidentId !== 'string') throw new PluginInputError("SDK Input Exception: Invalid incident ID");
-      if (!content || typeof content !== 'string') throw new PluginInputError("SDK Input Exception: Content required");
+      const validIncId = IdSchema.parse(incidentId);
+      const validContent = z.string().min(1).parse(content);
 
       const comment = await db.comment.create({
-        data: { content, incidentId, authorId: id }
+        data: { content: validContent, incidentId: validIncId, authorId: id }
       });
       await ctx.triggerHook('onCommentAdded', comment);
       return comment;
     })
   }
 }
+

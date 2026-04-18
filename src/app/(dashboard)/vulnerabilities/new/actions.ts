@@ -7,6 +7,7 @@ import { redirect } from "next/navigation"
 import { Severity } from "@prisma/client"
 import { sendNewVulnerabilityAlertEmail } from "@/lib/mailer"
 import { hasPermission } from "@/lib/auth-utils"
+import { getGlobalSettings } from "@/lib/settings";
 
 export async function createVulnerabilityAction(formData: FormData) {
   const session = await auth()
@@ -31,7 +32,7 @@ export async function createVulnerabilityAction(formData: FormData) {
     return { error: "Validation structural error: missing foundational CVE markers." }
   }
 
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   
   let slaHours: number | null = null;
   switch (severity) {

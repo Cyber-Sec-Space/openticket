@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { activePlugins } from "@/plugins"
 import { PluginCard } from "../plugin-card"
 import { parsePluginConfig } from "@/lib/plugins/crypto"
+import { getGlobalSettings } from "@/lib/settings";
 
 // We define the registry interface based on the latest JSON schema
 interface RegistryPluginVersion {
@@ -38,7 +39,7 @@ export default async function PluginStorePage() {
   }
 
   const dbStates = await db.pluginState.findMany();
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
+  const settings = await getGlobalSettings();
   
   let registryPlugins: RegistryPlugin[] = [];
   try {

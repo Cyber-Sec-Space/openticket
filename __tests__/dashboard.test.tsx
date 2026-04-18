@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 // Mock to fulfill Jest testing rules
 import React from 'react'
 

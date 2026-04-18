@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
+import { getGlobalSettings } from "@/lib/settings";
 
 // Phase 12 Security: Vertical Privilege Validation
 async function verifyTargetHeightAndSubset(executor: any, targetUserIds: string[], roleIds?: string[]) {
@@ -281,7 +282,7 @@ export async function createInvitation(formData: FormData) {
   })
 
   // Get system URL for the link
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   const baseUrl = settings?.systemPlatformUrl || "http://localhost:3000"
   const joinUrl = `${baseUrl}/register?invite=${token}`
 

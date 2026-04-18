@@ -1,3 +1,12 @@
+
+jest.mock("../../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { render, screen } from '@testing-library/react'
 import PluginStorePage from '@/app/(dashboard)/settings/plugins/store/page'
 import { TextEncoder, TextDecoder } from 'util'

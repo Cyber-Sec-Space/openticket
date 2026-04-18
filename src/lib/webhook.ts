@@ -1,5 +1,6 @@
 import { db } from "@/lib/db"
 import dns from "dns"
+import { getGlobalSettings } from "@/lib/settings";
 
 interface WebhookPayload {
   title: string
@@ -35,7 +36,7 @@ async function isTargetSecure(urlStr: string): Promise<{ isSecure: boolean, addr
 
 export async function dispatchWebhook(payload: WebhookPayload) {
   try {
-    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    const settings = await getGlobalSettings()
     if (!settings || !settings.webhookEnabled || !settings.webhookUrl) {
       return
     }

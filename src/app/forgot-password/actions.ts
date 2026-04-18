@@ -3,12 +3,13 @@
 import { db } from "@/lib/db"
 import crypto from "crypto"
 import { sendPasswordResetEmail } from "@/lib/mailer"
+import { getGlobalSettings } from "@/lib/settings";
 
 export async function sendResetLink(prevState: any, formData: FormData) {
   const email = formData.get("email") as string
   if (!email) return { error: "Structural Validation Error: Missing identity route" }
 
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   if (!settings?.smtpEnabled || settings?.allowPasswordReset === false) {
     return { error: "Operational Fault: Password recovery subsystem offline or disabled." }
   }

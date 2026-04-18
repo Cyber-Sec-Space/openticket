@@ -2,6 +2,7 @@ import { RegisterForm } from "./register-form"
 import { db } from "@/lib/db"
 import { ShieldAlert } from "lucide-react"
 import Link from "next/link"
+import { getGlobalSettings } from "@/lib/settings";
 
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ invite?: string }> }) {
   const params = await searchParams
@@ -15,7 +16,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
     }
   }
 
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   const allowRegistration = settings?.allowRegistration ?? true
 
   if (!allowRegistration && !invitationRecord) {

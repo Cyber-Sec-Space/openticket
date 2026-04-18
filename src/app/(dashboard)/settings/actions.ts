@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 import * as OTPAuth from "otpauth"
 import { assertSecureSession } from "@/lib/auth-utils"
 import { revalidatePath } from "next/cache"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 
 
 export async function updateProfile(formData: FormData) {

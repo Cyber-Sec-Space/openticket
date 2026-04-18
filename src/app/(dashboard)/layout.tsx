@@ -6,6 +6,8 @@ import { db } from "@/lib/db"
 import { BrowserNotifier } from "@/components/browser-notifier"
 import { TwoFactorPanel } from "./settings/two-factor-panel"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardLayout({
   children,
 }: {

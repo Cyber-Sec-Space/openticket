@@ -4,9 +4,10 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { sendNewRegistrationAlertEmail } from "@/lib/mailer"
 import { hasPermission } from "@/lib/auth-utils"
+import { getGlobalSettings } from "@/lib/settings";
 
 export async function createUserAction(formData: FormData) {
   const session = await auth()

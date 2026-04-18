@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
 import { encryptString, decryptString } from "@/lib/plugins/crypto"
 import nodemailer from "nodemailer"
+import { getGlobalSettings, invalidateGlobalSettings } from "@/lib/settings";
 
 export async function updateSystemSettings(formData: FormData) {
   try {
@@ -104,7 +105,7 @@ export async function updateSystemSettings(formData: FormData) {
   const soarAutoQuarantineThreshold = (soarAutoQuarantineThresholdRaw || "CRITICAL") as any
 
   // Detect state change for email verification
-  const currentSettings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const currentSettings = await getGlobalSettings()
   const wasEmailVerificationRequired = currentSettings?.requireEmailVerification ?? false
 
   await db.systemSetting.upsert({
@@ -216,8 +217,10 @@ export async function updateSystemSettings(formData: FormData) {
     }
   })
 
+  invalidateGlobalSettings();
+
   const { fireHook } = await import("@/lib/plugins/hook-engine");
-  const updatedSettings = await db.systemSetting.findUnique({ where: { id: "global" } });
+  const updatedSettings = await getGlobalSettings();
   await fireHook("onSystemSettingsUpdated", updatedSettings);
 
 
@@ -280,7 +283,7 @@ export async function testSmtpConnection(formData: FormData) {
   let finalPassword = smtpPasswordRaw
   if (!finalPassword) {
     // If empty, try to fetch the existing securely stored password
-    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    const settings = await getGlobalSettings()
     if (settings?.smtpPassword) {
       finalPassword = decryptString(settings.smtpPassword)
     }

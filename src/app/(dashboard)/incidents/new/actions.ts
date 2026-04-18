@@ -9,6 +9,7 @@ import { sendCriticalAlertEmail, sendAssetCompromisedEmail } from "@/lib/mailer"
 import { dispatchMassAlert } from "@/lib/notifier"
 import { fireHook } from "@/lib/plugins/hook-engine"
 import { hasPermission } from "@/lib/auth-utils"
+import { getGlobalSettings } from "@/lib/settings";
 
 export async function createIncident(prevState: any, formData: FormData) {
   const session = await auth()
@@ -40,7 +41,7 @@ export async function createIncident(prevState: any, formData: FormData) {
   const safeTitle = title.substring(0, 255);
   const safeDescription = description.substring(0, 50000);
 
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   const effectiveSeverity = severity as any || 'LOW'
   
   let slaHours: number | null = null;

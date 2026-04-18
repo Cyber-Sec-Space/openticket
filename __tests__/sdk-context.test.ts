@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { createPluginContext } from "../src/lib/plugins/sdk-context"
 import { db } from "../src/lib/db"
 

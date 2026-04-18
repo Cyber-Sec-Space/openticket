@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { updateSystemSettings, testSmtpConnection } from "../src/app/(dashboard)/system/actions"
 import { db } from "../src/lib/db"
 import { auth } from "@/auth"
@@ -82,7 +91,7 @@ describe("System Actions", () => {
       fd.append("webhookUrl", "https://cyber-sec.space/webhook")
       fd.append("soarAutoQuarantineThreshold", "")
       
-      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue({ requireEmailVerification: false })
+      ;(getGlobalSettings as jest.Mock).mockResolvedValue({ requireEmailVerification: false })
       
       await updateSystemSettings(fd)
       
@@ -124,7 +133,7 @@ describe("System Actions", () => {
     it("upserts system settings with explicit valid smtp port and no password", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
-      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue(null)
+      ;(getGlobalSettings as jest.Mock).mockResolvedValue(null)
       const fd = new FormData()
       fd.append("smtpPort", "587")
       fd.append("slaCriticalHours", "5")
@@ -171,7 +180,7 @@ describe("System Actions", () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
-      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue({ smtpPassword: "encrypted_pwd" })
+      ;(getGlobalSettings as jest.Mock).mockResolvedValue({ smtpPassword: "encrypted_pwd" })
       
       const fd = new FormData()
       fd.append("smtpHost", "smtp.test.com")
@@ -214,7 +223,7 @@ describe("System Actions", () => {
     it("tests smtp connection with missing password but no stored password", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
-      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue(null)
+      ;(getGlobalSettings as jest.Mock).mockResolvedValue(null)
       const fd = new FormData()
       fd.append("smtpHost", "smtp.test.com")
       fd.append("smtpUser", "user")

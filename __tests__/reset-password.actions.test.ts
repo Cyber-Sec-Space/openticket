@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { executeReset } from "../src/app/reset-password/actions";
 import { db } from "../src/lib/db";
 import bcrypt from "bcrypt";
@@ -10,7 +19,7 @@ jest.mock("../src/lib/db", () => ({
     $transaction: jest.fn()
   }
 }));
-jest.mock("bcryptjs", () => ({ hash: jest.fn().mockResolvedValue("new-hash") }));
+jest.mock("bcrypt", () => ({ hash: jest.fn().mockResolvedValue("new-hash") }));
 
 describe("executeReset", () => {
   afterEach(() => jest.clearAllMocks());

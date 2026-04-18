@@ -1,15 +1,16 @@
 "use server"
 
 import { db } from "@/lib/db"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { redirect } from "next/navigation"
 import { sendNewRegistrationAlertEmail, sendVerificationEmail } from "@/lib/mailer"
 import crypto from "crypto"
+import { getGlobalSettings } from "@/lib/settings";
 
 const BCRYPT_COST = 12
 
 export async function attemptRegistration(prevState: any, formData: FormData) {
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" }, include: { defaultUserRoles: true } })
+  const settings = await getGlobalSettings(true)
   const allowRegistration = settings?.allowRegistration ?? true
 
   const name = formData.get("name") as string

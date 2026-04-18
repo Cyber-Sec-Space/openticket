@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { sendResetLink } from "../src/app/forgot-password/actions";
 import { db } from "../src/lib/db";
 import { sendPasswordResetEmail } from "../src/lib/mailer";
@@ -24,14 +33,14 @@ describe("sendResetLink", () => {
   });
 
   it("returns error if SMTP offline or password reset disabled", async () => {
-    (require("../src/lib/db").db.systemSetting.findUnique as jest.Mock).mockResolvedValue({ smtpEnabled: false, allowPasswordReset: true });
+    (require("../src/lib/settings").getGlobalSettings as jest.Mock).mockResolvedValue({ smtpEnabled: false, allowPasswordReset: true });
     const fd = new FormData(); fd.append("email", "test@test.com");
     const res = await sendResetLink(null, fd);
     expect(res.error).toMatch(/Password recovery subsystem offline or disabled/);
   });
 
   it("returns success instantly if user not found", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ smtpEnabled: true });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ smtpEnabled: true });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
     const fd = new FormData(); fd.append("email", "test@test.com");
     const res = await sendResetLink(null, fd);
@@ -39,7 +48,7 @@ describe("sendResetLink", () => {
   });
 
   it("creates token and dispatches if user found", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ smtpEnabled: true, systemPlatformUrl: "http://test" });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ smtpEnabled: true, systemPlatformUrl: "http://test" });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce({ id: "user-1", email: "test@test.com" });
     const fd = new FormData(); fd.append("email", "test@test.com");
     

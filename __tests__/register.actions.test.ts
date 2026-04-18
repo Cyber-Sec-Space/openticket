@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { attemptRegistration } from "../src/app/register/actions"
 import { db } from "../src/lib/db"
 import bcrypt from "bcrypt"
@@ -33,7 +42,7 @@ jest.mock("../src/lib/mailer", () => ({
   sendVerificationEmail: jest.fn(),
 }));
 
-jest.mock("bcryptjs", () => ({
+jest.mock("bcrypt", () => ({
   hash: jest.fn().mockResolvedValue("hashed_pwd"),
 }));
 
@@ -48,7 +57,7 @@ describe("attemptRegistration", () => {
   });
 
   it("returns REGISTRATION_DISABLED if allowRegistration is false", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: false });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: false });
     const fd = new FormData();
     fd.append("name", "Test");
     fd.append("email", "test@example.com");
@@ -58,14 +67,14 @@ describe("attemptRegistration", () => {
   });
 
   it("returns MISSING_FIELDS if fields omitted", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
     const fd = new FormData();
     const result = await attemptRegistration(undefined, fd);
     expect(result).toBe("MISSING_FIELDS");
   });
 
   it("returns PASSWORD_TOO_SHORT if password is less than 8 chars", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
     const fd = new FormData();
     fd.append("name", "Test User");
     fd.append("email", "test@example.com");
@@ -75,7 +84,7 @@ describe("attemptRegistration", () => {
   });
 
   it("returns PASSWORD_TOO_LONG if password exceeds bcrypt byte-safe limit", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
     const fd = new FormData();
     fd.append("name", "Test User");
     fd.append("email", "test@example.com");
@@ -85,7 +94,7 @@ describe("attemptRegistration", () => {
   });
 
   it("returns REGISTRATION_FAILED if user already exists", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce({ id: "1" }); // Existing user
     const fd = new FormData();
     fd.append("name", "Test User");
@@ -98,7 +107,7 @@ describe("attemptRegistration", () => {
   });
 
   it("returns REGISTRATION_FAILED if DB throws P2002 (TOCTOU Race Condition) during create", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null); // Looks available
     (db.user.create as jest.Mock).mockRejectedValueOnce({ code: 'P2002' }); // Fails at write time
     
@@ -112,7 +121,7 @@ describe("attemptRegistration", () => {
   });
 
   it("throws exception if DB throws non-P2002 error during create", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
     const dbError = new Error("DB DOWN");
     (db.user.create as jest.Mock).mockRejectedValueOnce(dbError);
@@ -126,7 +135,7 @@ describe("attemptRegistration", () => {
   });
 
   it("creates user with explicit default roles from settings", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true, defaultUserRoles: ["SECOPS", "REPORTER"] });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true, defaultUserRoles: ["SECOPS", "REPORTER"] });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
     const fd = new FormData();
     fd.append("name", "Test User");
@@ -139,7 +148,7 @@ describe("attemptRegistration", () => {
 
   it("creates user with fallback REPORTER role if default roles is missing", async () => {
     // Missing defaultUserRoles array entirely
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
     const fd = new FormData();
     fd.append("name", "Test User");
@@ -152,7 +161,7 @@ describe("attemptRegistration", () => {
 
   it("creates user with fallback REPORTER role if default roles is empty array", async () => {
     // empty defaultUserRoles array
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ allowRegistration: true, defaultUserRoles: [] });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ allowRegistration: true, defaultUserRoles: [] });
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
     const fd = new FormData();
     fd.append("name", "Test User");
@@ -164,7 +173,7 @@ describe("attemptRegistration", () => {
   });
 
   it("handles null settings cleanly defaulting everything", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce(null);
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce(null);
     (db.user.findUnique as jest.Mock).mockResolvedValueOnce(null);
     const fd = new FormData();
     fd.append("name", "Test User");
@@ -177,7 +186,7 @@ describe("attemptRegistration", () => {
 
   it("triggers email alerts and verification branches", async () => {
     const { sendNewRegistrationAlertEmail, sendVerificationEmail } = require("../src/lib/mailer");
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ 
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ 
       allowRegistration: true, 
       smtpTriggerOnNewUser: true,
       requireEmailVerification: true,

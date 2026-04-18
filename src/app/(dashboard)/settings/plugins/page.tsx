@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { activePlugins } from "@/plugins"
 import { PluginCard } from "./plugin-card"
 import { parsePluginConfig } from "@/lib/plugins/crypto"
+import { getGlobalSettings } from "@/lib/settings";
 
 export default async function PluginManagementPage() {
   const session = await auth()
@@ -13,7 +14,7 @@ export default async function PluginManagementPage() {
   }
 
   const dbStates = await db.pluginState.findMany();
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } });
+  const settings = await getGlobalSettings();
 
   // Filter out globally undefined or malformed configurations to prevent rendering exceptions
   const installedPlugins = activePlugins.filter(p => p && p.manifest && p.manifest.id);

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient, Permission, IncidentStatus, Severity, IncidentType, AssetStatus, AssetType, VulnStatus } from '@prisma/client'
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 // Helper to get a random date between now and X days ago

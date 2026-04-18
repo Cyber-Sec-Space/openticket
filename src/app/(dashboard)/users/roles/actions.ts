@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
 import { Permission } from "@prisma/client"
+import { getGlobalSettings } from "@/lib/settings";
 
 // Verify granular Admin Privileges
 async function verifyAdmin(action: 'CREATE_ROLES' | 'UPDATE_ROLES' | 'DELETE_ROLES') {

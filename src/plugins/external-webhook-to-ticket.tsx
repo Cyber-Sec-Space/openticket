@@ -1,5 +1,4 @@
-import type { OpenTicketPlugin } from "../lib/plugins/types";
-import type { PluginSdkContext } from "../lib/plugins/sdk-types";
+import type { OpenTicketPlugin } from "../../../types/openticket-core";
 import React from 'react';
 
 const WebhookToTicketPlugin: OpenTicketPlugin = {
@@ -39,10 +38,10 @@ const WebhookToTicketPlugin: OpenTicketPlugin = {
     ]
   },
   hooks: {
-    onInstall: async (config: any, context: PluginSdkContext) => {
+    onInstall: async (config, context) => {
       await context.api.initEntity("Webhook Ingestion Bot", ["CREATE_INCIDENTS"]);
     },
-    onWebhookReceived: async (req: Request, config: any, context: PluginSdkContext) => {
+    onWebhookReceived: async (req, config, context) => {
       try {
         // 1. Basic Webhook Validation & Size Limits
         if (req.method !== 'POST') {
