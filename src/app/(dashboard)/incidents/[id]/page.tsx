@@ -21,6 +21,7 @@ import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload, Tag as TagIcon } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
+import { ActionForm } from "@/components/ui/action-form"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
 import { EvidenceUploadForm } from "@/components/evidence-upload-form"
 import { LocalTime } from "@/components/local-time"
@@ -580,7 +581,7 @@ export default async function IncidentDetailPage({
               </CardTitle>
             </CardHeader>
             <div className="p-6 space-y-4">
-              <form action={async (formData) => {
+              <ActionForm action={async (formData: FormData) => {
                 "use server"
                 const sessionUrl = await auth()
                 if (!sessionUrl) throw new Error("Unauthorized")
@@ -608,6 +609,7 @@ export default async function IncidentDetailPage({
                 const newComment = await db.comment.create({
                   data: { content, incidentId: incident!.id, authorId: sessionUrl.user.id }
                 })
+                const { fireHook } = await import("@/lib/plugins/hook-engine")
                 await fireHook("onCommentAdded", newComment)
 
                 revalidatePath(`/incidents/${incident!.id}`)
@@ -621,7 +623,7 @@ export default async function IncidentDetailPage({
                   className="w-full text-sm rounded-lg border border-border/60 bg-black/30 p-3 text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none"
                 />
                 <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(0,100,255,0.3)]">Post Investigation Log</Button>
-              </form>
+              </ActionForm>
 
               <div className="space-y-4 pt-2">
                 {timeline.map((item, idx) => (
@@ -721,16 +723,16 @@ export default async function IncidentDetailPage({
                           <LocalTime date={att.createdAt} format="date" className="text-[9px] font-mono text-muted-foreground" />
                         </div>
                       </a>
-                      <form action={async () => {
+                      <ActionForm action={async () => {
                         "use server"
                         await deleteAttachment(att.id)
                         revalidatePath(`/incidents/${incident!.id}`)
                         revalidatePath(`/incidents/[id]`, 'page')
-                      }}>
+                      }} resetOnSuccess={false}>
                         <button type="submit" className="p-1.5 rounded-md hover:bg-red-500/20 text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all absolute right-2 top-1/2 -translate-y-1/2" title="Delete evidence">
                            <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                      </form>
+                      </ActionForm>
                     </div>
                   ))}
                   

@@ -157,7 +157,7 @@ describe("System Actions", () => {
        
        await updateSystemSettings(new FormData())
        
-       expect(consoleSpy).toHaveBeenCalledWith("Failed to retroactively update SLA dates:", expect.any(Error))
+       expect(consoleSpy).toHaveBeenCalledWith("[SystemConfigService] Failed to retroactively update SLA dates:", expect.any(Error))
        consoleSpy.mockRestore()
     })
   })
