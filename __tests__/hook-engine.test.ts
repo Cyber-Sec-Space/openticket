@@ -1,6 +1,55 @@
 import { fireHook, invalidateHookCache } from "../src/lib/plugins/hook-engine"
 import { db } from "../src/lib/db"
 
+jest.mock("isolated-vm", () => {
+  return {
+    Isolate: class {
+      constructor(options: any) {}
+      createContextSync() {
+        const globalStore: any = {};
+        return {
+          global: {
+            setSync: (key: string, val: any) => {
+              // Extract the value from Reference if it is one
+              globalStore[key] = val && val.val ? val.val : val;
+            },
+            derefInto: jest.fn(),
+            _getStore: () => globalStore
+          }
+        }
+      }
+      compileScriptSync(code: string) {
+        return {
+          run: async (context: any, options: any) => {
+             const store = context.global._getStore();
+             // Extract the wrapper from the global object and run it so the hook executes
+             if (store && typeof store._hostWrapper === 'function') {
+                // If there is a timeout expected from a hanging promise, simulate it
+                // by running the hook, and if it doesn't resolve within timeout, throw
+                const hookPromise = store._hostWrapper();
+                if (options.timeout) {
+                  const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error("Execution Timeout: Plugin exceeded the 5000ms sandbox time-bomb limit.")), options.timeout);
+                  });
+                  return Promise.race([hookPromise, timeoutPromise]);
+                }
+                return hookPromise;
+             }
+             return Promise.resolve();
+          }
+        }
+      }
+    },
+    Reference: class {
+      constructor(public val: any) {}
+    },
+    ExternalCopy: class {
+      constructor(public val: any) {}
+      copyInto() { return this.val; }
+    }
+  };
+});
+
 jest.mock("../src/lib/db", () => ({
   db: {
     pluginState: {

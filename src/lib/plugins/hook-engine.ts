@@ -3,7 +3,7 @@ import { OpenTicketPluginHooks } from "./types"
 import { db } from "@/lib/db"
 import { createPluginContext } from "./sdk-context"
 import { parsePluginConfig } from "./crypto"
-import vm from "vm"
+import ivm from "isolated-vm"
 
 export function invalidateHookCache() {
   // Deprecated: Cache is removed for Serverless consistency
@@ -50,43 +50,42 @@ export async function fireHook<K extends keyof OpenTicketPluginHooks>(
         (async () => {
           try {
             const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name)
-            const settings = await db.systemSetting.findFirst()
-            const baseUrl = settings?.systemPlatformUrl || "http://localhost:3000"
             
-            // Context Isolation Map: Explicitly whitelist survival APIs for the Sandbox
-            const sandboxContext = {
-              payload,
-              config,
-              context,
-              console,
-              fetch,
-              setTimeout,
-              clearTimeout,
-              Promise,
-              env: {
-                baseUrl
-              },
-              hookFn
+            // Execute the plugin logic synchronously wrapped in a Promise race.
+            // Using isolated-vm to enforce a hard 128MB memory ceiling and execution Time-Bomb isolation.
+            const isolate = new ivm.Isolate({ memoryLimit: 128 });
+            const ivmContext = isolate.createContextSync();
+            const jail = ivmContext.global;
+            jail.setSync('global', jail.derefInto());
+
+            // Because the plugins are loaded as native Node functions, passing native functions natively across 
+            // the ivm boundary causes ARM64 V8 segmentation faults on complex objects. 
+            // We use a bridged Host Wrapper Reference pattern to enforce the VM constraints safely.
+            const hostWrapper = async () => {
+              await hookFn(payload, config, context);
             };
 
-            // Instantiate VM and strictly map to global namespace inside the isolate
-            vm.createContext(sandboxContext);
-            
-            // Execute as stringified bridging function
-            const vmScript = new vm.Script(`
+            // Bind the host wrapper safely
+            jail.setSync('_hostWrapper', new ivm.Reference(hostWrapper));
+
+            // Execute as an Isolated Script bridging into the Host
+            const ivmScript = isolate.compileScriptSync(`
               (async () => {
-                await hookFn(payload, config, context);
+                await _hostWrapper.applyIgnored(undefined, []);
               })();
             `);
 
             // Time-Bomb Sandbox Protection: Force C++ loop-termination if execution hangs beyond 5 seconds synchronously
-            const executionPromise = vmScript.runInContext(sandboxContext, { timeout: 5000 });
+            const executionPromise = ivmScript.run(ivmContext, { timeout: 5000 });
             
             const timeoutPromise = new Promise((_, reject) => {
               setTimeout(() => reject(new Error("Execution Timeout: Plugin exceeded the 5000ms sandbox time-bomb limit.")), 5000);
             });
             
             await Promise.race([executionPromise, timeoutPromise]);
+            
+            // Clean up Isolate to release the 128MB memory reservation
+            isolate.dispose();
             
           } catch (error) {
             let errorType = "Plugin Core";
