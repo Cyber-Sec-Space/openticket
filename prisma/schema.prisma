@@ -191,6 +191,12 @@ model PasswordResetToken {
 // Global Configuration (Singleton Model)
 // -----------------------------------------------------------------------------
 
+enum MailerProvider {
+  SMTP
+  RESEND
+  SENDGRID
+}
+
 model SystemSetting {
   id                 String  @id @default("global") // Enforce singleton
   allowRegistration  Boolean @default(true)
@@ -215,12 +221,16 @@ model SystemSetting {
   vulnSlaLowHours      Int @default(336)
   vulnSlaInfoHours     Int @default(720)
 
+
+
   // Rate Limiting Config
   rateLimitEnabled     Boolean @default(true)
   rateLimitWindowMs    Int     @default(900000) // 15 minutes default
   rateLimitMaxAttempts Int     @default(5)
 
-  // SMTP Configuration
+  // Mailer Configuration
+  mailerProvider       MailerProvider @default(SMTP)
+  mailerApiKey         String?
   smtpEnabled          Boolean @default(false)
   smtpHost             String?
   smtpPort             Int?

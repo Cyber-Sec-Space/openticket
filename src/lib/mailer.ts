@@ -2,6 +2,7 @@ import nodemailer from "nodemailer"
 import { db } from "./db"
 import { decryptString } from "./plugins/crypto"
 import { getGlobalSettings } from "@/lib/settings";
+import { runAsync } from "./utils/async";
 
 function escapeHtml(value: string) {
   return value
@@ -12,10 +13,16 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
-async function getTransporter() {
-  const settings = await getGlobalSettings()
-  
-  if (!settings?.smtpEnabled || !settings.smtpHost || !settings.smtpPort || !settings.smtpUser || !settings.smtpPassword) {
+interface MailOptions {
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}
+
+async function getSmtpTransporter(settings: any) {
+  if (!settings.smtpHost || !settings.smtpPort || !settings.smtpUser || !settings.smtpPassword) {
     return null
   }
 
@@ -33,15 +40,84 @@ async function getTransporter() {
   })
 }
 
+async function dispatchMail(options: MailOptions) {
+  const settings = await getGlobalSettings()
+  
+  // `smtpEnabled` acts as the master switch for the Mailer system
+  if (!settings?.smtpEnabled) return;
+
+  const provider = settings.mailerProvider || 'SMTP';
+
+  if (provider === 'RESEND') {
+    if (!settings.mailerApiKey) {
+      console.error("[Mailer] Missing Resend API Key");
+      return;
+    }
+    const apiKey = decryptString(settings.mailerApiKey);
+    const toArray = options.to.split(',').map(e => e.trim()).filter(Boolean);
+    
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: options.from,
+        to: toArray,
+        subject: options.subject,
+        html: options.html,
+        text: options.text
+      })
+    }).then(async r => {
+      if (!r.ok) console.error("[Mailer] Resend API Error:", await r.text());
+    }).catch(err => console.error("[Mailer] Resend fetch error:", err));
+    return;
+  }
+
+  if (provider === 'SENDGRID') {
+    if (!settings.mailerApiKey) {
+      console.error("[Mailer] Missing SendGrid API Key");
+      return;
+    }
+    const apiKey = decryptString(settings.mailerApiKey);
+    const toArray = options.to.split(',').map(e => ({ email: e.trim() })).filter(e => e.email);
+    
+    await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: toArray }],
+        from: { email: options.from }, // Note: SendGrid expects from to match verified sender
+        subject: options.subject,
+        content: [
+          { type: "text/plain", value: options.text },
+          { type: "text/html", value: options.html }
+        ]
+      })
+    }).then(async r => {
+      if (!r.ok) console.error("[Mailer] SendGrid API Error:", await r.text());
+    }).catch(err => console.error("[Mailer] SendGrid fetch error:", err));
+    return;
+  }
+
+  // Fallback to traditional SMTP via Nodemailer
+  const transporter = await getSmtpTransporter(settings);
+  if (transporter) {
+    await transporter.sendMail(options).catch(err => console.error("[Mailer] SMTP Error:", err));
+  }
+}
+
 async function getFromAddress() {
   const settings = await getGlobalSettings()
   return settings?.smtpFrom || '"OpenTicket SOC" <noreply@openticket.local>'
 }
 
 export async function sendCriticalAlertEmail(incident: { id: string, title: string, description: string, severity: string, status: string }, targetEmails: string[]) {
-  const transporter = await getTransporter()
-  if (!transporter || targetEmails.length === 0) return
-
+  if (targetEmails.length === 0) return
   const from = await getFromAddress()
   const safeTitle = escapeHtml(incident.title)
   const safeSeverity = escapeHtml(incident.severity)
@@ -62,19 +138,19 @@ export async function sendCriticalAlertEmail(incident: { id: string, title: stri
     </div>
   `
 
-  await transporter.sendMail({
-    from,
-    to: targetEmails.join(','),
-    subject: `[CRITICAL] INC-${incident.id.substring(0,8).toUpperCase()} - ${incident.title}`,
-    text: `CRITICAL INCIDENT: ${incident.title}\nSeverity: ${incident.severity}\nDescription:\n${incident.description}`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: targetEmails.join(','),
+      subject: `[CRITICAL] INC-${incident.id.substring(0,8).toUpperCase()} - ${incident.title}`,
+      text: `CRITICAL INCIDENT: ${incident.title}\nSeverity: ${incident.severity}\nDescription:\n${incident.description}`,
+      html,
+    });
+  });
 }
 
 export async function sendIncidentAssignmentEmail(incidentId: string, incidentTitle: string, userEmail: string, userName: string) {
-  const transporter = await getTransporter()
-  if (!transporter || !userEmail) return
-
+  if (!userEmail) return
   const from = await getFromAddress()
   const safeName = escapeHtml(userName)
   const safeTitle = escapeHtml(incidentTitle)
@@ -91,19 +167,19 @@ export async function sendIncidentAssignmentEmail(incidentId: string, incidentTi
     </div>
   `
 
-  await transporter.sendMail({
-    from,
-    to: userEmail,
-    subject: `[Assigned] INC-${incidentId.substring(0,8).toUpperCase()} - ${incidentTitle}`,
-    text: `You have been assigned to incident: ${incidentTitle}`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: userEmail,
+      subject: `[Assigned] INC-${incidentId.substring(0,8).toUpperCase()} - ${incidentTitle}`,
+      text: `You have been assigned to incident: ${incidentTitle}`,
+      html,
+    });
+  });
 }
 
 export async function sendResolutionEmail(incidentId: string, incidentTitle: string, reporterEmail: string, reporterName: string) {
-  const transporter = await getTransporter()
-  if (!transporter || !reporterEmail) return
-
+  if (!reporterEmail) return
   const from = await getFromAddress()
   const safeName = escapeHtml(reporterName)
   const safeTitle = escapeHtml(incidentTitle)
@@ -118,19 +194,20 @@ export async function sendResolutionEmail(incidentId: string, incidentTitle: str
       <p style="margin-top: 20px; font-size: 12px; color: #888;">This is an automated operational alert generated by OpenTicket.</p>
     </div>
   `
-  await transporter.sendMail({
-    from,
-    to: reporterEmail,
-    subject: `[Resolved] INC-${incidentId.substring(0,8).toUpperCase()} - ${incidentTitle}`,
-    text: `Your incident has been resolved: ${incidentTitle}`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: reporterEmail,
+      subject: `[Resolved] INC-${incidentId.substring(0,8).toUpperCase()} - ${incidentTitle}`,
+      text: `Your incident has been resolved: ${incidentTitle}`,
+      html,
+    });
+  });
 }
 
 export async function sendAssetCompromisedEmail(assetName: string, assetIp: string, targetEmails: string[]) {
-  const transporter = await getTransporter()
-  if (!transporter || targetEmails.length === 0) return
-
+  if (targetEmails.length === 0) return
   const from = await getFromAddress()
   const safeAssetName = escapeHtml(assetName)
   const safeAssetIp = escapeHtml(assetIp || "Unknown")
@@ -143,19 +220,20 @@ export async function sendAssetCompromisedEmail(assetName: string, assetIp: stri
       <p style="margin-top: 20px; font-size: 12px; color: #888;">This is an automated operational alert generated by OpenTicket.</p>
     </div>
   `
-  await transporter.sendMail({
-    from,
-    to: targetEmails.join(','),
-    subject: `[COMPROMISED] Asset Alert: ${assetName}`,
-    text: `Asset Compromised: ${assetName} (${assetIp || 'Unknown'})`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: targetEmails.join(','),
+      subject: `[COMPROMISED] Asset Alert: ${assetName}`,
+      text: `Asset Compromised: ${assetName} (${assetIp || 'Unknown'})`,
+      html,
+    });
+  });
 }
 
 export async function sendNewRegistrationAlertEmail(userEmail: string, userName: string, targetEmails: string[]) {
-  const transporter = await getTransporter()
-  if (!transporter || targetEmails.length === 0) return
-
+  if (targetEmails.length === 0) return
   const from = await getFromAddress()
   const safeUserName = escapeHtml(userName)
   const safeUserEmail = escapeHtml(userEmail)
@@ -169,19 +247,20 @@ export async function sendNewRegistrationAlertEmail(userEmail: string, userName:
       <p style="margin-top: 20px; font-size: 12px; color: #888;">This is an automated operational alert generated by OpenTicket.</p>
     </div>
   `
-  await transporter.sendMail({
-    from,
-    to: targetEmails.join(','),
-    subject: `[Registration] New User: ${userName}`,
-    text: `New User Registration: ${userName} (${userEmail})`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: targetEmails.join(','),
+      subject: `[Registration] New User: ${userName}`,
+      text: `New User Registration: ${userName} (${userEmail})`,
+      html,
+    });
+  });
 }
 
 export async function sendNewVulnerabilityAlertEmail(vulnTitle: string, severity: string, targetEmails: string[]) {
-  const transporter = await getTransporter()
-  if (!transporter || targetEmails.length === 0) return
-
+  if (targetEmails.length === 0) return
   const from = await getFromAddress()
   const safeTitle = escapeHtml(vulnTitle)
   const safeSeverity = escapeHtml(severity)
@@ -195,19 +274,20 @@ export async function sendNewVulnerabilityAlertEmail(vulnTitle: string, severity
       <p style="margin-top: 20px; font-size: 12px; color: #888;">This is an automated operational alert generated by OpenTicket.</p>
     </div>
   `
-  await transporter.sendMail({
-    from,
-    to: targetEmails.join(','),
-    subject: `[Vulnerability] ${vulnTitle}`,
-    text: `New Vulnerability: ${vulnTitle} (Severity: ${severity})`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: targetEmails.join(','),
+      subject: `[Vulnerability] ${vulnTitle}`,
+      text: `New Vulnerability: ${vulnTitle} (Severity: ${severity})`,
+      html,
+    });
+  });
 }
 
 export async function sendVerificationEmail(email: string, userName: string, tokenUrl: string) {
-  const transporter = await getTransporter()
-  if (!transporter || !email) return
-
+  if (!email) return
   const from = await getFromAddress()
   const safeUserName = escapeHtml(userName)
   const safeTokenUrl = escapeHtml(tokenUrl)
@@ -227,19 +307,20 @@ export async function sendVerificationEmail(email: string, userName: string, tok
       <p style="margin-top: 30px; font-size: 11px; color: #666; border-top: 1px solid #222; padding-top: 15px;">This is an automated operational alert generated by OpenTicket.</p>
     </div>
   `
-  await transporter.sendMail({
-    from,
-    to: email,
-    subject: `[Verify] Action Required: Verify your OpenTicket identity`,
-    text: `Welcome to OpenTicket! Please verify your email by navigating to this link: ${tokenUrl}`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: email,
+      subject: `[Verify] Action Required: Verify your OpenTicket identity`,
+      text: `Welcome to OpenTicket! Please verify your email by navigating to this link: ${tokenUrl}`,
+      html,
+    });
+  });
 }
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
-  const transporter = await getTransporter()
-  if (!transporter || !email) return
-
+  if (!email) return
   const from = await getFromAddress()
   const safeResetUrl = escapeHtml(resetUrl)
   const html = `
@@ -259,19 +340,20 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
       <p style="margin-top: 30px; font-size: 11px; color: #666; border-top: 1px solid #222; padding-top: 15px;">This is an automated operational alert generated by OpenTicket.</p>
     </div>
   `
-  await transporter.sendMail({
-    from,
-    to: email,
-    subject: `[Security] Identity Override Request`,
-    text: `A password reset sequence was requested. Follow this link to reset your password: ${resetUrl}. It expires in 15 minutes.`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: email,
+      subject: `[Security] Identity Override Request`,
+      text: `A password reset sequence was requested. Follow this link to reset your password: ${resetUrl}. It expires in 15 minutes.`,
+      html,
+    });
+  });
 }
 
 export async function sendOperatorInvitationEmail(email: string, joinUrl: string, inviterName: string) {
-  const transporter = await getTransporter()
-  if (!transporter || !email) return
-
+  if (!email) return
   const from = await getFromAddress()
   const safeInviterName = escapeHtml(inviterName)
   const safeJoinUrl = escapeHtml(joinUrl)
@@ -291,12 +373,15 @@ export async function sendOperatorInvitationEmail(email: string, joinUrl: string
       <p style="margin-top: 30px; font-size: 11px; color: #666; border-top: 1px solid #222; padding-top: 15px;">This is an automated operational alert generated by OpenTicket.</p>
     </div>
   `
-  await transporter.sendMail({
-    from,
-    to: email,
-    subject: `[Invitation] You've been invited to join OpenTicket`,
-    text: `You have been invited to OpenTicket. Join here: ${joinUrl}`,
-    html,
-  }).catch(err => console.error("SMTP Error:", err))
+  
+  return runAsync(async () => {
+    await dispatchMail({
+      from,
+      to: email,
+      subject: `[Invitation] You've been invited to join OpenTicket`,
+      text: `You have been invited to OpenTicket. Join here: ${joinUrl}`,
+      html,
+    });
+  });
 }
 

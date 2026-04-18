@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import dns from "dns"
 import { getGlobalSettings } from "@/lib/settings";
+import { runAsync } from "@/lib/utils/async";
 
 interface WebhookPayload {
   title: string
@@ -63,25 +64,28 @@ export async function dispatchWebhook(payload: WebhookPayload) {
       ]
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s tarpit barrier
+    return runAsync(async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s tarpit barrier
 
-    // SSRF FIX: Rewrite the URL to use the frozen resolved IP, but manually supply the Host header
-    const safeUrl = `${parsed.protocol}//${address}${parsed.port ? `:${parsed.port}` : ''}${parsed.pathname}${parsed.search}`;
+      // SSRF FIX: Rewrite the URL to use the frozen resolved IP, but manually supply the Host header
+      const safeUrl = `${parsed.protocol}//${address}${parsed.port ? `:${parsed.port}` : ''}${parsed.pathname}${parsed.search}`;
 
-    try {
-      await fetch(safeUrl, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Host': parsed.hostname 
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal
-      })
-    } finally {
-      clearTimeout(timeoutId);
-    }
+      try {
+        await fetch(safeUrl, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Host': parsed.hostname 
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal
+        })
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    });
+
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
       console.error("[WEBHOOK_ERROR] Target timeout (5000ms threshold breached). Potential tarpit detected.");
