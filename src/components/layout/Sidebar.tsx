@@ -78,6 +78,7 @@ export function Sidebar({ userPermissions, enabledPlugins = [] }: { userPermissi
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all duration-300 relative group overflow-hidden",
                 isActive 
