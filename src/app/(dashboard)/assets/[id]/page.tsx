@@ -54,7 +54,7 @@ export default async function AssetDetailPage({
   async function updateAssetAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || !hasPermission(sessionUrl as any, 'UPDATE_ASSETS')) throw new Error("Forbidden")
+    if (!sessionUrl || !hasPermission(sessionUrl, 'UPDATE_ASSETS')) throw new Error("Forbidden")
 
     const newName = formData.get("name") as string
     const newType = formData.get("type") as any
@@ -92,7 +92,7 @@ export default async function AssetDetailPage({
   async function deleteAssetAction() {
     "use server"
     const sessionUrl = await auth()
-    if (!sessionUrl || !hasPermission(sessionUrl as any, 'DELETE_ASSETS')) throw new Error("Forbidden")
+    if (!sessionUrl || !hasPermission(sessionUrl, 'DELETE_ASSETS')) throw new Error("Forbidden")
 
     // Deleting Asset sets incident.assetId = NULL by Prisma definition.
     await db.asset.deleteMany({ where: { id: asset!.id } })

@@ -29,7 +29,7 @@ jest.mock("../src/lib/db", () => ({
     auditLog: {
       create: jest.fn(),
     },
-    $executeRawUnsafe: jest.fn(),
+    $executeRaw: jest.fn(),
     $executeRaw: jest.fn()
   }
 }))
@@ -98,7 +98,7 @@ describe("System Actions", () => {
       
       expect(db.systemSetting.upsert).toHaveBeenCalled()
       expect(db.user.updateMany).toHaveBeenCalled()
-      expect(db.$executeRawUnsafe).toHaveBeenCalledTimes(2)
+      expect(db.$executeRaw).toHaveBeenCalledTimes(2)
     })
     
     it("handles parsing roles and encrypting smtp password and URL fallback parsing", async () => {
@@ -153,7 +153,7 @@ describe("System Actions", () => {
     it("catches DB exception silently during SLA update", async () => {
        (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
        ;(hasPermission as jest.Mock).mockReturnValue(true)
-       ;(db.$executeRawUnsafe as jest.Mock).mockRejectedValue(new Error("DB FAULT"))
+       ;(db.$executeRaw as jest.Mock).mockRejectedValue(new Error("DB FAULT"))
        const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {})
        
        await updateSystemSettings(new FormData())

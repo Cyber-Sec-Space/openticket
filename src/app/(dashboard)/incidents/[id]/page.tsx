@@ -105,7 +105,7 @@ export default async function IncidentDetailPage({
   async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = hasPermission(sessionUrl as any, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(sessionUrl as any, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
+    const hasPostPrivilege = hasPermission(sessionUrl, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(sessionUrl, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const settings = await getGlobalSettings()
@@ -117,8 +117,8 @@ export default async function IncidentDetailPage({
     
     if (!currentIncident) throw new Error("Synchronization Error: Incident record lost or expunged.")
 
-    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
-    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAll = hasPermission(sessionUrl, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
     const isUnassigned = currentIncident.assignees.length === 0
     if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
@@ -141,14 +141,14 @@ export default async function IncidentDetailPage({
     // 1. Status Mutation Checking
     if (newStatusRaw && newStatusRaw.replace(/ /g, '_') !== currentIncident.status) {
       const parsedStatus = newStatusRaw.replace(/ /g, '_') as any
-      if (parsedStatus === 'RESOLVED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENT_STATUS_RESOLVE')) finalStatus = parsedStatus
-      else if (parsedStatus === 'CLOSED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENT_STATUS_CLOSE')) finalStatus = parsedStatus
-      else if (parsedStatus !== 'RESOLVED' && parsedStatus !== 'CLOSED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) finalStatus = parsedStatus
+      if (parsedStatus === 'RESOLVED' && hasPermission(sessionUrl, 'UPDATE_INCIDENT_STATUS_RESOLVE')) finalStatus = parsedStatus
+      else if (parsedStatus === 'CLOSED' && hasPermission(sessionUrl, 'UPDATE_INCIDENT_STATUS_CLOSE')) finalStatus = parsedStatus
+      else if (parsedStatus !== 'RESOLVED' && parsedStatus !== 'CLOSED' && hasPermission(sessionUrl, 'UPDATE_INCIDENTS_METADATA')) finalStatus = parsedStatus
     }
 
     // 2. Severity & SLA Mutation Checking
     if (newSeverityRaw && newSeverityRaw !== currentIncident.severity) {
-      if (hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) {
+      if (hasPermission(sessionUrl, 'UPDATE_INCIDENTS_METADATA')) {
         finalSeverity = newSeverityRaw as any
         
         // Automatic SLA Recalculation on Severity changes
@@ -171,7 +171,7 @@ export default async function IncidentDetailPage({
           finalSlaDate = new Date(targetSlaDateRaw)
         }
       }
-    } else if (targetSlaDateRaw && targetSlaDateRaw.trim() !== "" && hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) {
+    } else if (targetSlaDateRaw && targetSlaDateRaw.trim() !== "" && hasPermission(sessionUrl, 'UPDATE_INCIDENTS_METADATA')) {
        finalSlaDate = new Date(targetSlaDateRaw)
     }
 
@@ -181,7 +181,7 @@ export default async function IncidentDetailPage({
     let assetsChanged = assetIds.length !== currentAssetSet.size || assetIds.some(id => !currentAssetSet.has(id))
 
     if (assetsChanged) {
-       if (hasPermission(sessionUrl as any, 'LINK_INCIDENT_TO_ASSET')) finalAssets = assetIds.map(id => ({ id }))
+       if (hasPermission(sessionUrl, 'LINK_INCIDENT_TO_ASSET')) finalAssets = assetIds.map(id => ({ id }))
     }
 
     // 4. Assignee Escalation Verification
@@ -193,8 +193,8 @@ export default async function IncidentDetailPage({
     
     if (assigneesChanged) {
        let isAuthorizedToAssign = false
-       const hasSelf = hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS_SELF')
-       const hasOthers = hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS_OTHERS')
+       const hasSelf = hasPermission(sessionUrl, 'ASSIGN_INCIDENTS_SELF')
+       const hasOthers = hasPermission(sessionUrl, 'ASSIGN_INCIDENTS_OTHERS')
        
        if (hasOthers) {
          isAuthorizedToAssign = true
@@ -278,7 +278,7 @@ export default async function IncidentDetailPage({
          
          if (meetsThreshold) {
            // BOLA Override protection: Ensure the SOAR Engine executor actively possesses ASSET mutation privileges
-           if (hasPermission(sessionUrl as any, 'UPDATE_ASSETS')) {
+           if (hasPermission(sessionUrl, 'UPDATE_ASSETS')) {
               for (const a of finalAssets) {
                  const affectedAsset = await db.asset.update({
                    where: { id: a.id },
@@ -334,14 +334,14 @@ export default async function IncidentDetailPage({
   async function editDetailsAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')
+    const hasPostPrivilege = hasPermission(sessionUrl, 'UPDATE_INCIDENTS_METADATA')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
     if (!currentIncident) throw new Error("Incident not found")
 
-    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
-    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAll = hasPermission(sessionUrl, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
     const isUnassigned = currentIncident.assignees.length === 0
     if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
@@ -383,14 +383,14 @@ export default async function IncidentDetailPage({
   async function deleteIncidentAction() {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = hasPermission(sessionUrl as any, 'DELETE_INCIDENTS')
+    const hasPostPrivilege = hasPermission(sessionUrl, 'DELETE_INCIDENTS')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
     if (!currentIncident) throw new Error("Incident not found")
 
-    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
-    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAll = hasPermission(sessionUrl, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
     const isUnassigned = currentIncident.assignees.length === 0
     if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
@@ -596,13 +596,13 @@ export default async function IncidentDetailPage({
                 const content = formData.get("content") as string
                 if (!content) return;
                 
-                const canAddComments = hasPermission(sessionUrl as any, 'ADD_COMMENTS');
+                const canAddComments = hasPermission(sessionUrl, 'ADD_COMMENTS');
                 
                 const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
                 if (!currentIncident) throw new Error("Incident not found")
 
-                const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
-                const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
+                const canViewAll = hasPermission(sessionUrl, 'VIEW_INCIDENTS_ALL')
+                const canViewUnassigned = hasPermission(sessionUrl, 'VIEW_INCIDENTS_UNASSIGNED')
                 const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id);
                 const isUnassigned = currentIncident.assignees.length === 0;
                 

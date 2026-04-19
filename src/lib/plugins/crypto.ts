@@ -1,7 +1,6 @@
 import crypto from "crypto";
 
 const ALGO = "aes-256-gcm";
-const LEGACY_FALLBACK_SECRET = process.env.LEGACY_FALLBACK_SECRET || "0".repeat(32);
 
 // Vault: {"v1": "secret1", "v2": "secret2"}
 let keyVault: Record<string, Buffer> | null = null;
@@ -52,7 +51,7 @@ const getCurrentKey = (): Buffer => {
   return keyVault![currentVersion];
 };
 
-const getLegacyFallbackKey = () => crypto.createHash("sha256").update(LEGACY_FALLBACK_SECRET).digest();
+
 
 export function encryptPluginConfig(configObject: Record<string, unknown> | null | undefined): string {
   if (!configObject) return `enc.${currentVersion}.`;
@@ -98,7 +97,7 @@ export function parsePluginConfig(rawConfigStr: string): Record<string, unknown>
     
     return JSON.parse(decrypted);
   } catch (err) {
-    console.error("[Plugin Crypto] Decryption failed.", err);
+    console.error("[Plugin Crypto] Primary key decryption failed. Data may be corrupted or encrypted with a rotated-out key.", err);
     return {};
   }
 }
