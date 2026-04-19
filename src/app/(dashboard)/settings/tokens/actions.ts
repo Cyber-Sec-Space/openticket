@@ -8,7 +8,7 @@ import { hasPermission, assertSecureSession } from "@/lib/auth-utils"
 
 export async function createApiTokenAction(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'ISSUE_API_TOKENS')) {
+  if (!session?.user || !hasPermission(session, 'ISSUE_API_TOKENS')) {
      throw new Error("Forbidden: You do not have the clearance tier required to mint automation tokens.")
   }
 

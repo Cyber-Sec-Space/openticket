@@ -12,7 +12,7 @@ import { getGlobalSettings } from "@/lib/settings";
 export async function createVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'CREATE_VULNERABILITIES')) {
+  if (!session?.user || !hasPermission(session, 'CREATE_VULNERABILITIES')) {
     return { error: "Forbidden: You lack the CREATE_VULNERABILITIES capability." }
   }
 
@@ -51,7 +51,7 @@ export async function createVulnerabilityAction(formData: FormData) {
       cvssScore,
       severity,
       targetSlaDate: null,
-      vulnerabilityAssets: hasPermission(session as any, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
+      vulnerabilityAssets: hasPermission(session, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
         ? { create: assetIds.map(id => ({ assetId: id, status: 'AFFECTED' })) }
         : undefined
     }

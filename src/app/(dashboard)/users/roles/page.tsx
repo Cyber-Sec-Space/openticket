@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function RolesPage() {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'VIEW_ROLES')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_ROLES')) {
     redirect("/login")
   }
 

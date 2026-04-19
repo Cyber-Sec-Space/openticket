@@ -91,18 +91,10 @@ export function parsePluginConfig(rawConfigStr: string): Record<string, unknown>
     const encryptedB64 = parts[4];
     
     let decrypted = "";
-    try {
-      const decipher = crypto.createDecipheriv(ALGO, getKeyForVersion(version), iv);
-      decipher.setAuthTag(authTag);
-      decrypted = decipher.update(encryptedB64, "base64", "utf8");
-      decrypted += decipher.final("utf8");
-    } catch {
-      // Backward compatibility for legacy data encrypted with the removed insecure fallback.
-      const legacyDecipher = crypto.createDecipheriv(ALGO, getLegacyFallbackKey(), iv);
-      legacyDecipher.setAuthTag(authTag);
-      decrypted = legacyDecipher.update(encryptedB64, "base64", "utf8");
-      decrypted += legacyDecipher.final("utf8");
-    }
+    const decipher = crypto.createDecipheriv(ALGO, getKeyForVersion(version), iv);
+    decipher.setAuthTag(authTag);
+    decrypted = decipher.update(encryptedB64, "base64", "utf8");
+    decrypted += decipher.final("utf8");
     
     return JSON.parse(decrypted);
   } catch (err) {

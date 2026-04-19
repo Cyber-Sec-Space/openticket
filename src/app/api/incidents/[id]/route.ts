@@ -9,7 +9,7 @@ export async function GET(
   const { id } = await params
   const session = await apiAuth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  if (!hasPermission(session as any, ['VIEW_INCIDENTS_ALL', 'VIEW_INCIDENTS_ASSIGNED', 'VIEW_INCIDENTS_UNASSIGNED'])) return new NextResponse("Forbidden", { status: 403 })
+  if (!hasPermission(session, ['VIEW_INCIDENTS_ALL', 'VIEW_INCIDENTS_ASSIGNED', 'VIEW_INCIDENTS_UNASSIGNED'])) return new NextResponse("Forbidden", { status: 403 })
 
   try {
     const incident = await db.incident.findUnique({
@@ -25,9 +25,9 @@ export async function GET(
 
     if (!incident) return new NextResponse("Not Found", { status: 404 })
 
-    const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
-    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+    const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
     
     // Strict isolation enforcement
     let isAuthorized = canViewAll || incident.reporterId === session.user.id
@@ -58,11 +58,11 @@ export async function PATCH(
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
-    const hasAssignAll = hasPermission(session as any, 'ASSIGN_INCIDENTS_OTHERS')
-    const hasAssignSelf = hasPermission(session as any, 'ASSIGN_INCIDENTS_SELF')
-    const hasMetadata = hasPermission(session as any, 'UPDATE_INCIDENTS_METADATA')
-    const canClose = hasPermission(session as any, 'UPDATE_INCIDENT_STATUS_CLOSE')
-    const canResolve = hasPermission(session as any, 'UPDATE_INCIDENT_STATUS_RESOLVE')
+    const hasAssignAll = hasPermission(session, 'ASSIGN_INCIDENTS_OTHERS')
+    const hasAssignSelf = hasPermission(session, 'ASSIGN_INCIDENTS_SELF')
+    const hasMetadata = hasPermission(session, 'UPDATE_INCIDENTS_METADATA')
+    const canClose = hasPermission(session, 'UPDATE_INCIDENT_STATUS_CLOSE')
+    const canResolve = hasPermission(session, 'UPDATE_INCIDENT_STATUS_RESOLVE')
 
     const body = await req.json()
     const { status, assigneeId, severity, assetId } = body
@@ -74,9 +74,9 @@ export async function PATCH(
     if (!existingIncident) return new NextResponse("Not Found", { status: 404 })
 
     // Enforce Zero-Trust BOLA Isolation before allowing any mutation blocks
-    const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
-    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+    const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
     
     let isAuthorized = canViewAll || existingIncident.reporterId === session.user.id
     if (!isAuthorized) {
@@ -125,7 +125,7 @@ export async function PATCH(
     }
     if (severity) updateData.severity = severity
     if (assetId !== undefined) {
-       if (!hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET')) {
+       if (!hasPermission(session, 'LINK_INCIDENT_TO_ASSET')) {
           return new NextResponse("Forbidden: Missing LINK_INCIDENT_TO_ASSET privilege", { status: 403 })
        }
        updateData.assetId = assetId

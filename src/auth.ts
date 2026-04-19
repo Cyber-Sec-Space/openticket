@@ -80,11 +80,12 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
         // Securely identify the network boundary of the requester
         const requestHeaders = await headers();
         const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
-        const xRealIp = requestHeaders.get("x-real-ip")?.trim();
-        const xForwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
-        const requestIp = trustProxyHeaders
-          ? (xRealIp || xForwardedFor || "127.0.0.1")
-          : (xRealIp || "127.0.0.1");
+        let requestIp = "127.0.0.1";
+        if (trustProxyHeaders) {
+          const xRealIp = requestHeaders.get("x-real-ip")?.trim();
+          const xForwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
+          requestIp = xRealIp || xForwardedFor || "127.0.0.1";
+        }
         
         // Fetch global directives (Moved up for early evaluation)
         const settings = await getGlobalSettings()

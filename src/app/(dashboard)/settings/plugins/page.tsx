@@ -9,7 +9,7 @@ import { getGlobalSettings } from "@/lib/settings";
 
 export default async function PluginManagementPage() {
   const session = await auth()
-  if (!session?.user?.id || !hasPermission(session as any, 'VIEW_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'VIEW_PLUGINS')) {
     redirect("/")
   }
 

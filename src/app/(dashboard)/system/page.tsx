@@ -23,7 +23,7 @@ import { createPluginContext } from "@/lib/plugins/sdk-context"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'VIEW_SYSTEM_SETTINGS')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_SYSTEM_SETTINGS')) {
     redirect("/login")
   }
 

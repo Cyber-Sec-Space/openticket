@@ -23,8 +23,8 @@ export async function GET(req: Request) {
   const skipParam = parseInt(searchParams.get('skip') || '0', 10)
   const skip = isNaN(skipParam) ? 0 : skipParam
 
-  const canExportIncidents = hasPermission(session as any, 'EXPORT_INCIDENTS')
-  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canExportIncidents = hasPermission(session, 'EXPORT_INCIDENTS')
+  const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
   let csvContent = ""
 
   if (type === 'incident') {
@@ -38,8 +38,8 @@ export async function GET(req: Request) {
        return new NextResponse("Forbidden: You require standard or advanced export permissions.", { status: 403 })
     }
 
-    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
-    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
 
     if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
        return new NextResponse("Forbidden: No view permissions granted.", { status: 403 })
@@ -87,7 +87,7 @@ export async function GET(req: Request) {
     }
   } else if (type === 'vulnerability') {
     // BOLA Enforcement
-    const hasVulnExportPrivilege = hasPermission(session as any, 'VIEW_VULNERABILITIES') && hasPermission(session as any, 'EXPORT_INCIDENTS')
+    const hasVulnExportPrivilege = hasPermission(session, 'VIEW_VULNERABILITIES') && hasPermission(session, 'EXPORT_INCIDENTS')
     if (!hasVulnExportPrivilege) {
        return new NextResponse("Forbidden: Comprehensive Threat intelligence extracts mandate explicit clearance.", { status: 403 })
     }

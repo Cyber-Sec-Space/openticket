@@ -11,9 +11,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const filterParams: any = {}
   
-  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
-  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+  const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
 
   if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
     return NextResponse.json([]) // Enforce absolute zero-trust view boundary
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
     include: {
       reporter: { select: { name: true, email: true } },
       assignees: { select: { name: true, email: true } },
-      asset: { select: { name: true, type: true } }
+      assets: { select: { id: true, name: true, type: true } }
     },
     orderBy: { createdAt: 'desc' },
     take,
@@ -66,11 +66,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const session = await apiAuth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  if (!hasPermission(session as any, 'CREATE_INCIDENTS')) return new NextResponse("Forbidden", { status: 403 })
+  if (!hasPermission(session, 'CREATE_INCIDENTS')) return new NextResponse("Forbidden", { status: 403 })
 
   try {
     const body = await req.json()
-    const { title, description, severity, assetId, tags = [] } = body
+    const { title, description, severity, assetIds = [], tags = [] } = body
 
     if (!title || !description) {
       return new NextResponse("Title and Description are required", { status: 400 })
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     }
 
     // If user has CREATE_INCIDENTS, they are allowed to set initial target asset and severity
-    const finalAssetId = hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null;
+    const finalAssetIds = hasPermission(session, 'LINK_INCIDENT_TO_ASSET') && Array.isArray(assetIds) ? assetIds.filter(id => id !== 'NONE') : [];
     
     const VALID_SEVERITIES = ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
     let finalSeverity = severity || 'LOW';
@@ -96,7 +96,9 @@ export async function POST(req: Request) {
         description,
         severity: finalSeverity,
         reporterId: session.user.id,
-        assetId: finalAssetId,
+        assets: finalAssetIds.length > 0 ? {
+          connect: finalAssetIds.map((id: string) => ({ id }))
+        } : undefined,
         status: 'NEW',
         tags: processedTags
       }
@@ -119,19 +121,19 @@ export async function POST(req: Request) {
     const currentRank = sevRank[newIncident.severity as keyof typeof sevRank] || 0
     const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
 
-    if (settings?.soarAutoQuarantineEnabled && newIncident.assetId && currentRank >= thresholdRank) {
-      await db.asset.update({
-        where: { id: newIncident.assetId },
+    if (settings?.soarAutoQuarantineEnabled && finalAssetIds.length > 0 && currentRank >= thresholdRank) {
+      await db.asset.updateMany({
+        where: { id: { in: finalAssetIds } },
         data: { status: 'COMPROMISED' }
       })
 
       await db.auditLog.create({
         data: {
           action: "SOAR_AUTO_QUARANTINE",
-          entityType: "Asset",
-          entityId: newIncident.assetId,
+          entityType: "Incident",
+          entityId: newIncident.id,
           userId: session.user.id,
-          changes: `Asset automatically marked as COMPROMISED due to ${newIncident.severity} Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
+          changes: `${finalAssetIds.length} Asset(s) automatically marked as COMPROMISED due to ${newIncident.severity} Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
         }
       })
     }

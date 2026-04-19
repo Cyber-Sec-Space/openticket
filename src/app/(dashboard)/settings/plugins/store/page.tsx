@@ -34,7 +34,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PluginStorePage() {
   const session = await auth()
-  if (!session?.user?.id || !hasPermission(session as any, 'VIEW_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'VIEW_PLUGINS')) {
     redirect("/")
   }
 

@@ -14,7 +14,7 @@ export default async function NewUserPage() {
   const session = await auth()
   
   if (!session?.user) { redirect("/login"); return null; }
-  const canCreate = hasPermission(session as any, 'CREATE_USERS')
+  const canCreate = hasPermission(session, 'CREATE_USERS')
 
   if (!canCreate) {
     return (

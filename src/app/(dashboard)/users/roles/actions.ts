@@ -10,7 +10,7 @@ import { getGlobalSettings } from "@/lib/settings";
 // Verify granular Admin Privileges
 async function verifyAdmin(action: 'CREATE_ROLES' | 'UPDATE_ROLES' | 'DELETE_ROLES') {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, action)) {
+  if (!session?.user || !hasPermission(session, action)) {
     throw new Error(`Unauthorized: You lack the ${action} capability.`)
   }
   return session

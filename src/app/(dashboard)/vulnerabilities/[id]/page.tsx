@@ -29,7 +29,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
   const resolvedSearchParams = await searchParams;
   const session = await auth()
 
-  if (!session?.user || !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_VULNERABILITIES')) {
     redirect("/login")
   }
 
@@ -103,7 +103,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
 
         {/* Admin Controls */}
         <div className="flex space-x-4 items-center">
-          {hasPermission(session as any, 'UPDATE_VULNERABILITIES') && (
+          {hasPermission(session, 'UPDATE_VULNERABILITIES') && (
             <ActionForm action={deleteVulnerabilityAction} resetOnSuccess={false}>
               <input type="hidden" name="vulnId" value={vuln.id} />
               <Button variant="destructive" size="sm" type="submit" className="opacity-70 hover:opacity-100 flex items-center">
@@ -196,7 +196,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
               )}
             </div>
 
-            {hasPermission(session as any, 'VIEW_VULNERABILITIES') && (
+            {hasPermission(session, 'VIEW_VULNERABILITIES') && (
               <ActionForm action={postVulnCommentAction} className="mt-4 flex flex-col space-y-2">
                 <input type="hidden" name="vulnId" value={vuln.id} />
                 <textarea
@@ -233,7 +233,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                       defaultSelectedIds={vuln.assignees.map((a: any) => a.id)}
                    />
                 </div>
-                {(hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF') || hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')) && (
+                {(hasPermission(session, 'ASSIGN_VULNERABILITIES_SELF') || hasPermission(session, 'ASSIGN_VULNERABILITIES_OTHERS')) && (
                   <Button type="submit" size="sm" className="w-full h-9 bg-cyan-950/40 text-cyan-400 hover:bg-cyan-900/60 border border-cyan-900/50 text-[11px] font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]">
                     Update Assignees
                   </Button>
@@ -248,7 +248,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
               <h2 className="font-bold tracking-tight text-red-500 flex-1">Infected Infrastructure</h2>
             </div>
 
-            {hasPermission(session as any, 'UPDATE_VULNERABILITIES') && (
+            {hasPermission(session, 'UPDATE_VULNERABILITIES') && (
               <ActionForm action={linkVulnAssetAction} className="w-full p-4 border-b border-white/5 bg-black/40 flex flex-col gap-3">
                 <input type="hidden" name="vulnId" value={vuln.id} />
                 <div className="w-full relative z-20">
@@ -278,7 +278,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                         </Link>
 
                         <div className="flex gap-2 items-center justify-between border-t border-white/5 pt-2">
-                          {hasPermission(session as any, 'UPDATE_VULNERABILITIES') ? (
+                          {hasPermission(session, 'UPDATE_VULNERABILITIES') ? (
                             <ActionForm action={updateVulnAssetStatusAction} className="flex gap-2" resetOnSuccess={false}>
                               <input type="hidden" name="vulnAssetId" value={vulnAsset.id} />
                               <input type="hidden" name="vulnId" value={vuln.id} />
@@ -299,7 +299,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
                             <Badge variant="outline" className="text-[10px] font-mono">{vulnAsset.status}</Badge>
                           )}
 
-                          {hasPermission(session as any, 'DELETE_VULNERABILITIES') && (
+                          {hasPermission(session, 'DELETE_VULNERABILITIES') && (
                             <ActionForm action={unlinkVulnAssetAction} resetOnSuccess={false}>
                               <input type="hidden" name="vulnId" value={vuln.id} />
                               <input type="hidden" name="vulnAssetId" value={vulnAsset.id} />

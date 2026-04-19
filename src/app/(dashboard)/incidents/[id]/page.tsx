@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
+import { MultiAssetPicker } from "@/components/ui/multi-asset-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload, Tag as TagIcon } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
@@ -56,7 +57,7 @@ export default async function IncidentDetailPage({
       include: {
         reporter: true,
         assignees: true,
-        asset: true
+        assets: true
       }
     }),
     db.comment.findMany({ where: { incidentId: id }, include: { author: { include: { customRoles: true } } }, orderBy: { createdAt: 'desc' }, take: TAKE_COMMENT, skip: (commentPage - 1) * TAKE_COMMENT }),
@@ -66,10 +67,10 @@ export default async function IncidentDetailPage({
     db.auditLog.findMany({ where: { entityType: 'Incident', entityId: id }, include: { user: { include: { customRoles: true } } }, orderBy: { createdAt: 'desc' }, take: 50 })
   ])
 
-  const hasPrivilege = hasPermission(session as any, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(session as any, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
+  const hasPrivilege = hasPermission(session, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(session, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
   
-  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+  const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+  const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
   
   const isAuthorized = canViewAll 
     || (canViewUnassigned && incident?.assignees.length === 0) 
@@ -89,7 +90,7 @@ export default async function IncidentDetailPage({
   // Only authorized operators can assign tickets.
   let eligibleAssignees: any[] = []
   if (hasPrivilege) {
-    const canAssignOthers = hasPermission(session as any, 'ASSIGN_INCIDENTS_OTHERS')
+    const canAssignOthers = hasPermission(session, 'ASSIGN_INCIDENTS_OTHERS')
     eligibleAssignees = await db.user.findMany({
       where: canAssignOthers 
         ? { customRoles: { some: { permissions: { hasSome: ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE', 'ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'] } } } }
@@ -111,7 +112,7 @@ export default async function IncidentDetailPage({
     
     const currentIncident = await db.incident.findUnique({ 
       where: { id: incident!.id },
-      include: { assignees: true, reporter: true }
+      include: { assignees: true, reporter: true, assets: true }
     })
     
     if (!currentIncident) throw new Error("Synchronization Error: Incident record lost or expunged.")
@@ -126,15 +127,15 @@ export default async function IncidentDetailPage({
 
     const newStatusRaw = formData.get("status") as string
     const newSeverityRaw = formData.get("severity") as string
-    const newAssetName = formData.get("assetName") as string
+    const assetIds = (formData.getAll("assetIds") as string[]).filter(id => id !== 'NONE')
     const assigneeIdsRaw = formData.getAll("assigneeIds") as string[]
     const targetSlaDateRaw = formData.get("targetSlaDate") as string
 
     // Phase 13: BOLA Graceful Drop Enforcer
     let finalStatus = currentIncident.status
     let finalSeverity = currentIncident.severity
-    let finalAssetId = currentIncident.assetId
-    let finalAssignees = currentIncident.assignees.map(a => ({ id: a.id }))
+    let finalAssets = currentIncident.assets.map((a: any) => ({ id: a.id }))
+    let finalAssignees = currentIncident.assignees.map((a: any) => ({ id: a.id }))
     let finalSlaDate = currentIncident.targetSlaDate
 
     // 1. Status Mutation Checking
@@ -175,9 +176,12 @@ export default async function IncidentDetailPage({
     }
 
     // 3. Asset Mapping Verification
-    const requestedAssetId = newAssetName === 'UNLINKED' ? null : assets.find(a => a.name === newAssetName)?.id || null
-    if (requestedAssetId !== currentIncident.assetId) {
-       if (hasPermission(sessionUrl as any, 'LINK_INCIDENT_TO_ASSET')) finalAssetId = requestedAssetId
+    const requestedAssetSet = new Set(assetIds)
+    const currentAssetSet = new Set(currentIncident.assets.map((a: any) => a.id))
+    let assetsChanged = assetIds.length !== currentAssetSet.size || assetIds.some(id => !currentAssetSet.has(id))
+
+    if (assetsChanged) {
+       if (hasPermission(sessionUrl as any, 'LINK_INCIDENT_TO_ASSET')) finalAssets = assetIds.map(id => ({ id }))
     }
 
     // 4. Assignee Escalation Verification
@@ -214,7 +218,9 @@ export default async function IncidentDetailPage({
       data: {
         status: finalStatus,
         severity: finalSeverity,
-        assetId: finalAssetId,
+        assets: {
+          set: finalAssets
+        },
         targetSlaDate: finalSlaDate,
         assignees: {
           set: finalAssignees
@@ -257,11 +263,11 @@ export default async function IncidentDetailPage({
       }
     }
 
-    const updatedIncident = await db.incident.findUnique({ where: { id: currentIncident.id }, include: { reporter: true, assignees: true, asset: true } })
+    const updatedIncident = await db.incident.findUnique({ where: { id: currentIncident.id }, include: { reporter: true, assignees: true, assets: true } })
     await fireHook("onIncidentUpdated", updatedIncident as any)
 
     // Phase 7: Dynamic Triage Auto-Isolation rules
-    if (finalSeverity === 'CRITICAL' && finalAssetId && currentIncident.severity !== 'CRITICAL') {
+    if (finalSeverity === 'CRITICAL' && finalAssets.length > 0 && currentIncident.severity !== 'CRITICAL') {
       if (settings?.soarAutoQuarantineEnabled) {
          // Telemetry SOAR mapping via system settings override threshold
          let meetsThreshold = false;
@@ -273,26 +279,28 @@ export default async function IncidentDetailPage({
          if (meetsThreshold) {
            // BOLA Override protection: Ensure the SOAR Engine executor actively possesses ASSET mutation privileges
            if (hasPermission(sessionUrl as any, 'UPDATE_ASSETS')) {
-              const affectedAsset = await db.asset.update({
-                where: { id: finalAssetId },
-                data: { status: 'COMPROMISED' }
-              })
-              await fireHook("onAssetCompromise", affectedAsset)
+              for (const a of finalAssets) {
+                 const affectedAsset = await db.asset.update({
+                   where: { id: a.id },
+                   data: { status: 'COMPROMISED' }
+                 })
+                 await fireHook("onAssetCompromise", affectedAsset)
 
-              const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_ASSETS', 'VIEW_SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
-              await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${finalAssetId}`)
+                 const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_ASSETS', 'VIEW_SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
+                 await dispatchMassAlert(admins.map(adm => adm.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${a.id}`)
 
-              if (settings?.smtpTriggerOnAssetCompromise) {
-                await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.filter(a => a.email).map(a => a.email as string))
+                 if (settings?.smtpTriggerOnAssetCompromise) {
+                   await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.filter(adm => adm.email).map(adm => adm.email as string))
+                 }
               }
 
               await db.auditLog.create({
                 data: {
                   action: "SOAR_AUTO_QUARANTINE",
-                  entityType: "Asset",
-                  entityId: finalAssetId,
+                  entityType: "Incident",
+                  entityId: currentIncident.id,
                   userId: sessionUrl.user.id,
-                  changes: `Autonomous SIEM Triage -> Segmenting network node due to attached Priority Ticket.`
+                  changes: `Autonomous SIEM Triage -> Segmented ${finalAssets.length} network node(s) due to attached Priority Ticket.`
                 }
               })
            }
@@ -365,7 +373,7 @@ export default async function IncidentDetailPage({
       }
     })
     
-    const updatedIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { reporter: true, assignees: true, asset: true } })
+    const updatedIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { reporter: true, assignees: true, assets: true } })
     const { fireHook } = await import("@/lib/plugins/hook-engine")
     await fireHook("onIncidentUpdated", updatedIncident as any)
     
@@ -443,7 +451,7 @@ export default async function IncidentDetailPage({
             </Link>
           )}
 
-          {hasPermission(session as any, 'DELETE_INCIDENTS') && (
+          {hasPermission(session, 'DELETE_INCIDENTS') && (
             <ConfirmForm action={deleteIncidentAction} promptMessage="Are you absolutely sure you want to PERMANENTLY terminate this incident? All associated intelligence and operational timelines will be destroyed. This cannot be undone.">
               <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" /> Terminate Incident
@@ -678,11 +686,17 @@ export default async function IncidentDetailPage({
                 <span className="text-foreground/90 font-medium">{incident.reporter?.name || "Deleted Operator"}</span>
               </div>
               <div>
-                <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target Asset</strong>
-                {incident.asset ? (
-                  <Link href={`/assets/${incident.asset.id}`} className="text-primary hover:underline font-mono text-xs">
-                    {incident.asset.name}
-                  </Link>
+                <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target Assets</strong>
+                {incident.assets && incident.assets.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {incident.assets.map((asset: any) => (
+                      <Link key={asset.id} href={`/assets/${asset.id}`}>
+                        <Badge variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 transition-colors font-mono text-xs">
+                          {asset.name}
+                        </Badge>
+                      </Link>
+                    ))}
+                  </div>
                 ) : <span className="text-muted-foreground italic text-xs">None Linked</span>}
               </div>
               <div>
@@ -795,18 +809,11 @@ export default async function IncidentDetailPage({
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-white/70">Target Node (Asset)</Label>
-                    <Select key={`asset-${incident.asset?.name || "UNLINKED"}`} name="assetName" defaultValue={incident.asset?.name || "UNLINKED"}>
-                      <SelectTrigger className="flex !h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
-                        <SelectValue placeholder="Associate Infrastructure (Optional)" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-black/95 border-border/60 shadow-2xl backdrop-blur-md max-h-64">
-                         <SelectItem value="UNLINKED" className="text-muted-foreground italic">None Selected</SelectItem>
-                         {assets.map(asset => (
-                           <SelectItem key={asset.id} value={asset.name} className="font-mono">{asset.name}</SelectItem>
-                         ))}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-xs text-white/70">Target Nodes (Assets)</Label>
+                    <MultiAssetPicker
+                      assets={assets}
+                      defaultSelectedIds={incident.assets.map(a => a.id)}
+                    />
                   </div>
 
                   <div className="space-y-2">

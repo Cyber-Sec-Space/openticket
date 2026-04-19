@@ -12,7 +12,7 @@ import { getGlobalSettings } from "@/lib/settings";
 export async function createUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'CREATE_USERS')) {
+  if (!session?.user || !hasPermission(session, 'CREATE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -53,12 +53,12 @@ export async function createUserAction(formData: FormData) {
   
   let finalRoleIds: string[] = []
   
-  if (customRoleIds.length > 0 && hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
-     const hasRoot = hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')
+  if (customRoleIds.length > 0 && hasPermission(session, 'ASSIGN_USER_ROLES')) {
+     const hasRoot = hasPermission(session, 'UPDATE_SYSTEM_SETTINGS')
      if (!hasRoot) {
        // Validate Subset Integrity
        const targetRoles = await db.customRole.findMany({ where: { id: { in: customRoleIds } } })
-       const callerPerms = new Set((session as any).user?.permissions || [])
+       const callerPerms = new Set((session).user?.permissions || [])
        let isSubset = true
        for (const role of targetRoles) {
          for (const perm of role.permissions) {

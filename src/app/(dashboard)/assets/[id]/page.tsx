@@ -35,14 +35,14 @@ export default async function AssetDetailPage({
   const TAKE_VULN = 10;
 
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'VIEW_ASSETS')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_ASSETS')) {
     return notFound()
   }
 
   const [asset, incidents, totalIncidents, vulns, totalVulns] = await Promise.all([
     db.asset.findUnique({ where: { id } }),
-    db.incident.findMany({ where: { assetId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_INC, skip: (incPage - 1) * TAKE_INC }),
-    db.incident.count({ where: { assetId: id } }),
+    db.incident.findMany({ where: { assets: { some: { id } } }, orderBy: { createdAt: 'desc' }, take: TAKE_INC, skip: (incPage - 1) * TAKE_INC }),
+    db.incident.count({ where: { assets: { some: { id } } } }),
     db.vulnerability.findMany({ where: { vulnerabilityAssets: { some: { assetId: id } } }, orderBy: { createdAt: 'desc' }, take: TAKE_VULN, skip: (vulnPage - 1) * TAKE_VULN }),
     db.vulnerability.count({ where: { vulnerabilityAssets: { some: { assetId: id } } } })
   ])
@@ -72,7 +72,7 @@ export default async function AssetDetailPage({
         externalId: newExternalId || null
       }
     })
-    
+
     const updatedAsset = await db.asset.findUnique({ where: { id: asset!.id } })
     const { fireHook } = await import("@/lib/plugins/hook-engine")
     await fireHook("onAssetUpdated", updatedAsset as any)
@@ -111,7 +111,7 @@ export default async function AssetDetailPage({
         </Link>
 
         <div className="flex items-center gap-3">
-          {hasPermission(session as any, 'UPDATE_ASSETS') && !isEditing && (
+          {hasPermission(session, 'UPDATE_ASSETS') && !isEditing && (
             <Link href={`/assets/${asset.id}?edit=true`}>
               <Button variant="outline" size="sm" className="bg-black/20 text-blue-400 border-blue-400/30 hover:bg-blue-400/10">
                 <Edit3 className="w-4 h-4 mr-2" /> Modify Specs
@@ -119,7 +119,7 @@ export default async function AssetDetailPage({
             </Link>
           )}
 
-          {hasPermission(session as any, 'DELETE_ASSETS') && (
+          {hasPermission(session, 'DELETE_ASSETS') && (
             <ConfirmForm action={deleteAssetAction} promptMessage="Permanently terminate this node? Associated intelligence tags will be unlinked.">
               <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" /> Decommission Node
@@ -134,7 +134,7 @@ export default async function AssetDetailPage({
           <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">{asset.name}</h1>
           <p className="text-muted-foreground font-mono text-xs opacity-70 flex items-center gap-2">
             <span className="text-primary"><Network className="inline w-3 h-3 mr-1" /> NODE-{asset.id.substring(0, 8).toUpperCase()}</span>
-            • {asset.ipAddress || 'Internal DNS Routing'}
+            • {asset.ipAddress || 'N/A'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 mt-2 md:mt-0">
@@ -182,6 +182,12 @@ export default async function AssetDetailPage({
                         <SelectItem value="ENDPOINT">ENDPOINT</SelectItem>
                         <SelectItem value="NETWORK">NETWORK</SelectItem>
                         <SelectItem value="SOFTWARE">SOFTWARE</SelectItem>
+                        <SelectItem value="REPOSITORY">REPOSITORY</SelectItem>
+                        <SelectItem value="CLOUD_RESOURCE">CLOUD RESOURCE</SelectItem>
+                        <SelectItem value="DOMAIN">DOMAIN</SelectItem>
+                        <SelectItem value="IAM_ROLE">IAM ROLE</SelectItem>
+                        <SelectItem value="SAAS_APP">SAAS APP</SelectItem>
+                        <SelectItem value="CONTAINER">CONTAINER</SelectItem>
                         <SelectItem value="OTHER">OTHER</SelectItem>
                       </SelectContent>
                     </Select>
@@ -211,6 +217,14 @@ export default async function AssetDetailPage({
                 </ConfirmForm>
               ) : (
                 <div className="space-y-5 text-sm">
+                  <div>
+                    <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Category</strong>
+                    <span className="text-foreground/90 font-mono text-xs">{asset.type.replace(/_/g, ' ')}</span>
+                  </div>
+                  <div>
+                    <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Deployment State</strong>
+                    <span className="text-foreground/90 font-mono text-xs">{asset.status.replace(/_/g, ' ')}</span>
+                  </div>
                   {asset.externalId && (
                     <div>
                       <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Virtual Identifier</strong>

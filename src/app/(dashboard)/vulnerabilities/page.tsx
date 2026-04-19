@@ -16,10 +16,10 @@ import { CreateVulnModal } from "./create-vuln-modal"
 export default async function VulnerabilitiesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_VULNERABILITIES')) {
     return redirect("/login")
   }
-  const canCreate = hasPermission(session as any, 'CREATE_VULNERABILITIES')
+  const canCreate = hasPermission(session, 'CREATE_VULNERABILITIES')
   const assets = canCreate ? await db.asset.findMany({ select: { id: true, name: true, ipAddress: true }, orderBy: { name: 'asc' } }) : []
 
   const resolvedParams = await searchParams;

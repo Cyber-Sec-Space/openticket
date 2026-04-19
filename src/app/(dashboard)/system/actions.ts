@@ -96,7 +96,7 @@ export async function updateSystemSettings(formData: FormData) {
 
 export async function testSmtpConnection(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')) {
+  if (!session?.user || !hasPermission(session, 'UPDATE_SYSTEM_SETTINGS')) {
     return { error: "Unauthorized" }
   }
 

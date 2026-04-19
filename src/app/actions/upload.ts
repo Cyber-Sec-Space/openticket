@@ -31,8 +31,8 @@ export async function uploadAttachment(formData: FormData) {
 
   // BOLA & RBAC Entity Verification checks
   if (vulnId) {
-    const hasPrivilege = hasPermission(session as any, 'UPLOAD_VULN_ATTACHMENTS')
-    if (!hasPrivilege || !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
+    const hasPrivilege = hasPermission(session, 'UPLOAD_VULN_ATTACHMENTS')
+    if (!hasPrivilege || !hasPermission(session, 'VIEW_VULNERABILITIES')) {
        return { error: "Forbidden: Strict Vuln BOLA enforcement" }
     }
     const vuln = await db.vulnerability.findUnique({ where: { id: vulnId }, select: { id: true }})
@@ -40,10 +40,10 @@ export async function uploadAttachment(formData: FormData) {
   }
 
   if (incidentId) {
-    if (!hasPermission(session as any, 'UPLOAD_INCIDENT_ATTACHMENTS')) return { error: "Forbidden: Direct capability blocked" }
-    const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
-    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    if (!hasPermission(session, 'UPLOAD_INCIDENT_ATTACHMENTS')) return { error: "Forbidden: Direct capability blocked" }
+    const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+    const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
 
     if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
        return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance." }
@@ -187,19 +187,19 @@ export async function deleteAttachment(attachmentId: string) {
   if (!attachment) return { error: "Not found" }
 
   // RBAC for Delete
-  const hasIncidentDeletePrivilege = hasPermission(session as any, 'DELETE_INCIDENT_ATTACHMENTS')
-  const hasVulnDeletePrivilege = hasPermission(session as any, 'DELETE_VULN_ATTACHMENTS')
+  const hasIncidentDeletePrivilege = hasPermission(session, 'DELETE_INCIDENT_ATTACHMENTS')
+  const hasVulnDeletePrivilege = hasPermission(session, 'DELETE_VULN_ATTACHMENTS')
 
-  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
-  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+  const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
   
   // Absolute Zero-Trust Evaluation
   if (attachment.incident && !canViewAll && !canViewAssigned && !canViewUnassigned) {
      return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance to operate on this dataset." }
   }
 
-  if (attachment.vuln && !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
+  if (attachment.vuln && !hasPermission(session, 'VIEW_VULNERABILITIES')) {
      return { error: "Forbidden: Absolute Zero-Trust. You lack baseline view clearance to operate on this dataset." }
   }
 

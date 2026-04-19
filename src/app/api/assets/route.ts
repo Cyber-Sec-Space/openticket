@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const session = await apiAuth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const hasPrivilege = hasPermission(session as any, 'VIEW_ASSETS')
+  const hasPrivilege = hasPermission(session, 'VIEW_ASSETS')
   if (!hasPrivilege) {
      return new NextResponse("Forbidden: Access to systemic assets is strictly restricted.", { status: 403 })
   }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   const session = await apiAuth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   
-  const hasPrivilege = hasPermission(session as any, 'CREATE_ASSETS')
+  const hasPrivilege = hasPermission(session, 'CREATE_ASSETS')
   if (!hasPrivilege) {
     return new NextResponse("Forbidden", { status: 403 })
   }

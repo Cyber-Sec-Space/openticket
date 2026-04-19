@@ -43,7 +43,7 @@ export async function updateUserRole(formData: FormData) {
   const session = await auth()
   
   // Security boundary: Only ASSIGN_USER_ROLES can modify RBAC.
-  if (!session?.user || !hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
+  if (!session?.user || !hasPermission(session, 'ASSIGN_USER_ROLES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -85,7 +85,7 @@ export async function updateUserRole(formData: FormData) {
 export async function deleteUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'DELETE_USERS')) {
+  if (!session?.user || !hasPermission(session, 'DELETE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -129,7 +129,7 @@ export async function deleteUserAction(formData: FormData) {
 export async function toggleUserStatusAction(userId: string, isDisabled: boolean) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'SUSPEND_USERS')) {
+  if (!session?.user || !hasPermission(session, 'SUSPEND_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -170,7 +170,7 @@ export async function toggleUserStatusAction(userId: string, isDisabled: boolean
 export async function bulkDeleteUsersAction(userIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'DELETE_USERS')) {
+  if (!session?.user || !hasPermission(session, 'DELETE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -206,7 +206,7 @@ export async function bulkDeleteUsersAction(userIds: string[]) {
 export async function bulkUpdateRolesAction(userIds: string[], roleIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
+  if (!session?.user || !hasPermission(session, 'ASSIGN_USER_ROLES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -251,7 +251,7 @@ export async function createInvitation(formData: FormData) {
   const session = await auth()
   if (!session?.user) throw new Error("Unauthorized")
   
-  if (!hasPermission(session as any, 'CREATE_USERS')) {
+  if (!hasPermission(session, 'CREATE_USERS')) {
     throw new Error("Insufficient Permissions")
   }
 

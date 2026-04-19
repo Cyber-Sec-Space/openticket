@@ -24,9 +24,9 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   const filterParams: any = { AND: [] }
 
   // Hard RBAC rule: absolute propagation natively isolates unauthorized read actions
-  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL');
-  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED');
-  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED');
+  const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL');
+  const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED');
+  const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED');
 
   if (!canViewAll) {
      const assignedConditions = []
@@ -40,8 +40,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
      filterParams.AND.push({ OR: assignedConditions })
   }
 
-  const canCreate = hasPermission(session as any, 'CREATE_INCIDENTS');
-  const canLinkAsset = hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET');
+  const canCreate = hasPermission(session, 'CREATE_INCIDENTS');
+  const canLinkAsset = hasPermission(session, 'LINK_INCIDENT_TO_ASSET');
   const assets = canLinkAsset ? await db.asset.findMany({
     select: { id: true, name: true },
     orderBy: { name: 'asc' }
@@ -79,6 +79,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
     include: {
       reporter: { select: { name: true, isBot: true } },
       assignees: { select: { name: true } },
+      assets: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: 'desc' },
     skip: (page - 1) * TAKE,
@@ -219,14 +220,24 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                 </TableCell>
                 <TableCell className="font-medium text-foreground flex flex-col justify-center gap-1 min-h-[64px] py-2">
                   <span className="truncate max-w-[200px] xl:max-w-[300px]">{incident.title}</span>
-                  {incident.tags && incident.tags.length > 0 && (
-                    <div className="flex gap-1 overflow-hidden max-w-[250px]">
-                       {incident.tags.slice(0, 2).map((t, idx) => (
-                         <span key={idx} className="bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] font-mono whitespace-nowrap">{t}</span>
-                       ))}
-                       {incident.tags.length > 2 && <span className="text-[9px] text-muted-foreground self-center">+{incident.tags.length - 2}</span>}
-                    </div>
-                  )}
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {incident.tags && incident.tags.length > 0 && (
+                      <div className="flex gap-1 overflow-hidden max-w-[200px]">
+                         {incident.tags.slice(0, 2).map((t, idx) => (
+                           <span key={idx} className="bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded px-1.5 py-0.5 text-[9px] font-mono whitespace-nowrap">{t}</span>
+                         ))}
+                         {incident.tags.length > 2 && <span className="text-[9px] text-muted-foreground self-center">+{incident.tags.length - 2}</span>}
+                      </div>
+                    )}
+                    {incident.assets && incident.assets.length > 0 && (
+                      <div className="flex gap-1 overflow-hidden max-w-[200px]">
+                         {incident.assets.slice(0, 2).map((a, idx) => (
+                           <span key={idx} className="bg-primary/10 text-primary border border-primary/20 rounded px-1.5 py-0.5 text-[9px] font-mono whitespace-nowrap flex items-center"><ShieldAlert className="w-2 h-2 mr-1"/>{a.name}</span>
+                         ))}
+                         {incident.assets.length > 2 && <span className="text-[9px] text-muted-foreground self-center">+{incident.assets.length - 2}</span>}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Badge className={`bg-transparent border ${incident.severity === 'CRITICAL' ? 'border-destructive text-destructive shadow-[0_0_10px_rgba(255,50,50,0.2)] animate-pulse' : (incident.severity === 'INFO' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : 'border-primary text-primary')}`}>

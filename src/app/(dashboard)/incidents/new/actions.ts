@@ -13,15 +13,14 @@ import { getGlobalSettings } from "@/lib/settings";
 
 export async function createIncident(prevState: any, formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'CREATE_INCIDENTS')) {
+  if (!session?.user || !hasPermission(session, 'CREATE_INCIDENTS')) {
     throw new Error("Forbidden: You do not possess the clearance to mint operational incidents.")
   }
 
   const title = formData.get("title") as string
   const description = formData.get("description") as string
   const severity = formData.get("severity") as string
-  const assetId = formData.get("assetId") as string
-
+  const assetIds = (formData.getAll("assetIds") as string[]).filter(id => id !== 'NONE')
   const type = formData.get("type") as string || "OTHER"
 
   const rawTags = formData.getAll("tags") as string[]
@@ -60,7 +59,9 @@ export async function createIncident(prevState: any, formData: FormData) {
       type: type as any,
       severity: effectiveSeverity,
       reporterId: session.user.id,
-      assetId: hasPermission(session as any, 'LINK_INCIDENT_TO_ASSET') && assetId ? assetId : null,
+      assets: (hasPermission(session, 'LINK_INCIDENT_TO_ASSET') && assetIds.length > 0) ? {
+        connect: assetIds.map(id => ({ id }))
+      } : undefined,
       status: 'NEW',
       targetSlaDate: null,
       tags
@@ -78,28 +79,31 @@ export async function createIncident(prevState: any, formData: FormData) {
   const currentRank = sevRank[effectiveSeverity as keyof typeof sevRank] || 0
   const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
 
-  if (settings?.soarAutoQuarantineEnabled && assetId && currentRank >= thresholdRank) {
-    const affectedAsset = await db.asset.update({
-      where: { id: assetId },
+  if (settings?.soarAutoQuarantineEnabled && assetIds.length > 0 && currentRank >= thresholdRank) {
+    const affectedAssets = await db.asset.findMany({ where: { id: { in: assetIds } } })
+    await db.asset.updateMany({
+      where: { id: { in: assetIds } },
       data: { status: 'COMPROMISED' }
     })
     
-    // Core Plugin Registry Hook
-    await fireHook("onAssetCompromise", affectedAsset)
+    for (const affectedAsset of affectedAssets) {
+      // Core Plugin Registry Hook
+      await fireHook("onAssetCompromise", { ...affectedAsset, status: 'COMPROMISED' })
 
-    if (settings?.smtpTriggerOnAssetCompromise) {
-      const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['VIEW_INCIDENTS_ALL', 'UPDATE_SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { id: true, email: true } })
-      await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
-      await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${assetId}`)
+      if (settings?.smtpTriggerOnAssetCompromise) {
+        const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['VIEW_INCIDENTS_ALL', 'UPDATE_SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { id: true, email: true } })
+        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
+        await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${affectedAsset.id}`)
+      }
     }
     
     await db.auditLog.create({
       data: {
         action: "SOAR_AUTO_QUARANTINE",
-        entityType: "Asset",
-        entityId: assetId,
+        entityType: "Incident",
+        entityId: newIncident.id,
         userId: session.user.id,
-        changes: `Asset automatically marked as COMPROMISED due to CRITICAL Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} tracking.`
+        changes: `${assetIds.length} Asset(s) automatically marked as COMPROMISED due to Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} tracking.`
       }
     })
   }

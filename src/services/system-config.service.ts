@@ -196,33 +196,33 @@ export class SystemConfigService {
   private static async retroactiveSlaRecalculation(payload: SystemConfigPayload) {
     try {
       await Promise.all([
-        db.$executeRawUnsafe(`
+        db.$executeRaw`
           UPDATE "Incident"
           SET "targetSlaDate" = "createdAt" + (
             CASE "severity"::text
-              WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
-              WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
-              WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
-              WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
-              WHEN 'INFO'     THEN $5::int * INTERVAL '1 hour'
+              WHEN 'CRITICAL' THEN ${payload.slaCriticalHours || 4}::int * INTERVAL '1 hour'
+              WHEN 'HIGH'     THEN ${payload.slaHighHours || 24}::int * INTERVAL '1 hour'
+              WHEN 'MEDIUM'   THEN ${payload.slaMediumHours || 72}::int * INTERVAL '1 hour'
+              WHEN 'LOW'      THEN ${payload.slaLowHours || 168}::int * INTERVAL '1 hour'
+              WHEN 'INFO'     THEN ${payload.slaInfoHours || 720}::int * INTERVAL '1 hour'
             END
           )
           WHERE "status"::text IN ('NEW', 'IN_PROGRESS', 'PENDING_INFO')
-        `, payload.slaCriticalHours || 4, payload.slaHighHours || 24, payload.slaMediumHours || 72, payload.slaLowHours || 168, payload.slaInfoHours || 720),
+        `,
         
-        db.$executeRawUnsafe(`
+        db.$executeRaw`
           UPDATE "Vulnerability"
           SET "targetSlaDate" = "createdAt" + (
             CASE "severity"::text
-              WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
-              WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
-              WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
-              WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
-              WHEN 'INFO'     THEN $5::int * INTERVAL '1 hour'
+              WHEN 'CRITICAL' THEN ${payload.vulnSlaCriticalHours || 12}::int * INTERVAL '1 hour'
+              WHEN 'HIGH'     THEN ${payload.vulnSlaHighHours || 48}::int * INTERVAL '1 hour'
+              WHEN 'MEDIUM'   THEN ${payload.vulnSlaMediumHours || 168}::int * INTERVAL '1 hour'
+              WHEN 'LOW'      THEN ${payload.vulnSlaLowHours || 336}::int * INTERVAL '1 hour'
+              WHEN 'INFO'     THEN ${payload.vulnSlaInfoHours || 720}::int * INTERVAL '1 hour'
             END
           )
           WHERE "status"::text IN ('OPEN', 'MITIGATED')
-        `, payload.vulnSlaCriticalHours || 12, payload.vulnSlaHighHours || 48, payload.vulnSlaMediumHours || 168, payload.vulnSlaLowHours || 336, payload.vulnSlaInfoHours || 720)
+        `
       ]);
     } catch (e) {
       console.error("[SystemConfigService] Failed to retroactively update SLA dates:", e)

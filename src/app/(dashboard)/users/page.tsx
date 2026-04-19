@@ -12,11 +12,11 @@ export default async function UsersPage() {
   const session = await auth()
   
   // Security Perimeter: Only VIEW_USERS handles User configurations
-  if (!session?.user || !hasPermission(session as any, 'VIEW_USERS')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_USERS')) {
     redirect("/login")
   }
 
-  const canCreate = hasPermission(session as any, 'CREATE_USERS')
+  const canCreate = hasPermission(session, 'CREATE_USERS')
 
   const users = await db.user.findMany({
     orderBy: { email: 'asc' },

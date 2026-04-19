@@ -17,7 +17,7 @@ const execAsync = promisify(exec);
 
 export async function togglePluginState(pluginId: string, currentState: boolean) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'TOGGLE_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'TOGGLE_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -83,7 +83,7 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
 
 export async function updatePluginConfig(pluginId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'CONFIGURE_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'CONFIGURE_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -128,7 +128,7 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
 
 export async function installExternalPlugin(pluginId: string, version: string, sourceType: string, packageName?: string) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'INSTALL_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'INSTALL_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -234,7 +234,7 @@ export async function installExternalPlugin(pluginId: string, version: string, s
 
 export async function uninstallExternalPlugin(pluginId: string) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'INSTALL_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'INSTALL_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -294,7 +294,7 @@ export async function uninstallExternalPlugin(pluginId: string) {
 
 export async function triggerProductionBuild() {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
+  if (!session?.user?.id || !hasPermission(session, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
   
   // Prevent Next.js concurrency corruption by skipping 'build' if running in dev mode.
   if (process.env.NODE_ENV !== "production") {
@@ -318,7 +318,7 @@ export async function triggerProductionBuild() {
 
 export async function triggerServerRestart() {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
+  if (!session?.user?.id || !hasPermission(session, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
   
   if (process.env.NODE_ENV !== "production") {
     console.log("[System] Bypassing server restart. Next.js HMR will intelligently hot-reload the plugin injection.");

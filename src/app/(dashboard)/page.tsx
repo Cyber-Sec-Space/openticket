@@ -28,15 +28,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
 
   if (!session?.user) { redirect("/login"); return null; }
 
-  if (!hasPermission(session as any, 'VIEW_DASHBOARD')) {
+  if (!hasPermission(session, 'VIEW_DASHBOARD')) {
     redirect("/incidents")
   }
 
   const activePluginStates = await db.pluginState.findMany({ where: { isActive: true } });
 
-  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL');
-  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED');
-  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED');
+  const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL');
+  const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED');
+  const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED');
 
   // Metric computations for the dashboard
   const filterParams: any = {}
@@ -463,7 +463,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
           <div className="border border-primary/20 bg-primary/5 rounded-xl flex flex-col justify-between p-5 shadow-[0_0_20px_rgba(0,100,255,0.05)] shrink-0">
             <h2 className="text-sm font-bold tracking-widest text-primary/80 mb-3 uppercase">Command Actions</h2>
             <div className="space-y-2">
-              {hasPermission(session as any, 'CREATE_INCIDENTS') && (
+              {hasPermission(session, 'CREATE_INCIDENTS') && (
                 <Link href="/incidents/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-primary/50 text-white rounded-lg transition-all">
                   <ShieldAlert className="w-4 h-4 mr-3 text-primary group-hover:scale-110 transition-transform" />
                   <div className="text-sm">
@@ -471,7 +471,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                   </div>
                 </Link>
               )}
-              {hasPermission(session as any, 'CREATE_ASSETS') && (
+              {hasPermission(session, 'CREATE_ASSETS') && (
                 <Link href="/assets/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-blue-400/50 text-white rounded-lg transition-all">
                   <Server className="w-4 h-4 mr-3 text-blue-400 group-hover:scale-110 transition-transform" />
                   <div className="text-sm">
@@ -479,7 +479,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ p
                   </div>
                 </Link>
               )}
-              {hasPermission(session as any, 'CREATE_VULNERABILITIES') && (
+              {hasPermission(session, 'CREATE_VULNERABILITIES') && (
                 <Link href="/vulnerabilities/new" className="group flex items-center p-3 bg-black/50 hover:bg-black border border-white/5 hover:border-purple-400/50 text-white rounded-lg transition-all">
                   <Bug className="w-4 h-4 mr-3 text-purple-400 group-hover:scale-110 transition-transform" />
                   <div className="text-sm">

@@ -29,7 +29,7 @@ async function computeVulnStatus(vulnId: string) {
 export async function updateVulnAssetStatusAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'UPDATE_VULNERABILITIES')) {
+  if (!session?.user || !hasPermission(session, 'UPDATE_VULNERABILITIES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -66,8 +66,8 @@ export async function updateVulnAssetStatusAction(formData: FormData) {
 
 export async function addAssigneesAction(formData: FormData) {
   const session = await auth()
-  const hasSelf = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF')
-  const hasOthers = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')
+  const hasSelf = hasPermission(session, 'ASSIGN_VULNERABILITIES_SELF')
+  const hasOthers = hasPermission(session, 'ASSIGN_VULNERABILITIES_OTHERS')
   if (!session?.user || (!hasSelf && !hasOthers)) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string
@@ -93,8 +93,8 @@ export async function addAssigneesAction(formData: FormData) {
 
 export async function removeAssigneeAction(formData: FormData) {
   const session = await auth()
-  const hasSelf = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF')
-  const hasOthers = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')
+  const hasSelf = hasPermission(session, 'ASSIGN_VULNERABILITIES_SELF')
+  const hasOthers = hasPermission(session, 'ASSIGN_VULNERABILITIES_OTHERS')
   if (!session?.user || (!hasSelf && !hasOthers)) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string
@@ -120,7 +120,7 @@ export async function postVulnCommentAction(formData: FormData) {
   const session = await auth()
   if (!session?.user) throw new Error("Unauthorized")
 
-  if (!hasPermission(session as any, 'VIEW_VULNERABILITIES') || !hasPermission(session as any, 'ADD_COMMENTS')) {
+  if (!hasPermission(session, 'VIEW_VULNERABILITIES') || !hasPermission(session, 'ADD_COMMENTS')) {
      throw new Error("Forbidden: You lack either view clearance or the ADD_COMMENTS capability.")
   }
 
@@ -146,7 +146,7 @@ export async function postVulnCommentAction(formData: FormData) {
 
 export async function linkVulnAssetAction(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'LINK_VULN_TO_ASSET')) throw new Error("Unauthorized")
+  if (!session?.user || !hasPermission(session, 'LINK_VULN_TO_ASSET')) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string
   const assetIds = formData.getAll("assetIds") as string[]
@@ -170,7 +170,7 @@ export async function linkVulnAssetAction(formData: FormData) {
 
 export async function unlinkVulnAssetAction(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'LINK_VULN_TO_ASSET')) throw new Error("Unauthorized")
+  if (!session?.user || !hasPermission(session, 'LINK_VULN_TO_ASSET')) throw new Error("Unauthorized")
 
   const vulnAssetId = formData.get("vulnAssetId") as string
   const vulnId = formData.get("vulnId") as string
@@ -187,7 +187,7 @@ export async function unlinkVulnAssetAction(formData: FormData) {
 export async function deleteVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'DELETE_VULNERABILITIES')) {
+  if (!session?.user || !hasPermission(session, 'DELETE_VULNERABILITIES')) {
     throw new Error("Forbidden: Strict Admin Access Control for Destructive Operations")
   }
 
@@ -230,8 +230,8 @@ export async function deleteVulnerabilityAction(formData: FormData) {
 
 export async function setVulnAssigneesAction(formData: FormData) {
   const session = await auth()
-  const hasSelf = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF')
-  const hasOthers = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')
+  const hasSelf = hasPermission(session, 'ASSIGN_VULNERABILITIES_SELF')
+  const hasOthers = hasPermission(session, 'ASSIGN_VULNERABILITIES_OTHERS')
   if (!session?.user || (!hasSelf && !hasOthers)) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string

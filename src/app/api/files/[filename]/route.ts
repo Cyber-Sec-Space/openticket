@@ -59,10 +59,10 @@ export async function GET(req: Request, props: { params: Promise<{ filename: str
     return new NextResponse("File Not Found", { status: 404 })
   }
 
-  const hasGlobalIncidents = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
-  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
-  const hasGlobalVulns = hasPermission(session as any, 'VIEW_VULNERABILITIES')
+  const hasGlobalIncidents = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
+  const hasGlobalVulns = hasPermission(session, 'VIEW_VULNERABILITIES')
 
   // Enforce Bound Object Level Authorization
   let authorized = false;
