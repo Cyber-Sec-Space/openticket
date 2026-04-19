@@ -5,7 +5,7 @@ export type IncidentData = {
   description: string
   type?: any
   severity?: any
-  assetId?: string
+  assetIds?: string[]
   tags?: string[]
 }
 
@@ -59,7 +59,7 @@ export type PluginSdkContext = {
     resetUserMfaSession: (userId: string) => Promise<any>
 
     // Phase 8 Operations (CRUD Parity)
-    updateIncidentDetails: (incidentId: string, updates: { title?: string, description?: string, severity?: Severity, assetId?: string | null }) => Promise<any>
+    updateIncidentDetails: (incidentId: string, updates: { title?: string, description?: string, severity?: Severity, assetIds?: string[] }) => Promise<any>
     
     getVulnerability: (vulnId: string) => Promise<any>
     searchVulnerabilities: (query?: { severity?: Severity, status?: VulnStatus, limit?: number }) => Promise<any>

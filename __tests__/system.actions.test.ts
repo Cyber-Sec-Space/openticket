@@ -29,7 +29,8 @@ jest.mock("../src/lib/db", () => ({
     auditLog: {
       create: jest.fn(),
     },
-    $executeRawUnsafe: jest.fn()
+    $executeRawUnsafe: jest.fn(),
+    $executeRaw: jest.fn()
   }
 }))
 

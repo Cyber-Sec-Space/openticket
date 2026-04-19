@@ -16,7 +16,7 @@ export const IncidentCreateSchema = z.object({
   description: z.string().min(1, "Description is required"),
   type: z.string().optional().default("OTHER"),
   severity: SeverityEnum.optional().default("LOW"),
-  assetId: z.string().optional().nullable(),
+  assetIds: z.array(z.string()).optional().default([]),
   tags: z.array(z.string()).optional().default([])
 });
 
@@ -24,7 +24,7 @@ export const IncidentUpdateSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   description: z.string().min(1).optional(),
   severity: SeverityEnum.optional(),
-  assetId: z.string().nullable().optional()
+  assetIds: z.array(z.string()).optional()
 });
 
 export const IncidentSearchSchema = z.object({

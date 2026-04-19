@@ -32,7 +32,11 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
           description: parsedData.description,
           type: parsedData.type,
           severity: effectiveSeverity,
-          assetId: parsedData.assetId,
+          ...(parsedData.assetIds && parsedData.assetIds.length > 0 ? {
+            assets: {
+              connect: parsedData.assetIds.filter(id => id !== 'NONE').map(id => ({ id }))
+            }
+          } : {}),
           status: 'NEW',
           targetSlaDate: null,
           tags: parsedData.tags,
@@ -94,15 +98,23 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       return updated;
     }),
 
-    updateIncidentDetails: withPluginErrorHandling(async (incidentId: string, updates: { title?: string, description?: string, severity?: Severity, assetId?: string | null }) => {
+    updateIncidentDetails: withPluginErrorHandling(async (incidentId: string, updates: { title?: string, description?: string, severity?: Severity, assetIds?: string[] }) => {
       const id = ctx.requireBotUser('UPDATE_INCIDENTS_METADATA');
       const validId = IdSchema.parse(incidentId);
       const parsedUpdates = IncidentUpdateSchema.parse(updates);
 
+      const dataToUpdate: any = { ...parsedUpdates };
+      if (parsedUpdates.assetIds) {
+        dataToUpdate.assets = {
+          set: parsedUpdates.assetIds.filter(aid => aid !== 'NONE').map(aid => ({ id: aid }))
+        };
+        delete dataToUpdate.assetIds;
+      }
+
       const updated = await db.incident.update({
         where: { id: validId },
         data: {
-          ...parsedUpdates,
+          ...dataToUpdate,
           auditLogs: {
             create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UPDATED`, userId: id, changes: parsedUpdates }
           }
@@ -222,7 +234,7 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       const updated = await db.incident.update({
         where: { id: validIncId },
         data: { 
-          assetId: validAssetId,
+          assets: { connect: { id: validAssetId } },
           auditLogs: {
             create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_LINKED_TO_ASSET`, userId: id, changes: { assetId: validAssetId } }
           }

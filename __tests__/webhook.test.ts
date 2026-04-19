@@ -3,7 +3,7 @@ jest.mock("dns", () => ({
 }));
 jest.mock("@/lib/settings", () => ({ getGlobalSettings: jest.fn() }));
 
-import { isTargetSecure, dispatchWebhook } from "@/lib/plugins/webhook";
+import { isTargetSecure, dispatchWebhook } from "@/lib/webhook";
 import { promises as dns } from "dns";
 import { getGlobalSettings } from "@/lib/settings";
 
