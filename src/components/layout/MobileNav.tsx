@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, Menu, X, LayoutDashboard, ToyBrick, Key } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useNavigationOverride } from "./NavigationProvider"
 
 export function MobileNav({ userPermissions, enabledPlugins = [] }: { userPermissions?: string[], enabledPlugins?: string[] }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -84,6 +85,8 @@ export function MobileNav({ userPermissions, enabledPlugins = [] }: { userPermis
     { name: "Settings", href: "/settings", icon: Settings }
   ]
 
+  const { setPendingPath } = useNavigationOverride()
+
   const NavGroup = ({ items, title }: { items: any[], title?: string }) => {
     if (items.length === 0) return null;
     return (
@@ -96,6 +99,12 @@ export function MobileNav({ userPermissions, enabledPlugins = [] }: { userPermis
               key={item.href}
               href={item.href}
               prefetch={true}
+              onClick={(e) => {
+                setIsOpen(false);
+                if (pathname !== item.href && !(item.href !== "/" && pathname.startsWith(item.href))) {
+                  setPendingPath(item.href);
+                }
+              }}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-300 relative group overflow-hidden",
                 isActive 

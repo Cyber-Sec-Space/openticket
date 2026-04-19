@@ -6,10 +6,11 @@ import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { ShieldAlert, Server, Home, LogOut, Users, FileText, Settings, Bug, Sliders, LayoutDashboard, ToyBrick, Key } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useNavigationOverride } from "./NavigationProvider"
 
 export function Sidebar({ userPermissions, enabledPlugins = [] }: { userPermissions?: string[], enabledPlugins?: string[] }) {
   const pathname = usePathname()
-  
+  const { setPendingPath } = useNavigationOverride()
 
   const coreNavItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -79,6 +80,11 @@ export function Sidebar({ userPermissions, enabledPlugins = [] }: { userPermissi
               key={item.href}
               href={item.href}
               prefetch={true}
+              onClick={(e) => {
+                if (pathname !== item.href && !(item.href !== "/" && pathname.startsWith(item.href))) {
+                  setPendingPath(item.href);
+                }
+              }}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all duration-300 relative group overflow-hidden",
                 isActive 

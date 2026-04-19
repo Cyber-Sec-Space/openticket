@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { TopLoader } from "@/components/layout/TopLoader";
 import "./globals.css";
 
 const interFont = Inter({
@@ -26,7 +25,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col font-sans" suppressHydrationWarning>
-        <TopLoader />
         {/* Render child pages/layouts directly, enabling different layouts per route group */}
         {children}
       </body>
