@@ -76,8 +76,8 @@ describe("Mailer payload and branching tests", () => {
   });
 
   it("should fallback to default from address if not provided", async () => {
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ ...validSmtpSettings, smtpFrom: null }); // fallback
     (getGlobalSettings as jest.Mock).mockResolvedValueOnce(validSmtpSettings);
-    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ smtpFrom: null }); // fallback
     await sendCriticalAlertEmail({ id: "1", title: "T", description: "D", severity: "HIGH", status: "NEW" }, ["test@test.com"]);
     
     expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({ from: '"OpenTicket SOC" <noreply@openticket.local>' }));
@@ -88,7 +88,7 @@ describe("Mailer payload and branching tests", () => {
     (getGlobalSettings as jest.Mock).mockResolvedValue(validSmtpSettings); // return valid for both getTransporter and getFromAddress
 
     await sendCriticalAlertEmail({ id: "1", title: "T", description: "D", severity: "HIGH", status: "NEW" }, ["test@test.com"]);
-    expect(consoleErrorSpy).toHaveBeenCalledWith("SMTP Error:", expect.any(Error));
+    expect(consoleErrorSpy).toHaveBeenCalledWith("[Mailer] SMTP Error:", expect.any(Error));
   });
 
   describe("Function bindings", () => {
