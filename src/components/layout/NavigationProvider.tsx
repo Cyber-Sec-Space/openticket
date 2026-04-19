@@ -22,27 +22,36 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <NavContext.Provider value={{ pendingPath, setPendingPath }}>
-      {pendingPath && pendingPath !== pathname ? (
-        <div className="flex-1 flex flex-col p-6 w-full h-full animate-in fade-in duration-200">
-           <div className="flex flex-col space-y-6 max-w-7xl mx-auto w-full">
-              {/* Universal Instant Loading Skeleton */}
-              <div className="flex justify-between items-center mb-6">
-                 <div className="h-8 w-48 bg-white/5 rounded-md animate-pulse"></div>
-                 <div className="h-10 w-32 bg-white/5 rounded-md animate-pulse"></div>
-              </div>
-              <div className="h-24 w-full bg-white/5 rounded-xl animate-pulse"></div>
-              <div className="space-y-3">
-                 <div className="h-16 w-full bg-white/5 rounded-xl animate-pulse"></div>
-                 <div className="h-16 w-full bg-white/5 rounded-xl animate-pulse"></div>
-                 <div className="h-16 w-full bg-white/5 rounded-xl animate-pulse"></div>
-              </div>
-           </div>
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </NavContext.Provider>
   )
+}
+
+export function NavigationContent({ children }: { children: React.ReactNode }) {
+  const { pendingPath } = useNavigationOverride()
+  const pathname = usePathname()
+
+  if (pendingPath && pendingPath !== pathname) {
+    return (
+      <div className="flex-1 flex flex-col p-6 w-full h-full animate-in fade-in duration-200">
+         <div className="flex flex-col space-y-6 max-w-7xl mx-auto w-full">
+            {/* Universal Instant Loading Skeleton */}
+            <div className="flex justify-between items-center mb-6">
+               <div className="h-8 w-48 bg-white/5 rounded-md animate-pulse"></div>
+               <div className="h-10 w-32 bg-white/5 rounded-md animate-pulse"></div>
+            </div>
+            <div className="h-24 w-full bg-white/5 rounded-xl animate-pulse"></div>
+            <div className="space-y-3">
+               <div className="h-16 w-full bg-white/5 rounded-xl animate-pulse"></div>
+               <div className="h-16 w-full bg-white/5 rounded-xl animate-pulse"></div>
+               <div className="h-16 w-full bg-white/5 rounded-xl animate-pulse"></div>
+            </div>
+         </div>
+      </div>
+    )
+  }
+
+  return <>{children}</>
 }
 
 export const useNavigationOverride = () => useContext(NavContext)
