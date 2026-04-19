@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import NextTopLoader from "nextjs-toploader";
+import { TopLoader } from "@/components/layout/TopLoader";
 import "./globals.css";
 
 const interFont = Inter({
@@ -26,18 +26,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col font-sans" suppressHydrationWarning>
-        <NextTopLoader 
-          color="#10b981" 
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 15px #10b981,0 0 5px #10b981"
-          zIndex={1600}
-        />
+        <TopLoader />
         {/* Render child pages/layouts directly, enabling different layouts per route group */}
         {children}
       </body>
