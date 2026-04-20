@@ -213,7 +213,7 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
                  </TableCell>
 
                  <TableCell className="text-center font-mono py-4">
-                    <div className="flex gap-1.5 flex-wrap justify-center mx-auto">
+                    <div className="flex justify-center gap-1.5 flex-wrap flex-1 min-w-[200px]">
                       {vuln.vulnerabilityAssets?.length > 0 ? (
                         vuln.vulnerabilityAssets.slice(0, 3).map((va: any) => (
                           <Badge key={va.assetId || va.id} variant="outline" className={`text-[10px] bg-black/40 border-white/5 font-mono ${va.status === 'MITIGATED' ? 'text-yellow-500' : va.status === 'PATCHED' ? 'text-green-500' : 'text-red-400'}`}>
