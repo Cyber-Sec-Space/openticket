@@ -44,7 +44,8 @@ jest.mock("@/lib/db", () => ({
     },
     auditLog: {
       create: jest.fn()
-    }
+    },
+    $transaction: jest.fn().mockImplementation(async (cb) => cb(db))
   }
 }));
 

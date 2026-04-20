@@ -2,6 +2,8 @@ import { apiAuth } from "@/lib/api-auth"
 import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { hasPermission } from "@/lib/auth-utils"
+import { logger } from "@/lib/logger"
+import { randomUUID } from "crypto"
 
 export async function GET(req: Request) {
   const session = await apiAuth()
@@ -49,6 +51,10 @@ export async function POST(req: Request) {
     if (!name) {
       return new NextResponse("Asset name is required", { status: 400 })
     }
+
+    if (name.length > 255) {
+      return new NextResponse("Input Boundary Violation: Asset name exceeds maximum allowed length.", { status: 400 })
+    }
     
     // Explicit Enum validation to prevent Prisma 500 Unhandled Exceptions
     const VALID_ASSET_TYPES = ['ROUTER', 'SWITCH', 'FIREWALL', 'SERVER', 'WORKSTATION', 'MOBILE_DEVICE', 'IOT_DEVICE', 'OTHER', 'LAPTOP', 'DESKTOP'];
@@ -69,28 +75,32 @@ export async function POST(req: Request) {
        secureIp = ipAddress;
     }
 
-    const newAsset = await db.asset.create({
-      data: {
-        name,
-        type: finalType,
-        ipAddress: ipAddress || null,
-        status: 'ACTIVE'
-      }
-    })
+    const newAsset = await db.$transaction(async (tx) => {
+      const asset = await tx.asset.create({
+        data: {
+          name,
+          type: finalType,
+          ipAddress: ipAddress || null,
+          status: 'ACTIVE'
+        }
+      })
 
-    await db.auditLog.create({
-      data: {
-        action: "ASSET_CREATED",
-        entityType: "Asset",
-        entityId: newAsset.id,
-        userId: session.user.id,
-        changes: { name, type, ipAddress }
-      }
-    })
+      await tx.auditLog.create({
+        data: {
+          action: "ASSET_CREATED",
+          entityType: "Asset",
+          entityId: asset.id,
+          userId: session.user.id,
+          changes: { name, type, ipAddress }
+        }
+      })
+      
+      return asset;
+    });
 
     return NextResponse.json(newAsset, { status: 201 })
   } catch (error) {
-    console.error("[POST /api/assets]", error)
+    logger.error("Failed to create asset", { path: "/api/assets", userId: session.user.id }, error);
     return new NextResponse("Internal Error", { status: 500 })
   }
 }

@@ -3,6 +3,8 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { hasPermission } from "@/lib/auth-utils"
 import { getGlobalSettings } from "@/lib/settings";
+import { logger } from "@/lib/logger";
+import { randomUUID } from "crypto";
 
 export async function GET(req: Request) {
   const session = await apiAuth()
@@ -75,6 +77,10 @@ export async function POST(req: Request) {
     if (!title || !description) {
       return new NextResponse("Title and Description are required", { status: 400 })
     }
+
+    if (title.length > 255 || description.length > 50000) {
+      return new NextResponse("Input Boundary Violation: Title or description exceeds maximum allowed length.", { status: 400 })
+    }
     
     let processedTags: string[] = []
     if (Array.isArray(tags)) {
@@ -90,57 +96,62 @@ export async function POST(req: Request) {
       return new NextResponse(`Invalid Severity. Accepted values: ${VALID_SEVERITIES.join(', ')}`, { status: 400 })
     }
 
-    const newIncident = await db.incident.create({
-      data: {
-        title,
-        description,
-        severity: finalSeverity,
-        reporterId: session.user.id,
-        assets: finalAssetIds.length > 0 ? {
-          connect: finalAssetIds.map((id: string) => ({ id }))
-        } : undefined,
-        status: 'NEW',
-        tags: processedTags
-      }
-    })
-
-    // Log the action
-    await db.auditLog.create({
-      data: {
-        action: "INCIDENT_CREATED",
-        entityType: "Incident",
-        entityId: newIncident.id,
-        userId: session.user.id,
-        changes: { title, severity }
-      }
-    })
-
-    // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation
     const settings = await getGlobalSettings()
-    const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
-    const currentRank = sevRank[newIncident.severity as keyof typeof sevRank] || 0
-    const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
-
-    if (settings?.soarAutoQuarantineEnabled && finalAssetIds.length > 0 && currentRank >= thresholdRank) {
-      await db.asset.updateMany({
-        where: { id: { in: finalAssetIds } },
-        data: { status: 'COMPROMISED' }
-      })
-
-      await db.auditLog.create({
+    
+    const newIncident = await db.$transaction(async (tx) => {
+      const incident = await tx.incident.create({
         data: {
-          action: "SOAR_AUTO_QUARANTINE",
-          entityType: "Incident",
-          entityId: newIncident.id,
-          userId: session.user.id,
-          changes: `${finalAssetIds.length} Asset(s) automatically marked as COMPROMISED due to ${newIncident.severity} Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} directly filed.`
+          title,
+          description,
+          severity: finalSeverity,
+          reporterId: session.user.id,
+          assets: finalAssetIds.length > 0 ? {
+            connect: finalAssetIds.map((id: string) => ({ id }))
+          } : undefined,
+          status: 'NEW',
+          tags: processedTags
         }
       })
-    }
+
+      // Log the action
+      await tx.auditLog.create({
+        data: {
+          action: "INCIDENT_CREATED",
+          entityType: "Incident",
+          entityId: incident.id,
+          userId: session.user.id,
+          changes: { title, severity }
+        }
+      })
+
+      // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation
+      const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
+      const currentRank = sevRank[incident.severity as keyof typeof sevRank] || 0
+      const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
+
+      if (settings?.soarAutoQuarantineEnabled && finalAssetIds.length > 0 && currentRank >= thresholdRank) {
+        await tx.asset.updateMany({
+          where: { id: { in: finalAssetIds } },
+          data: { status: 'COMPROMISED' }
+        })
+
+        await tx.auditLog.create({
+          data: {
+            action: "SOAR_AUTO_QUARANTINE",
+            entityType: "Incident",
+            entityId: incident.id,
+            userId: session.user.id,
+            changes: `${finalAssetIds.length} Asset(s) automatically marked as COMPROMISED due to ${incident.severity} Incident INC-${incident.id.substring(0, 8).toUpperCase()} directly filed.`
+          }
+        })
+      }
+      
+      return incident;
+    });
 
     return NextResponse.json(newIncident, { status: 201 })
   } catch (error) {
-    console.error("[POST /api/incidents]", error)
+    logger.error("Failed to create incident", { path: "/api/incidents", userId: session.user.id }, error);
     return new NextResponse("Internal Error", { status: 500 })
   }
 }

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Bug, Server } from "lucide-react"
+import { Bug, Server, Loader2 } from "lucide-react"
 import { MultiAssetPicker } from "@/components/ui/multi-asset-picker"
 
 export function VulnFormClient({ assets }: { assets: any[] }) {
@@ -126,7 +126,9 @@ export function VulnFormClient({ assets }: { assets: any[] }) {
 
       <div className="pt-6 border-t border-white/10 flex justify-end">
         <Button type="submit" disabled={isPending} className="w-full sm:w-auto bg-red-600 hover:bg-red-500 shadow-[0_0_15px_rgba(220,38,38,0.3)] text-white font-bold tracking-wide">
-          {isPending ? "Committing..." : "Commit Vulnerability"}
+          {isPending ? (
+             <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Committing...</>
+          ) : "Commit Vulnerability"}
         </Button>
       </div>
     </form>

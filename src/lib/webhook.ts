@@ -10,7 +10,7 @@ interface WebhookPayload {
   url: string
 }
 
-async function isTargetSecure(urlStr: string): Promise<{ isSecure: boolean, address?: string, parsed?: URL }> {
+export async function isTargetSecure(urlStr: string): Promise<{ isSecure: boolean, address?: string, parsed?: URL }> {
   try {
     const parsed = new URL(urlStr);
     if (!['http:', 'https:'].includes(parsed.protocol)) return { isSecure: false };

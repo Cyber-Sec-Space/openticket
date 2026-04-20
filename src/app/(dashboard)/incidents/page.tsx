@@ -76,7 +76,15 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
 
   const incidents = await db.incident.findMany({
     where: filterParams,
-    include: {
+    select: {
+      id: true,
+      title: true,
+      severity: true,
+      status: true,
+      type: true,
+      createdAt: true,
+      targetSlaDate: true,
+      tags: true,
       reporter: { select: { name: true, isBot: true } },
       assignees: { select: { name: true } },
       assets: { select: { id: true, name: true } },

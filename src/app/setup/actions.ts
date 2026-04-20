@@ -25,11 +25,11 @@ export async function testSmtpConnection(host: string, port: number, user: strin
 }
 
 export async function dispatchSetupVerificationEmail(
-  email: string, 
-  smtpHost: string, 
-  smtpPort: number, 
-  smtpUser: string, 
-  smtpPassword: string, 
+  email: string,
+  smtpHost: string,
+  smtpPort: number,
+  smtpUser: string,
+  smtpPassword: string,
   smtpFrom: string
 ) {
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -89,7 +89,7 @@ export async function initializeInstance(formData: FormData) {
   const password = formData.get("password") as string
   const confirmPassword = formData.get("confirmPassword") as string
   const systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
-  
+
   const requireEmailVerification = formData.get("requireEmailVerification") === "on"
   const otpCode = formData.get("otpCode") as string
 
@@ -153,7 +153,7 @@ export async function initializeInstance(formData: FormData) {
         description: 'Global read-only access for compliance and executive auditing',
         isSystem: true,
         permissions: [
-          Permission.VIEW_INCIDENTS_ALL, Permission.VIEW_ASSETS, Permission.VIEW_VULNERABILITIES, 
+          Permission.VIEW_INCIDENTS_ALL, Permission.VIEW_ASSETS, Permission.VIEW_VULNERABILITIES,
           Permission.VIEW_USERS, Permission.VIEW_ROLES, Permission.VIEW_DASHBOARD, Permission.VIEW_AUDIT_LOGS,
           Permission.VIEW_PLUGINS, Permission.VIEW_SYSTEM_SETTINGS, Permission.VIEW_API_TOKENS
         ]
@@ -167,8 +167,8 @@ export async function initializeInstance(formData: FormData) {
         description: 'Basic L1 ticket handling. Can triage and update assigned incidents.',
         isSystem: true,
         permissions: [
-          Permission.VIEW_INCIDENTS_ASSIGNED, Permission.VIEW_INCIDENTS_UNASSIGNED, Permission.CREATE_INCIDENTS, 
-          Permission.UPDATE_INCIDENTS_METADATA, Permission.ASSIGN_INCIDENTS_SELF, Permission.UPLOAD_INCIDENT_ATTACHMENTS, 
+          Permission.VIEW_INCIDENTS_ASSIGNED, Permission.VIEW_INCIDENTS_UNASSIGNED, Permission.CREATE_INCIDENTS,
+          Permission.UPDATE_INCIDENTS_METADATA, Permission.ASSIGN_INCIDENTS_SELF, Permission.UPLOAD_INCIDENT_ATTACHMENTS,
           Permission.ADD_COMMENTS, Permission.VIEW_DASHBOARD, Permission.VIEW_ASSETS
         ]
       }
@@ -198,8 +198,8 @@ export async function initializeInstance(formData: FormData) {
         description: 'Responsible for registering and updating CVEs and network vulnerabilities.',
         isSystem: true,
         permissions: [
-          Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES, 
-          Permission.ASSIGN_VULNERABILITIES_SELF, Permission.UPLOAD_VULN_ATTACHMENTS, Permission.VIEW_DASHBOARD, 
+          Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES,
+          Permission.ASSIGN_VULNERABILITIES_SELF, Permission.UPLOAD_VULN_ATTACHMENTS, Permission.VIEW_DASHBOARD,
           Permission.VIEW_ASSETS
         ]
       }
@@ -212,15 +212,15 @@ export async function initializeInstance(formData: FormData) {
         description: 'Lead offensive/defensive security. Can delete vulnerabilities and manage assignments.',
         isSystem: true,
         permissions: [
-          Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES, 
-          Permission.DELETE_VULNERABILITIES, Permission.ASSIGN_VULNERABILITIES_SELF, Permission.ASSIGN_VULNERABILITIES_OTHERS, 
-          Permission.LINK_VULN_TO_ASSET, Permission.UPLOAD_VULN_ATTACHMENTS, Permission.DELETE_VULN_ATTACHMENTS, 
+          Permission.VIEW_VULNERABILITIES, Permission.CREATE_VULNERABILITIES, Permission.UPDATE_VULNERABILITIES,
+          Permission.DELETE_VULNERABILITIES, Permission.ASSIGN_VULNERABILITIES_SELF, Permission.ASSIGN_VULNERABILITIES_OTHERS,
+          Permission.LINK_VULN_TO_ASSET, Permission.UPLOAD_VULN_ATTACHMENTS, Permission.DELETE_VULN_ATTACHMENTS,
           Permission.VIEW_DASHBOARD, Permission.VIEW_ASSETS
         ]
       }
     }),
     db.customRole.upsert({
-      where: { name: 'IT Operations Analyst' },
+      where: { name: 'Operations Analyst' },
       update: {},
       create: {
         name: 'IT Operations Analyst',
@@ -239,7 +239,7 @@ export async function initializeInstance(formData: FormData) {
         description: 'Full autonomy over CMDB infrastructure including asset creation and destruction.',
         isSystem: true,
         permissions: [
-          Permission.VIEW_ASSETS, Permission.CREATE_ASSETS, Permission.UPDATE_ASSETS, Permission.DELETE_ASSETS, 
+          Permission.VIEW_ASSETS, Permission.CREATE_ASSETS, Permission.UPDATE_ASSETS, Permission.DELETE_ASSETS,
           Permission.VIEW_DASHBOARD
         ]
       }
@@ -252,9 +252,9 @@ export async function initializeInstance(formData: FormData) {
         description: 'Specialized role for managing user access, role assignments, and password resets.',
         isSystem: true,
         permissions: [
-          Permission.VIEW_USERS, Permission.CREATE_USERS, Permission.UPDATE_USER_PROFILE, Permission.ASSIGN_USER_ROLES, 
-          Permission.RESET_USER_PASSWORDS, Permission.SUSPEND_USERS, Permission.DELETE_USERS, Permission.VIEW_ROLES, 
-          Permission.CREATE_ROLES, Permission.UPDATE_ROLES, Permission.DELETE_ROLES, Permission.VIEW_DASHBOARD, 
+          Permission.VIEW_USERS, Permission.CREATE_USERS, Permission.UPDATE_USER_PROFILE, Permission.ASSIGN_USER_ROLES,
+          Permission.RESET_USER_PASSWORDS, Permission.SUSPEND_USERS, Permission.DELETE_USERS, Permission.VIEW_ROLES,
+          Permission.CREATE_ROLES, Permission.UPDATE_ROLES, Permission.DELETE_ROLES, Permission.VIEW_DASHBOARD,
           Permission.VIEW_AUDIT_LOGS
         ]
       }

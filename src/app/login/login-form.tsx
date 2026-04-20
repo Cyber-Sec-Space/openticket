@@ -3,7 +3,7 @@
 import { useActionState, useState, useEffect } from "react"
 import { authenticate } from "./actions"
 import { signOut } from "next-auth/react"
-import { ScanFace } from "lucide-react"
+import { ScanFace, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
@@ -160,7 +160,14 @@ export function LoginForm({ allowRegistration = false, allowPasswordReset = fals
         type="submit" 
         disabled={isPending}
       >
-        {isPending ? "Authenticating..." : (showTwoFactor ? "Verify Code" : "Access Portal")}
+        {isPending ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Authenticating...
+          </>
+        ) : (
+          showTwoFactor ? "Verify Code" : "Access Portal"
+        )}
       </Button>
       
       {showTwoFactor && (

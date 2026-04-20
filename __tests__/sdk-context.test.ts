@@ -69,12 +69,14 @@ describe("Plugin SDK Context", () => {
           title: "Test Incident",
           type: "OTHER",
           severity: "LOW",
-          reporterId: "bot-123",
-          auditLogs: {
-            create: expect.objectContaining({
-              action: "[PLUGIN:test] INCIDENT_CREATED"
-            })
-          }
+          reporter: { connect: { id: "bot-123" } }
+        })
+      });
+
+      expect(db.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: "[PLUGIN:test] INCIDENT_CREATED",
+          entityType: "Incident"
         })
       });
 

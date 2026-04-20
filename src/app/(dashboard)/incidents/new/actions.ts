@@ -52,71 +52,76 @@ export async function createIncident(prevState: any, formData: FormData) {
     default:         slaHours = null; break; // INFO has no SLA requirement
   }
 
-  let newIncident = await db.incident.create({
-    data: {
-      title: safeTitle,
-      description: safeDescription,
-      type: type as any,
-      severity: effectiveSeverity,
-      reporterId: session.user.id,
-      assets: (hasPermission(session, 'LINK_INCIDENT_TO_ASSET') && assetIds.length > 0) ? {
-        connect: assetIds.map(id => ({ id }))
-      } : undefined,
-      status: 'NEW',
-      targetSlaDate: null,
-      tags
-    }
-  })
-
-  if (slaHours !== null) {
-    await db.$executeRaw`UPDATE "Incident" SET "targetSlaDate" = NOW() + (${slaHours} * INTERVAL '1 hour') WHERE id = ${newIncident.id}`;
-    // Re-fetch to guarantee hooks, emails, and SOA get the absolute exact PostgreSQL timestamp
-    newIncident = await db.incident.findUnique({ where: { id: newIncident.id } }) as any;
-  }
-
-  // Phase 7 & 11: SOAR Automations (Auto-Quarantine)
-  const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
-  const currentRank = sevRank[effectiveSeverity as keyof typeof sevRank] || 0
-  const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
-
-  if (settings?.soarAutoQuarantineEnabled && assetIds.length > 0 && currentRank >= thresholdRank) {
-    const affectedAssets = await db.asset.findMany({ where: { id: { in: assetIds } } })
-    await db.asset.updateMany({
-      where: { id: { in: assetIds } },
-      data: { status: 'COMPROMISED' }
-    })
-    
-    for (const affectedAsset of affectedAssets) {
-      // Core Plugin Registry Hook
-      await fireHook("onAssetCompromise", { ...affectedAsset, status: 'COMPROMISED' })
-
-      if (settings?.smtpTriggerOnAssetCompromise) {
-        const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['VIEW_INCIDENTS_ALL', 'UPDATE_SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { id: true, email: true } })
-        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
-        await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${affectedAsset.id}`)
-      }
-    }
-    
-    await db.auditLog.create({
+  const [newIncident, affectedAssets] = await db.$transaction(async (tx) => {
+    let created = await tx.incident.create({
       data: {
-        action: "SOAR_AUTO_QUARANTINE",
-        entityType: "Incident",
-        entityId: newIncident.id,
-        userId: session.user.id,
-        changes: `${assetIds.length} Asset(s) automatically marked as COMPROMISED due to Incident INC-${newIncident.id.substring(0, 8).toUpperCase()} tracking.`
+        title: safeTitle,
+        description: safeDescription,
+        type: type as any,
+        severity: effectiveSeverity,
+        reporterId: session.user.id,
+        assets: (hasPermission(session, 'LINK_INCIDENT_TO_ASSET') && assetIds.length > 0) ? {
+          connect: assetIds.map(id => ({ id }))
+        } : undefined,
+        status: 'NEW',
+        targetSlaDate: null,
+        tags
       }
-    })
-  }
+    });
 
-  await db.auditLog.create({
-    data: {
-      action: "INCIDENT_CREATED",
-      entityType: "Incident",
-      entityId: newIncident.id,
-      userId: session.user.id,
-      changes: { title, severity }
+    if (slaHours !== null) {
+      await tx.$executeRaw`UPDATE "Incident" SET "targetSlaDate" = NOW() + (${slaHours} * INTERVAL '1 hour') WHERE id = ${created.id}`;
+      // Re-fetch to guarantee hooks, emails, and SOA get the absolute exact PostgreSQL timestamp
+      created = await tx.incident.findUnique({ where: { id: created.id } }) as any;
     }
-  })
+
+    // Phase 7 & 11: SOAR Automations (Auto-Quarantine)
+    const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
+    const currentRank = sevRank[effectiveSeverity as keyof typeof sevRank] || 0;
+    const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL'];
+
+    let compromisedAssets: any[] = [];
+    if (settings?.soarAutoQuarantineEnabled && assetIds.length > 0 && currentRank >= thresholdRank) {
+      compromisedAssets = await tx.asset.findMany({ where: { id: { in: assetIds } } });
+      await tx.asset.updateMany({
+        where: { id: { in: assetIds } },
+        data: { status: 'COMPROMISED' }
+      });
+      
+      await tx.auditLog.create({
+        data: {
+          action: "SOAR_AUTO_QUARANTINE",
+          entityType: "Incident",
+          entityId: created.id,
+          userId: session.user.id,
+          changes: `${assetIds.length} Asset(s) automatically marked as COMPROMISED due to Incident INC-${created.id.substring(0, 8).toUpperCase()} tracking.`
+        }
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        action: "INCIDENT_CREATED",
+        entityType: "Incident",
+        entityId: created.id,
+        userId: session.user.id,
+        changes: { title, severity }
+      }
+    });
+
+    return [created, compromisedAssets];
+  });
+
+  for (const affectedAsset of affectedAssets) {
+    // Core Plugin Registry Hook
+    await fireHook("onAssetCompromise", { ...affectedAsset, status: 'COMPROMISED' })
+
+    if (settings?.smtpTriggerOnAssetCompromise) {
+      const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['VIEW_INCIDENTS_ALL', 'UPDATE_SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { id: true, email: true } })
+      await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
+      await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${affectedAsset.id}`)
+    }
+  }
 
   // Core Plugin Registry Hook
   await fireHook("onIncidentCreated", newIncident)

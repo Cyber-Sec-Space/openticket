@@ -140,6 +140,36 @@ describe("Hook Engine", () => {
     consoleSpy.mockRestore()
   })
 
+  it("classifies PluginSystemError correctly", async () => {
+    (db.pluginState.findMany as jest.Mock).mockResolvedValue([{ id: "test", isActive: true }])
+    const { activePlugins } = require("@/plugins")
+    activePlugins[0].hooks.onSystemSettingsUpdated = jest.fn().mockRejectedValue({ name: 'PluginSystemError', message: 'test' })
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    await fireHook("onSystemSettingsUpdated", {} as any)
+    expect(consoleSpy).toHaveBeenCalledWith(`[System Failure] Underlying system failed during plugin execution [test] on event [onSystemSettingsUpdated]:`, expect.anything())
+    consoleSpy.mockRestore()
+  })
+
+  it("classifies PluginPermissionError correctly", async () => {
+    (db.pluginState.findMany as jest.Mock).mockResolvedValue([{ id: "test", isActive: true }])
+    const { activePlugins } = require("@/plugins")
+    activePlugins[0].hooks.onSystemSettingsUpdated = jest.fn().mockRejectedValue({ name: 'PluginPermissionError', message: 'test' })
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    await fireHook("onSystemSettingsUpdated", {} as any)
+    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Security] Plugin attempted an unauthorized action [test] on event [onSystemSettingsUpdated]:`, expect.anything())
+    consoleSpy.mockRestore()
+  })
+
+  it("classifies PluginInputError correctly", async () => {
+    (db.pluginState.findMany as jest.Mock).mockResolvedValue([{ id: "test", isActive: true }])
+    const { activePlugins } = require("@/plugins")
+    activePlugins[0].hooks.onSystemSettingsUpdated = jest.fn().mockRejectedValue({ name: 'PluginInputError', message: 'test' })
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    await fireHook("onSystemSettingsUpdated", {} as any)
+    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Validation] Plugin provided invalid input [test] on event [onSystemSettingsUpdated]:`, expect.anything())
+    consoleSpy.mockRestore()
+  })
+
   it("handles parse errors in config configJson", async () => {
     (db.pluginState.findMany as jest.Mock).mockResolvedValue([{ id: "test", isActive: true, configJson: "enc.v1.boom" }])
     const { parsePluginConfig } = require("../src/lib/plugins/crypto");

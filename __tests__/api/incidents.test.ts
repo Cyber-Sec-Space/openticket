@@ -1,5 +1,39 @@
+jest.mock("next/server", () => {
+  class MockNextResponse {
+    constructor(body: any, init: any) {
+      (this as any).body = body;
+      (this as any).status = init?.status || 200;
+    }
+    static json(data: any, init: any) {
+      return { status: init?.status || 200, json: async () => data };
+    }
+  }
+  return {
+    NextRequest: class MockNextRequest {
+      url: string;
+      method: string;
+      body: any;
+      constructor(url: string, options: any) {
+        this.url = url;
+        this.method = options?.method || "GET";
+        this.body = options?.body;
+      }
+      async json() { return JSON.parse(this.body); }
+    },
+    NextResponse: MockNextResponse
+  };
+});
+
 jest.mock("@/lib/api-auth", () => ({ apiAuth: jest.fn() }));
-jest.mock("@/lib/db", () => ({ db: { incident: { findMany: jest.fn(), create: jest.fn() }, auditLog: { create: jest.fn() }, asset: { updateMany: jest.fn() } } }));
+jest.mock("@/lib/db", () => {
+  const mDb = {
+    incident: { findMany: jest.fn(), create: jest.fn() },
+    auditLog: { create: jest.fn() },
+    asset: { updateMany: jest.fn() },
+    $transaction: jest.fn().mockImplementation(async (cb) => cb(mDb))
+  };
+  return { db: mDb };
+});
 jest.mock("@/lib/auth-utils", () => ({ hasPermission: jest.fn() }));
 jest.mock("@/lib/settings", () => ({ getGlobalSettings: jest.fn() }));
 

@@ -33,7 +33,8 @@ export async function GET(req: Request) {
               userId: session.user.id,
               isPushed: false
             },
-            orderBy: { createdAt: "asc" }
+            orderBy: { createdAt: "asc" },
+            take: 50
           });
 
           if (unpushedAlerts.length > 0) {

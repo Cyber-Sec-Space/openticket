@@ -17,6 +17,7 @@ const config: Config = {
   collectCoverageFrom: [
     'src/lib/plugins/**/*.{js,ts}',
     '!src/lib/plugins/types.ts',
+    '!src/lib/plugins/sdk-types.ts',
     '!src/lib/plugins/sdk-context.ts',
     'src/lib/auth-utils.ts',
     'src/app/(dashboard)/settings/plugins/actions.ts',

@@ -61,7 +61,8 @@ export default async function PluginStorePage() {
     }
     
     if (!fetched) {
-      const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { cache: "no-store" });
+      // Use ISR caching (revalidate every 300 seconds / 5 minutes) to avoid GitHub Rate Limiting
+      const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { next: { revalidate: 300 } });
       if (res.ok) {
         rawData = await res.json();
       } else {

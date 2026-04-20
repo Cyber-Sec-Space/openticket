@@ -43,75 +43,43 @@ export async function createVulnerabilityAction(formData: FormData) {
     default:         slaHours = null; break; // INFO has no SLA requirement
   }
 
-  let newVuln = await db.vulnerability.create({
-    data: {
-      title,
-      cveId,
-      description,
-      cvssScore,
-      severity,
-      targetSlaDate: null,
-      vulnerabilityAssets: hasPermission(session, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
-        ? { create: assetIds.map(id => ({ assetId: id, status: 'AFFECTED' })) }
-        : undefined
-    }
-  })
+  let newVuln = await db.$transaction(async (tx) => {
+    let created = await tx.vulnerability.create({
+      data: {
+        title,
+        cveId,
+        description,
+        cvssScore,
+        severity,
+        targetSlaDate: null,
+        vulnerabilityAssets: hasPermission(session, 'LINK_VULN_TO_ASSET') && assetIds.length > 0
+          ? { create: assetIds.map(id => ({ assetId: id, status: 'AFFECTED' })) }
+          : undefined
+      }
+    });
 
-  if (slaHours !== null) {
-    await db.$executeRaw`UPDATE "Vulnerability" SET "targetSlaDate" = NOW() + (${slaHours} * INTERVAL '1 hour') WHERE id = ${newVuln.id}`;
-    // Re-fetch to guarantee hooks and emails get the absolute exact PostgreSQL timestamp
-    newVuln = await db.vulnerability.findUnique({ where: { id: newVuln.id } }) as any;
-  }
+    if (slaHours !== null) {
+      await tx.$executeRaw`UPDATE "Vulnerability" SET "targetSlaDate" = NOW() + (${slaHours} * INTERVAL '1 hour') WHERE id = ${created.id}`;
+      // Re-fetch to guarantee hooks and emails get the absolute exact PostgreSQL timestamp
+      created = await tx.vulnerability.findUnique({ where: { id: created.id } }) as any;
+    }
+
+    // Telemetry Audit log hook
+    await tx.auditLog.create({
+      data: {
+        action: "VULN_DISCOVERED",
+        entityType: "Vulnerability",
+        entityId: created.id,
+        userId: session.user.id,
+        changes: `Minted Threat metrics ${cveId || created.title} logging local CVSS:[${cvssScore}]`
+      }
+    });
+
+    return created;
+  });
 
   const { fireHook } = await import("@/lib/plugins/hook-engine");
   await fireHook("onVulnerabilityCreated", newVuln);
-
-  // SOAR Automations (Auto-Quarantine)
-  const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
-  const currentRank = sevRank[severity as keyof typeof sevRank] || 0
-  const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
-
-  if (settings?.soarAutoQuarantineEnabled && assetIds.length > 0 && currentRank >= thresholdRank) {
-    const affectedAssets = await db.asset.findMany({ where: { id: { in: assetIds } } })
-    await db.asset.updateMany({
-      where: { id: { in: assetIds } },
-      data: { status: 'COMPROMISED' }
-    })
-    
-    const { sendAssetCompromisedEmail } = await import("@/lib/mailer")
-    const { dispatchMassAlert } = await import("@/lib/notifier")
-    
-    for (const affectedAsset of affectedAssets) {
-      await fireHook("onAssetCompromise", { ...affectedAsset, status: 'COMPROMISED' })
-
-      if (settings?.smtpTriggerOnAssetCompromise) {
-        const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['VIEW_INCIDENTS_ALL', 'UPDATE_SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { id: true, email: true } })
-        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
-        await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${affectedAsset.id}`)
-      }
-    }
-    
-    await db.auditLog.create({
-      data: {
-        action: "SOAR_AUTO_QUARANTINE",
-        entityType: "Vulnerability",
-        entityId: newVuln.id,
-        userId: session.user.id,
-        changes: `${assetIds.length} Asset(s) automatically marked as COMPROMISED due to Vulnerability VULN-${newVuln.id.substring(0, 8).toUpperCase()} tracking.`
-      }
-    })
-  }
-
-  // Telemetry Audit log hook
-  await db.auditLog.create({
-    data: {
-      action: "VULN_DISCOVERED",
-      entityType: "Vulnerability",
-      entityId: newVuln.id,
-      userId: session.user.id,
-      changes: `Minted Threat metrics ${cveId || newVuln.title} logging local CVSS:[${cvssScore}]`
-    }
-  })
 
   if (settings?.smtpTriggerOnNewVulnerability) {
     const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_VULNERABILITIES', 'VIEW_VULNERABILITIES'] } } }, email: { not: null } }, select: { email: true } })

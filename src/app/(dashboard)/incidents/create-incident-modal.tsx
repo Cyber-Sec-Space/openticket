@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TagInput } from "@/components/ui/tag-input"
 import { MultiAssetPicker } from "@/components/ui/multi-asset-picker"
 import { createIncident } from "./new/actions"
+import { SubmitButton } from "@/components/ui/submit-button"
 
 export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: boolean, assets: any[] }) {
   const [open, setOpen] = useState(false)
@@ -108,9 +109,9 @@ export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: bo
             />
           </div>
 
-          <Button type="submit" className="w-full h-12 text-md font-bold mt-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(0,255,200,0.4)] transition-all">
+          <SubmitButton loadingText="Deploying Payload..." className="w-full h-12 text-md font-bold mt-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(0,255,200,0.4)] transition-all">
              Deploy Report Payload
-          </Button>
+          </SubmitButton>
         </form>
       </DialogContent>
     </Dialog>

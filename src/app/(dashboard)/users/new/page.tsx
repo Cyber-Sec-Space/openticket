@@ -9,6 +9,7 @@ import { db } from "@/lib/db"
 import { createUserAction } from "./actions"
 import { hasPermission } from "@/lib/auth-utils"
 import Link from "next/link"
+import { SubmitButton } from "@/components/ui/submit-button"
 
 export default async function NewUserPage() {
   const session = await auth()
@@ -110,9 +111,9 @@ export default async function NewUserPage() {
           </div>
 
           <div className="pt-6 border-t border-white/10 flex justify-end">
-            <Button type="submit" className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] text-white font-bold tracking-wide">
+            <SubmitButton loadingText="Minting Identity..." className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] text-white font-bold tracking-wide">
               Mint Identity Record
-            </Button>
+            </SubmitButton>
           </div>
         </form>
       </div>
