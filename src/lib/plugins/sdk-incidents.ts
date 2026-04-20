@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { IncidentStatus, Severity } from "@prisma/client"
+import { IncidentStatus, Severity, IncidentType } from "@prisma/client"
 import { PluginSystemError, PluginInputError, withPluginErrorHandling } from './errors'
 import { SdkExecutionContext, IncidentData } from './sdk-types'
 import { IncidentCreateSchema, IncidentUpdateSchema, IncidentSearchSchema } from './schemas'
@@ -30,7 +30,7 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
         data: {
           title: parsedData.title,
           description: parsedData.description,
-          type: parsedData.type,
+          type: parsedData.type as IncidentType,
           severity: effectiveSeverity,
           ...(parsedData.assetIds && parsedData.assetIds.length > 0 ? {
             assets: {
@@ -284,7 +284,7 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
       const [attachment] = await db.$transaction([
         db.attachment.create({
-          data: { filename: validFileName, fileUrl: validUrl, incidentId: validIncId, uploader: { connect: { id } } }
+          data: { filename: validFileName, fileUrl: validUrl, incident: { connect: { id: validIncId } }, uploader: { connect: { id } } }
         }),
         db.auditLog.create({
           data: { action: `[PLUGIN:${ctx.pluginId}] EVIDENCE_ATTACHED`, entityType: "Incident", entityId: validIncId, userId: id, changes: { filename: validFileName } }
@@ -314,7 +314,7 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       const validContent = z.string().min(1).parse(content);
 
       const comment = await db.comment.create({
-        data: { content: validContent, incidentId: validIncId, author: { connect: { id } } }
+        data: { content: validContent, incident: { connect: { id: validIncId } }, author: { connect: { id } } }
       });
       await ctx.triggerHook('onCommentAdded', comment);
       return comment;
