@@ -18,6 +18,12 @@ export function ResetPasswordButton({ userId }: { userId: string }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<{message: string, type: 'success'|'error'} | null>(null)
+
+  const showToast = (message: string, type: 'success'|'error' = 'success') => {
+    setToastMessage({ message, type })
+    setTimeout(() => setToastMessage(null), 3000)
+  }
 
   const handleReset = async () => {
     try {
@@ -25,14 +31,14 @@ export function ResetPasswordButton({ userId }: { userId: string }) {
       const res = await adminResetPasswordAction(userId)
       
       if (res.mode === 'email') {
-        window.alert("Password reset email transmitted successfully.")
+        showToast("Password reset email transmitted successfully.", "success")
         setIsOpen(false)
       } else if (res.mode === 'manual' && res.tempPassword) {
         setTempPassword(res.tempPassword)
         // Only show alert if it's necessary, though the dialog is enough
       }
     } catch (error: any) {
-      window.alert(error.message || "Failed to reset password")
+      showToast(error.message || "Failed to reset password", "error")
     } finally {
       setIsLoading(false)
     }
@@ -79,7 +85,7 @@ export function ResetPasswordButton({ userId }: { userId: string }) {
                   variant="secondary"
                   onClick={() => {
                     navigator.clipboard.writeText(tempPassword);
-                    window.alert("Copied to clipboard");
+                    showToast("Copied to clipboard", "success");
                   }}
                 >
                   Copy
@@ -101,6 +107,12 @@ export function ResetPasswordButton({ userId }: { userId: string }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {toastMessage && (
+        <div className={`fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg z-50 text-sm font-medium animate-in slide-in-from-bottom-5 ${toastMessage.type === 'error' ? 'bg-red-950 border border-red-500/50 text-red-200' : 'bg-emerald-950 border border-emerald-500/50 text-emerald-200'}`}>
+          {toastMessage.message}
+        </div>
+      )}
     </>
   )
 }
