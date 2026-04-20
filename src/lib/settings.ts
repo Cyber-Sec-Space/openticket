@@ -14,7 +14,7 @@ export async function getGlobalSettings(includeRelations = false): Promise<any> 
   
   const settings = await db.systemSetting.findUnique({ 
     where: { id: "global" },
-    include: includeRelations ? { defaultUserRoles: { select: { name: true } } } : undefined
+    include: includeRelations ? { defaultUserRoles: { select: { id: true, name: true } } } : undefined
   });
   
   if (!includeRelations) {
