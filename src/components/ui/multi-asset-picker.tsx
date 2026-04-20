@@ -40,23 +40,23 @@ export function MultiAssetPicker({ assets, defaultSelectedIds = [], disabled = f
         type="button" 
         onClick={() => !disabled && setOpen(!open)}
         disabled={disabled}
-        className={`flex min-h-[42px] w-full items-center justify-between rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all flex-wrap gap-2 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`flex min-h-[42px] w-full items-center justify-between rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        {selected.size === 0 ? (
-           <span className="text-muted-foreground italic flex items-center gap-2"><Server className="w-4 h-4"/> No Infrastructure Mapped (Select Assets)</span>
-        ) : (
-           <div className="flex flex-wrap gap-1.5">
-             {Array.from(selected).map(id => {
+        <div className="flex flex-wrap gap-1.5 flex-1 items-center">
+          {selected.size === 0 ? (
+             <span className="text-muted-foreground italic flex items-center gap-2"><Server className="w-4 h-4 flex-shrink-0"/> <span className="text-left">No Infrastructure Mapped (Select Assets)</span></span>
+          ) : (
+             Array.from(selected).map(id => {
                const a = assets.find(x => x.id === id)
                return a ? (
                  <Badge key={id} variant="secondary" className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 flex items-center gap-1.5 shadow-[0_0_10px_rgba(220,38,38,0.1)]">
                    {a.name}
                  </Badge>
                ) : null
-             })}
-           </div>
-        )}
-        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+             })
+          )}
+        </div>
+        <ChevronDown className="w-4 h-4 text-muted-foreground ml-2 flex-shrink-0" />
       </button>
 
       {open && (

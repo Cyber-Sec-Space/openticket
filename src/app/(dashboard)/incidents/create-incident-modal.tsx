@@ -56,7 +56,7 @@ export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: bo
                     <SelectItem value="DATA_BREACH">Data Breach</SelectItem>
                     <SelectItem value="UNAUTHORIZED_ACCESS">Unauthorized Access</SelectItem>
                     <SelectItem value="NETWORK_ANOMALY">Network Anomaly</SelectItem>
-                    <SelectItem value="OTHER" className="text-muted-foreground">Other / Triage</SelectItem>
+                    <SelectItem value="OTHER">Other / Triage</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
