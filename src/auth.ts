@@ -21,41 +21,26 @@ declare module "next-auth" {
 }
 
 class Missing2FAError extends CredentialsSignin {
-  constructor() {
-    super();
-    this.message = "Missing2FA";
-  }
+  code = "Missing2FA"
 }
 
 class Invalid2FAError extends CredentialsSignin {
-  constructor() {
-    super();
-    this.message = "Invalid2FA";
-  }
+  code = "Invalid2FA"
 }
 
 
 class EmailNotVerifiedError extends CredentialsSignin {
-  constructor() {
-    super();
-    this.message = "EmailNotVerified";
-  }
+  code = "EmailNotVerified"
 }
 
 class IdentitySuspendedError extends CredentialsSignin {
-  constructor() {
-    super();
-    this.message = "IdentitySuspended";
-  }
+  code = "IdentitySuspended"
 }
 
 // Database-backed distributed rate limit tracking replaces volatile in-memory strategies
 
 class AuthenticationThrottledError extends CredentialsSignin {
-  constructor() {
-    super();
-    this.message = "AuthenticationThrottled";
-  }
+  code = "AuthenticationThrottled"
 }
 
 import { headers } from "next/headers"

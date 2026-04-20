@@ -40,11 +40,11 @@ export async function authenticate(
     await signIn('credentials', { ...payload, redirectTo: '/' })
   } catch (error: any) {
     // NextAuth errors might fail instanceof check due to package resolution issues, so we check type or name
-    const isAuthError = error instanceof AuthError || error?.name?.includes('AuthError') || error?.type === 'CredentialsSignin' || error?.type?.includes('Error');
+    const isAuthError = error instanceof AuthError || error?.name?.includes('AuthError') || error?.type?.includes('Error') || typeof error.type === 'string';
     
     if (isAuthError) {
       const customCause = error.cause?.err as any;
-      const errMessage = customCause?.message || customCause?.code || error.code || error.message;
+      const errMessage = customCause?.message || customCause?.code || error.code || error.type || error.message;
       
       if (errMessage === "Missing2FA") return "REQUIRES_2FA";
       
