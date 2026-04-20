@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { toggleUserStatusAction, deleteUserAction } from "../actions"
+import { ResetPasswordButton } from "./reset-password-button"
 import { UserPanels } from "./user-panels"
 import { hasPermission } from "@/lib/auth-utils"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
@@ -96,6 +97,9 @@ export default async function UserDetailPage({
         <div className="flex gap-3">
           {session.user.id !== user.id && (
             <>
+              {hasPermission(session, 'RESET_USER_PASSWORDS') && (
+                 <ResetPasswordButton userId={user.id} />
+              )}
               <ConfirmForm 
                 action={async () => { "use server"; await toggleUserStatusAction(user.id, !user.isDisabled); }} 
                 promptMessage={user.isDisabled ? "Restore this operator's platform access?" : "Suspend this operator?"}
