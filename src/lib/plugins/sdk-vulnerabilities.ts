@@ -37,7 +37,7 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
           cveId: parsedData.options?.cveId || null,
           cvssScore: parsedData.options?.cvssScore || null,
           targetSlaDate: null,
-          vulnerabilityAssets: { create: { assetId: parsedData.targetAssetId, status: 'AFFECTED' } }
+          vulnerabilityAssets: { create: { asset: { connect: { id: parsedData.targetAssetId } }, status: 'AFFECTED' } }
         }
       });
 
@@ -119,7 +119,7 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
       const validContent = z.string().min(1).parse(content);
 
       const comment = await db.comment.create({
-        data: { content: validContent, vulnId: validId, authorId: id }
+        data: { content: validContent, vulnId: validId, author: { connect: { id } } }
       });
       await ctx.triggerHook('onCommentAdded', comment);
       return comment;
@@ -252,7 +252,7 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
 
       const [attachment] = await db.$transaction([
         db.attachment.create({
-          data: { filename: validFileName, fileUrl: validUrl, vulnId: validVulnId, uploaderId: id }
+          data: { filename: validFileName, fileUrl: validUrl, vulnId: validVulnId, uploader: { connect: { id } } }
         }),
         db.auditLog.create({
           data: { action: `[PLUGIN:${ctx.pluginId}] EVIDENCE_ATTACHED`, entityType: "Vulnerability", entityId: validVulnId, userId: id, changes: { filename: validFileName } }

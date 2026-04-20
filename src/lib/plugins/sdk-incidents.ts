@@ -78,7 +78,7 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       if (comment) {
         ctx.requireBotUser('ADD_COMMENTS');
         updateData.comments = {
-          create: { content: z.string().parse(comment), authorId: botId }
+          create: { content: z.string().parse(comment), author: { connect: { id: botId } } }
         };
       }
 
@@ -259,7 +259,7 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
 
       const [attachment] = await db.$transaction([
         db.attachment.create({
-          data: { filename: validFileName, fileUrl: validUrl, incidentId: validIncId, uploaderId: id }
+          data: { filename: validFileName, fileUrl: validUrl, incidentId: validIncId, uploader: { connect: { id } } }
         }),
         db.auditLog.create({
           data: { action: `[PLUGIN:${ctx.pluginId}] EVIDENCE_ATTACHED`, entityType: "Incident", entityId: validIncId, userId: id, changes: { filename: validFileName } }
@@ -289,7 +289,7 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       const validContent = z.string().min(1).parse(content);
 
       const comment = await db.comment.create({
-        data: { content: validContent, incidentId: validIncId, authorId: id }
+        data: { content: validContent, incidentId: validIncId, author: { connect: { id } } }
       });
       await ctx.triggerHook('onCommentAdded', comment);
       return comment;
