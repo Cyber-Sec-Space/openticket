@@ -5,7 +5,7 @@ import { ShieldCheck, User, Mail, Lock, CheckCircle2, AlertTriangle, Loader2, Gl
 import { testSmtpConnection, dispatchSetupVerificationEmail, initializeInstance } from "./actions"
 import { cn } from "@/lib/utils"
 
-export function SetupForm() {
+export function SetupForm({ defaultSmtp }: { defaultSmtp?: { host: string, port: string, user: string, pass: string, from: string } }) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [step, setStep] = useState(1)
@@ -221,27 +221,27 @@ export function SetupForm() {
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground"><Server className="w-4 h-4" /></div>
-              <input type="text" name="smtpHost" placeholder="smtp.mailgun.org" className="w-full text-sm pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
+              <input type="text" name="smtpHost" defaultValue={defaultSmtp?.host} placeholder="smtp.mailgun.org" className="w-full text-sm pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
             </div>
             <div className="relative group">
-              <input type="number" name="smtpPort" placeholder="Port (e.g. 587)" className="w-full text-sm px-4 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
+              <input type="number" name="smtpPort" defaultValue={defaultSmtp?.port} placeholder="Port (e.g. 587)" className="w-full text-sm px-4 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
              <div className="relative group">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground"><User className="w-4 h-4" /></div>
-              <input type="text" name="smtpUser" placeholder="SMTP Username" className="w-full text-sm pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
+              <input type="text" name="smtpUser" defaultValue={defaultSmtp?.user} placeholder="SMTP Username" className="w-full text-sm pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
             </div>
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground"><Key className="w-4 h-4" /></div>
-              <input type="password" name="smtpPassword" placeholder="SMTP Password" className="w-full text-sm pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
+              <input type="password" name="smtpPassword" defaultValue={defaultSmtp?.pass} placeholder="SMTP Password" className="w-full text-sm pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
             </div>
           </div>
           
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground"><Mail className="w-4 h-4" /></div>
-            <input type="email" name="smtpFrom" placeholder="From Address (e.g. support@acme.com)" className="w-full text-sm pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
+            <input type="email" name="smtpFrom" defaultValue={defaultSmtp?.from} placeholder="From Address (e.g. support@acme.com)" className="w-full text-sm pl-10 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-primary/50" disabled={isPending} />
           </div>
 
           <div className="pt-2">
