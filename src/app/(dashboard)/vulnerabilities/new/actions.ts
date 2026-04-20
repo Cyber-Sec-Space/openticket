@@ -66,6 +66,42 @@ export async function createVulnerabilityAction(formData: FormData) {
   const { fireHook } = await import("@/lib/plugins/hook-engine");
   await fireHook("onVulnerabilityCreated", newVuln);
 
+  // SOAR Automations (Auto-Quarantine)
+  const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
+  const currentRank = sevRank[severity as keyof typeof sevRank] || 0
+  const thresholdRank = sevRank[(settings?.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL']
+
+  if (settings?.soarAutoQuarantineEnabled && assetIds.length > 0 && currentRank >= thresholdRank) {
+    const affectedAssets = await db.asset.findMany({ where: { id: { in: assetIds } } })
+    await db.asset.updateMany({
+      where: { id: { in: assetIds } },
+      data: { status: 'COMPROMISED' }
+    })
+    
+    const { sendAssetCompromisedEmail } = await import("@/lib/mailer")
+    const { dispatchMassAlert } = await import("@/lib/notifier")
+    
+    for (const affectedAsset of affectedAssets) {
+      await fireHook("onAssetCompromise", { ...affectedAsset, status: 'COMPROMISED' })
+
+      if (settings?.smtpTriggerOnAssetCompromise) {
+        const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['VIEW_INCIDENTS_ALL', 'UPDATE_SYSTEM_SETTINGS'] } } }, email: { not: null } }, select: { id: true, email: true } })
+        await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.map(a => a.email as string))
+        await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${affectedAsset.id}`)
+      }
+    }
+    
+    await db.auditLog.create({
+      data: {
+        action: "SOAR_AUTO_QUARANTINE",
+        entityType: "Vulnerability",
+        entityId: newVuln.id,
+        userId: session.user.id,
+        changes: `${assetIds.length} Asset(s) automatically marked as COMPROMISED due to Vulnerability VULN-${newVuln.id.substring(0, 8).toUpperCase()} tracking.`
+      }
+    })
+  }
+
   // Telemetry Audit log hook
   await db.auditLog.create({
     data: {
