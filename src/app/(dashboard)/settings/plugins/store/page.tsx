@@ -99,10 +99,17 @@ export default async function PluginStorePage() {
             const isLocal = !!activePluginNode;
 
             // Merge registry metadata upwards to perfectly match the expected `OpenTicketPlugin['manifest']` shape for PluginCard
-            const cardManifest = activePluginNode ? activePluginNode.manifest : {
+            const cardManifest = activePluginNode ? {
+              ...plugin,
+              ...activePluginNode.manifest,
+              signature: activePluginNode.manifest.signature || plugin.versions[plugin.latestVersion]?.integritySha256,
+              supportedPluginApiVersion: activePluginNode.manifest.supportedPluginApiVersion || plugin.versions[plugin.latestVersion]?.supportedPluginApiVersion
+            } : {
               ...plugin,
               version: plugin.latestVersion,
-              requestedPermissions: plugin.versions[plugin.latestVersion]?.requestedPermissions || []
+              requestedPermissions: plugin.versions[plugin.latestVersion]?.requestedPermissions || [],
+              supportedPluginApiVersion: plugin.versions[plugin.latestVersion]?.supportedPluginApiVersion || [],
+              signature: plugin.versions[plugin.latestVersion]?.integritySha256 || plugin.signature
             };
 
             return (

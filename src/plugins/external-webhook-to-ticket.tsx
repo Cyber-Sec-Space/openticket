@@ -7,6 +7,15 @@ const WebhookToTicketPlugin: OpenTicketPlugin = {
     name: "Generic Webhook Ingestion",
     version: "1.1.0",
     description: "Receives inbound alerts via Generic Webhook JSON payload and safely converts them into new Incident tickets.",
+    author: "OpenTicket Team",
+    developer: {
+      name: "OpenTicket Team",
+      email: "dev@cyber-sec.space",
+      website: "https://openticket.cyber-sec.space"
+    },
+    repositoryUrl: "https://github.com/Cyber-Sec-Space/openticket-plugin-registry",
+    icon: "webhook",
+    signature: "75728c4401854642b766cefac6d528b1888aab4a65928dddeb988a422379acfb",
     supportedPluginApiVersion: ['1.0.0', '1.1.0', '1.2.0', '1.3.0'],
     requestedPermissions: ["CREATE_INCIDENTS"],
     options: [

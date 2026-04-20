@@ -132,6 +132,13 @@ export interface OpenTicketPlugin {
     description: string;
     version: string;
     author?: string;
+    developer?: {
+      name?: string;
+      email?: string;
+      website?: string;
+    };
+    repositoryUrl?: string;
+    icon?: string;
     requestedPermissions?: import("@prisma/client").Permission[];
     supportedPluginApiVersion?: string[];
     options?: Array<{
@@ -145,6 +152,7 @@ export interface OpenTicketPlugin {
     }>;
     dependsOn?: string[];
     signature?: string;
+    integritySha256?: string;
   };
   
   hooks?: OpenTicketPluginHooks;
