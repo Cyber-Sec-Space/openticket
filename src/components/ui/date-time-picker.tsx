@@ -3,7 +3,6 @@ import React, { forwardRef, useState } from "react";
 import { format, parse, isValid } from "date-fns";
 import { Calendar as CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -98,15 +97,13 @@ export const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
         
         <Popover>
           <PopoverTrigger asChild>
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/20 hover:scale-110 active:scale-90 transition-all duration-300 disabled:opacity-50"
+              className="absolute right-1 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-white/5 hover:text-primary focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={disabled}
             >
               <CalendarIcon className="h-4 w-4" />
-            </Button>
+            </button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 bg-black/95 border border-white/10 shadow-[0_0_30px_rgba(0,255,200,0.15)] backdrop-blur-xl rounded-xl overflow-hidden glass-panel" align="end">
             <div className="bg-gradient-to-b from-white/5 to-transparent">
