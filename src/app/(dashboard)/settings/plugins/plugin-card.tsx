@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect } from "react"
 import { OpenTicketPlugin } from "@/lib/plugins/types"
 import { Button } from "@/components/ui/button"
 import { togglePluginState, updatePluginConfig, installExternalPlugin, uninstallExternalPlugin, triggerProductionBuild, triggerServerRestart } from "./actions"
-import { Power, Save, Trash, ToyBrick, Settings as SettingsIcon, AlertCircle, Loader2, Download, Hammer, RefreshCw, ShieldAlert, CheckCircle2 } from "lucide-react"
+import { Power, Save, Trash, ToyBrick, Settings as SettingsIcon, AlertCircle, Loader2, Download, Hammer, RefreshCw, ShieldAlert, CheckCircle2, BadgeCheck } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -517,7 +517,10 @@ export function PluginCard({
              </div>
              <div className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between">
                 <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Author</span>
-                <span className="font-mono text-sm text-white truncate mt-1">{manifest.author || "Unknown Source"}</span>
+                <span className="font-mono text-sm text-white truncate mt-1 flex items-center gap-1.5">
+                  {manifest.author || "Unknown Source"}
+                  {manifest.author === 'OpenTicket Team' && <BadgeCheck className="w-4 h-4 text-blue-400" title="Official Integration" />}
+                </span>
              </div>
              <div className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between">
                 <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Signature</span>
