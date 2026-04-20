@@ -505,10 +505,10 @@ export default async function IncidentDetailPage({
                         <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
                           <SelectItem value="MALWARE">Malware Infection</SelectItem>
                           <SelectItem value="PHISHING">Phishing Attempt</SelectItem>
-                          <SelectItem value="DATA BREACH" className="text-destructive">Data Breach</SelectItem>
+                          <SelectItem value="DATA BREACH">Data Breach</SelectItem>
                           <SelectItem value="UNAUTHORIZED ACCESS">Unauthorized Access</SelectItem>
                           <SelectItem value="NETWORK ANOMALY">Network Anomaly</SelectItem>
-                          <SelectItem value="OTHER" className="text-muted-foreground">Other / Triage</SelectItem>
+                          <SelectItem value="OTHER">Other / Triage</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
