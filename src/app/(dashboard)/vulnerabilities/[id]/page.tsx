@@ -42,7 +42,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
   const TAKE_ASSET = 10;
   const TAKE_FILE = 8;
 
-  const [vuln, affectedAssets, totalAssets, attachments, totalAttachments, allAssets, allUsers] = await Promise.all([
+  const [vuln, affectedAssets, totalAssets, attachments, totalAttachments, allAssets, allUsers, allLinkedAssetIds] = await Promise.all([
     db.vulnerability.findUnique({
       where: { id },
       include: {
@@ -63,8 +63,11 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
     db.attachment.findMany({ where: { vulnId: id }, orderBy: { createdAt: 'desc' }, take: TAKE_FILE, skip: (filePage - 1) * TAKE_FILE }),
     db.attachment.count({ where: { vulnId: id } }),
     db.asset.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, type: true } }),
-    db.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, isBot: true } })
+    db.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true, isBot: true } }),
+    db.vulnerabilityAsset.findMany({ where: { vulnId: id }, select: { assetId: true } }).then(records => records.map(r => r.assetId))
   ])
+
+  const unlinkedAssets = allAssets.filter(a => !allLinkedAssetIds.includes(a.id));
 
   if (!vuln) {
     return notFound()
@@ -252,7 +255,7 @@ export default async function VulnerabilityDetailPage({ params, searchParams }: 
               <ActionForm action={linkVulnAssetAction} className="w-full p-4 border-b border-white/5 bg-black/40 flex flex-col gap-3">
                 <input type="hidden" name="vulnId" value={vuln.id} />
                 <div className="w-full relative z-20">
-                  <MultiAssetPicker assets={allAssets as any} />
+                  <MultiAssetPicker assets={unlinkedAssets as any} />
                 </div>
                 <Button type="submit" size="sm" variant="secondary" className="w-full h-8 text-xs shrink-0 bg-red-950/40 text-red-400 hover:bg-red-900/60 border border-red-900/50">Link Selected Assets</Button>
               </ActionForm>
