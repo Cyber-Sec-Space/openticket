@@ -1,6 +1,6 @@
 "use client";
 import React, { forwardRef, useState } from "react";
-import { format } from "date-fns";
+import { format, parse, isValid } from "date-fns";
 import { Calendar as CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,22 +19,59 @@ export interface DateTimePickerProps {
   disabled?: boolean;
 }
 
-export const DateTimePicker = forwardRef<HTMLButtonElement, DateTimePickerProps>(
+export const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
   ({ className, name, defaultValue, disabled }, ref) => {
-    const [date, setDate] = useState<Date | undefined>(() => {
-      if (!defaultValue) return undefined;
-      const parsed = new Date(defaultValue);
-      return isNaN(parsed.getTime()) ? undefined : parsed;
-    });
+    // Initial parse
+    const initialDate = defaultValue ? new Date(defaultValue) : undefined;
+    const isValidInit = initialDate && !isNaN(initialDate.getTime());
 
-    const [timeString, setTimeString] = useState<string>(() => {
-      if (!defaultValue) return "00:00";
-      const parsed = new Date(defaultValue);
-      if (isNaN(parsed.getTime())) return "00:00";
-      return format(parsed, "HH:mm");
-    });
+    const [date, setDate] = useState<Date | undefined>(isValidInit ? initialDate : undefined);
+    
+    // The textual representation the user interacts with
+    const [inputValue, setInputValue] = useState<string>(
+      isValidInit ? format(initialDate, "yyyy-MM-dd HH:mm") : ""
+    );
 
-    // Sync time string into the date object
+    const [timeString, setTimeString] = useState<string>(
+      isValidInit ? format(initialDate, "HH:mm") : "00:00"
+    );
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      setInputValue(val);
+
+      // Try to parse basic format "yyyy-MM-dd HH:mm"
+      const parsed = parse(val, "yyyy-MM-dd HH:mm", new Date());
+      if (isValid(parsed)) {
+        setDate(parsed);
+        setTimeString(format(parsed, "HH:mm"));
+      } else {
+        // Fallback for just dates "yyyy-MM-dd"
+        const parsedDate = parse(val, "yyyy-MM-dd", new Date());
+        if (isValid(parsedDate)) {
+           const [hours, minutes] = timeString.split(":");
+           parsedDate.setHours(parseInt(hours || "0", 10));
+           parsedDate.setMinutes(parseInt(minutes || "0", 10));
+           setDate(parsedDate);
+        } else {
+           setDate(undefined);
+        }
+      }
+    };
+
+    const handleDateSelect = (selectedDate: Date | undefined) => {
+      if (selectedDate) {
+        const [hours, minutes] = timeString.split(":");
+        selectedDate.setHours(parseInt(hours || "0", 10));
+        selectedDate.setMinutes(parseInt(minutes || "0", 10));
+        setDate(selectedDate);
+        setInputValue(format(selectedDate, "yyyy-MM-dd HH:mm"));
+      } else {
+        setDate(undefined);
+        setInputValue("");
+      }
+    };
+
     const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
       setTimeString(val);
@@ -44,59 +81,58 @@ export const DateTimePicker = forwardRef<HTMLButtonElement, DateTimePickerProps>
         newDate.setHours(parseInt(hours || "0", 10));
         newDate.setMinutes(parseInt(minutes || "0", 10));
         setDate(newDate);
+        setInputValue(format(newDate, "yyyy-MM-dd HH:mm"));
       }
-    };
-
-    const handleSelect = (selectedData: Date | undefined) => {
-      if (selectedData) {
-        const [hours, minutes] = timeString.split(":");
-        selectedData.setHours(parseInt(hours || "0", 10));
-        selectedData.setMinutes(parseInt(minutes || "0", 10));
-      }
-      setDate(selectedData);
     };
 
     return (
-      <div className={cn("relative w-full", className)}>
+      <div className={cn("relative flex items-center w-full group", className)} ref={ref}>
+        <Input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          placeholder="YYYY-MM-DD HH:mm"
+          className="w-full bg-black/40 border-white/10 text-white focus:ring-primary focus:border-primary placeholder:text-muted-foreground/50 transition-all font-mono text-sm h-10 pr-12"
+          disabled={disabled}
+        />
+        
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              ref={ref}
               type="button"
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal bg-black/50 border border-white/10 text-white hover:bg-white/10 hover:text-white transition-all h-10 px-3",
-                !date && "text-muted-foreground",
-                disabled && "opacity-50 cursor-not-allowed"
-              )}
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary hover:bg-white/5 disabled:opacity-50"
               disabled={disabled}
             >
-              <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-              {date ? format(date, "PPP p") : <span>Pick a date & time</span>}
+              <CalendarIcon className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-black/95 border-white/10 shadow-2xl glass-panel" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={handleSelect}
-              initialFocus
-            />
-            <div className="p-3 border-t border-white/10 bg-black/40 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground ml-2" />
-                <span className="text-sm text-muted-foreground">Time</span>
-              </div>
-              <Input 
-                type="time" 
-                value={timeString}
-                onChange={handleTimeChange}
-                className="bg-black/50 border-white/10 text-white h-8 w-[120px] focus:ring-primary focus:border-primary [color-scheme:dark]"
+          <PopoverContent className="w-auto p-0 bg-black/95 border border-white/10 shadow-[0_0_30px_rgba(0,255,200,0.15)] backdrop-blur-xl rounded-xl overflow-hidden glass-panel" align="end">
+            <div className="bg-gradient-to-b from-white/5 to-transparent">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={handleDateSelect}
+                initialFocus
+                className="bg-transparent"
               />
+              <div className="p-3 border-t border-white/10 flex items-center justify-between gap-3 bg-black/50">
+                <div className="flex items-center gap-2 text-primary/80">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Time</span>
+                </div>
+                <Input 
+                  type="time" 
+                  value={timeString}
+                  onChange={handleTimeChange}
+                  className="bg-black/60 border-white/10 text-white h-8 w-[120px] focus:ring-primary focus:border-primary font-mono text-sm [color-scheme:dark]"
+                />
+              </div>
             </div>
           </PopoverContent>
         </Popover>
-        {/* Hidden field to maintain exact ISO-8601 UTC data contract for FormData Server Actions */}
+        {/* Hidden field for form data */}
         {name && (
           <input 
             type="hidden" 
