@@ -39,11 +39,12 @@ export function createUserApi(ctx: SdkExecutionContext) {
           name: parsedData.name,
           isDisabled: false,
           isBot: false,
-          customRoles: rolesToConnect.length > 0 ? { connect: rolesToConnect } : undefined,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] USER_CREATED`, userId: id, changes: { email: parsedData.email, assignRoleNames: parsedData.assignRoleNames } }
-          }
+          customRoles: rolesToConnect.length > 0 ? { connect: rolesToConnect } : undefined
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] USER_CREATED`, entityType: 'User', entityId: newUser.id, userId: id, changes: { email: parsedData.email, assignRoleNames: parsedData.assignRoleNames } }
       });
       
       await ctx.triggerHook('onUserCreated', newUser);
@@ -61,11 +62,12 @@ export function createUserApi(ctx: SdkExecutionContext) {
       const updated = await db.user.update({
         where: { id: validId },
         data: { 
-          isDisabled: true,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] USER_SUSPENDED`, userId: id, changes: { isDisabled: true } }
-          }
+          isDisabled: true
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] USER_SUSPENDED`, entityType: 'User', entityId: validId, userId: id, changes: { isDisabled: true } }
       });
       
       await ctx.triggerHook('onUserUpdated', updated);
@@ -87,11 +89,12 @@ export function createUserApi(ctx: SdkExecutionContext) {
       const updated = await db.user.update({
          where: { id: validId },
          data: { 
-           customRoles: { set: validRoles.map(r => ({ id: r.id })) },
-           auditLogs: {
-             create: { action: `[PLUGIN:${ctx.pluginId}] USER_ROLES_MODIFIED`, userId: id, changes: { targetRoleNames: validRolesArray } }
-           }
+           customRoles: { set: validRoles.map(r => ({ id: r.id })) }
          }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] USER_ROLES_MODIFIED`, entityType: 'User', entityId: validId, userId: id, changes: { targetRoleNames: validRolesArray } }
       });
       
       await ctx.triggerHook('onUserUpdated', updated);
@@ -106,11 +109,12 @@ export function createUserApi(ctx: SdkExecutionContext) {
         where: { id: validId },
         data: { 
           isTwoFactorEnabled: false, 
-          twoFactorSecret: null,
-          auditLogs: {
-             create: { action: `[PLUGIN:${ctx.pluginId}] USER_MFA_RESET`, userId: id, changes: { mfaDisabled: true } }
-          }
+          twoFactorSecret: null
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] USER_MFA_RESET`, entityType: 'User', entityId: validId, userId: id, changes: { mfaDisabled: true } }
       });
       
       await ctx.triggerHook('onUserUpdated', updated);

@@ -20,11 +20,12 @@ export function createAssetApi(ctx: SdkExecutionContext) {
           type: parsedData.type as AssetType, 
           ipAddress: parsedData.ipAddress, 
           externalId: parsedData.externalId, 
-          metadata: parsedData.metadata,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] ASSET_CREATED`, userId: id, changes: { name: parsedData.name, type: parsedData.type, ipAddress: parsedData.ipAddress, externalId: parsedData.externalId } }
-          }
+          metadata: parsedData.metadata
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] ASSET_CREATED`, entityType: 'Asset', entityId: asset.id, userId: id, changes: { name: parsedData.name, type: parsedData.type, ipAddress: parsedData.ipAddress, externalId: parsedData.externalId } }
       });
       
       await ctx.triggerHook('onAssetCreated', asset);
@@ -75,11 +76,12 @@ export function createAssetApi(ctx: SdkExecutionContext) {
       const updated = await db.asset.update({
         where: { id: validId },
         data: {
-          ...parsedUpdates,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] ASSET_UPDATED`, userId: id, changes: parsedUpdates }
-          }
+          ...parsedUpdates
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] ASSET_UPDATED`, entityType: 'Asset', entityId: validId, userId: id, changes: parsedUpdates }
       });
       
       await ctx.triggerHook('onAssetUpdated', updated);
@@ -94,11 +96,12 @@ export function createAssetApi(ctx: SdkExecutionContext) {
       const updated = await db.asset.update({
         where: { id: validId },
         data: { 
-          status,
-          auditLogs: {
-             create: { action: `[PLUGIN:${ctx.pluginId}] ASSET_STATUS_UPDATED`, userId: id, changes: { status } }
-          }
+          status
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] ASSET_STATUS_UPDATED`, entityType: 'Asset', entityId: validId, userId: id, changes: { status } }
       });
 
       await ctx.triggerHook('onAssetUpdated', updated);
@@ -121,11 +124,12 @@ export function createAssetApi(ctx: SdkExecutionContext) {
       const updated = await db.asset.update({
         where: { id: validId },
         data: { 
-          metadata: mergedMetadata,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] METADATA_PATCHED`, userId, changes: parsedPatch }
-          }
+          metadata: mergedMetadata
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] METADATA_PATCHED`, entityType: 'Asset', entityId: validId, userId, changes: parsedPatch }
       });
 
       await ctx.triggerHook('onAssetUpdated', updated);

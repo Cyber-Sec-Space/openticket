@@ -37,11 +37,12 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
           cveId: parsedData.options?.cveId || null,
           cvssScore: parsedData.options?.cvssScore || null,
           targetSlaDate: null,
-          vulnerabilityAssets: { create: { assetId: parsedData.targetAssetId, status: 'AFFECTED' } },
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] VULNERABILITY_REPORTED`, userId: id, changes: { title: parsedData.title, targetAssetId: parsedData.targetAssetId, severity: parsedData.severity, cveId: parsedData.options?.cveId } }
-          }
+          vulnerabilityAssets: { create: { assetId: parsedData.targetAssetId, status: 'AFFECTED' } }
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] VULNERABILITY_REPORTED`, entityType: 'Vulnerability', entityId: vuln.id, userId: id, changes: { title: parsedData.title, targetAssetId: parsedData.targetAssetId, severity: parsedData.severity, cveId: parsedData.options?.cveId } }
       });
 
       if (slaHours !== null) {
@@ -80,11 +81,12 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
       const updated = await db.vulnerability.update({
         where: { id: validId },
         data: {
-          ...parsedUpdates,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] VULNERABILITY_UPDATED`, userId: id, changes: parsedUpdates }
-          }
+          ...parsedUpdates
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] VULNERABILITY_UPDATED`, entityType: 'Vulnerability', entityId: validId, userId: id, changes: parsedUpdates }
       });
       
       await ctx.triggerHook('onVulnerabilityUpdated', updated);
@@ -99,11 +101,12 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
       const updated = await db.vulnerability.update({
         where: { id: validId },
         data: { 
-          status,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] VULNERABILITY_STATUS_UPDATED`, userId: id, changes: { status } }
-          }
+          status
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] VULNERABILITY_STATUS_UPDATED`, entityType: 'Vulnerability', entityId: validId, userId: id, changes: { status } }
       });
       
       await ctx.triggerHook('onVulnerabilityUpdated', updated);
@@ -133,11 +136,12 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
       const updated = await db.vulnerability.update({
         where: { id: validVulnId },
         data: { 
-          assignees: { connect: { id: validTargetId } },
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] VULN_ASSIGNED`, userId: id, changes: { targetUserId: validTargetId } }
-          }
+          assignees: { connect: { id: validTargetId } }
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] VULN_ASSIGNED`, entityType: 'Vulnerability', entityId: validVulnId, userId: id, changes: { targetUserId: validTargetId } }
       });
       
       await ctx.triggerHook('onVulnerabilityUpdated', updated);
@@ -152,11 +156,12 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
       const updated = await db.vulnerability.update({
          where: { id: validVulnId },
          data: { 
-           assignees: { disconnect: { id: validTargetId } },
-           auditLogs: {
-             create: { action: `[PLUGIN:${ctx.pluginId}] VULNERABILITY_UNASSIGNED`, userId: id, changes: { targetUserId: validTargetId } }
-           }
+           assignees: { disconnect: { id: validTargetId } }
          }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] VULNERABILITY_UNASSIGNED`, entityType: 'Vulnerability', entityId: validVulnId, userId: id, changes: { targetUserId: validTargetId } }
       });
       
       await ctx.triggerHook('onVulnerabilityUpdated', updated);
