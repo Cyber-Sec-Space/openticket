@@ -479,50 +479,93 @@ export function PluginCard({
 
   const renderDetailsDialog = () => {
     return (
-      <DialogContent className="sm:max-w-[600px] border border-white/10 bg-zinc-950 shadow-[0_0_50px_rgba(0,0,0,0.5)] max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <DialogContent className="sm:max-w-[700px] border border-white/10 bg-zinc-950 shadow-[0_0_50px_rgba(0,0,0,0.5)] max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-           <DialogTitle className="flex items-center gap-3 text-white text-2xl pt-2">
-             <ToyBrick className={`w-8 h-8 ${isActive ? 'text-primary' : 'text-neutral-500'}`} />
-             {manifest.name}
+           <DialogTitle className="flex flex-col gap-1 pt-2">
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                   <div className={`p-3 rounded-2xl ${isActive ? 'bg-primary/10 border-primary/30 shadow-[0_0_20px_rgba(0,255,200,0.2)]' : 'bg-white/5 border-white/10'} border`}>
+                      <ToyBrick className={`w-8 h-8 ${isActive ? 'text-primary' : 'text-neutral-500'}`} />
+                   </div>
+                   <div>
+                      <h2 className="text-2xl text-white font-extrabold tracking-tight">{manifest.name}</h2>
+                      <div className="flex items-center gap-2 mt-2">
+                         <span className="text-[10px] bg-white/10 text-white/70 px-2 py-0.5 rounded-full font-mono font-bold tracking-widest border border-white/10">v{isLocal ? manifest.version : selectedVersion}</span>
+                         {isLocal ? (
+                           isActive ? <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold border border-emerald-500/30">ACTIVE INSTALLED</span> : <span className="text-[10px] bg-neutral-500/20 text-neutral-400 px-2 py-0.5 rounded-full font-bold border border-neutral-500/30">DISABLED</span>
+                         ) : (
+                           <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-bold border border-cyan-500/30">REGISTRY MODULE</span>
+                         )}
+                      </div>
+                   </div>
+                </div>
+             </div>
            </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-2">
-          <p className="text-sm text-neutral-300 leading-relaxed text-base pt-2">
-             {manifest.description}
-          </p>
-
-          <div className="grid grid-cols-2 gap-4">
-             <div className="bg-black/40 border border-white/10 rounded-lg p-3">
-                <span className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">Version</span>
-                <span className="font-mono text-sm text-white">{isLocal ? manifest.version : selectedVersion}</span>
-             </div>
-             <div className="bg-black/40 border border-white/10 rounded-lg p-3">
-                <span className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">Plugin ID</span>
-                <span className="font-mono text-xs text-white break-all">{manifest.id}</span>
-             </div>
+        <div className="space-y-6 py-4">
+          <div className="bg-black/30 border border-white/5 rounded-xl p-4">
+            <p className="text-sm text-neutral-300 leading-relaxed">
+               {manifest.description}
+            </p>
           </div>
 
-          <div className="space-y-3">
-             <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Requested Kernel Privileges</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+             <div className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between col-span-2">
+                <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 flex items-center gap-1">Plugin Identity (UUID)</span>
+                <span className="font-mono text-xs text-white break-all bg-black/60 border border-white/5 p-2 rounded truncate">{manifest.id}</span>
+             </div>
+             <div className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between">
+                <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Author</span>
+                <span className="font-mono text-sm text-white truncate mt-1">{manifest.author || "Unknown Source"}</span>
+             </div>
+             <div className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between">
+                <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Signature</span>
+                <span className={`font-mono text-xs ${manifest.signature ? 'text-emerald-400' : 'text-neutral-600'} truncate mt-1`}>{manifest.signature ? 'Verified' : 'Unsigned'}</span>
+             </div>
+             {manifest.supportedPluginApiVersion && manifest.supportedPluginApiVersion.length > 0 && (
+                <div className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between col-span-2">
+                   <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2">Supported API Targets</span>
+                   <div className="flex gap-2">
+                     {manifest.supportedPluginApiVersion.map((v: string) => (
+                       <span key={v} className="font-mono text-[11px] text-blue-400 bg-blue-400/10 border border-blue-400/20 px-2 py-1 rounded inline-block">{v}</span>
+                     ))}
+                   </div>
+                </div>
+             )}
+             {manifest.dependsOn && manifest.dependsOn.length > 0 && (
+                <div className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between col-span-2">
+                   <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2">Hard Dependencies</span>
+                   <div className="flex gap-2 flex-wrap">
+                     {manifest.dependsOn.map((d: string) => (
+                       <span key={d} className="font-mono text-[11px] text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-1 rounded inline-block truncate max-w-full">{d}</span>
+                     ))}
+                   </div>
+                </div>
+             )}
+          </div>
+
+          <div className="space-y-3 bg-red-950/10 border border-red-500/10 rounded-xl p-4">
+             <h4 className="text-xs font-bold text-red-400 uppercase tracking-widest flex items-center">
+                <ShieldAlert className="w-4 h-4 mr-2" /> Requested Kernel Privileges
+             </h4>
              <div className="flex flex-wrap gap-2">
                {activePermissions && activePermissions.length > 0 ? (
                  activePermissions.map((p: any) => (
-                   <span key={p} className="text-[10px] bg-red-950/30 border border-red-500/20 px-2 py-1 rounded text-red-300 font-mono flex items-center">
-                     <ShieldAlert className="w-3 h-3 mr-1" />
+                   <span key={p} className="text-[10px] bg-red-950/40 border border-red-500/30 px-2 py-1.5 rounded text-red-300 font-mono flex items-center shadow-sm">
                      {p.replace(/_/g, ' ')}
                    </span>
                  ))
                ) : (
-                 <span className="text-xs text-neutral-500 italic">No special permissions requested</span>
+                 <span className="text-xs text-neutral-500 italic bg-black/40 px-3 py-1.5 rounded border border-white/5">No special permissions requested. Runs in Sandbox.</span>
                )}
              </div>
           </div>
 
           {renderConfigFormsInline()}
           
-          <div className="pt-4 border-t border-white/10 flex justify-end gap-2">
-             <Button variant="outline" onClick={(e) => { e.stopPropagation(); setIsConfigOpen(false); }} className="bg-transparent border-white/20 text-white">Close</Button>
+          <div className="pt-4 border-t border-white/10 flex justify-end gap-3 mt-8">
+             <Button variant="outline" onClick={(e) => { e.stopPropagation(); setIsConfigOpen(false); }} className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white">Close Details</Button>
           </div>
         </div>
       </DialogContent>
