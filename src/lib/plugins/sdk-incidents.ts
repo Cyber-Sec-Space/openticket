@@ -53,6 +53,31 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
         newInc = await db.incident.findUnique({ where: { id: newInc.id } }) as any;
       }
       
+      // SOAR Dynamics Auto Quarantine Sync for Zero-Day Creation via SDK
+      const validAssetIds = parsedData.assetIds ? parsedData.assetIds.filter(id => id !== 'NONE') : [];
+      if (settings?.soarAutoQuarantineEnabled && validAssetIds.length > 0) {
+        const sevRank = { INFO: 0, LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
+        const currentRank = sevRank[effectiveSeverity] || 0;
+        const thresholdRank = sevRank[(settings.soarAutoQuarantineThreshold as keyof typeof sevRank) || 'CRITICAL'];
+        
+        if (currentRank >= thresholdRank) {
+          await db.asset.updateMany({
+            where: { id: { in: validAssetIds } },
+            data: { status: 'COMPROMISED' }
+          });
+
+          await db.auditLog.create({
+            data: {
+              action: `[PLUGIN:${ctx.pluginId}] SOAR_AUTO_QUARANTINE`,
+              entityType: "Incident",
+              entityId: newInc.id,
+              userId: id,
+              changes: `${validAssetIds.length} Asset(s) automatically marked as COMPROMISED due to ${effectiveSeverity} Incident INC-${newInc.id.substring(0, 8).toUpperCase()} filed via plugin.`
+            }
+          });
+        }
+      }
+
       await ctx.triggerHook('onIncidentCreated', newInc);
       return newInc;
     }),

@@ -25,7 +25,7 @@ const WebhookToTicketPlugin: OpenTicketPlugin = {
   "from": "user@example.com", // Will be prefixed to the description
   "type": "MALWARE",          // OTHER, MALWARE, PHISHING, DATA_BREACH, UNAUTHORIZED_ACCESS, NETWORK_ANOMALY
   "severity": "CRITICAL",     // INFO, LOW, MEDIUM, HIGH, CRITICAL
-  "assetIds": ["clugxyz123..."], // Array of valid UUIDs of existing OpenTicket Assets
+  "assetId": "clugxyz123...", // Must be a valid UUID of an existing OpenTicket Asset
   "tags": ["urgent", "endpoint"] 
 }</pre>`
       },
@@ -128,11 +128,9 @@ const WebhookToTicketPlugin: OpenTicketPlugin = {
         }
 
         // 3d. Asset ID strict string check
-        let safeAssetIds: string[] = [];
-        if (payload.assetIds && Array.isArray(payload.assetIds)) {
-          safeAssetIds = payload.assetIds.map((id: any) => String(id).trim()).filter((id: string) => id.length > 0);
-        } else if (payload.assetId && typeof payload.assetId === 'string') {
-          safeAssetIds = [payload.assetId.trim()];
+        let safeAssetId: string | null = null;
+        if (payload.assetId && typeof payload.assetId === 'string') {
+          safeAssetId = payload.assetId.trim();
         }
 
         // 4. Transform & Dispatch to Core Engine
@@ -141,7 +139,7 @@ const WebhookToTicketPlugin: OpenTicketPlugin = {
           description: safeText,
           type: parsedType,
           severity: parsedSeverity,
-          assetIds: safeAssetIds,
+          assetIds: safeAssetId ? [safeAssetId] : [],
           tags: safeTags
         };
 
