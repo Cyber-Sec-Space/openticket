@@ -40,11 +40,12 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
           status: 'NEW',
           targetSlaDate: null,
           tags: parsedData.tags,
-          reporterId: id,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_CREATED`, userId: id, changes: { title: parsedData.title, severity: effectiveSeverity } }
-          }
+          reporter: { connect: { id } }
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_CREATED`, entityType: 'Incident', entityId: newInc.id, userId: id, changes: { title: parsedData.title, severity: effectiveSeverity } }
       });
       
       if (slaHours !== null) {
@@ -81,13 +82,13 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
         };
       }
 
-      updateData.auditLogs = {
-        create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_STATUS_CHANGED`, userId: botId, changes: { status } }
-      };
-
       const updated = await db.incident.update({
         where: { id: validId },
         data: updateData
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_STATUS_CHANGED`, entityType: 'Incident', entityId: validId, userId: botId, changes: { status } }
       });
 
       if (status === 'RESOLVED') {
@@ -114,11 +115,12 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       const updated = await db.incident.update({
         where: { id: validId },
         data: {
-          ...dataToUpdate,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UPDATED`, userId: id, changes: parsedUpdates }
-          }
+          ...dataToUpdate
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UPDATED`, entityType: 'Incident', entityId: validId, userId: id, changes: parsedUpdates }
       });
       
       await ctx.triggerHook('onIncidentUpdated', updated);
@@ -136,11 +138,12 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       const updated = await db.incident.update({
         where: { id: validIncId },
         data: { 
-          assignees: { connect: { id: validUserId } },
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_ASSIGNED`, userId: id, changes: { targetUserId: validUserId } }
-          }
+          assignees: { connect: { id: validUserId } }
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_ASSIGNED`, entityType: 'Incident', entityId: validIncId, userId: id, changes: { targetUserId: validUserId } }
       });
       
       await ctx.triggerHook('onIncidentUpdated', updated);
@@ -155,11 +158,12 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       const updated = await db.incident.update({
          where: { id: validIncId },
          data: { 
-           assignees: { disconnect: { id: validUserId } },
-           auditLogs: {
-             create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UNASSIGNED`, userId: id, changes: { targetUserId: validUserId } }
-           }
+           assignees: { disconnect: { id: validUserId } }
          }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_UNASSIGNED`, entityType: 'Incident', entityId: validIncId, userId: id, changes: { targetUserId: validUserId } }
       });
       
       await ctx.triggerHook('onIncidentUpdated', updated);
@@ -182,11 +186,12 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       const updated = await db.incident.update({
         where: { id: validId },
         data: { 
-          tags: newTags,
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_TAGS_MODIFIED`, userId: id, changes: { tags: newTags } }
-          }
+          tags: newTags
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_TAGS_MODIFIED`, entityType: 'Incident', entityId: validId, userId: id, changes: { tags: newTags } }
       });
       
       await ctx.triggerHook('onIncidentUpdated', updated);
@@ -234,11 +239,12 @@ export function createIncidentApi(ctx: SdkExecutionContext) {
       const updated = await db.incident.update({
         where: { id: validIncId },
         data: { 
-          assets: { connect: { id: validAssetId } },
-          auditLogs: {
-            create: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_LINKED_TO_ASSET`, userId: id, changes: { assetId: validAssetId } }
-          }
+          assets: { connect: { id: validAssetId } }
         }
+      });
+
+      await db.auditLog.create({
+        data: { action: `[PLUGIN:${ctx.pluginId}] INCIDENT_LINKED_TO_ASSET`, entityType: 'Incident', entityId: validIncId, userId: id, changes: { assetId: validAssetId } }
       });
       
       await ctx.triggerHook('onIncidentUpdated', updated);
