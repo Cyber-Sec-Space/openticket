@@ -102,7 +102,7 @@ export const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-primary hover:bg-white/5 disabled:opacity-50"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/20 hover:scale-110 active:scale-90 transition-all duration-300 disabled:opacity-50"
               disabled={disabled}
             >
               <CalendarIcon className="h-4 w-4" />
