@@ -119,7 +119,7 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
       const validContent = z.string().min(1).parse(content);
 
       const comment = await db.comment.create({
-        data: { content: validContent, vulnerability: { connect: { id: validId } }, author: { connect: { id } } }
+        data: { content: validContent, vuln: { connect: { id: validId } }, author: { connect: { id } } }
       });
       await ctx.triggerHook('onCommentAdded', comment);
       return comment;
@@ -252,7 +252,7 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
 
       const [attachment] = await db.$transaction([
         db.attachment.create({
-          data: { filename: validFileName, fileUrl: validUrl, vulnerability: { connect: { id: validVulnId } }, uploader: { connect: { id } } }
+          data: { filename: validFileName, fileUrl: validUrl, vuln: { connect: { id: validVulnId } }, uploader: { connect: { id } } }
         }),
         db.auditLog.create({
           data: { action: `[PLUGIN:${ctx.pluginId}] EVIDENCE_ATTACHED`, entityType: "Vulnerability", entityId: validVulnId, userId: id, changes: { filename: validFileName } }
