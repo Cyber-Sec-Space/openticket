@@ -178,7 +178,7 @@ export function createVulnerabilityApi(ctx: SdkExecutionContext) {
 
       const [link] = await db.$transaction([
         db.vulnerabilityAsset.create({
-          data: { vulnId: validVulnId, assetId: validAssetId, status: 'AFFECTED' }
+          data: { vulnerability: { connect: { id: validVulnId } }, asset: { connect: { id: validAssetId } }, status: 'AFFECTED' }
         }),
         db.auditLog.create({
           data: { action: `[PLUGIN:${ctx.pluginId}] VULN_ASSET_LINKED`, entityType: "Vulnerability", entityId: validVulnId, userId: id, changes: { assetId: validAssetId } }
