@@ -69,7 +69,7 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
       action: "UPDATE",
       entityType: "PLUGIN",
       entityId: pluginId,
-      userId: session?.user?.id || "system",
+      userId: session!.user!.id!,
       changes: { details: `Plugin '${pluginId}' state toggled to ${newState ? "ACTIVE" : "INACTIVE"}.` }
     }
   });

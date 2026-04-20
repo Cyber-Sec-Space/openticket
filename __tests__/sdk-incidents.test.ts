@@ -105,6 +105,27 @@ describe("sdk-incidents", () => {
       expect(db.asset.updateMany).not.toHaveBeenCalled();
       spy.mockRestore();
     });
+
+    it("handles undefined assetIds and undefined severity gracefully", async () => {
+      (db.systemSetting.findFirst as jest.Mock).mockResolvedValue({
+        soarAutoQuarantineEnabled: true,
+        soarAutoQuarantineThreshold: "LOW"
+      });
+      (db.incident.create as jest.Mock).mockResolvedValue({ id: "inc-1" });
+
+      const { IncidentCreateSchema } = require("@/lib/plugins/schemas");
+      const spy = jest.spyOn(IncidentCreateSchema, 'parse').mockReturnValue({
+        title: "T",
+        description: "D",
+        severity: undefined,
+        assetIds: undefined
+      } as any);
+
+      await api().createIncident({ title: "T", description: "D" });
+      
+      expect(db.asset.updateMany).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
   });
 
   describe("getIncident", () => {

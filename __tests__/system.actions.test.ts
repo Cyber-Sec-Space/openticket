@@ -109,8 +109,9 @@ describe("System Actions", () => {
       fd.append("defaultRoleId", "CustomRole1")
       fd.append("smtpPassword", "newpass")
       fd.append("webhookEnabled", "on")
-      fd.append("webhookUrl", "invalid_url")
-      fd.append("systemPlatformUrl", "invalid_url")
+      fd.append("webhookUrl", "ftp://invalid_protocol") // Will parse as URL but fail protocol check
+      fd.append("systemPlatformUrl", "ftp://invalid_protocol") // Will parse as URL but fail protocol check
+      fd.append("soarAutoQuarantineThreshold", "HIGH")
       fd.append("slaCriticalHours", "invalid")
       fd.append("slaHighHours", "invalid")
       fd.append("slaMediumHours", "invalid")
@@ -129,6 +130,7 @@ describe("System Actions", () => {
       const upsertArgs = (db.systemSetting.upsert as jest.Mock).mock.calls[0][0]
       expect(upsertArgs.update.systemPlatformUrl).toBe("http://localhost:3000") // Fallback
       expect(upsertArgs.update.webhookUrl).toBe("") // Fallback
+      expect(upsertArgs.update.soarAutoQuarantineThreshold).toBe("HIGH")
     })
 
     it("upserts system settings with explicit valid smtp port and no password", async () => {

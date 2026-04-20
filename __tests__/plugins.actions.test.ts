@@ -104,6 +104,7 @@ describe("Plugin Actions", () => {
       expect(activePlugins[0].hooks.onUninstall).toHaveBeenCalled()
     })
 
+
     it("throws if lifecycle hook fails with Error instance", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
@@ -128,6 +129,51 @@ describe("Plugin Actions", () => {
       activePlugins[0].hooks.onInstall.mockRejectedValueOnce("string error")
       
       await expect(togglePluginState("test-plugin", false)).rejects.toThrow("Plugin lifecycle initialization failed: string error")
+    })
+
+    it("throws PluginSystemError correctly during installation", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ id: "test-plugin", configJson: "enc.v1.xxx" })
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ test: true })
+      
+      const { activePlugins } = require("@/plugins")
+      const err = new Error("system failed");
+      err.name = "PluginSystemError";
+      activePlugins[0].hooks.onInstall.mockRejectedValueOnce(err)
+      
+      await expect(togglePluginState("test-plugin", false)).rejects.toThrow("System failure during plugin installation: system failed")
+    })
+
+    it("throws PluginPermissionError correctly during installation", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ id: "test-plugin", configJson: "enc.v1.xxx" })
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ test: true })
+      
+      const { activePlugins } = require("@/plugins")
+      const err = new Error("perm denied");
+      err.name = "PluginPermissionError";
+      activePlugins[0].hooks.onInstall.mockRejectedValueOnce(err)
+      
+      await expect(togglePluginState("test-plugin", false)).rejects.toThrow("Permission denied during plugin installation: perm denied")
+    })
+
+    it("throws PluginInputError correctly during installation", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ id: "test-plugin", configJson: "enc.v1.xxx" })
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ test: true })
+      
+      const { activePlugins } = require("@/plugins")
+      const err = new Error("bad input");
+      err.name = "PluginInputError";
+      activePlugins[0].hooks.onInstall.mockRejectedValueOnce(err)
+      
+      await expect(togglePluginState("test-plugin", false)).rejects.toThrow("Invalid input provided during plugin installation: bad input")
     })
 
     it("toggles state when config json contains real data to test length branching", async () => {

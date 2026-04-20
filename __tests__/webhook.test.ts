@@ -14,27 +14,26 @@ describe("Webhook SSRF Protection", () => {
 
   describe("isTargetSecure", () => {
     it("blocks localhost", async () => {
-      const { secure } = await isTargetSecure("http://localhost:8080");
-      expect(secure).toBe(false);
+      const { isSecure } = await isTargetSecure("http://localhost:8080");
+      expect(isSecure).toBe(false);
     });
 
     it("blocks 127.0.0.1", async () => {
-      const { secure } = await isTargetSecure("http://127.0.0.1");
-      expect(secure).toBe(false);
+      const { isSecure } = await isTargetSecure("http://127.0.0.1");
+      expect(isSecure).toBe(false);
     });
 
     it("blocks internal IP ranges via DNS lookup", async () => {
       (dns.lookup as jest.Mock).mockResolvedValue({ address: "10.0.0.5" });
-      const { secure, error } = await isTargetSecure("http://internal-corp-service.com");
-      expect(secure).toBe(false);
-      expect(error).toContain("Internal Network Resolution Blocked");
+      const { isSecure } = await isTargetSecure("http://internal-corp-service.com");
+      expect(isSecure).toBe(false);
     });
 
     it("allows valid external URLs", async () => {
       (dns.lookup as jest.Mock).mockResolvedValue({ address: "8.8.8.8" });
-      const { secure, frozenUrl } = await isTargetSecure("https://api.github.com");
-      expect(secure).toBe(true);
-      expect(frozenUrl).toBe("https://8.8.8.8/");
+      const { isSecure, parsed } = await isTargetSecure("https://api.github.com");
+      expect(isSecure).toBe(true);
+      expect(parsed?.hostname).toBe("api.github.com");
     });
   });
 

@@ -64,6 +64,16 @@ describe("sdk-vulnerabilities", () => {
       expect(res).toEqual({ id: "v-1", targetSlaDate: expect.any(Date) });
     });
 
+    it("creates vulnerability with CRITICAL severity with default SLA fallback", async () => {
+      (db.asset.findUnique as jest.Mock).mockResolvedValue({ id: "a-1" });
+      (getGlobalSettings as jest.Mock).mockResolvedValue({});
+      (db.vulnerability.create as jest.Mock).mockResolvedValue({ id: "v-1" });
+      (db.vulnerability.findUnique as jest.Mock).mockResolvedValue({ id: "v-1", targetSlaDate: new Date() });
+
+      await api().reportVulnerability("T", "D", "CRITICAL", "a-1");
+      expect(db.$executeRaw).toHaveBeenCalled();
+    });
+
     it("creates vulnerability with HIGH severity and no options", async () => {
       (db.asset.findUnique as jest.Mock).mockResolvedValue({ id: "a-1" });
       (getGlobalSettings as jest.Mock).mockResolvedValue(null); // Missing settings fallback to default
@@ -77,6 +87,14 @@ describe("sdk-vulnerabilities", () => {
       expect(db.$executeRaw).toHaveBeenCalled();
     });
 
+    it("creates vulnerability with HIGH severity and specific SLA settings", async () => {
+      (db.asset.findUnique as jest.Mock).mockResolvedValue({ id: "a-1" });
+      (getGlobalSettings as jest.Mock).mockResolvedValue({ vulnSlaHighHours: 24 });
+      (db.vulnerability.create as jest.Mock).mockResolvedValue({ id: "v-1" });
+      await api().reportVulnerability("T", "D", "HIGH", "a-1");
+      expect(db.$executeRaw).toHaveBeenCalled();
+    });
+
     it("creates vulnerability with MEDIUM severity", async () => {
       (db.asset.findUnique as jest.Mock).mockResolvedValue({ id: "a-1" });
       (getGlobalSettings as jest.Mock).mockResolvedValue({});
@@ -87,9 +105,27 @@ describe("sdk-vulnerabilities", () => {
       expect(db.$executeRaw).toHaveBeenCalled();
     });
 
+    it("creates vulnerability with MEDIUM severity and specific SLA settings", async () => {
+      (db.asset.findUnique as jest.Mock).mockResolvedValue({ id: "a-1" });
+      (getGlobalSettings as jest.Mock).mockResolvedValue({ vulnSlaMediumHours: 72 });
+      (db.vulnerability.create as jest.Mock).mockResolvedValue({ id: "v-1" });
+
+      await api().reportVulnerability("T", "D", "MEDIUM", "a-1");
+      expect(db.$executeRaw).toHaveBeenCalled();
+    });
+
     it("creates vulnerability with LOW severity", async () => {
       (db.asset.findUnique as jest.Mock).mockResolvedValue({ id: "a-1" });
       (getGlobalSettings as jest.Mock).mockResolvedValue({});
+      (db.vulnerability.create as jest.Mock).mockResolvedValue({ id: "v-1" });
+
+      await api().reportVulnerability("T", "D", "LOW", "a-1");
+      expect(db.$executeRaw).toHaveBeenCalled();
+    });
+
+    it("creates vulnerability with LOW severity and specific SLA settings", async () => {
+      (db.asset.findUnique as jest.Mock).mockResolvedValue({ id: "a-1" });
+      (getGlobalSettings as jest.Mock).mockResolvedValue({ vulnSlaLowHours: 100 });
       (db.vulnerability.create as jest.Mock).mockResolvedValue({ id: "v-1" });
 
       await api().reportVulnerability("T", "D", "LOW", "a-1");

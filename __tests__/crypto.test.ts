@@ -19,6 +19,14 @@ describe("Crypto Utils", () => {
     expect(decrypted).toEqual(config)
   })
 
+  it("decrypts payload with unknown version falling back to v1", () => {
+    const config = { test: "fallback" }
+    const encrypted = encryptPluginConfig(config)
+    const v99Encrypted = encrypted.replace("enc.v1.", "enc.v99.");
+    const decrypted = parsePluginConfig(v99Encrypted);
+    expect(decrypted).toEqual(config);
+  })
+
   it("handles null undefined in plugin config", () => {
     expect(encryptPluginConfig(null)).toBe("enc.v1.")
     expect(parsePluginConfig("")).toEqual({})

@@ -76,10 +76,10 @@ describe("sdk-assets", () => {
 
     it("searches assets with type and status", async () => {
       (db.asset.findMany as jest.Mock).mockResolvedValue([{ id: "a1" }]);
-      const res = await api().searchAssets({ type: "HARDWARE", status: "ONLINE", limit: 10 });
+      const res = await api().searchAssets({ type: "HARDWARE", status: "ACTIVE", limit: 10 });
       expect(res).toEqual([{ id: "a1" }]);
       expect(db.asset.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: { type: "HARDWARE", status: "ONLINE" }
+        where: { type: "HARDWARE", status: "ACTIVE" }
       }));
     });
 
@@ -93,9 +93,9 @@ describe("sdk-assets", () => {
 
     it("searches assets with only status", async () => {
       (db.asset.findMany as jest.Mock).mockResolvedValue([{ id: "a1" }]);
-      await api().searchAssets({ status: "ONLINE" });
+      await api().searchAssets({ status: "ACTIVE" });
       expect(db.asset.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: { status: "ONLINE" }
+        where: { status: "ACTIVE" }
       }));
     });
   });
@@ -129,6 +129,15 @@ describe("sdk-assets", () => {
       await api().updateAssetMetadata("a1", { patch: true });
       expect(db.asset.update).toHaveBeenCalledWith(expect.objectContaining({
         data: { metadata: { exist: true, patch: true } }
+      }));
+    });
+
+    it("patches asset metadata when initially null", async () => {
+      (db.asset.findUnique as jest.Mock).mockResolvedValue({ id: "a1", metadata: null });
+      (db.asset.update as jest.Mock).mockResolvedValue({ id: "a1" });
+      await api().updateAssetMetadata("a1", { patch: true });
+      expect(db.asset.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: { metadata: { patch: true } }
       }));
     });
   });
