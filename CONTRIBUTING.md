@@ -66,4 +66,6 @@ Bugs are tracked as GitHub issues. When creating an issue, please use the provid
 
 ## ⚖️ Licensing & CLA
 
-OpenTicket uses a dual-licensing model (AGPL-3.0 / Enterprise). By contributing to this repository, you agree that your contributions will be licensed under the AGPL-3.0. You also certify that you have the right to submit the code under this license.
+OpenTicket uses a dual-licensing model (AGPL-3.0 / Enterprise). By contributing to this repository, you agree to sign our Contributor License Agreement (CLA). This CLA grants Cyber Sec Space the right to commercially re-license your contributions as part of the Enterprise edition, while ensuring your code remains perpetually available to the community under the AGPL-3.0.
+
+When you submit your first Pull Request, our CLA-Bot will automatically prompt you to review and digitally sign the agreement before the PR can be merged.
