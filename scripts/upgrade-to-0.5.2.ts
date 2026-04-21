@@ -40,7 +40,7 @@ async function main() {
 
     for (const role of allRoles) {
       let modified = false;
-      let newPermissions = [...role.permissions];
+      const newPermissions = [...role.permissions];
 
       // Give Administrators or DevOps Engineers full API token management capabilities
       const hasAdminLevelAccess = role.permissions.includes(Permission.MANAGE_INTEGRATIONS) || role.name === 'System Administrator';

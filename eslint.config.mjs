@@ -1,6 +1,6 @@
-import { defineConfig, globalIgnores } from "eslint/config";
+import tseslint from 'typescript-eslint';
 
-const eslintConfig = defineConfig([
+export default tseslint.config(
   {
     ignores: [
       ".next/**",
@@ -13,16 +13,23 @@ const eslintConfig = defineConfig([
   },
   {
     files: ["**/*.ts", "**/*.tsx"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        project: true,
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+    },
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "eqeqeq": "error",
       "prefer-const": "error",
-      "no-debugger": "error"
+      "no-debugger": "error",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
     }
   }
-]);
-
-export default eslintConfig;
+);
 

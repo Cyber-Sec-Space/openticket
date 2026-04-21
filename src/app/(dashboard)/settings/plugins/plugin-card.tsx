@@ -519,7 +519,7 @@ export function PluginCard({
                 <span className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Author</span>
                 <span className="font-mono text-sm text-white truncate mt-1 flex items-center gap-1.5">
                   {manifest.author || "Unknown Source"}
-                  {manifest.author === 'OpenTicket Team' && <BadgeCheck className="w-4 h-4 text-blue-400" title="Official Integration" />}
+                  {manifest.author === 'OpenTicket Team' && <BadgeCheck className="w-4 h-4 text-blue-400" />}
                 </span>
              </div>
              <div className="bg-black/40 border border-white/10 rounded-lg p-3 flex flex-col justify-between">

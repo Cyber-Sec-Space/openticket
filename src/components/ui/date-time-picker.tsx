@@ -96,7 +96,7 @@ export const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
         />
         
         <Popover>
-          <PopoverTrigger asChild>
+          <PopoverTrigger {...{ asChild: true } as any}>
             <button
               type="button"
               className="absolute right-1 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-white/5 hover:text-primary focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -109,8 +109,8 @@ export const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
             <div className="bg-gradient-to-b from-white/5 to-transparent">
               <Calendar
                 mode="single"
-                selected={date}
-                onSelect={handleDateSelect}
+                selected={date as any}
+                onSelect={handleDateSelect as any}
                 initialFocus
                 className="bg-transparent"
               />

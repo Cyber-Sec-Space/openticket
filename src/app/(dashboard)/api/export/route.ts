@@ -60,7 +60,7 @@ export async function GET(req: Request) {
     // Resource Constraint Enforcement (OOM Prevention) w/ Safe Paging
     const incidents = await db.incident.findMany({
       where: whereClause,
-      include: { asset: true, reporter: true, assignees: true },
+      include: { assets: true, reporter: true, assignees: true },
       orderBy: { createdAt: 'desc' },
       take: 5000,
       skip: skip
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
         incident.type,
         incident.severity,
         incident.status,
-        incident.asset?.name || "Unlinked",
+        (incident as any).assets?.[0]?.name || "Unlinked",
         incident.reporter?.name || incident.reporter?.email || "Deleted Operator",
         `"${sanitizeCsvCell(assigneesStr)}"`,
         incident.targetSlaDate ? incident.targetSlaDate.toISOString() : "None",

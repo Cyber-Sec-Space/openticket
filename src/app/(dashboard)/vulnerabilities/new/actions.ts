@@ -43,7 +43,7 @@ export async function createVulnerabilityAction(formData: FormData) {
     default:         slaHours = null; break; // INFO has no SLA requirement
   }
 
-  let newVuln = await db.$transaction(async (tx) => {
+  const newVuln = await db.$transaction(async (tx) => {
     let created = await tx.vulnerability.create({
       data: {
         title,

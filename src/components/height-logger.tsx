@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 export function HeightLogger() {
   const [h, setH] = useState("calculating...")
   useEffect(() => {
-    let measured = false;
+    const measured = false;
     const interval = setInterval(() => {
        const grid = document.querySelector('.grid.gap-6');
        if (grid && !measured) {

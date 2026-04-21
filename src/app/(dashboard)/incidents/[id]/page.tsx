@@ -178,7 +178,7 @@ export default async function IncidentDetailPage({
     // 3. Asset Mapping Verification
     const requestedAssetSet = new Set(assetIds)
     const currentAssetSet = new Set(currentIncident.assets.map((a: any) => a.id))
-    let assetsChanged = assetIds.length !== currentAssetSet.size || assetIds.some(id => !currentAssetSet.has(id))
+    const assetsChanged = assetIds.length !== currentAssetSet.size || assetIds.some(id => !currentAssetSet.has(id))
 
     if (assetsChanged) {
        if (hasPermission(sessionUrl, 'LINK_INCIDENT_TO_ASSET')) finalAssets = assetIds.map(id => ({ id }))
@@ -189,7 +189,7 @@ export default async function IncidentDetailPage({
     const currentAssigneeIds = new Set(currentIncident.assignees.map(a => a.id))
     const requestedAssigneeSet = new Set(validAssigneeIds)
     
-    let assigneesChanged = validAssigneeIds.length !== currentAssigneeIds.size || validAssigneeIds.some(id => !currentAssigneeIds.has(id))
+    const assigneesChanged = validAssigneeIds.length !== currentAssigneeIds.size || validAssigneeIds.some(id => !currentAssigneeIds.has(id))
     
     if (assigneesChanged) {
        let isAuthorizedToAssign = false

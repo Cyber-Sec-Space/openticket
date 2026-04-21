@@ -103,14 +103,14 @@ export default async function PluginStorePage() {
             const cardManifest = activePluginNode ? {
               ...plugin,
               ...activePluginNode.manifest,
-              signature: activePluginNode.manifest.signature || plugin.versions[plugin.latestVersion]?.integritySha256,
+              signature: activePluginNode.manifest.signature || (plugin.versions[plugin.latestVersion] as any)?.integritySha256,
               supportedPluginApiVersion: activePluginNode.manifest.supportedPluginApiVersion || plugin.versions[plugin.latestVersion]?.supportedPluginApiVersion
             } : {
               ...plugin,
               version: plugin.latestVersion,
               requestedPermissions: plugin.versions[plugin.latestVersion]?.requestedPermissions || [],
               supportedPluginApiVersion: plugin.versions[plugin.latestVersion]?.supportedPluginApiVersion || [],
-              signature: plugin.versions[plugin.latestVersion]?.integritySha256 || plugin.signature
+              signature: (plugin.versions[plugin.latestVersion] as any)?.integritySha256 || (plugin as any).signature
             };
 
             return (

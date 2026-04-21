@@ -40,7 +40,7 @@ async function main() {
 
     for (const role of allRoles) {
       let modified = false;
-      let newPermissions = [...role.permissions];
+      const newPermissions = [...role.permissions];
 
       // Give Global Auditor or Viewer of settings access to view plugins
       if (

@@ -63,7 +63,7 @@ export async function attemptRegistration(prevState: any, formData: FormData) {
 
   try {
     const defaultRoles = (settings && settings.defaultUserRoles && settings.defaultUserRoles.length > 0) 
-      ? { connect: settings.defaultUserRoles.map(r => ({ id: r.id })) } 
+      ? { connect: settings.defaultUserRoles.map((r: any) => ({ id: r.id })) } 
       : undefined
 
     await db.$transaction(async (tx) => {

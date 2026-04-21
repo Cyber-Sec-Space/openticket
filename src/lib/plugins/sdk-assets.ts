@@ -76,7 +76,10 @@ export function createAssetApi(ctx: SdkExecutionContext) {
       const updated = await db.asset.update({
         where: { id: validId },
         data: {
-          ...parsedUpdates
+          name: parsedUpdates.name,
+          type: parsedUpdates.type as AssetType | undefined,
+          ipAddress: parsedUpdates.ipAddress,
+          externalId: parsedUpdates.externalId
         }
       });
 

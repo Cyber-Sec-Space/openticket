@@ -16,7 +16,7 @@ export function ConfirmForm({ action, promptMessage, children, className, ...pro
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setIsMounted(true)
   }, [])
 

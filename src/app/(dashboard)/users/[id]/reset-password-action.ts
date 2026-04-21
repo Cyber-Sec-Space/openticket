@@ -31,7 +31,7 @@ export async function adminResetPasswordAction(targetUserId: string) {
   }
 
   const targetUser = await db.user.findUnique({ where: { id: targetUserId } })
-  if (!targetUser) throw new Error("Target user not found")
+  if (!targetUser || !targetUser.email) throw new Error("Target user not found or has no valid email address")
 
   const settings = await getGlobalSettings()
   

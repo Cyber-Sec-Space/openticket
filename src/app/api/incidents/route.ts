@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     const finalAssetIds = hasPermission(session, 'LINK_INCIDENT_TO_ASSET') && Array.isArray(assetIds) ? assetIds.filter(id => id !== 'NONE') : [];
     
     const VALID_SEVERITIES = ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-    let finalSeverity = severity || 'LOW';
+    const finalSeverity = severity || 'LOW';
     if (!VALID_SEVERITIES.includes(finalSeverity)) {
       return new NextResponse(`Invalid Severity. Accepted values: ${VALID_SEVERITIES.join(', ')}`, { status: 400 })
     }
