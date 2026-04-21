@@ -1,15 +1,33 @@
 Dockerfile
+docker-compose.yml
 .dockerignore
-node_modules
+.git/
+.github/
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
 npm-debug.log
-README.md
-.next
-.git
+*.log
+
+# Next.js build output
+.next/
+out/
+build/
+
+# Environment configurations
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.vscode/*
-/.vscode/
-docs/*
-/.next/
+
+# Docs and community files
+docs/
+*.md
+
+# Local state
+private/uploads/
+release-standalone/
+.DS_Store
