@@ -50,6 +50,7 @@ As a heavily fortified Enterprise platform built on a Zero-Trust architecture, w
 - Rate-Limiting Bypasses (defeating our database-backed Login throttling to achieve Credential Stuffing)
 - CSV Injection / DDE vulnerabilities in telemetry exports (bypassing the `=, +, -, @` sanitizer)
 - SMTP Header Injection / Email Spoofing (bypassing our Multi-Provider Mailer abstraction)
+- Path Traversal / Arbitrary File Upload (bypassing the strict extension verifiers and cryptographic filename isolations)
 - Information Disclosure of sensitive data (Tokens, Passwords, AES-256-GCM Vault payloads, PII)
 
 **Out of Scope**:

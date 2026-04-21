@@ -52,6 +52,7 @@
 - 頻率限制 (Rate-Limiting) 繞過 (擊破我們依賴資料庫的分散式限流模組，進而達成密碼噴灑或撞庫攻擊)
 - CSV 注入 / DDE 漏洞 (在遙測資料匯出時，成功繞過 `=`、`+`、`-`、`@` 的跳脫防禦)
 - SMTP 標頭注入 / 電子郵件欺騙 (繞過我們的 Multi-Provider Mailer 通知抽象層)
+- 目錄穿越 / 任意檔案上傳 (Path Traversal / Arbitrary File Upload) (成功繞過我們內建的嚴格副檔名檢驗與密碼學檔名隔離機制)
 - 機敏資料外洩 (Information Disclosure) (例如外洩 Token、密碼 Hash、AES-256-GCM Vault 金庫負載或 PII)
 
 **不涵蓋範圍 (Out of Scope)**:
