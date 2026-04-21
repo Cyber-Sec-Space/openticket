@@ -135,10 +135,29 @@ erDiagram
         String action
         String entityType
     }
+    LoginAttempt {
+        String id PK
+        String ip
+        String identifier
+        DateTime createdAt
+    }
+    VulnerabilityAsset {
+        String id PK
+        String vulnId FK
+        String assetId FK
+        Enum status "AFFECTED, MITIGATED, PATCHED"
+    }
+    Invitation {
+        String id PK
+        String email
+        String token
+        String inviterId FK
+    }
 
     User ||--o{ Incident : "Reports"
     Asset ||--o{ Incident : "Subject of"
-    Asset ||--o{ Vulnerability : "Affected by"
+    Vulnerability ||--o{ VulnerabilityAsset : "Targets"
+    Asset ||--o{ VulnerabilityAsset : "Contains"
     Incident ||--o{ Comment : "Contains"
     Vulnerability ||--o{ Comment : "Contains"
     User ||--o{ Comment : "Authors"
@@ -148,6 +167,7 @@ erDiagram
     User ||--o{ ApiToken : "Issues"
     User ||--o{ Attachment : "Uploads"
     User ||--o{ UserNotification : "Receives"
+    User ||--o{ Invitation : "Sends"
     Incident ||--o{ Attachment : "Contains"
     Vulnerability ||--o{ Attachment : "Contains"
 ```

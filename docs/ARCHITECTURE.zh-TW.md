@@ -132,10 +132,29 @@ erDiagram
         String action
         String entityType
     }
+    LoginAttempt {
+        String id PK
+        String ip
+        String identifier
+        DateTime createdAt
+    }
+    VulnerabilityAsset {
+        String id PK
+        String vulnId FK
+        String assetId FK
+        Enum status "AFFECTED, MITIGATED, PATCHED"
+    }
+    Invitation {
+        String id PK
+        String email
+        String token
+        String inviterId FK
+    }
 
     User ||--o{ Incident : "通報 (Reports)"
     Asset ||--o{ Incident : "事件標的 (Subject of)"
-    Vulnerability }|--|{ Asset : "Affects (關聯)"
+    Vulnerability ||--o{ VulnerabilityAsset : "攻擊目標 (Targets)"
+    Asset ||--o{ VulnerabilityAsset : "包含 (Contains)"
     Incident ||--o{ Comment : "包含回應 (Contains)"
     Vulnerability ||--o{ Comment : "包含回應 (Contains)"
     User ||--o{ Comment : "撰寫 (Authors)"
@@ -145,6 +164,7 @@ erDiagram
     User ||--o{ ApiToken : "發行 (Issues)"
     User ||--o{ Attachment : "上傳 (Uploads)"
     User ||--o{ UserNotification : "接收警報 (Receives)"
+    User ||--o{ Invitation : "發送邀請 (Sends)"
 ```
 
 ### 2.3 機器自動化介接 (Machine-to-Machine API) 與 PAT 金鑰
