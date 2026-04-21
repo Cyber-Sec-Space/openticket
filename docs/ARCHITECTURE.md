@@ -70,7 +70,10 @@ erDiagram
     }
     User {
         String id PK
+        String name
         String email
+        String image
+        String passwordHash
         Boolean isTwoFactorEnabled
         String twoFactorSecret
         Boolean notifyOnCritical
@@ -155,9 +158,11 @@ erDiagram
     }
     MetricSnapshot {
         String id PK
-        String metricName
-        Float value
-        DateTime recordedAt
+        DateTime timestamp
+        String scopeType
+        String scopeId
+        String payload
+        DateTime createdAt
     }
     Account {
         String id PK
@@ -169,6 +174,11 @@ erDiagram
         String id PK
         String sessionToken
         String userId FK
+    }
+    VerificationToken {
+        String identifier PK
+        String token
+        DateTime expires
     }
 
     User ||--o{ Incident : "Reports"
