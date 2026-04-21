@@ -56,7 +56,8 @@ Creates a new incident. Triggers SOAR workflows automatically if severity matche
   "title": "Database Server Offline",
   "description": "The primary PostgreSQL node stopped responding.",
   "severity": "CRITICAL",
-  "assetId": "clugxyz123asdf"
+  "assetIds": ["clugxyz123asdf"],
+  "tags": ["#database", "#outage"]
 }
 ```
 
@@ -90,9 +91,7 @@ Registers a new asset into the inventory.
 {
   "name": "Web Server 01",
   "type": "SERVER",
-  "ipAddress": "192.168.1.100",
-  "hostname": "web01.internal",
-  "criticality": "HIGH"
+  "ipAddress": "192.168.1.100"
 }
 ```
 
