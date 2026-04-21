@@ -79,7 +79,7 @@ erDiagram
         String id PK
         String name
         Boolean isSystem
-        Json permissions
+        EnumArray permissions
     }
     UserCustomRoles {
         String userId FK
@@ -150,6 +150,23 @@ erDiagram
         String token
         String inviterId FK
     }
+    MetricSnapshot {
+        String id PK
+        String metricName
+        Float value
+        DateTime recordedAt
+    }
+    Account {
+        String id PK
+        String provider
+        String providerAccountId
+        String userId FK
+    }
+    Session {
+        String id PK
+        String sessionToken
+        String userId FK
+    }
 
     User ||--o{ Incident : "通報 (Reports)"
     Asset ||--o{ Incident : "事件標的 (Subject of)"
@@ -165,6 +182,8 @@ erDiagram
     User ||--o{ Attachment : "上傳 (Uploads)"
     User ||--o{ UserNotification : "接收警報 (Receives)"
     User ||--o{ Invitation : "發送邀請 (Sends)"
+    User ||--o{ Account : "綁定 (Linked to)"
+    User ||--o{ Session : "維持 (Maintains)"
 ```
 
 ### 2.3 機器自動化介接 (Machine-to-Machine API) 與 PAT 金鑰
@@ -297,8 +316,8 @@ await fetch(`https://${pinnedIp}${parsed.pathname}`, {
 * **Server Actions 優先於 REST API：** 多數內部狀態異動直接採用 Server Actions（`"use server"`）直接處理 `FormData`，省去了撰寫 `fetch/axios` 並在後端即時驗證。
 * **PostgreSQL 原生全文檢索 (tsvector)**: 為了消除資料庫在數百萬筆 Log 執行 `%LIKE%` 模糊比對所產生的災難性 N+1 延遲，我們採用 Postgres 原生 `tsvector / tsquery` 全文檢索索引矩陣，確保極高的文字搜尋效能。
 * **分散式頻率限制 (Distributed Rate Limiting)**: 使用獨立資料庫追蹤來源 IP 與目標帳號鎖定，在完全不需要 Redis 伺服器的情況下原生抑制暴力破解與密碼噴灑。
-* **全同步式對話框的退場 (Asynchronous Modal)**: 系統全局拔除了會導致瀏覽器凍結的原生警告區塊 (`window.alert`, `window.confirm`)。我們匯入無阻塞的 React Shadcn Portaled `<Dialog>`，保護 UI Event-Loop 反應時間。
-* **動態細粒度權限矩陣 (Dynamic Granular Permission Matrix)：** 放棄使用布林值角色設定，系統透過 JSON 設定支援極龐大的多重角色權限組合操作，未來也無須繁雜的 Database Schema 遷移即可自由增加原子能力。
+* **全域配置與多重郵件抽象層 (Global Toggles & Multi-Mailer)**：我們透過單例化的 `SystemSetting` 進行全域邊界設定（如 `Global2FAEnforcedError`），並將發信邏輯 (Resend, SendGrid, SMTP) 完全抽象於 UI 服務之後。
+* **嚴謹的 RBAC 權限矩陣設計 (Strict Role-Based Access Control)**：有別於鬆散的 JSON 結構，我們原生支援由 PostgreSQL 限定型別的多重枚舉陣列 (`Permission[]`) 來建立多對多的 CustomRole 關聯。在保有動態配置能力的同時，嚴格阻絕了無定型的 NoSQL JSON 欄位變異風險，確保全資料庫型別安全。
 * **多重信件提供商 (Multi-Provider Mailer)：** 放棄將發信邏輯硬編碼死綁 SMTP，改以支援彈性從 UI 介面即時熱切換成 SMTP、或者更穩定的第三方服務如 Resend API 或 SendGrid API。
 * **API Token 密碼學儲存機制：** 資料庫拒絕存放明文形式的金鑰。發行請求時呼叫 `crypto.randomBytes(24)` 生成並進行不可逆的 `SHA-256` 雜湊入庫。
 * **從源頭確保安全性 (Security at Inception)：** 

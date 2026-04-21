@@ -79,7 +79,7 @@ erDiagram
         String id PK
         String name
         Boolean isSystem
-        Json permissions
+        EnumArray permissions
     }
     UserCustomRoles {
         String userId FK
@@ -153,6 +153,23 @@ erDiagram
         String token
         String inviterId FK
     }
+    MetricSnapshot {
+        String id PK
+        String metricName
+        Float value
+        DateTime recordedAt
+    }
+    Account {
+        String id PK
+        String provider
+        String providerAccountId
+        String userId FK
+    }
+    Session {
+        String id PK
+        String sessionToken
+        String userId FK
+    }
 
     User ||--o{ Incident : "Reports"
     Asset ||--o{ Incident : "Subject of"
@@ -168,6 +185,8 @@ erDiagram
     User ||--o{ Attachment : "Uploads"
     User ||--o{ UserNotification : "Receives"
     User ||--o{ Invitation : "Sends"
+    User ||--o{ Account : "Linked to"
+    User ||--o{ Session : "Maintains"
     Incident ||--o{ Attachment : "Contains"
     Vulnerability ||--o{ Attachment : "Contains"
 ```
@@ -303,8 +322,8 @@ await fetch(`https://${pinnedIp}${parsed.pathname}`, {
 * **Server Actions over REST:** Most internal state mutations leverage React Server Actions (`"use server"`) directly accepting `FormData`. This cuts out the `fetch/axios` boilerplate and handles backend validations instantly.
 * **PostgreSQL Full-Text Search (tsvector)**: To circumvent catastrophic Database N+1 drag causing O(N) evaluations across multi-million row log tables during Incident filtering, the architecture inherently discards standard `%LIKE%` syntax in favor of Postgres native `tsvector / tsquery` indexing matrices, massively boosting structural UI scaling.
 * **Distributed Rate Limiting (No Redis):** A database-backed dual-vector rate limiter tracks source IPs and target accounts asynchronously, shielding login boundaries without introducing an external Redis dependency.
-* **Asynchronous Modal Transitions**: Ripped out volatile and visually disruptive synchronous browser OS-blocks (`window.alert`, `window.confirm`) exchanging them globally with non-blocking React Shadcn Portaled `<Dialog>` constructs, shielding UI event-loop state mutations naturally.
-* **Dynamic Granular Permission Matrix:** Instead of restrictive monolithic enums, we natively support many-to-many custom roles linking dynamic `JSON` capability arrays within PostgreSQL. This enables fine-grained customizable administrative structures adapting universally.
+* **Global Toggles & Multi-Mailer Abstractions**: Using a singleton `SystemSetting` model, OpenTicket configures edge-case scenarios globally (e.g. `Global2FAEnforcedError`) and abstracts email providers (Resend, SendGrid, SMTP) behind an agnostic UI layer.
+* **Strict Role-Based Access Control (RBAC):** We natively support many-to-many custom roles using strictly typed PostgreSQL enum arrays (`Permission[]`). This provides type-safe validation across the boundary avoiding NoSQL JSON mutations while still enabling fine-grained customizable administrative structures adaptable universally.
 * **Multi-Provider Mailer:** Replaced hardcoded SMTP transport logic with a dynamic `MailerEngine` that can instantaneously switch dispatch mechanisms (SMTP, Resend API, SendGrid API) directly through the System UI.
 * **API Token Cryptography:** The database explicitly refuses to store raw `ApiToken` identities. OpenTicket invokes `crypto.randomBytes(24)` to mint a 48-character Hex payload, and unilaterally stores a one-way `SHA-256` hash.
 * **Component-Level Enums & Database Enums:** Prisma stringifies the values differently across layers. The database enforces constraints (`IN_PROGRESS`), while the Application rendering layer strips special characters (e.g. `IN PROGRESS`) to present unified UI strings.
