@@ -1,6 +1,6 @@
 # Security Policy
 
-Security is the core foundation of OpenTicket. We take all security vulnerabilities seriously and appreciate the efforts of security researchers and our community in helping us keep our platform safe.
+Security is the core foundation of OpenTicket. As a cybersecurity incident management platform, we take all security vulnerabilities seriously and appreciate the efforts of security researchers and our community in helping us keep our platform safe.
 
 ## Supported Versions
 
@@ -34,20 +34,27 @@ If you believe you have found a security vulnerability in OpenTicket, please rep
 
 ## Scope
 
+As a heavily fortified Enterprise platform built on a Zero-Trust architecture, we are particularly interested in bypasses against our native mitigation layers.
+
 **In Scope**:
 - Remote Code Execution (RCE)
-- Server-Side Request Forgery (SSRF)
-- Cross-Site Scripting (XSS)
-- Authentication Bypass / Broken Access Control (BOLA/IDOR)
-- SQL Injection
-- Information Disclosure of sensitive data (Tokens, Passwords, PII)
-- Sandbox escapes in the Plugin Engine
+- Server-Side Request Forgery (SSRF) bypasses (defeating our IP-freezing and DNS rebinding protections)
+- Cross-Site Scripting (XSS) (including bypasses against `isomorphic-dompurify` in Plugin UI injections)
+- Authentication Bypass / Broken Access Control (BOLA/IDOR) (including bypassing the Next.js Edge proxy layer)
+- SQL / Prisma Injection
+- Sandbox Escapes in the Plugin Engine (bypassing `isolated-vm`, `Promise.race` 5000ms TTL, or 128MB Memory limits)
+- AST Pre-Flight Evasion (bypassing the TypeScript AST static vulnerability analysis during Plugin deployment)
+- Prototype Pollution or SDK Validation Bypass (defeating Zod strict schemas in `api.*` methods)
+- Rate-Limiting Bypasses (defeating our database-backed Login throttling to achieve Credential Stuffing)
+- CSV Injection / DDE vulnerabilities in telemetry exports (bypassing the `=, +, -, @` sanitizer)
+- Information Disclosure of sensitive data (Tokens, Passwords, AES-256-GCM Vault payloads, PII)
 
 **Out of Scope**:
-- Issues requiring physical access to the server.
+- Issues requiring physical access to the server or database.
 - Social engineering (e.g., phishing) against OpenTicket users.
 - Denial of Service (DoS) attacks that require massive external volumetric traffic (OpenTicket is designed to be protected by external WAF/DDoS mitigation).
 - Vulnerabilities in outdated, unsupported browsers.
+- Theoretical vulnerabilities without a reproducible Proof of Concept (PoC).
 
 ## Hall of Fame / Credits
 
