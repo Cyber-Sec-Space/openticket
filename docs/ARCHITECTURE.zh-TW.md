@@ -227,11 +227,11 @@ graph TD
 ```
 
 ### 2.5 全方位通知中心 (Omni-channel Notifications)
-維運通報透過 `User Preference` 分支，並支援動態切換三家主流的郵件供應商引擎，保障跨平台零延遲的系統警報。
+維運通報透過 `User` 模型內建的布林標記 (Boolean Flags) 分支進行控制，並支援動態切換三家主流的郵件供應商引擎，保障跨平台零延遲的系統警報。
 
 ```mermaid
 graph TD
-    SystemEvent[重點資安事件] --> NotificationRouter{"用戶設定 (UserPreference)"}
+    SystemEvent[重點資安事件] --> NotificationRouter{"用戶布林標籤 (User Boolean Flags)"}
     NotificationRouter -- "Enable Web Notifications" --> SSEQueue[伺服器發送事件 (SSE)]
     NotificationRouter -- "Enable Email" --> MailerEngine{"SystemSetting 收發引擎"}
     SSEQueue --> DesktopAlerts[作業系統桌面 HTML5 底層推播]

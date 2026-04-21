@@ -232,11 +232,11 @@ graph TD
 ```
 
 ### 2.5 Omni-channel Notifications
-Administrators can broadcast critical telemetry across multiple communication layers, governed seamlessly by discrete `UserPreference` records. A Multi-Provider Mailer supports switching transit engines instantaneously.
+Administrators can broadcast critical telemetry across multiple communication layers, governed seamlessly by `User` boolean preference flags. A Multi-Provider Mailer supports switching transit engines instantaneously.
 
 ```mermaid
 graph TD
-    SystemEvent[Significant SecOps Event] --> NotificationRouter{"Check UserPreferences"}
+    SystemEvent[Significant SecOps Event] --> NotificationRouter{"Check User Boolean Flags"}
     NotificationRouter -- "Enable Web Notifications" --> SSEQueue[Server-Sent Events Stream]
     NotificationRouter -- "Enable Email" --> MailerEngine{"SystemSetting.mailerProvider"}
     SSEQueue --> DesktopAlerts[OS-Native HTML5 Desktop Alerts]
