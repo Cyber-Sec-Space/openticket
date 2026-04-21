@@ -44,7 +44,7 @@
 - 跨站腳本攻擊 (XSS) (包含繞過外掛 UI 注入層的 `isomorphic-dompurify` 清洗防禦)
 - 身分驗證與授權繞過 / 越權存取 / BOLA / IDOR (包含 Next.js Edge 代理層繞過 或 Setup Wizard 初始劫持)
 - MFA / 2FA 繞過 (擊破系統基於 TOTP 的強制二階段驗證)
-- 權限提升攻擊 (擊破我們基於 JSON 矩陣的自訂角色存取控制 Role-Based Access Control)
+- 權限提升 (Privilege Escalation) (擊敗基於 PostgreSQL 嚴格型別 Enum 的自定義角色權限矩陣)
 - SQL 注入 / Prisma 注入
 - 擴充外掛引擎之沙盒逃逸 (Sandbox Escapes) (成功穿透 `isolated-vm` 隔離、`Promise.race` 5000ms 炸彈或 128MB 實體記憶體天花板)
 - AST 靜態語法預檢規避 (在部署外掛時成功繞過 TypeScript AST 的靜態惡意語法攔截)

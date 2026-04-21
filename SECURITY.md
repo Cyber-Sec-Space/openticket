@@ -42,7 +42,7 @@ As a heavily fortified Enterprise platform built on a Zero-Trust architecture, w
 - Cross-Site Scripting (XSS) (including bypasses against `isomorphic-dompurify` in Plugin UI injections)
 - Authentication & Authorization Bypasses (including BOLA/IDOR, Setup Wizard Hijacking, or Edge proxy layer evasion)
 - MFA/2FA Bypasses (defeating TOTP authentication enforcement)
-- Privilege Escalation (defeating our JSON-based custom Role-Based Access Control matrix)
+- Privilege Escalation (defeating our strictly-typed PostgreSQL Enum-based Role Access Control matrix)
 - SQL / Prisma Injection
 - Sandbox Escapes in the Plugin Engine (bypassing `isolated-vm`, `Promise.race` 5000ms TTL, or 128MB Memory limits)
 - AST Pre-Flight Evasion (bypassing the TypeScript AST static vulnerability analysis during Plugin deployment)
