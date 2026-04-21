@@ -53,7 +53,6 @@ As a heavily fortified Enterprise platform built on a Zero-Trust architecture, w
 - Privilege Escalation (defeating our strictly-typed PostgreSQL Enum-based Role Access Control matrix)
 - SQL / Prisma Injection
 - Sandbox Escapes in the Plugin Engine (bypassing `isolated-vm`, `Promise.race` 5000ms TTL, or 128MB Memory limits)
-- AST Pre-Flight Evasion (bypassing the TypeScript AST static vulnerability analysis during Plugin deployment)
 - Prototype Pollution or SDK Validation Bypass (defeating Zod strict schemas in `api.*` methods)
 - Rate-Limiting Bypasses (defeating our database-backed Login throttling to achieve Credential Stuffing)
 - CSV Injection / DDE vulnerabilities in telemetry exports (bypassing the `=, +, -, @` sanitizer)

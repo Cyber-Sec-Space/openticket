@@ -55,7 +55,6 @@
 - 權限提升 (Privilege Escalation) (擊敗基於 PostgreSQL 嚴格型別 Enum 的自定義角色權限矩陣)
 - SQL 注入 / Prisma 注入
 - 擴充外掛引擎之沙盒逃逸 (Sandbox Escapes) (成功穿透 `isolated-vm` 隔離、`Promise.race` 5000ms 炸彈或 128MB 實體記憶體天花板)
-- AST 靜態語法預檢規避 (在部署外掛時成功繞過 TypeScript AST 的靜態惡意語法攔截)
 - 原型污染 (Prototype Pollution) 或 SDK 驗證繞過 (擊破 `api.*` 方法中的 Zod 嚴格驗證)
 - 頻率限制 (Rate-Limiting) 繞過 (擊破我們依賴資料庫的分散式限流模組，進而達成密碼噴灑或撞庫攻擊)
 - CSV 注入 / DDE 漏洞 (在遙測資料匯出時，成功繞過 `=`、`+`、`-`、`@` 的跳脫防禦)

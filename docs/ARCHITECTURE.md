@@ -201,14 +201,11 @@ To avoid blocking the primary web threads with complex external third-party acti
 1. **API Limit Sandbox**: Hook executions are bound directly to a `Promise.race()` primitive throwing an exception unconditionally at `5000ms`. Infinite loops or hanging API calls strictly collapse before threatening system responsiveness. Furthermore, execution occurs inside an `isolated-vm` instance with a hard `128MB` memory limit to protect the host Node.js heap.
 2. **End-to-End Cryptography**: Plugin parameters containing valid API tokens are protected against Database Dumps natively. Data is strictly ciphered using an `AES-256-GCM` implementation tied to Server Entropy before committing state.
 3. **Zod Input Validation**: The core SDK (`api.createIncident()`, etc) routes all payload inputs through strict `Zod` schemas. This ensures that plugins cannot manipulate or pollute the Prisma database layer using malformed payloads or prototype pollution techniques.
-4. **OAuth-Style Privilege Consent**: During installation, remote Registry Extensions broadcast explicitly required `Permissions`. Global Administrators map these through a Deep-Dive Details Overlay actively extracting hierarchical `versions[].requestedPermissions` arrays. Backends execute strict Set-Intersections, purging any unsanctioned permissions stealthily invoked during `onInstall`.
 
-The Plugin architecture is built around a defense-in-depth framework spanning five core resilience layers:
+The Plugin architecture is built around a defense-in-depth framework spanning three core resilience layers:
 1. **Absolute Identity Gating**: Plugins interact with the system via a limited SDK abstraction. Every request is forced downstream via a provisioned Sandbox Bot Role.
-2. **Authorization Manifests (OAuth-Style)**: Core integrations explicitly request operational permissions inside their root `manifest`. These are challenged inside the React Presentation layer necessitating explicit Administrative `Grant & Activate` user decisions.
-3. **Encryption At Rest**: To preserve the secrecy of Third-Party configurations, payloads are automatically encrypted via `AES-256-GCM` mapped against `AUTH_SECRET`, with an integral AuthTag neutralizing manipulation injections.
-4. **Pre-Flight AST Syntax Checker**: Bypassing traditional compilation delays, newly downloaded third-party code natively intercepts an active `tsc` TypeScript transpiler execution. Sub-routines proactively extract the raw Abstract Syntax Tree (AST), identifying devastating structures before filesystem write, automatically rolling back the database configuration.
-5. **UI Component Injection**: Registry Manifests can safely transport React definitions via the `settingsPanels` API, natively embedding Plugin-specific Administrative dashboards directly into the parent. Furthermore, dynamic Hook splits like `*MainWidgets` and `*SidebarWidgets` allow injection into Incident, Vulnerability, Asset, and User Profile pages. XSS vectors within these payloads are neutralized via `isomorphic-dompurify`.
+2. **Encryption At Rest**: To preserve the secrecy of Third-Party configurations, payloads are automatically encrypted via `AES-256-GCM` mapped against `AUTH_SECRET`, with an integral AuthTag neutralizing manipulation injections.
+3. **UI Component Injection**: Registry Manifests can safely transport React definitions via the `settingsPanels` API, natively embedding Plugin-specific Administrative dashboards directly into the parent. Furthermore, dynamic Hook splits like `*MainWidgets` and `*SidebarWidgets` allow injection into Incident, Vulnerability, Asset, and User Profile pages. XSS vectors within these payloads are neutralized via `isomorphic-dompurify`.
 
 ```mermaid
 graph TD
@@ -222,13 +219,6 @@ graph TD
     end
     
     Exec -->|Strict SDK Boundaries & Zod| Plugins[Invoke isolated-vm V8 Sandbox]
-    
-    subgraph Registry [Remote Distribution Pipeline]
-        RemoteRepo[GitHub Raw Module] -->|Server Action| Download[Fetch & AST Verify Code]
-        Download --> UIAuth[UI Permissions Modal Consent]
-        UIAuth --> DBIntercept[Manifest Privilege Intersection]
-        DBIntercept --> Build[Compile framework bundle]
-    end
 ```
 
 ### 2.5 Omni-channel Notifications

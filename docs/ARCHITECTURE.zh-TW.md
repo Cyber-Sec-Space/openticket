@@ -196,13 +196,11 @@ erDiagram
 1. **API 限流沙盒 (Memory & Time Limits)**：所有的 Hook 執行邏輯都會被封裝在一個 `Promise.race()` 原語之中，並在超過 `5000ms` 後無條件拋出例外。並被放置於隔離的 `isolated-vm` 虛擬 V8 引擎環境內，同時實施 128MB 的嚴格實體記憶體限制，確保外掛洩漏不會影響 Host 的 Node.js。
 2. **端對端加密 (End-to-End Cryptography)**：凡是包含有效 API 憑證 (Token) 的外掛參數，在寫入資料庫實體狀態前，都會綁定伺服器熵使用 `AES-256-GCM` 原生進行靜態加密。完全杜絕因為資料庫傾印造成的金鑰外洩。
 3. **Zod 驗證邊界 (Zod Schema Boundaries)**：核心的 SDK（例如 `api.createIncident()` 等呼叫）完全由 Zod 強制接管輸入 payloads。外掛無法利用畸形物件進行原型污染 (Prototype Pollution) 或讓 Prisma 資料庫拋出無效錯誤。
-4. **OAuth 式權限批准 (OAuth-Style Consent)**：在遠端 Registry 安裝套件期間會宣示權限。管理員將被強制查閱 `versions[].requestedPermissions`。後端同時會執行嚴格的集合交集 (Set-Intersections)，無情過濾任何外掛企圖暗中啟動的未授權 API。
 
 外掛架構圍繞著縱深防禦 (Defense-in-Depth) 的框架建構，包含了多重核心防禦層：
 1. **絕對身分閘道 (Absolute Identity Gating)**：外部外掛必須透過受限的 SDK 進行互動，所有請求都會被強制向下轉交給指定的沙盒機器人角色 (Sandbox Bot Role) 進行代理。
 2. **靜態密碼學防護 (Encryption At Rest)**：設定檔在存入資料庫前，將透過 `AES-256-GCM` 直接靜態加密，並且自帶 AuthTag 將資料庫被竄改的風險降至零。
-3. **寫入前 AST 語法預檢 (Pre-Flight AST Syntax Checker)**：系統在下載外掛程式碼的瞬間，會呼叫底層的 `tsc`。利用解析抽象語法樹 (AST)，精準捕捉 `DiagnosticCategory.Error` 致命錯誤。查獲致命語法將會直接拒絕寫入與掛載，防範了因為遠端惡意程式碼而癱瘓伺服器編譯路徑。
-4. **UI 元件注入安全隔離 (UI Component Injection)**：除了伺服器後端，Registry 外掛現在安全支援注入自訂 React UI 模組，允許精準地外科手術式注入至事件、漏洞、資產的「主時間軸」或「側邊欄」內。透過 `isomorphic-dompurify` 的協助，完全消除了透過 UI 模組注入的 XSS (跨站腳本攻擊) 風險。
+3. **UI 元件注入安全隔離 (UI Component Injection)**：除了伺服器後端，Registry 外掛現在安全支援注入自訂 React UI 模組，允許精準地外科手術式注入至事件、漏洞、資產的「主時間軸」或「側邊欄」內。透過 `isomorphic-dompurify` 的協助，完全消除了透過 UI 模組注入的 XSS (跨站腳本攻擊) 風險。
 
 ```mermaid
 graph TD
@@ -216,13 +214,6 @@ graph TD
     end
     
     Exec -->|嚴密的 Zod API 驗證| Plugins[喚醒已隔離的 isolated-vm V8 沙盒模組]
-    
-    subgraph Registry [遠端市集分發管線]
-        RemoteRepo[GitHub Raw Module] -->|Server Action| Download[下載並進行 AST 語法預檢]
-        Download --> UIAuth[UI 權限同意 Modal]
-        UIAuth --> DBIntercept[後端權限交集驗證]
-        DBIntercept --> Build[動態掛載與編譯]
-    end
 ```
 
 ### 2.5 全方位通知中心 (Omni-channel Notifications)
