@@ -27,6 +27,14 @@ cp -r prisma release-standalone/openticket/
 # Ensure package.json is there to run prisma commands
 cp package.json release-standalone/openticket/
 
+# IMPORTANT: Explicitly inject the generated Prisma Client binaries.
+# Next.js standalone file-tracing notoriously fails to copy these dynamic .node bindings.
+echo "🧩 Injecting generated Prisma Client engine..."
+mkdir -p release-standalone/openticket/node_modules/.prisma
+cp -r node_modules/.prisma/* release-standalone/openticket/node_modules/.prisma/
+mkdir -p release-standalone/openticket/node_modules/@prisma/client
+cp -r node_modules/@prisma/client/* release-standalone/openticket/node_modules/@prisma/client/
+
 # 4. Compress
 echo "🗜️ Compressing standalone package..."
 cd release-standalone
