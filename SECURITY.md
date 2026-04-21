@@ -27,7 +27,15 @@ If you believe you have found a security vulnerability in OpenTicket, please rep
 - Proof of Concept (PoC) code or screenshots if applicable.
 - Any suggested mitigations.
 
-### Response Timeline
+## Rules of Engagement / Authorized Testing
+
+To protect our users and infrastructure, you must adhere to the following rules during your research:
+- **Test Locally**: DO NOT perform security testing against our live, production URLs or any infrastructure hosted by us. You must test exclusively against a local Sandbox/Instance (e.g., using `docker-compose up` or our provided `setup.sh`).
+- **No Data Exfiltration**: Do not access, modify, or delete user data that does not belong to your own test accounts.
+- **No Disruption**: Do not perform Denial of Service (DoS) attacks or intentionally execute resource exhaustion payloads against anything other than your local isolated environment.
+- **No Backdoors**: Do not leave backdoors or malicious payloads lingering in the database or server filesystem after your Proof of Concept is complete.
+
+## Response Timeline
 - We will acknowledge receipt of your vulnerability report within **72 hours**.
 - We aim to provide a fix or mitigation plan within **30 days**.
 - We will notify you when the vulnerability is patched and a security advisory is published.
