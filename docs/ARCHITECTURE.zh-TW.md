@@ -241,9 +241,10 @@ graph TD
 
 ```mermaid
 graph TD
-    SystemEvent[重點資安事件] --> NotificationRouter{"用戶布林標籤 (User Boolean Flags)"}
-    NotificationRouter -- "Enable Web Notifications" --> SSEQueue[伺服器發送事件 (SSE)]
-    NotificationRouter -- "Enable Email" --> MailerEngine{"SystemSetting 收發引擎"}
+    SystemEvent[重點資安事件] --> UPRouter{"用戶布林設定 (User Boolean Flags)"}
+    SystemEvent --> SysRouter{"全域事件觸發器 (SystemSetting SMTP Triggers)"}
+    UPRouter -- "允許推播 (Enable Web Alerts)" --> SSEQueue[伺服器發送事件 (SSE)]
+    SysRouter -- "觸發郵件 (Enable Email Alerts)" --> MailerEngine{"SystemSetting.mailerProvider"}
     SSEQueue --> DesktopAlerts[作業系統桌面 HTML5 底層推播]
     MailerEngine -- "SMTP" --> SMTP_Provider[Nodemailer 原生 SMTP]
     MailerEngine -- "RESEND" --> Resend_API[Resend 官方 REST API]

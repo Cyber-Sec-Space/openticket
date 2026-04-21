@@ -246,9 +246,10 @@ Administrators can broadcast critical telemetry across multiple communication la
 
 ```mermaid
 graph TD
-    SystemEvent[Significant SecOps Event] --> NotificationRouter{"Check User Boolean Flags"}
-    NotificationRouter -- "Enable Web Notifications" --> SSEQueue[Server-Sent Events Stream]
-    NotificationRouter -- "Enable Email" --> MailerEngine{"SystemSetting.mailerProvider"}
+    SystemEvent[Significant SecOps Event] --> UPRouter{"Check User Boolean Flags"}
+    SystemEvent --> SysRouter{"Check SystemSetting SMTP Triggers"}
+    UPRouter -- "Enable Web Notifications" --> SSEQueue[Server-Sent Events Stream]
+    SysRouter -- "Email Alert Enabled" --> MailerEngine{"SystemSetting.mailerProvider"}
     SSEQueue --> DesktopAlerts[OS-Native HTML5 Desktop Alerts]
     MailerEngine -- "SMTP" --> SMTP_Provider[Nodemailer SMTP]
     MailerEngine -- "RESEND" --> Resend_API[Resend REST API]
