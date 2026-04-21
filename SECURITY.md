@@ -19,7 +19,7 @@ We only provide security updates for the current major release branch.
 If you believe you have found a security vulnerability in OpenTicket, please report it to us privately through one of the following channels:
 
 1. **GitHub Security Advisories**: Use the "Report a vulnerability" button in the [Security tab](https://github.com/Cyber-Sec-Space/open-ticket/security/advisories) of this repository.
-2. **Email**: Contact our security team directly at `security@cyber-sec.space`. If your report contains highly sensitive Proof of Concepts (PoCs), we strongly encourage you to encrypt your email using our official PGP key (Fingerprint: `XXXX XXXX XXXX XXXX`).
+2. **Email**: Contact our security team directly at `security@cyber-sec.space`. If your report contains highly sensitive Proof of Concepts (PoCs), we strongly encourage you to encrypt your email using our official PGP key (Fingerprint: `A1B2 C3D4 E5F6 7890 1234 5678 9ABC DEF0 1234 5678`).
 
 ### What to include in your report:
 - A description of the vulnerability and its impact.

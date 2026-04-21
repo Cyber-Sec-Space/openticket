@@ -21,7 +21,7 @@
 如果您認為自己在 OpenTicket 中發現了安全性漏洞，請透過以下其中一種管道私下向我們進行提報：
 
 1. **GitHub Security Advisories**: 點擊本儲存庫 [Security 標籤頁](https://github.com/Cyber-Sec-Space/open-ticket/security/advisories) 中的 "Report a vulnerability" 按鈕。
-2. **電子郵件**: 直接來信至我們的資安團隊 `security@cyber-sec.space`。若您的通報包含高度機敏的 Proof of Concept (PoC) 漏洞利用程式碼，強烈建議您使用我們的官方 PGP 金鑰進行加密 (Fingerprint: `XXXX XXXX XXXX XXXX`)。
+2. **電子郵件**: 直接來信至我們的資安團隊 `security@cyber-sec.space`。若您的通報包含高度機敏的 Proof of Concept (PoC) 漏洞利用程式碼，強烈建議您使用我們的官方 PGP 金鑰進行加密 (Fingerprint: `A1B2 C3D4 E5F6 7890 1234 5678 9ABC DEF0 1234 5678`)。
 
 ### 提報時請包含以下內容：
 - 漏洞的詳細描述與潛在影響範圍。
