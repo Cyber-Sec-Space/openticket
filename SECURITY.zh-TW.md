@@ -21,7 +21,7 @@
 如果您認為自己在 OpenTicket 中發現了安全性漏洞，請透過以下其中一種管道私下向我們進行提報：
 
 1. **GitHub Security Advisories**: 點擊本儲存庫 [Security 標籤頁](https://github.com/Cyber-Sec-Space/open-ticket/security/advisories) 中的 "Report a vulnerability" 按鈕。
-2. **電子郵件 (Email)**: 直接聯絡我們的資安團隊 `security@cyber-sec.space`。
+2. **電子郵件**: 直接來信至我們的資安團隊 `security@cyber-sec.space`。若您的通報包含高度機敏的 Proof of Concept (PoC) 漏洞利用程式碼，強烈建議您使用我們的官方 PGP 金鑰進行加密 (Fingerprint: `XXXX XXXX XXXX XXXX`)。
 
 ### 提報時請包含以下內容：
 - 漏洞的詳細描述與潛在影響範圍。
@@ -61,6 +61,7 @@
 - 需要大量外部網路流量的阻斷服務攻擊 (DoS/DDoS) (OpenTicket 架構設計上預設由外部 WAF/DDoS 清洗服務保護)。
 - 建立在過時、不受支援的瀏覽器上的漏洞。
 - 缺乏可重現 Proof of Concept (PoC) 的純理論漏洞。
+- 第三方上游開源套件 (如：React, Prisma) 的原生漏洞。除非您能具體證明 OpenTicket 以不安全的方式呼叫並利用了該套件的缺陷。
 
 ## 安全港避風港條款 (Safe Harbor)
 

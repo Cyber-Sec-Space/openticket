@@ -19,7 +19,7 @@ We only provide security updates for the current major release branch.
 If you believe you have found a security vulnerability in OpenTicket, please report it to us privately through one of the following channels:
 
 1. **GitHub Security Advisories**: Use the "Report a vulnerability" button in the [Security tab](https://github.com/Cyber-Sec-Space/open-ticket/security/advisories) of this repository.
-2. **Email**: Contact our security team directly at `security@cyber-sec.space`.
+2. **Email**: Contact our security team directly at `security@cyber-sec.space`. If your report contains highly sensitive Proof of Concepts (PoCs), we strongly encourage you to encrypt your email using our official PGP key (Fingerprint: `XXXX XXXX XXXX XXXX`).
 
 ### What to include in your report:
 - A description of the vulnerability and its impact.
@@ -59,6 +59,7 @@ As a heavily fortified Enterprise platform built on a Zero-Trust architecture, w
 - Denial of Service (DoS) attacks that require massive external volumetric traffic (OpenTicket is designed to be protected by external WAF/DDoS mitigation).
 - Vulnerabilities in outdated, unsupported browsers.
 - Theoretical vulnerabilities without a reproducible Proof of Concept (PoC).
+- Vulnerabilities within third-party upstream dependencies (e.g., React, Prisma), unless you can provide a PoC demonstrating that OpenTicket explicitly utilizes the dependency in an insecure manner.
 
 ## Safe Harbor
 
