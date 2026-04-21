@@ -29,7 +29,7 @@ In production: `https://your-openticket-instance.com/api`
 Retrieves a paginated list of incidents.
 
 **Query Parameters:**
-- `take` (optional, default: 20): Number of records to return.
+- `take` (optional, default: 100): Number of records to return. Maximum is 100.
 - `skip` (optional, default: 0): Number of records to skip.
 
 **Response:**
