@@ -49,11 +49,12 @@ We enforce strict coding standards to maintain enterprise-grade quality:
 
 ## 📥 Pull Request Process
 
-1. Ensure any install or build dependencies are removed before the end of the layer when doing a build.
-2. Update the README.md with details of changes to the interface, this includes new environment variables, exposed ports, useful file locations and container parameters.
-3. Your PR must pass all CI checks (Linting, Tests, Build).
-4. Fill out the Pull Request template completely.
-5. You may merge the Pull Request in once you have the sign-off of at least one maintainer.
+1. Ensure your TypeScript code passes absolute strict mode checks. Do not use `@ts-ignore` or `any` to bypass the `isolated-vm` Sandbox boundaries.
+2. If your branch modifies `schema.prisma`, ensure you've successfully tested the migration chain using `npm run migrate:prod` locally.
+3. Update the `README.md` and/or `docs/API.md` with details of changes to SDK payloads or UI layouts.
+4. Your PR must pass all CI checks (Linting, Tests, Build).
+5. Fill out the Pull Request template completely.
+6. You may merge the Pull Request in once you have the sign-off of at least one maintainer.
 
 ## 🐛 Reporting Bugs
 
