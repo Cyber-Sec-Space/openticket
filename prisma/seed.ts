@@ -267,7 +267,7 @@ async function main() {
         type: template.type,
         severity: template.severity,
         status: status,
-        assetId: asset.id,
+        assets: { connect: [{ id: asset.id }] },
         reporterId: reporter.id,
         tags: tags,
         createdAt: createdDate,

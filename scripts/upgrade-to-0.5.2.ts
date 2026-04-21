@@ -16,7 +16,16 @@ async function main() {
   const prisma = new PrismaClient();
 
   try {
-    console.log("[1/1] Connecting to database to apply API metadata...");
+    console.log("[1/2] Checking if migration is already applied...");
+
+    const adminRole = await prisma.customRole.findUnique({ where: { name: 'System Administrator' } });
+    if (adminRole && adminRole.permissions.includes(Permission.ACCESS_API)) {
+       console.log("      [SKIPPED] System Administrator already has ACCESS_API permission.");
+       console.log("🎉 Upgrade to v0.5.2 already applied. Safe to proceed.\n");
+       return;
+    }
+
+    console.log("[2/2] Applying API metadata to custom roles...");
 
     const allRoles = await prisma.customRole.findMany();
 
