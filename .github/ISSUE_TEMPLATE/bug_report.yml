@@ -1,0 +1,61 @@
+name: Bug Report
+description: Create a report to help us improve OpenTicket
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! 
+        **Note:** If this is a security vulnerability, please refer to our [Security Policy](../../SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: OpenTicket Version
+      description: What version of OpenTicket are you using? (e.g., 0.5.4, 1.0.0-rc.1)
+      placeholder: "ex. 1.0.0-rc.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: env
+    attributes:
+      label: Environment
+      description: How is OpenTicket deployed?
+      options:
+        - Local Development (npm run dev)
+        - Standalone Build
+        - Docker Compose
+        - Kubernetes
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots / Logs
+      description: If applicable, add screenshots or console logs to help explain your problem.
