@@ -19,6 +19,7 @@ if [ ! -f .env ]; then
     echo -e "\033[1;31m[ERR] .env.example not found! Providing template...\033[0m"
     echo "DATABASE_URL=\"postgresql://user:password@localhost:5432/openticket\"" > .env
     echo "AUTH_SECRET=\"$(openssl rand -base64 32)\"" >> .env
+    echo "NEXTAUTH_SECRET=\"$(openssl rand -base64 32)\"" >> .env
   fi
 else
   echo -e "\033[1;32m[INF] .env file already exists.\033[0m"
@@ -70,8 +71,7 @@ npm install
 # 3. Database Migration
 echo -e "\n\033[1;36m>> Synchronizing Database Schema...\033[0m"
 npx prisma generate
-npx prisma migrate deploy
-npm run upgrade:0.5.0
+npm run migrate:prod
 
 echo -e "\n\033[1;36m====================================================\033[0m"
 echo -e "\033[1;32m🎉 Setup Complete! 🎉\033[0m"
