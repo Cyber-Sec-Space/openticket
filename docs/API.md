@@ -36,7 +36,7 @@ Retrieves a paginated list of incidents.
 ```json
 [
   {
-    "id": 1,
+    "id": "cm1uxtxyz0000abcdef",
     "title": "Suspicious Login Detected",
     "status": "NEW",
     "severity": "HIGH",
@@ -56,14 +56,14 @@ Creates a new incident. Triggers SOAR workflows automatically if severity matche
   "title": "Database Server Offline",
   "description": "The primary PostgreSQL node stopped responding.",
   "severity": "CRITICAL",
-  "assetId": 5
+  "assetId": "clugxyz123asdf"
 }
 ```
 
 **Response:**
 ```json
 {
-  "id": 2,
+  "id": "cm1tzvyxyz000abcd",
   "status": "NEW"
 }
 ```

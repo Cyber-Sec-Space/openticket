@@ -63,11 +63,17 @@ erDiagram
         Boolean smtpEnabled
         Enum mailerProvider
     }
+    PluginState {
+        String id PK
+        Boolean isActive
+        String configJson
+    }
     User {
         String id PK
         String email
         Boolean isTwoFactorEnabled
         String twoFactorSecret
+        Boolean notifyOnCritical
     }
     CustomRole {
         String id PK
@@ -104,11 +110,22 @@ erDiagram
         Enum severity
         String assetId FK
     }
+    Comment {
+        String id PK
+        String content
+        String targetId FK
+        String userId FK
+    }
     Attachment {
         String id PK
         String filename
         String incidentId FK
         String vulnId FK
+    }
+    UserNotification {
+        String id PK
+        String title
+        String userId FK
     }
     AuditLog {
         String id PK
@@ -119,11 +136,15 @@ erDiagram
     User ||--o{ Incident : "通報 (Reports)"
     Asset ||--o{ Incident : "事件標的 (Subject of)"
     Vulnerability }|--|{ Asset : "Affects (關聯)"
+    Incident ||--o{ Comment : "包含回應 (Contains)"
+    Vulnerability ||--o{ Comment : "包含回應 (Contains)"
+    User ||--o{ Comment : "撰寫 (Authors)"
     User ||--o{ AuditLog : "執行 (Performs)"
     User ||--o{ UserCustomRoles : "Assigned"
     CustomRole ||--o{ UserCustomRoles : "Defines"
     User ||--o{ ApiToken : "發行 (Issues)"
     User ||--o{ Attachment : "上傳 (Uploads)"
+    User ||--o{ UserNotification : "接收警報 (Receives)"
 ```
 
 ### 2.3 機器自動化介接 (Machine-to-Machine API) 與 PAT 金鑰
@@ -265,5 +286,6 @@ await fetch(`https://${pinnedIp}${parsed.pathname}`, {
    - 移除了存在偽隨機數漏洞與已棄用的依賴項改以強化版的 C++ `bcrypt` 編譯套件為主。
    - `SystemSetting` 中的全域開啟 2FA 開關可以直接限制全站任何無配置 OTP 的行為（拋出 `Global2FAEnforcedError`）。
    - **防禦越權存取**：強行評估該物件擁有者的連帶防護，拒絕越權竄改 (BOLA) 覆寫原本被信任的權限層。
+   - **防禦 CSV 注入 (DDE Mitigation)**：所有的系統資料匯出皆受制於端點級聯的跳脫層，強制對於以 `=, +, -, @` 開頭的儲存格插入跳脫字元，徹底阻斷惡意載荷在管理員 Excel 內執行任意系統巨集的資安風險。
 * **層級與溢位管理策略 (Z-Index & Overflow Hierarchy)：** 為實現高密度的集中化儀表板，在卡片中大量使用了 `overflow-hidden` 強制邊界。為避免下拉選單因此遭到截斷裁切，我們引入 React Portals 架構與手動提權的 Z-Index ，使浮出選單與日曆選擇器能脫離 DOM 封裝樹。
 * **伺服器端外掛熱重載 (Server-Side Registry Orchestration)**：利用 Node.js 的 `child_process.exec` 功能在背景接受指令觸發編譯器的重組 (`next build`)。並於回傳 `process.exit(0)`，將 Node 的高可用性重啟任務委託給 Docker 或 Host Daemon (PM2) 處理，達成真正的自動熱更佈署。

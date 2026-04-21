@@ -63,11 +63,17 @@ erDiagram
         Boolean smtpEnabled
         Enum mailerProvider
     }
+    PluginState {
+        String id PK
+        Boolean isActive
+        String configJson
+    }
     User {
         String id PK
         String email
         Boolean isTwoFactorEnabled
         String twoFactorSecret
+        Boolean notifyOnCritical
     }
     CustomRole {
         String id PK
@@ -106,12 +112,23 @@ erDiagram
         DateTime targetSlaDate
         String assetId FK
     }
+    Comment {
+        String id PK
+        String content
+        String targetId FK
+        String userId FK
+    }
     Attachment {
         String id PK
         String filename
         String fileUrl
         String incidentId FK
         String vulnId FK
+    }
+    UserNotification {
+        String id PK
+        String title
+        String userId FK
     }
     AuditLog {
         String id PK
@@ -122,11 +139,15 @@ erDiagram
     User ||--o{ Incident : "Reports"
     Asset ||--o{ Incident : "Subject of"
     Asset ||--o{ Vulnerability : "Affected by"
+    Incident ||--o{ Comment : "Contains"
+    Vulnerability ||--o{ Comment : "Contains"
+    User ||--o{ Comment : "Authors"
     User ||--o{ AuditLog : "Performs"
     User ||--o{ UserCustomRoles : "Assigned"
     CustomRole ||--o{ UserCustomRoles : "Defines"
-    User ||--o{ Attachment : "Uploads"
     User ||--o{ ApiToken : "Issues"
+    User ||--o{ Attachment : "Uploads"
+    User ||--o{ UserNotification : "Receives"
     Incident ||--o{ Attachment : "Contains"
     Vulnerability ||--o{ Attachment : "Contains"
 ```
@@ -272,5 +293,6 @@ await fetch(`https://${pinnedIp}${parsed.pathname}`, {
    - Replaced weak pseudo-random generation dependencies (`bcryptjs`) with compiled implementations (`bcrypt`).
    - A global `SystemSetting` toggle can immediately quarantine non-2FA-compliant accounts (`Global2FAEnforcedError`).
    - **Strict BOLA Adherence**: Exhaustive Backend Ownership evaluations actively reject direct-object manipulation over comments and incidents overriding default trust constraints.
+   - **CSV Injection (DDE) Immunity**: All structured data exports natively pass through a strict sanitization layer mapping escaping `=, +, -, @` lead characters, actively neutralizing Excel Maco-execution pivoting attacks for exported telemetry.
 * **Z-Index & Overflow Hierarchy Management:** In order to achieve a high-density, centralized dashboard, complex CSS boundaries like `overflow-hidden` are used heavily in Glassmorphism cards. We aggressively utilize React Portals (`portalId`) and manual Z-Index elevation to ensure overlays mount dynamically outside the standard React DOM encapsulation tree.
 * **Server-Side Registry Orchestration**: External node application extensions can be downloaded asynchronously on-demand. OpenTicket initiates an independent child spawn `exec` to reconstruct identical `next build` topologies locally, and subsequently intercepts the lifecycle via `process.exit(0)` delegating high-availability restart capabilities uniquely back to standard Daemon Managers (Docker/Host Supervisor).
