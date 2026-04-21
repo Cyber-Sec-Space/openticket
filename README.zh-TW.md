@@ -160,7 +160,7 @@ npm run migrate:prod
 - [REST API 文件](docs/API.md) — 將 OpenTicket 與外部工具及 SOAR 劇本整合。
 - [架構設計書](docs/ARCHITECTURE.zh-TW.md) — 系統設計、資料流及安全邊界的深度解析。
 - [貢獻指南](CONTRIBUTING.md) — 本地開發、程式碼風格規範及 PR 流程。
-- [安全政策](SECURITY.md) — 負責任揭露漏洞的方式。
+- [安全政策](SECURITY.zh-TW.md) — 負責任揭露漏洞的方式。
 
 ---
 

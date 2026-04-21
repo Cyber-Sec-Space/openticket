@@ -40,13 +40,16 @@ As a heavily fortified Enterprise platform built on a Zero-Trust architecture, w
 - Remote Code Execution (RCE)
 - Server-Side Request Forgery (SSRF) bypasses (defeating our IP-freezing and DNS rebinding protections)
 - Cross-Site Scripting (XSS) (including bypasses against `isomorphic-dompurify` in Plugin UI injections)
-- Authentication Bypass / Broken Access Control (BOLA/IDOR) (including bypassing the Next.js Edge proxy layer)
+- Authentication & Authorization Bypasses (including BOLA/IDOR, Setup Wizard Hijacking, or Edge proxy layer evasion)
+- MFA/2FA Bypasses (defeating TOTP authentication enforcement)
+- Privilege Escalation (defeating our JSON-based custom Role-Based Access Control matrix)
 - SQL / Prisma Injection
 - Sandbox Escapes in the Plugin Engine (bypassing `isolated-vm`, `Promise.race` 5000ms TTL, or 128MB Memory limits)
 - AST Pre-Flight Evasion (bypassing the TypeScript AST static vulnerability analysis during Plugin deployment)
 - Prototype Pollution or SDK Validation Bypass (defeating Zod strict schemas in `api.*` methods)
 - Rate-Limiting Bypasses (defeating our database-backed Login throttling to achieve Credential Stuffing)
 - CSV Injection / DDE vulnerabilities in telemetry exports (bypassing the `=, +, -, @` sanitizer)
+- SMTP Header Injection / Email Spoofing (bypassing our Multi-Provider Mailer abstraction)
 - Information Disclosure of sensitive data (Tokens, Passwords, AES-256-GCM Vault payloads, PII)
 
 **Out of Scope**:
