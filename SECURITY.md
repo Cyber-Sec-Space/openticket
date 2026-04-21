@@ -65,6 +65,7 @@ As a heavily fortified Enterprise platform built on a Zero-Trust architecture, w
 - Issues requiring physical access to the server or database.
 - Social engineering (e.g., phishing) against OpenTicket users.
 - Denial of Service (DoS) attacks that require massive external volumetric traffic (OpenTicket is designed to be protected by external WAF/DDoS mitigation).
+- Vulnerabilities within unofficial, third-party community plugins. Security flaws inside custom plugins should be reported directly to the plugin's author. Only vulnerabilities within the Core Platform, Plugin Sandbox Engine, or Officially Maintained Plugins are in scope.
 - Vulnerabilities in outdated, unsupported browsers.
 - Theoretical vulnerabilities without a reproducible Proof of Concept (PoC).
 - Vulnerabilities within third-party upstream dependencies (e.g., React, Prisma), unless you can provide a PoC demonstrating that OpenTicket explicitly utilizes the dependency in an insecure manner.
