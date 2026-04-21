@@ -60,6 +60,14 @@ As a heavily fortified Enterprise platform built on a Zero-Trust architecture, w
 - Vulnerabilities in outdated, unsupported browsers.
 - Theoretical vulnerabilities without a reproducible Proof of Concept (PoC).
 
+## Safe Harbor
+
+We consider security research and vulnerability disclosure activities conducted in compliance with this policy to be authorized conduct. We will not initiate or support legal action against researchers who adhere to these guidelines. If legal action is initiated by a third party against you for activities conducted in accordance with this policy, we will make it known that your actions were conducted in compliance with this policy.
+
+## Rewards / Bug Bounty
+
+Currently, OpenTicket operates as a non-profit open-source initiative. While we cannot offer monetary bug bounties at this time, valid and critical vulnerability disclosures will be fully acknowledged in our Hall of Fame, CVE reports, and Release Notes.
+
 ## Hall of Fame / Credits
 
 We deeply appreciate the security researchers who responsibly disclose vulnerabilities. We will gladly credit you (with your permission) in our Security Advisories and Release Notes when a patch is published.

@@ -56,12 +56,20 @@
 - 機敏資料外洩 (Information Disclosure) (例如外洩 Token、密碼 Hash、AES-256-GCM Vault 金庫負載或 PII)
 
 **不涵蓋範圍 (Out of Scope)**:
-- 需要實際接觸伺服器硬體或實體資料庫才能觸發的漏洞。
-- 針對 OpenTicket 使用者進行的社交工程攻擊 (Social engineering / Phishing)。
-- 需要巨量外部網路頻寬的阻斷服務攻擊 (Volumetric DoS) (OpenTicket 的架構設計假定此類攻擊將由外部 WAF/DDoS 防護機制吸收處理)。
-- 過時且不受支援的瀏覽器中所特有的漏洞。
-- 無法提供重現步驟或 PoC 的純理論型漏洞。
+- 需要物理存取伺服器或資料庫硬體的攻擊。
+- 針對 OpenTicket 使用者的社交工程攻擊 (例如：釣魚信件)。
+- 需要大量外部網路流量的阻斷服務攻擊 (DoS/DDoS) (OpenTicket 架構設計上預設由外部 WAF/DDoS 清洗服務保護)。
+- 建立在過時、不受支援的瀏覽器上的漏洞。
+- 缺乏可重現 Proof of Concept (PoC) 的純理論漏洞。
 
-## 榮譽榜與致謝 (Hall of Fame / Credits)
+## 安全港避風港條款 (Safe Harbor)
 
-我們誠摯地感謝那些負責任地進行漏洞揭露的資安研究員。當修補程式發佈時，我們非常樂意（在取得您的同意下）將您的名字標註在我們的資安通報與 Release Notes 中，以表彰您的貢獻。
+我們視任何遵守本政策進行的資安研究與漏洞揭露行為均為「已授權」的合法行為。我們絕對不會對遵守此指導原則的資安研究員採取或支持任何法律行動。若有第三方因您遵守本政策的研究行為而對您發起法律訴訟，我們將會主動聲明您的行為是符合本專案授權條款的。
+
+## 漏洞懸賞與獎勵 (Rewards / Bug Bounty)
+
+目前 OpenTicket 是一個非營利的開源專案，我們現階段無法提供實質的現金懸賞 (Monetary Bug Bounties)。然而，對於有效且嚴重的漏洞揭露，我們非常樂意在榮譽榜 (Hall of Fame)、CVE 報告與 Release Notes 表彰您的貢獻。
+
+## 榮譽榜與鳴謝 (Hall of Fame / Credits)
+
+我們非常感謝以負責任的態度進行漏洞揭露的資安研究員。當修補程式發佈時，我們非常樂意（在取得您同意的前提下）在我們的資安公告與版本發行說明 (Release Notes) 中署名並向您致敬。
