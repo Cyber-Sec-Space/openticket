@@ -80,7 +80,7 @@
           </div>
           <div style="flex: 1;" class="terminal">
             <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
-            <pre><code><span class="comment">// 0.5.2 Internal Event Bus Pipeline</span>
+            <pre><code><span class="comment">// v1.0.0-rc.1 Internal Event Bus Pipeline</span>
 <span class="keyword">await</span> eventBus.emit(<span class="string">'onIncidentResolved'</span>, {  
   <span class="property">targetId</span>: <span class="string">'inc_992x'</span>,
   <span class="property">trigger</span>: <span class="string">'AUTOMATION'</span>
@@ -236,8 +236,8 @@
        <!-- ITEM 7: Syntax Constraints (Wide) -->
        <div class="bento-card glass item-wide reveal delay-1" style="border-color: rgba(239, 68, 68, 0.4);">
         <div class="bento-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);"><i data-lucide="triangle-alert"></i></div>
-        <h3>AST Sandbox Verification</h3>
-        <p>Bad plugins crash mono-repos. To protect the Host container's stability, OpenTicket embeds an <strong>AST Pre-flight Syntax Checker</strong> utilizing the isolated context during runtime installation flow. Any code triggering a `DiagnosticCategory.Error` throws an immediate uninstallation lock preserving Node loops.</p>
+        <h3>V8 Isolate Sandbox Engine</h3>
+        <p>Bad plugins crash mono-repos. To protect the Host container's stability and prevent malicious exploits, OpenTicket executes all plugin scripts inside a <strong>V8 Isolate Sandbox</strong> using <code>isolated-vm</code>. Plugin code operates within a strict 128MB memory ceiling and is subjected to a 5000ms TTL `Promise.race()` bomb to prevent event-loop hijacking.</p>
         
         <div style="background: rgba(239,68,68,0.1); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); padding: 1.5rem; margin-top: 1.5rem;">
            <h5 style="color: #fca5a5; font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase;">Recovery Protocols</h5>
