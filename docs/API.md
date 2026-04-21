@@ -72,7 +72,22 @@ Creates a new incident. Triggers SOAR workflows automatically if severity matche
 #### Get Incident
 `GET /incidents/:id`
 
-Retrieves details for a specific incident.
+Retrieves details for a specific incident including the associated assets, comments, and current status.
+
+#### Update Incident
+`PATCH /incidents/:id`
+
+Updates metadata, assignments, severity, or associated assets of a specific incident. Requires appropriate assignment or global permissions based on the strict BOLA isolation boundary.
+
+**Request Body:**
+```json
+{
+  "status": "IN_PROGRESS",
+  "assigneeId": "cuid_user_123",
+  "severity": "HIGH",
+  "assetIds": ["cuid_asset_456"]
+}
+```
 
 ### 2. Assets
 
@@ -80,6 +95,10 @@ Retrieves details for a specific incident.
 `GET /assets`
 
 Retrieves a paginated list of assets.
+
+**Query Parameters:**
+- `take` (optional, default: 100): Number of records to return. Maximum is 100.
+- `skip` (optional, default: 0): Number of records to skip.
 
 #### Create Asset
 `POST /assets`
