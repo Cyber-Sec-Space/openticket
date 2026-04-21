@@ -17,7 +17,7 @@ export async function GET(
       include: {
         reporter: { select: { name: true, email: true } },
         assignees: { select: { name: true, email: true, id: true } },
-        asset: { select: { name: true, type: true } },
+        assets: { select: { id: true, name: true, type: true } },
         comments: { include: { author: { select: { name: true, customRoles: { select: { name: true } } } } } },
         attachments: true
       }
@@ -65,7 +65,7 @@ export async function PATCH(
     const canResolve = hasPermission(session, 'UPDATE_INCIDENT_STATUS_RESOLVE')
 
     const body = await req.json()
-    const { status, assigneeId, severity, assetId } = body
+    const { status, assigneeId, severity, assetIds } = body
 
     const existingIncident = await db.incident.findUnique({ 
       where: { id },
@@ -98,7 +98,7 @@ export async function PATCH(
        }
     }
 
-    if ((severity !== undefined || assetId !== undefined) && !hasAssignAll && !(isAssigned && hasMetadata)) {
+    if ((severity !== undefined || assetIds !== undefined) && !hasAssignAll && !(isAssigned && hasMetadata)) {
        return new NextResponse("Forbidden: Setting severities or assets requires explicit assignment privileges.", { status: 403 })
     }
 
@@ -124,11 +124,15 @@ export async function PATCH(
       }
     }
     if (severity) updateData.severity = severity
-    if (assetId !== undefined) {
+    if (assetIds !== undefined) {
        if (!hasPermission(session, 'LINK_INCIDENT_TO_ASSET')) {
           return new NextResponse("Forbidden: Missing LINK_INCIDENT_TO_ASSET privilege", { status: 403 })
        }
-       updateData.assetId = assetId
+       if (assetIds === null || (Array.isArray(assetIds) && assetIds.length === 0)) {
+           updateData.assets = { set: [] }
+       } else if (Array.isArray(assetIds)) {
+           updateData.assets = { set: assetIds.map(id => ({ id })) }
+       }
     }
 
     const updatedIncident = await db.incident.update({
