@@ -97,34 +97,27 @@
         </div>
       </div>
 
-      <!-- ITEM 3: Manual Clone (Standard / 1/3) -->
-      <div class="bento-card glass reveal">
-        <h3>1. Bare-Metal Clone</h3>
-        <p>Prefer running Node natively on your network interface bypassing Docker sockets completely?</p>
-        <div class="terminal mt-4" style="background: #000; border: none;">
-          <pre style="padding: 1rem;"><code><span class="keyword">git</span> clone https://github...
-<span class="keyword">cd</span> openticket
-<span class="keyword">npm</span> install</code></pre>
-        </div>
-      </div>
+      <!-- ITEM 3: Bare-Metal Setup.sh (Full Width) -->
+      <div class="bento-card glass item-full reveal">
+        <div style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 300px;">
+            <div class="bento-icon"><i data-lucide="terminal"></i></div>
+            <h3>Bare-Metal Automated Setup</h3>
+            <p>Prefer running Node natively on your network interface bypassing Docker sockets completely? OpenTicket provides an interactive setup script that automatically provisions your variables, installs dependencies, and synchronizes the Edge Full-Text Search database explicitly without manual intervention.</p>
+          </div>
+          <div style="flex: 1.5; min-width: 400px;" class="terminal">
+            <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+            <pre><code><span class="comment"># 1. Clone the repository</span>
+<span class="keyword">git</span> clone https://github.com/Cyber-Sec-Space/open-ticket
+<span class="keyword">cd</span> open-ticket
 
-      <!-- ITEM 4: Environment & DB (Standard / 1/3) -->
-      <div class="bento-card glass reveal delay-1">
-        <h3>2. FTS Database String</h3>
-        <p>Because OpenTicket `v1.0.0-rc.1` relies on Postgres Edge Full-Text Search, you must supply a rigorous URL.</p>
-        <div class="terminal mt-4" style="background: #000; border: none;">
-          <pre style="padding: 1rem;"><code><span class="keyword">cp</span> .env.example .env
-<span class="comment"># Edit DATABASE_URL in .env</span></code></pre>
-        </div>
-      </div>
+<span class="comment"># 2. Run the interactive setup wizard</span>
+<span class="keyword">chmod</span> +x setup.sh
+<span class="keyword">./setup.sh</span>
 
-      <!-- ITEM 5: Prisma Init (Standard / 1/3) -->
-      <div class="bento-card glass reveal delay-2">
-        <h3>3. Cluster Integrity</h3>
-        <p>Force the Prisma engine to validate your connection URL and push the highly indexed schema.</p>
-        <div class="terminal mt-4" style="background: #000; border: none;">
-          <pre style="padding: 1rem;"><code><span class="keyword">npx</span> prisma generate
-<span class="keyword">npx</span> prisma db push</code></pre>
+<span class="comment"># 3. Boot the native development server</span>
+<span class="keyword">npm</span> run dev</code></pre>
+          </div>
         </div>
       </div>
 
