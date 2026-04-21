@@ -1,0 +1,517 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// NextAuth / Auth.js (SSO reserved schema) & RBAC
+// -----------------------------------------------------------------------------
+
+enum Permission {
+  VIEW_INCIDENTS_ALL
+  VIEW_INCIDENTS_ASSIGNED
+  VIEW_INCIDENTS_UNASSIGNED
+  CREATE_INCIDENTS
+  UPDATE_INCIDENTS_METADATA
+  UPDATE_INCIDENT_STATUS_RESOLVE
+  UPDATE_INCIDENT_STATUS_CLOSE
+  ASSIGN_INCIDENTS_SELF
+  ASSIGN_INCIDENTS_OTHERS
+  LINK_INCIDENT_TO_ASSET
+  UPLOAD_INCIDENT_ATTACHMENTS
+  DELETE_INCIDENT_ATTACHMENTS
+  DELETE_INCIDENTS
+  EXPORT_INCIDENTS
+
+  ADD_COMMENTS
+  DELETE_OWN_COMMENTS
+  DELETE_ANY_COMMENTS
+
+  VIEW_ASSETS
+  CREATE_ASSETS
+  UPDATE_ASSETS
+  DELETE_ASSETS
+
+  VIEW_VULNERABILITIES
+  CREATE_VULNERABILITIES
+  UPDATE_VULNERABILITIES
+  DELETE_VULNERABILITIES
+  ASSIGN_VULNERABILITIES_SELF
+  ASSIGN_VULNERABILITIES_OTHERS
+  LINK_VULN_TO_ASSET
+  UPLOAD_VULN_ATTACHMENTS
+  DELETE_VULN_ATTACHMENTS
+
+  VIEW_USERS
+  CREATE_USERS
+  UPDATE_USER_PROFILE
+  ASSIGN_USER_ROLES
+  RESET_USER_PASSWORDS
+  SUSPEND_USERS
+  DELETE_USERS
+
+  VIEW_ROLES
+  CREATE_ROLES
+  UPDATE_ROLES
+  DELETE_ROLES
+
+  VIEW_DASHBOARD
+  VIEW_SYSTEM_SETTINGS
+  UPDATE_SYSTEM_SETTINGS
+  MANAGE_INTEGRATIONS
+
+  VIEW_PLUGINS
+  INSTALL_PLUGINS
+  TOGGLE_PLUGINS
+  CONFIGURE_PLUGINS
+
+  RESTART_SYSTEM_SERVICES
+  VIEW_AUDIT_LOGS
+
+  ACCESS_API
+  VIEW_API_TOKENS
+  ISSUE_API_TOKENS
+  REVOKE_API_TOKENS
+}
+
+model CustomRole {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  isSystem    Boolean      @default(false)
+  permissions Permission[]
+
+  users      User[]          @relation("UserCustomRoles")
+  systemRule SystemSetting[] @relation("DefaultUserRoles")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                 String       @id @default(cuid())
+  name               String?
+  email              String?      @unique
+  emailVerified      DateTime?
+  image              String?
+  passwordHash       String? // Added for Credentials provider MVP
+  customRoles        CustomRole[] @relation("UserCustomRoles")
+  isTwoFactorEnabled Boolean      @default(false)
+  twoFactorSecret    String?
+  isDisabled         Boolean      @default(false) // Phase 5 Suspension Support
+
+  // Plugin Identity Mapping
+  isBot               Boolean @default(false)
+  botPluginIdentifier String? @unique
+
+  // Browser Notification Preferences
+  browserNotificationsEnabled Boolean @default(false)
+  notifyOnCritical            Boolean @default(true)
+  notifyOnHigh                Boolean @default(false)
+  notifyOnAssign              Boolean @default(true)
+  notifyOnResolution          Boolean @default(true)
+  notifyOnAssetCompromise     Boolean @default(true)
+  notifyOnUnassigned          Boolean @default(false)
+
+  accounts  Account[]
+  sessions  Session[]
+  apiTokens ApiToken[]
+
+  // Relations for OpenTicket
+  reportedIncidents       Incident[]         @relation("Reporter")
+  assignedIncidents       Incident[]         @relation("IncidentAssignees")
+  assignedVulnerabilities Vulnerability[]    @relation("VulnAssignees")
+  comments                Comment[]
+  auditLogs               AuditLog[]
+  attachments             Attachment[]
+  notifications           UserNotification[]
+  createdInvitations      Invitation[]       @relation("UserCreatesInvitations")
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean  @default(false)
+  isPushed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+// -----------------------------------------------------------------------------
+// Global Configuration (Singleton Model)
+// -----------------------------------------------------------------------------
+
+enum MailerProvider {
+  SMTP
+  RESEND
+  SENDGRID
+}
+
+model SystemSetting {
+  id                 String       @id @default("global") // Enforce singleton
+  allowRegistration  Boolean      @default(true)
+  allowPasswordReset Boolean      @default(true)
+  requireGlobal2FA   Boolean      @default(false)
+  defaultUserRoles   CustomRole[] @relation("DefaultUserRoles")
+
+  webhookUrl     String?
+  webhookEnabled Boolean @default(false)
+
+  // Global SLA Matrix Config (Hours)
+  slaCriticalHours Int @default(4)
+  slaHighHours     Int @default(24)
+  slaMediumHours   Int @default(72)
+  slaLowHours      Int @default(168)
+  slaInfoHours     Int @default(720)
+
+  // Vulnerability SLA Matrix Config (Hours)
+  vulnSlaCriticalHours Int @default(12)
+  vulnSlaHighHours     Int @default(48)
+  vulnSlaMediumHours   Int @default(168)
+  vulnSlaLowHours      Int @default(336)
+  vulnSlaInfoHours     Int @default(720)
+
+  // Rate Limiting Config
+  rateLimitEnabled     Boolean @default(true)
+  rateLimitWindowMs    Int     @default(900000) // 15 minutes default
+  rateLimitMaxAttempts Int     @default(5)
+
+  // Mailer Configuration
+  mailerProvider MailerProvider @default(SMTP)
+  mailerApiKey   String?
+  smtpEnabled    Boolean        @default(false)
+  smtpHost       String?
+  smtpPort       Int?
+  smtpUser       String?
+  smtpPassword   String?
+  smtpFrom       String?
+
+  // SMTP Event Triggers
+  smtpTriggerOnCritical         Boolean @default(true)
+  smtpTriggerOnHigh             Boolean @default(false)
+  smtpTriggerOnAssign           Boolean @default(true)
+  smtpTriggerOnResolution       Boolean @default(true)
+  smtpTriggerOnAssetCompromise  Boolean @default(true)
+  smtpTriggerOnNewUser          Boolean @default(false)
+  smtpTriggerOnNewVulnerability Boolean @default(true)
+
+  // Auth Enforcements
+  requireEmailVerification Boolean @default(false)
+  systemPlatformUrl        String  @default("http://localhost:3000")
+
+  // SOAR Automations
+  soarAutoQuarantineEnabled   Boolean  @default(true)
+  soarAutoQuarantineThreshold Severity @default(CRITICAL)
+
+  updatedAt DateTime @updatedAt
+}
+
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  ip         String
+  identifier String
+  createdAt  DateTime @default(now())
+
+  @@index([ip, createdAt])
+}
+
+// -----------------------------------------------------------------------------
+// OpenTicket Core Models
+// -----------------------------------------------------------------------------
+
+enum AssetType {
+  SERVER
+  ENDPOINT
+  NETWORK
+  SOFTWARE
+  REPOSITORY // Added for GitHub / GitLab / Source Control
+  CLOUD_RESOURCE // Added for AWS / Azure / GCP resources
+  DOMAIN // Added for URLs and DNS names
+  IAM_ROLE // Added for Identity and Access Management
+  SAAS_APP // Added for external SaaS identities
+  CONTAINER // Added for Docker / K8s
+  OTHER
+}
+
+enum AssetStatus {
+  ACTIVE
+  INACTIVE
+  COMPROMISED
+  MAINTENANCE
+}
+
+model Asset {
+  id        String    @id @default(cuid())
+  name      String
+  type      AssetType @default(OTHER)
+  ipAddress String?
+
+  // Phase 5: Virtual Asset Compatibility
+  externalId String? // Used to uniquely identify assets coming from outside (e.g., github repo URLs, AWS ARNs)
+  metadata   Json? // Highly flexible JSON column for plugin-specific data (e.g. { "language": "TypeScript", "visibility": "public" })
+
+  status    AssetStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  incidents           Incident[]           @relation("IncidentAssets")
+  vulnerabilityAssets VulnerabilityAsset[]
+
+  @@index([name])
+  @@index([ipAddress])
+}
+
+enum VulnStatus {
+  OPEN
+  MITIGATED
+  RESOLVED
+}
+
+enum VulnAssetStatus {
+  AFFECTED
+  MITIGATED
+  PATCHED
+  FALSE_POSITIVE
+}
+
+model VulnerabilityAsset {
+  id        String          @id @default(cuid())
+  vulnId    String
+  assetId   String
+  status    VulnAssetStatus @default(AFFECTED)
+  notes     String?         @db.Text
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  vulnerability Vulnerability @relation(fields: [vulnId], references: [id], onDelete: Cascade)
+  asset         Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([vulnId, assetId])
+}
+
+model Vulnerability {
+  id            String     @id @default(cuid())
+  title         String
+  cveId         String?
+  cvssScore     Float?
+  description   String     @db.Text
+  severity      Severity   @default(LOW)
+  status        VulnStatus @default(OPEN)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  targetSlaDate DateTime?
+
+  vulnerabilityAssets VulnerabilityAsset[]
+  attachments         Attachment[]
+  assignees           User[]               @relation("VulnAssignees")
+  comments            Comment[]
+
+  @@index([severity])
+  @@index([status])
+}
+
+enum Severity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  NEW
+  IN_PROGRESS
+  PENDING_INFO
+  RESOLVED
+  CLOSED
+}
+
+enum IncidentType {
+  MALWARE
+  PHISHING
+  DATA_BREACH
+  UNAUTHORIZED_ACCESS
+  NETWORK_ANOMALY
+  OTHER
+}
+
+model Incident {
+  id          String         @id @default(cuid())
+  title       String
+  description String         @db.Text
+  type        IncidentType   @default(OTHER)
+  severity    Severity       @default(LOW)
+  status      IncidentStatus @default(NEW)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  reporterId String?
+  reporter   User?   @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
+
+  tags String[] @default([])
+
+  assignees User[] @relation("IncidentAssignees")
+
+  assets Asset[] @relation("IncidentAssets")
+
+  targetSlaDate DateTime?
+
+  comments    Comment[]
+  attachments Attachment[]
+
+  @@index([status])
+  @@index([severity])
+  @@index([title])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  incidentId String?
+  incident   Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  vulnId String?
+  vuln   Vulnerability? @relation(fields: [vulnId], references: [id], onDelete: Cascade)
+
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String // e.g., "INCIDENT_CREATED", "STATUS_CHANGED"
+  entityType String // e.g., "Incident", "Asset"
+  entityId   String
+  changes    Json? // Optional JSON payload detailing what changed
+  createdAt  DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  filename  String
+  fileUrl   String
+  createdAt DateTime @default(now())
+
+  incidentId String?
+  incident   Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  vulnId String?
+  vuln   Vulnerability? @relation(fields: [vulnId], references: [id], onDelete: Cascade)
+
+  uploaderId String?
+  uploader   User?   @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
+}
+
+// -----------------------------------------------------------------------------
+// Machine-to-Machine Authenticators
+// -----------------------------------------------------------------------------
+
+model ApiToken {
+  id         String    @id @default(cuid())
+  name       String
+  tokenHash  String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+
+  @@index([tokenHash])
+}
+
+// -----------------------------------------------------------------------------
+// Plugin Management
+// -----------------------------------------------------------------------------
+
+model PluginState {
+  id          String   @id // Corresponds to OpenTicketPlugin.manifest.id
+  isActive    Boolean  @default(false)
+  configJson  String?  @db.Text
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// Time-Series Data Snapshots (Dashboard Cache)
+// -----------------------------------------------------------------------------
+
+model MetricSnapshot {
+  id        String   @id @default(cuid())
+  timestamp DateTime // Defines the 30-min window
+  scopeType String // 'GLOBAL' or 'USER'
+  scopeId   String // 'ALL' or user_id
+
+  payload String @db.Text // JSON with detailed active counts and rates
+
+  createdAt DateTime @default(now())
+
+  @@unique([timestamp, scopeType, scopeId])
+  @@index([timestamp])
+}
+
+model Invitation {
+  id          String   @id @default(cuid())
+  email       String?
+  token       String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  createdById String
+
+  createdBy User @relation("UserCreatesInvitations", fields: [createdById], references: [id], onDelete: Cascade)
+}

@@ -46,5 +46,4 @@ next-env.d.ts
 
 # Custom OpenTicket Logic
 private/uploads/
-release-standalone/
 package-lock 2.jsonrelease-docker/
