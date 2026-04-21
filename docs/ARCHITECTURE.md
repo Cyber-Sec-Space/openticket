@@ -60,13 +60,18 @@ The database schema utilizes strict referential integrity. All significant chang
 erDiagram
     SystemSetting {
         String id PK
-        Boolean smtpEnabled
+        Boolean allowRegistration
+        Boolean requireGlobal2FA
+        Boolean webhookEnabled
+        Boolean rateLimitEnabled
         Enum mailerProvider
     }
     PluginState {
         String id PK
         Boolean isActive
         String configJson
+        DateTime installedAt
+        DateTime updatedAt
     }
     User {
         String id PK
@@ -130,8 +135,13 @@ erDiagram
     }
     UserNotification {
         String id PK
-        String title
         String userId FK
+        String title
+        String body
+        String link
+        Boolean isRead
+        Boolean isPushed
+        DateTime createdAt
     }
     AuditLog {
         String id PK
