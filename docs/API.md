@@ -97,6 +97,3 @@ Registers a new asset into the inventory.
 
 ---
 
-## Rate Limiting
-
-The API is protected by a distributed rate limiting engine. If you exceed the configured threshold, the API will respond with `429 Too Many Requests`. The thresholds can be configured in the System Settings dashboard.
