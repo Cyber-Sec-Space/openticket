@@ -46,4 +46,8 @@ next-env.d.ts
 
 # Custom OpenTicket Logic
 private/uploads/
-package-lock 2.jsonrelease-docker/
+release-docker/
+release-standalone/
+.temp_sdk_dump.txt
+tsc_errors.txt
+package-lock 2.json

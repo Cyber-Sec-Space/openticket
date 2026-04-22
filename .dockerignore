@@ -30,4 +30,5 @@ docs/
 # Local state
 private/uploads/
 release-standalone/
+release-docker/
 .DS_Store
