@@ -10,6 +10,13 @@ coverage/
 .next/
 out/
 build/
+.swc/
+
+# Database (SQLite Edge Instances)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
 
 # misc
 .DS_Store
@@ -43,6 +50,7 @@ next-env.d.ts
 # Editors
 .vscode/
 .idea/
+.cursor/
 
 # Custom OpenTicket Logic
 private/uploads/
