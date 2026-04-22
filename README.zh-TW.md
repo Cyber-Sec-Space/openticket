@@ -98,6 +98,9 @@ docker-compose up -d --build
 chmod +x setup.sh
 ./setup.sh
 
+# 提示: 如果在 CI/CD 自動化環境部屬，可以動態略過等待提問機制：
+# ./setup.sh --non-interactive
+
 # 啟動開發伺服器
 npm run dev
 ```
@@ -105,12 +108,13 @@ npm run dev
 > **本地郵件攔截**：建議在本地開發時使用 [MailDev](https://github.com/maildev/maildev) 作為安全的 SMTP 攔截器。所有系統外發郵件（Setup OTP、事件指派、自動隔離警報）都會被攔截，可在 `http://localhost:1080` 檢視。
 
 ### 選項 C: 預編譯 Standalone 獨立包 (生產環境 / 極簡部屬)
-對於內部受限無法使用 Docker，但仍需要極度最佳化生產環境部屬的網路，OpenTicket 在 [GitHub Releases](https://github.com/Cyber-Sec-Space/open-ticket/releases) 提供了預先編譯好的 Standalone 獨立封裝包。
+對於內部受限無法使用 Docker，但仍需要極度最佳化生產環境部屬的網路，OpenTicket 在 [GitHub Releases](https://github.com/Cyber-Sec-Space/openticket/releases) 提供了預先編譯好的 Standalone 獨立封裝包。
 這個 `.tar.gz` 壓縮包內含了 Next.js 編譯並優化後的 `.next/standalone` 輸出庫，完全不需要在正式環境手動執行耗時的 `npm install`。
 
 ```bash
-# 1. 從 GitHub Releases 下載 Standalone 獨立壓縮包
-wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v1.0.0-rc.1/openticket-standalone-v1.0.0-rc.1.tar.gz
+# 1. 從 GitHub Releases 下載並校驗 Standalone 獨立壓縮包
+wget https://github.com/Cyber-Sec-Space/openticket/releases/download/v1.0.0-rc.1/openticket-standalone-v1.0.0-rc.1.tar.gz
+echo "709d78529e7ef54a090dcbb761fe1b35f26336b2626dcf74fbae962ea8ecd2ef *openticket-standalone-v1.0.0-rc.1.tar.gz" | shasum -a 256 --check
 
 # 2. 解壓縮
 tar -xzf openticket-standalone-v1.0.0-rc.1.tar.gz
@@ -120,8 +124,9 @@ cd openticket-standalone
 cp .env.example .env
 nano .env # 請務必設定好 DATABASE_URL 與 AUTH_SECRET
 
-# 4. 對您準備好的 PostgreSQL 資料庫執行架構遷移
-npx prisma migrate deploy
+# 4. ⚠️ 嚴重警告：資料庫必須先行 Migrate 準備完畢！
+# Standalone 獨立包為純淨計算節點 (內部不含 Prisma CLI 套件)。
+# 請務必確認您已從外部 CI/CD 或是 Docker 主機對目標資料庫執行過 Migrate 發布，方可啟動伺服器。
 
 # 5. 原生啟動 Node.js 生產端伺服器進程
 node server.js

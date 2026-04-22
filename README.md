@@ -92,6 +92,9 @@ If you prefer running Node.js directly on your host machine, use the setup scrip
 chmod +x setup.sh
 ./setup.sh
 
+# Hint: For headless CI/CD deployments, bypass TTY prompts dynamically:
+# ./setup.sh --non-interactive
+
 # Start the development server
 npm run dev
 ```
@@ -99,11 +102,12 @@ npm run dev
 > **Local Email Testing**: For local development, it is recommended to use [MailDev](https://github.com/maildev/maildev) as a safe SMTP interceptor. All outbound system emails (Setup OTPs, Incident Assignments, Auto-Quarantine Alerts) can be intercepted and viewed at `http://localhost:1080`.
 
 ### Option C: Pre-Compiled Standalone Bundle (Minimalist Production)
-For strictly constrained internal networks without Docker, OpenTicket offers a pre-compiled standalone tarball in the [GitHub Releases](https://github.com/Cyber-Sec-Space/open-ticket/releases) section. It contains the fully optimized Next.js `.next/standalone` output, avoiding the need for lengthy `npm install` executions on production hardware.
+For strictly constrained internal networks without Docker, OpenTicket offers a pre-compiled standalone tarball in the [GitHub Releases](https://github.com/Cyber-Sec-Space/openticket/releases) section. It contains the fully optimized Next.js `.next/standalone` output, avoiding the need for lengthy `npm install` executions on production hardware.
 
 ```bash
-# 1. Download the Standalone Tarball
-wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v1.0.0-rc.1/openticket-standalone-v1.0.0-rc.1.tar.gz
+# 1. Download & Verify the Standalone Tarball
+wget https://github.com/Cyber-Sec-Space/openticket/releases/download/v1.0.0-rc.1/openticket-standalone-v1.0.0-rc.1.tar.gz
+echo "709d78529e7ef54a090dcbb761fe1b35f26336b2626dcf74fbae962ea8ecd2ef *openticket-standalone-v1.0.0-rc.1.tar.gz" | shasum -a 256 --check
 
 # 2. Extract and enter the directory
 tar -xzf openticket-standalone-v1.0.0-rc.1.tar.gz
@@ -113,8 +117,9 @@ cd openticket-standalone
 cp .env.example .env
 nano .env # Set DATABASE_URL and AUTH_SECRET
 
-# 4. Migrate your prepared PostgreSQL Database
-npx prisma migrate deploy
+# 4. Attention: Database Must Be Schema-Ready!
+# The standalone build is purely a compute node (does not contain Prisma CLI). 
+# You MUST have previously triggered the migration pipeline from a worker or Docker node.
 
 # 5. Native Node.js Production Boot
 node server.js

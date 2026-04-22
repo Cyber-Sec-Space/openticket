@@ -108,12 +108,15 @@
           <div style="flex: 1.5; min-width: 400px;" class="terminal">
             <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
             <pre><code><span class="comment"># 1. Clone the repository</span>
-<span class="keyword">git</span> clone https://github.com/Cyber-Sec-Space/open-ticket
-<span class="keyword">cd</span> open-ticket
+<span class="keyword">git</span> clone https://github.com/Cyber-Sec-Space/openticket
+<span class="keyword">cd</span> openticket
 
 <span class="comment"># 2. Run the interactive setup wizard</span>
 <span class="keyword">chmod</span> +x setup.sh
 <span class="keyword">./setup.sh</span>
+
+<span class="comment"># Hint: For headless CI/CD, bypass prompts dynamically:</span>
+<span class="comment"># ./setup.sh --non-interactive</span>
 
 <span class="comment"># 3. Boot the native development server</span>
 <span class="keyword">npm</span> run dev</code></pre>
@@ -134,8 +137,9 @@
           </div>
           <div style="flex: 1.5; min-width: 400px;" class="terminal">
             <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
-            <pre><code><span class="comment"># 1. Download the v1.0.0-rc.1 encapsulated build</span>
-<span class="keyword">wget</span> https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v1.0.0-rc.1/openticket-standalone-v1.0.0-rc.1.tar.gz
+            <pre><code><span class="comment"># 1. Download & Verify the v1.0.0-rc.1 encapsulated build</span>
+<span class="keyword">wget</span> https://github.com/Cyber-Sec-Space/openticket/releases/download/v1.0.0-rc.1/openticket-standalone-v1.0.0-rc.1.tar.gz
+<span class="keyword">echo</span> "709d78529e7ef54a090dcbb761fe1b35f26336b2626dcf74fbae962ea8ecd2ef *openticket-standalone-v1.0.0-rc.1.tar.gz" | shasum -a 256 --check
 
 <span class="comment"># 2. Extract minified application locally</span>
 <span class="keyword">tar</span> -xzf openticket-standalone-v1.0.0-rc.1.tar.gz
