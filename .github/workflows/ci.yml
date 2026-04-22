@@ -8,6 +8,10 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      NEXTAUTH_SECRET: ci-dummy-secret-key-that-is-at-least-32-chars
+      JWT_SECRET: ci-dummy-secret-key-that-is-at-least-32-chars
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
