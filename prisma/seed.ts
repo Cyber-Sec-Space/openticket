@@ -199,8 +199,8 @@ async function main() {
         description: bp.desc + '\n\nAutomatically generated for demo purposes to simulate diverse structural mappings.',
         severity: bp.severity,
         status: status,
-        vulnerabilityAssets: { create: affected.map(a => ({ assetId: a.id, status: status === VulnStatus.RESOLVED ? 'PATCHED' : status === VulnStatus.MITIGATED ? 'MITIGATED' : 'AFFECTED' })) },
-        assignees: { connect: assignees.map(u => ({ id: u.id })) }
+        vulnerabilityAssets: { create: affected.map((a: any) => ({ assetId: a.id, status: status === VulnStatus.RESOLVED ? 'PATCHED' : status === VulnStatus.MITIGATED ? 'MITIGATED' : 'AFFECTED' })) },
+        assignees: { connect: assignees.map((u: any) => ({ id: u.id })) }
       }
     });
 

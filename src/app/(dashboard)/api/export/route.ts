@@ -70,7 +70,7 @@ export async function GET(req: Request) {
     csvContent += headers.join(",") + "\n"
 
     for (const incident of incidents) {
-      const assigneesStr = incident.assignees.map(a => a.name).join("; ")
+      const assigneesStr = incident.assignees.map((a: any) => a.name).join("; ")
       const row = [
         incident.id,
         `"${sanitizeCsvCell(incident.title)}"`,
