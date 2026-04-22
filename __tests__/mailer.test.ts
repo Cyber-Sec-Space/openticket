@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import {
   sendCriticalAlertEmail,
   sendIncidentAssignmentEmail,
@@ -49,26 +58,26 @@ describe("Mailer payload and branching tests", () => {
   };
 
   it("should return early if SMTP is disabled or settings missing", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce(null);
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce(null);
     await sendCriticalAlertEmail({ id: "1", title: "T", description: "D", severity: "HIGH", status: "NEW" }, ["test@test.com"]);
     expect(nodemailer.createTransport).not.toHaveBeenCalled();
 
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ smtpEnabled: false });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ smtpEnabled: false });
     await sendCriticalAlertEmail({ id: "1", title: "T", description: "D", severity: "HIGH", status: "NEW" }, ["test@test.com"]);
     expect(nodemailer.createTransport).not.toHaveBeenCalled();
   });
 
   it("should configure secure correctly based on port", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ ...validSmtpSettings, smtpPort: 465 });
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ ...validSmtpSettings, smtpPort: 465 }); // For getFromAddress
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ ...validSmtpSettings, smtpPort: 465 });
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ ...validSmtpSettings, smtpPort: 465 }); // For getFromAddress
     await sendCriticalAlertEmail({ id: "1", title: "T", description: "D", severity: "HIGH", status: "NEW" }, ["test@test.com"]);
     
     expect(nodemailer.createTransport).toHaveBeenCalledWith(expect.objectContaining({ secure: true }));
   });
 
   it("should fallback to default from address if not provided", async () => {
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce(validSmtpSettings);
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValueOnce({ smtpFrom: null }); // fallback
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce({ ...validSmtpSettings, smtpFrom: null }); // fallback
+    (getGlobalSettings as jest.Mock).mockResolvedValueOnce(validSmtpSettings);
     await sendCriticalAlertEmail({ id: "1", title: "T", description: "D", severity: "HIGH", status: "NEW" }, ["test@test.com"]);
     
     expect(sendMailMock).toHaveBeenCalledWith(expect.objectContaining({ from: '"OpenTicket SOC" <noreply@openticket.local>' }));
@@ -76,15 +85,15 @@ describe("Mailer payload and branching tests", () => {
 
   it("should catch and log sendMail rejections", async () => {
     sendMailMock.mockRejectedValueOnce(new Error("SMTP down"));
-    (db.systemSetting.findUnique as jest.Mock).mockResolvedValue(validSmtpSettings); // return valid for both getTransporter and getFromAddress
+    (getGlobalSettings as jest.Mock).mockResolvedValue(validSmtpSettings); // return valid for both getTransporter and getFromAddress
 
     await sendCriticalAlertEmail({ id: "1", title: "T", description: "D", severity: "HIGH", status: "NEW" }, ["test@test.com"]);
-    expect(consoleErrorSpy).toHaveBeenCalledWith("SMTP Error:", expect.any(Error));
+    expect(consoleErrorSpy).toHaveBeenCalledWith("[Mailer] SMTP Error:", expect.any(Error));
   });
 
   describe("Function bindings", () => {
     beforeEach(() => {
-      (db.systemSetting.findUnique as jest.Mock).mockResolvedValue(validSmtpSettings);
+      (getGlobalSettings as jest.Mock).mockResolvedValue(validSmtpSettings);
     });
 
     it("should abort if target emails array is empty", async () => {

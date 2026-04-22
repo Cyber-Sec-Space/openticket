@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { notFound, redirect } from "next/navigation"
+import { revalidatePath } from "next/cache"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -10,18 +11,22 @@ import { sendIncidentAssignmentEmail, sendResolutionEmail, sendAssetCompromisedE
 import { dispatchAlert, dispatchMassAlert } from "@/lib/notifier"
 import { fireHook } from "@/lib/plugins/hook-engine"
 import { hasPermission } from "@/lib/auth-utils"
-import { uploadAttachment, deleteAttachment } from "@/app/actions/upload"
-import { FileUploadBox } from "@/components/file-upload-box"
+import { deleteAttachment } from "@/app/actions/upload"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { MultiAssigneePicker } from "@/components/ui/multi-assignee-picker"
+import { MultiAssetPicker } from "@/components/ui/multi-asset-picker"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { Activity, ShieldAlert, Edit3, Trash2, Shield, Calendar, Paperclip, Upload, Tag as TagIcon } from "lucide-react"
 import { TagInput } from "@/components/ui/tag-input"
+import { ActionForm } from "@/components/ui/action-form"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
+import { EvidenceUploadForm } from "@/components/evidence-upload-form"
+import { LocalTime } from "@/components/local-time"
+import { getGlobalSettings } from "@/lib/settings";
 
 export default async function IncidentDetailPage({
   params,
@@ -52,7 +57,7 @@ export default async function IncidentDetailPage({
       include: {
         reporter: true,
         assignees: true,
-        asset: true
+        assets: true
       }
     }),
     db.comment.findMany({ where: { incidentId: id }, include: { author: { include: { customRoles: true } } }, orderBy: { createdAt: 'desc' }, take: TAKE_COMMENT, skip: (commentPage - 1) * TAKE_COMMENT }),
@@ -62,10 +67,10 @@ export default async function IncidentDetailPage({
     db.auditLog.findMany({ where: { entityType: 'Incident', entityId: id }, include: { user: { include: { customRoles: true } } }, orderBy: { createdAt: 'desc' }, take: 50 })
   ])
 
-  const hasPrivilege = hasPermission(session as any, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(session as any, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
+  const hasPrivilege = hasPermission(session, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(session, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
   
-  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-  const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+  const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+  const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
   
   const isAuthorized = canViewAll 
     || (canViewUnassigned && incident?.assignees.length === 0) 
@@ -85,7 +90,7 @@ export default async function IncidentDetailPage({
   // Only authorized operators can assign tickets.
   let eligibleAssignees: any[] = []
   if (hasPrivilege) {
-    const canAssignOthers = hasPermission(session as any, 'ASSIGN_INCIDENTS_OTHERS')
+    const canAssignOthers = hasPermission(session, 'ASSIGN_INCIDENTS_OTHERS')
     eligibleAssignees = await db.user.findMany({
       where: canAssignOthers 
         ? { customRoles: { some: { permissions: { hasSome: ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE', 'ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'] } } } }
@@ -100,20 +105,20 @@ export default async function IncidentDetailPage({
   async function updateIncidentAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = hasPermission(sessionUrl as any, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(sessionUrl as any, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
+    const hasPostPrivilege = hasPermission(sessionUrl, ['UPDATE_INCIDENT_STATUS_RESOLVE', 'UPDATE_INCIDENT_STATUS_CLOSE']) || hasPermission(sessionUrl, ['ASSIGN_INCIDENTS_SELF', 'ASSIGN_INCIDENTS_OTHERS'])
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
-    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    const settings = await getGlobalSettings()
     
     const currentIncident = await db.incident.findUnique({ 
       where: { id: incident!.id },
-      include: { assignees: true, reporter: true }
+      include: { assignees: true, reporter: true, assets: true }
     })
     
     if (!currentIncident) throw new Error("Synchronization Error: Incident record lost or expunged.")
 
-    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
-    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAll = hasPermission(sessionUrl, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
     const isUnassigned = currentIncident.assignees.length === 0
     if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
@@ -122,28 +127,28 @@ export default async function IncidentDetailPage({
 
     const newStatusRaw = formData.get("status") as string
     const newSeverityRaw = formData.get("severity") as string
-    const newAssetName = formData.get("assetName") as string
+    const assetIds = (formData.getAll("assetIds") as string[]).filter(id => id !== 'NONE')
     const assigneeIdsRaw = formData.getAll("assigneeIds") as string[]
     const targetSlaDateRaw = formData.get("targetSlaDate") as string
 
     // Phase 13: BOLA Graceful Drop Enforcer
     let finalStatus = currentIncident.status
     let finalSeverity = currentIncident.severity
-    let finalAssetId = currentIncident.assetId
-    let finalAssignees = currentIncident.assignees.map(a => ({ id: a.id }))
+    let finalAssets = currentIncident.assets.map((a: any) => ({ id: a.id }))
+    let finalAssignees = currentIncident.assignees.map((a: any) => ({ id: a.id }))
     let finalSlaDate = currentIncident.targetSlaDate
 
     // 1. Status Mutation Checking
     if (newStatusRaw && newStatusRaw.replace(/ /g, '_') !== currentIncident.status) {
       const parsedStatus = newStatusRaw.replace(/ /g, '_') as any
-      if (parsedStatus === 'RESOLVED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENT_STATUS_RESOLVE')) finalStatus = parsedStatus
-      else if (parsedStatus === 'CLOSED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENT_STATUS_CLOSE')) finalStatus = parsedStatus
-      else if (parsedStatus !== 'RESOLVED' && parsedStatus !== 'CLOSED' && hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) finalStatus = parsedStatus
+      if (parsedStatus === 'RESOLVED' && hasPermission(sessionUrl, 'UPDATE_INCIDENT_STATUS_RESOLVE')) finalStatus = parsedStatus
+      else if (parsedStatus === 'CLOSED' && hasPermission(sessionUrl, 'UPDATE_INCIDENT_STATUS_CLOSE')) finalStatus = parsedStatus
+      else if (parsedStatus !== 'RESOLVED' && parsedStatus !== 'CLOSED' && hasPermission(sessionUrl, 'UPDATE_INCIDENTS_METADATA')) finalStatus = parsedStatus
     }
 
     // 2. Severity & SLA Mutation Checking
     if (newSeverityRaw && newSeverityRaw !== currentIncident.severity) {
-      if (hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) {
+      if (hasPermission(sessionUrl, 'UPDATE_INCIDENTS_METADATA')) {
         finalSeverity = newSeverityRaw as any
         
         // Automatic SLA Recalculation on Severity changes
@@ -166,14 +171,17 @@ export default async function IncidentDetailPage({
           finalSlaDate = new Date(targetSlaDateRaw)
         }
       }
-    } else if (targetSlaDateRaw && targetSlaDateRaw.trim() !== "" && hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')) {
+    } else if (targetSlaDateRaw && targetSlaDateRaw.trim() !== "" && hasPermission(sessionUrl, 'UPDATE_INCIDENTS_METADATA')) {
        finalSlaDate = new Date(targetSlaDateRaw)
     }
 
     // 3. Asset Mapping Verification
-    const requestedAssetId = newAssetName === 'UNLINKED' ? null : assets.find(a => a.name === newAssetName)?.id || null
-    if (requestedAssetId !== currentIncident.assetId) {
-       if (hasPermission(sessionUrl as any, 'LINK_INCIDENT_TO_ASSET')) finalAssetId = requestedAssetId
+    const requestedAssetSet = new Set(assetIds)
+    const currentAssetSet = new Set(currentIncident.assets.map((a: any) => a.id))
+    const assetsChanged = assetIds.length !== currentAssetSet.size || assetIds.some(id => !currentAssetSet.has(id))
+
+    if (assetsChanged) {
+       if (hasPermission(sessionUrl, 'LINK_INCIDENT_TO_ASSET')) finalAssets = assetIds.map(id => ({ id }))
     }
 
     // 4. Assignee Escalation Verification
@@ -181,12 +189,12 @@ export default async function IncidentDetailPage({
     const currentAssigneeIds = new Set(currentIncident.assignees.map(a => a.id))
     const requestedAssigneeSet = new Set(validAssigneeIds)
     
-    let assigneesChanged = validAssigneeIds.length !== currentAssigneeIds.size || validAssigneeIds.some(id => !currentAssigneeIds.has(id))
+    const assigneesChanged = validAssigneeIds.length !== currentAssigneeIds.size || validAssigneeIds.some(id => !currentAssigneeIds.has(id))
     
     if (assigneesChanged) {
        let isAuthorizedToAssign = false
-       const hasSelf = hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS_SELF')
-       const hasOthers = hasPermission(sessionUrl as any, 'ASSIGN_INCIDENTS_OTHERS')
+       const hasSelf = hasPermission(sessionUrl, 'ASSIGN_INCIDENTS_SELF')
+       const hasOthers = hasPermission(sessionUrl, 'ASSIGN_INCIDENTS_OTHERS')
        
        if (hasOthers) {
          isAuthorizedToAssign = true
@@ -210,7 +218,9 @@ export default async function IncidentDetailPage({
       data: {
         status: finalStatus,
         severity: finalSeverity,
-        assetId: finalAssetId,
+        assets: {
+          set: finalAssets
+        },
         targetSlaDate: finalSlaDate,
         assignees: {
           set: finalAssignees
@@ -253,11 +263,11 @@ export default async function IncidentDetailPage({
       }
     }
 
-    const updatedIncident = await db.incident.findUnique({ where: { id: currentIncident.id }, include: { reporter: true, assignees: true, asset: true } })
+    const updatedIncident = await db.incident.findUnique({ where: { id: currentIncident.id }, include: { reporter: true, assignees: true, assets: true } })
     await fireHook("onIncidentUpdated", updatedIncident as any)
 
     // Phase 7: Dynamic Triage Auto-Isolation rules
-    if (finalSeverity === 'CRITICAL' && finalAssetId && currentIncident.severity !== 'CRITICAL') {
+    if (finalSeverity === 'CRITICAL' && finalAssets.length > 0 && currentIncident.severity !== 'CRITICAL') {
       if (settings?.soarAutoQuarantineEnabled) {
          // Telemetry SOAR mapping via system settings override threshold
          let meetsThreshold = false;
@@ -268,27 +278,29 @@ export default async function IncidentDetailPage({
          
          if (meetsThreshold) {
            // BOLA Override protection: Ensure the SOAR Engine executor actively possesses ASSET mutation privileges
-           if (hasPermission(sessionUrl as any, 'UPDATE_ASSETS')) {
-              const affectedAsset = await db.asset.update({
-                where: { id: finalAssetId },
-                data: { status: 'COMPROMISED' }
-              })
-              await fireHook("onAssetCompromise", affectedAsset)
+           if (hasPermission(sessionUrl, 'UPDATE_ASSETS')) {
+              for (const a of finalAssets) {
+                 const affectedAsset = await db.asset.update({
+                   where: { id: a.id },
+                   data: { status: 'COMPROMISED' }
+                 })
+                 await fireHook("onAssetCompromise", affectedAsset)
 
-              const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_ASSETS', 'VIEW_SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
-              await dispatchMassAlert(admins.map(a => a.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${finalAssetId}`)
+                 const admins = await db.user.findMany({ where: { customRoles: { some: { permissions: { hasSome: ['UPDATE_ASSETS', 'VIEW_SYSTEM_SETTINGS'] } } } }, select: { id: true, email: true } })
+                 await dispatchMassAlert(admins.map(adm => adm.id), "ASSET_COMPROMISE", "ASSET COMPROMISED", `Asset ${affectedAsset.name} has been structurally quarantined.`, `/assets/${a.id}`)
 
-              if (settings?.smtpTriggerOnAssetCompromise) {
-                await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.filter(a => a.email).map(a => a.email as string))
+                 if (settings?.smtpTriggerOnAssetCompromise) {
+                   await sendAssetCompromisedEmail(affectedAsset.name, affectedAsset.ipAddress || '', admins.filter(adm => adm.email).map(adm => adm.email as string))
+                 }
               }
 
               await db.auditLog.create({
                 data: {
                   action: "SOAR_AUTO_QUARANTINE",
-                  entityType: "Asset",
-                  entityId: finalAssetId,
+                  entityType: "Incident",
+                  entityId: currentIncident.id,
                   userId: sessionUrl.user.id,
-                  changes: `Autonomous SIEM Triage -> Segmenting network node due to attached Priority Ticket.`
+                  changes: `Autonomous SIEM Triage -> Segmented ${finalAssets.length} network node(s) due to attached Priority Ticket.`
                 }
               })
            }
@@ -322,14 +334,14 @@ export default async function IncidentDetailPage({
   async function editDetailsAction(formData: FormData) {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = hasPermission(sessionUrl as any, 'UPDATE_INCIDENTS_METADATA')
+    const hasPostPrivilege = hasPermission(sessionUrl, 'UPDATE_INCIDENTS_METADATA')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
     if (!currentIncident) throw new Error("Incident not found")
 
-    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
-    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAll = hasPermission(sessionUrl, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
     const isUnassigned = currentIncident.assignees.length === 0
     if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
@@ -361,7 +373,7 @@ export default async function IncidentDetailPage({
       }
     })
     
-    const updatedIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { reporter: true, assignees: true, asset: true } })
+    const updatedIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { reporter: true, assignees: true, assets: true } })
     const { fireHook } = await import("@/lib/plugins/hook-engine")
     await fireHook("onIncidentUpdated", updatedIncident as any)
     
@@ -371,14 +383,14 @@ export default async function IncidentDetailPage({
   async function deleteIncidentAction() {
     "use server"
     const sessionUrl = await auth()
-    const hasPostPrivilege = hasPermission(sessionUrl as any, 'DELETE_INCIDENTS')
+    const hasPostPrivilege = hasPermission(sessionUrl, 'DELETE_INCIDENTS')
     if (!sessionUrl || !hasPostPrivilege) throw new Error("Forbidden")
 
     const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
     if (!currentIncident) throw new Error("Incident not found")
 
-    const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
-    const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAll = hasPermission(sessionUrl, 'VIEW_INCIDENTS_ALL')
+    const canViewUnassigned = hasPermission(sessionUrl, 'VIEW_INCIDENTS_UNASSIGNED')
     const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id)
     const isUnassigned = currentIncident.assignees.length === 0
     if (!canViewAll && !isReporterOrAssignee && !(canViewUnassigned && isUnassigned)) {
@@ -439,7 +451,7 @@ export default async function IncidentDetailPage({
             </Link>
           )}
 
-          {hasPermission(session as any, 'DELETE_INCIDENTS') && (
+          {hasPermission(session, 'DELETE_INCIDENTS') && (
             <ConfirmForm action={deleteIncidentAction} promptMessage="Are you absolutely sure you want to PERMANENTLY terminate this incident? All associated intelligence and operational timelines will be destroyed. This cannot be undone.">
               <Button type="submit" variant="outline" size="sm" className="bg-black/20 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" /> Terminate Incident
@@ -493,10 +505,10 @@ export default async function IncidentDetailPage({
                         <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md">
                           <SelectItem value="MALWARE">Malware Infection</SelectItem>
                           <SelectItem value="PHISHING">Phishing Attempt</SelectItem>
-                          <SelectItem value="DATA BREACH" className="text-destructive">Data Breach</SelectItem>
+                          <SelectItem value="DATA BREACH">Data Breach</SelectItem>
                           <SelectItem value="UNAUTHORIZED ACCESS">Unauthorized Access</SelectItem>
                           <SelectItem value="NETWORK ANOMALY">Network Anomaly</SelectItem>
-                          <SelectItem value="OTHER" className="text-muted-foreground">Other / Triage</SelectItem>
+                          <SelectItem value="OTHER">Other / Triage</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -577,20 +589,20 @@ export default async function IncidentDetailPage({
               </CardTitle>
             </CardHeader>
             <div className="p-6 space-y-4">
-              <form action={async (formData) => {
+              <ActionForm action={async (formData: FormData) => {
                 "use server"
                 const sessionUrl = await auth()
                 if (!sessionUrl) throw new Error("Unauthorized")
                 const content = formData.get("content") as string
                 if (!content) return;
                 
-                const canAddComments = hasPermission(sessionUrl as any, 'ADD_COMMENTS');
+                const canAddComments = hasPermission(sessionUrl, 'ADD_COMMENTS');
                 
                 const currentIncident = await db.incident.findUnique({ where: { id: incident!.id }, include: { assignees: true } })
                 if (!currentIncident) throw new Error("Incident not found")
 
-                const canViewAll = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_ALL')
-                const canViewUnassigned = hasPermission(sessionUrl as any, 'VIEW_INCIDENTS_UNASSIGNED')
+                const canViewAll = hasPermission(sessionUrl, 'VIEW_INCIDENTS_ALL')
+                const canViewUnassigned = hasPermission(sessionUrl, 'VIEW_INCIDENTS_UNASSIGNED')
                 const isReporterOrAssignee = currentIncident.reporterId === sessionUrl.user.id || currentIncident.assignees.some((a: any) => a.id === sessionUrl.user.id);
                 const isUnassigned = currentIncident.assignees.length === 0;
                 
@@ -605,9 +617,11 @@ export default async function IncidentDetailPage({
                 const newComment = await db.comment.create({
                   data: { content, incidentId: incident!.id, authorId: sessionUrl.user.id }
                 })
+                const { fireHook } = await import("@/lib/plugins/hook-engine")
                 await fireHook("onCommentAdded", newComment)
 
-                redirect(`/incidents/${incident!.id}`)
+                revalidatePath(`/incidents/${incident!.id}`)
+                revalidatePath(`/incidents/[id]`, 'page')
               }} className="space-y-3 pb-6 border-b border-border/50">
                 <textarea
                   name="content"
@@ -617,7 +631,7 @@ export default async function IncidentDetailPage({
                   className="w-full text-sm rounded-lg border border-border/60 bg-black/30 p-3 text-white placeholder:text-muted-foreground focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all resize-none"
                 />
                 <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(0,100,255,0.3)]">Post Investigation Log</Button>
-              </form>
+              </ActionForm>
 
               <div className="space-y-4 pt-2">
                 {timeline.map((item, idx) => (
@@ -627,7 +641,7 @@ export default async function IncidentDetailPage({
                         {item.author?.name || 'System'}
                         <span className="opacity-50 text-[10px] font-normal ml-1">({item.type === 'AUDIT' ? 'SYSTEM EVENT' : (item.author?.customRoles?.length ? item.author.customRoles.map((r:any) => r.name).join(', ') : 'OPERATOR')})</span>
                       </span>
-                      <span className="font-mono text-[10px] opacity-70">{item.createdAt.toLocaleString()}</span>
+                      <LocalTime date={item.createdAt} className="font-mono text-[10px] opacity-70" />
                     </div>
                     {item.type === 'AUDIT' ? (
                       <p className="text-xs font-mono text-primary/70 bg-black/40 p-2 rounded block">{item.content}</p>
@@ -672,16 +686,22 @@ export default async function IncidentDetailPage({
                 <span className="text-foreground/90 font-medium">{incident.reporter?.name || "Deleted Operator"}</span>
               </div>
               <div>
-                <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target Asset</strong>
-                {incident.asset ? (
-                  <Link href={`/assets/${incident.asset.id}`} className="text-primary hover:underline font-mono text-xs">
-                    {incident.asset.name}
-                  </Link>
+                <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target Assets</strong>
+                {incident.assets && incident.assets.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {incident.assets.map((asset: any) => (
+                      <Link key={asset.id} href={`/assets/${asset.id}`}>
+                        <Badge variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 transition-colors font-mono text-xs">
+                          {asset.name}
+                        </Badge>
+                      </Link>
+                    ))}
+                  </div>
                 ) : <span className="text-muted-foreground italic text-xs">None Linked</span>}
               </div>
               <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Record Initialized</strong>
-                <span className="font-mono text-xs text-foreground/80">{incident.createdAt.toLocaleString()}</span>
+                <LocalTime date={incident.createdAt} className="font-mono text-xs text-foreground/80" />
               </div>
               <div>
                 <strong className="block text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Target SLA</strong>
@@ -689,7 +709,7 @@ export default async function IncidentDetailPage({
                   <span className={`flex items-center gap-2 font-mono text-xs font-semibold px-2 py-1 rounded w-fit ${isOverdue ? 'bg-red-500/20 text-red-400 border border-red-500/50 shadow-[0_0_10px_rgba(255,50,50,0.4)] animate-pulse' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
                     <span>
                       <Calendar className="w-3 h-3 inline mr-1" />
-                      {incident.targetSlaDate.toLocaleString()}
+                      <LocalTime date={incident.targetSlaDate} />
                     </span>
                   </span>
                 ) : <span className="text-muted-foreground italic text-xs">No Deadline Set</span>}
@@ -704,17 +724,7 @@ export default async function IncidentDetailPage({
               </CardTitle>
             </CardHeader>
             <div className="p-5 space-y-4 text-sm z-20">
-              <form action={async (formData) => {
-                "use server"
-                formData.append("incidentId", incident!.id)
-                await uploadAttachment(formData)
-                redirect(`/incidents/${incident!.id}`)
-              }} className="space-y-3 pb-5 border-b border-border/50">
-                <FileUploadBox />
-                <Button type="submit" size="sm" className="w-full bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_15px_rgba(100,0,255,0.2)]">
-                  Attach Evidence
-                </Button>
-              </form>
+              <EvidenceUploadForm incidentId={incident.id} />
 
               {attachments.length > 0 ? (
                 <div className="flex flex-col gap-2 pt-1">
@@ -724,18 +734,19 @@ export default async function IncidentDetailPage({
                         <Paperclip className="w-3 h-3 mr-2 text-indigo-400/70 group-hover:text-indigo-400 flex-shrink-0" />
                         <div className="flex flex-col min-w-0 pr-1">
                           <span className="text-[11px] font-medium text-white/90 truncate">{att.filename}</span>
-                          <span className="text-[9px] font-mono text-muted-foreground">{att.createdAt.toLocaleDateString()}</span>
+                          <LocalTime date={att.createdAt} format="date" className="text-[9px] font-mono text-muted-foreground" />
                         </div>
                       </a>
-                      <form action={async () => {
+                      <ActionForm action={async () => {
                         "use server"
                         await deleteAttachment(att.id)
-                        redirect(`/incidents/${incident!.id}?commentPage=${commentPage}&filePage=${filePage}`)
-                      }}>
+                        revalidatePath(`/incidents/${incident!.id}`)
+                        revalidatePath(`/incidents/[id]`, 'page')
+                      }} resetOnSuccess={false}>
                         <button type="submit" className="p-1.5 rounded-md hover:bg-red-500/20 text-red-400/50 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all absolute right-2 top-1/2 -translate-y-1/2" title="Delete evidence">
                            <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                      </form>
+                      </ActionForm>
                     </div>
                   ))}
                   
@@ -798,18 +809,11 @@ export default async function IncidentDetailPage({
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs text-white/70">Target Node (Asset)</Label>
-                    <Select key={`asset-${incident.asset?.name || "UNLINKED"}`} name="assetName" defaultValue={incident.asset?.name || "UNLINKED"}>
-                      <SelectTrigger className="flex !h-10 w-full appearance-none rounded-md border border-white/10 bg-black/50 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all pr-8">
-                        <SelectValue placeholder="Associate Infrastructure (Optional)" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-black/95 border-border/60 shadow-2xl backdrop-blur-md max-h-64">
-                         <SelectItem value="UNLINKED" className="text-muted-foreground italic">None Selected</SelectItem>
-                         {assets.map(asset => (
-                           <SelectItem key={asset.id} value={asset.name} className="font-mono">{asset.name}</SelectItem>
-                         ))}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-xs text-white/70">Target Nodes (Assets)</Label>
+                    <MultiAssetPicker
+                      assets={assets}
+                      defaultSelectedIds={incident.assets.map(a => a.id)}
+                    />
                   </div>
 
                   <div className="space-y-2">

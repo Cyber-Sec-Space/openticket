@@ -1,9 +1,10 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { db } from "./lib/db"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import * as OTPAuth from "otpauth"
 import { CredentialsSignin, DefaultSession } from "next-auth"
+import { getGlobalSettings } from "@/lib/settings"
 
 declare module "next-auth" {
   interface User {
@@ -19,35 +20,27 @@ declare module "next-auth" {
   }
 }
 
-class Missing2FAError extends Error {
-  constructor() {
-    super("Missing2FA");
-    this.name = "Missing2FAError";
-  }
+class Missing2FAError extends CredentialsSignin {
+  code = "Missing2FA"
 }
 
-class Invalid2FAError extends Error {
-  constructor() {
-    super("Invalid2FA");
-    this.name = "Invalid2FAError";
-  }
+class Invalid2FAError extends CredentialsSignin {
+  code = "Invalid2FA"
 }
 
 
-class EmailNotVerifiedError extends Error {
-  constructor() {
-    super("EmailNotVerified");
-    this.name = "EmailNotVerifiedError";
-  }
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = "EmailNotVerified"
+}
+
+class IdentitySuspendedError extends CredentialsSignin {
+  code = "IdentitySuspended"
 }
 
 // Database-backed distributed rate limit tracking replaces volatile in-memory strategies
 
-class AuthenticationThrottledError extends Error {
-  constructor() {
-    super("AuthenticationThrottled");
-    this.name = "AuthenticationThrottledError";
-  }
+class AuthenticationThrottledError extends CredentialsSignin {
+  code = "AuthenticationThrottled"
 }
 
 import { headers } from "next/headers"
@@ -71,12 +64,16 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
         
         // Securely identify the network boundary of the requester
         const requestHeaders = await headers();
-        const requestIp = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() 
-                       || requestHeaders.get("x-real-ip") 
-                       || "127.0.0.1";
+        const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
+        let requestIp = "127.0.0.1";
+        if (trustProxyHeaders) {
+          const xRealIp = requestHeaders.get("x-real-ip")?.trim();
+          const xForwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
+          requestIp = xRealIp || xForwardedFor || "127.0.0.1";
+        }
         
         // Fetch global directives (Moved up for early evaluation)
-        const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+        const settings = await getGlobalSettings()
         
         // --- Distributed Rate Limiting Strategy (Brute Force Protection) ---
         const rateLimitEnabled = settings?.rateLimitEnabled ?? true;
@@ -134,6 +131,10 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
           return null
         }
         
+        if (user.isDisabled) {
+           if (rateLimitEnabled) await db.loginAttempt.create({ data: { identifier: email, ip: requestIp } });
+           throw new IdentitySuspendedError()
+        }
 
         const requireGlobal2FA = settings?.requireGlobal2FA ?? false
 
@@ -160,6 +161,16 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
         if (rateLimitEnabled) {
             await db.loginAttempt.deleteMany({ where: { identifier: email } });
         }
+        
+        await db.auditLog.create({
+          data: {
+            action: "LOGIN",
+            entityType: "USER",
+            entityId: user.id,
+            userId: user.id,
+            changes: { details: `Successful authentication from IP: ${requestIp}` }
+          }
+        });
 
         const perms = Array.from(new Set(user.customRoles.flatMap(r => r.permissions)))
 
@@ -189,12 +200,12 @@ export const { handlers, signIn, signOut, auth, unstable_update: update } = Next
            return null // Returning null instantly destroys the JWT token and logs the user out
         } else {
            token.permissions = Array.from(new Set(dbUser.customRoles.flatMap(r => r.permissions))) // Sync RBAC
-           const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+           const settings = await getGlobalSettings()
            token.requires2FASetup = (settings?.requireGlobal2FA ?? false) && (!dbUser.isTwoFactorEnabled || !dbUser.twoFactorSecret)
         }
       }
       return token
     }
   },
-  session: { strategy: "jwt" }
+  session: { strategy: "jwt", maxAge: 60 * 60 }
 })

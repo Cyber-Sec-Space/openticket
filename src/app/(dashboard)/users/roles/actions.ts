@@ -5,11 +5,12 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
 import { Permission } from "@prisma/client"
+import { getGlobalSettings } from "@/lib/settings";
 
 // Verify granular Admin Privileges
 async function verifyAdmin(action: 'CREATE_ROLES' | 'UPDATE_ROLES' | 'DELETE_ROLES') {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, action)) {
+  if (!session?.user || !hasPermission(session, action)) {
     throw new Error(`Unauthorized: You lack the ${action} capability.`)
   }
   return session
@@ -44,7 +45,7 @@ export async function createRole(formData: FormData) {
   if (!name) throw new Error("Role name is required")
 
   try {
-    await db.customRole.create({
+    const newRole = await db.customRole.create({
       data: {
         name,
         description,
@@ -52,6 +53,17 @@ export async function createRole(formData: FormData) {
         permissions: permissionIds
       }
     })
+    
+    await db.auditLog.create({
+      data: {
+        action: "CREATE",
+        entityType: "ROLE",
+        entityId: newRole.id,
+        userId: session.user.id,
+        changes: { details: `Role '${name}' created with ${permissionIds.length} permissions.` }
+      }
+    })
+    
     revalidatePath("/users/roles")
     return { success: true }
   } catch (err: any) {
@@ -74,7 +86,7 @@ export async function updateRole(formData: FormData) {
   if (existingRole.isSystem) throw new Error("System roles cannot be modified")
 
   try {
-    await db.customRole.update({
+    const updatedRole = await db.customRole.update({
       where: { id },
       data: {
         name,
@@ -82,6 +94,17 @@ export async function updateRole(formData: FormData) {
         permissions: permissionIds
       }
     })
+    
+    await db.auditLog.create({
+      data: {
+        action: "UPDATE",
+        entityType: "ROLE",
+        entityId: id,
+        userId: session.user.id,
+        changes: { details: `Role '${name}' updated with ${permissionIds.length} permissions.` }
+      }
+    })
+    
     revalidatePath("/users/roles")
     return { success: true }
   } catch (err: any) {
@@ -90,7 +113,7 @@ export async function updateRole(formData: FormData) {
 }
 
 export async function deleteRole(formData: FormData) {
-  await verifyAdmin('DELETE_ROLES')
+  const session = await verifyAdmin('DELETE_ROLES')
 
   const id = formData.get("id") as string
   
@@ -135,6 +158,16 @@ export async function deleteRole(formData: FormData) {
 
      // 4. Finally delete the role entirely
      await tx.customRole.delete({ where: { id } })
+     
+     await tx.auditLog.create({
+       data: {
+         action: "DELETE",
+         entityType: "ROLE",
+         entityId: id,
+         userId: session?.user?.id || "system",
+         changes: { details: `Role '${existingRole.name}' deleted. Users reassigned to fallback role if applicable.` }
+       }
+     })
   })
 
   revalidatePath("/users/roles")

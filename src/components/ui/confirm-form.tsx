@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useTransition } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle } from "lucide-react"
@@ -13,9 +13,10 @@ export function ConfirmForm({ action, promptMessage, children, className, ...pro
   const [isOpen, setIsOpen] = useState(false)
   const [formDataCache, setFormDataCache] = useState<FormData | null>(null)
   const [isMounted, setIsMounted] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setIsMounted(true)
   }, [])
 
@@ -26,9 +27,13 @@ export function ConfirmForm({ action, promptMessage, children, className, ...pro
   }
 
   const confirmAndSubmit = () => {
-    setIsOpen(false)
     if (formDataCache) {
-      action(formDataCache)
+      startTransition(async () => {
+        await action(formDataCache)
+        setIsOpen(false)
+      })
+    } else {
+      setIsOpen(false)
     }
   }
 
@@ -56,11 +61,11 @@ export function ConfirmForm({ action, promptMessage, children, className, ...pro
                <p className="text-sm text-foreground/80 leading-relaxed font-medium">{promptMessage}</p>
             </div>
             <div className="flex gap-3 mt-8 w-full relative z-10">
-               <Button type="button" variant="outline" className="flex-1 bg-black/40 border-white/10 hover:bg-white/10 text-white/80" onClick={() => setIsOpen(false)}>
+               <Button type="button" disabled={isPending} variant="outline" className="flex-1 bg-black/40 border-white/10 hover:bg-white/10 text-white/80 disabled:opacity-50" onClick={() => setIsOpen(false)}>
                  Cancel
                </Button>
-               <Button type="button" className="flex-1 bg-destructive hover:bg-destructive/80 text-destructive-foreground font-semibold shadow-[0_0_15px_rgba(255,50,50,0.3)]" onClick={confirmAndSubmit}>
-                 Confirm Execution
+               <Button type="button" disabled={isPending} className="flex-1 bg-destructive hover:bg-destructive/80 text-destructive-foreground font-semibold shadow-[0_0_15px_rgba(255,50,50,0.3)] disabled:opacity-50" onClick={confirmAndSubmit}>
+                 {isPending ? "Executing..." : "Confirm Execution"}
                </Button>
             </div>
           </div>

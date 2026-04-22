@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OpenTicket | Security Plugin Development Guide</title>
-  <meta name="description" content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions for the OpenTicket SecOps platform.">
+  <meta name="description"
+    content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions for the OpenTicket SecOps platform.">
   <meta name="keywords" content="OpenTicket Plugins, SOAR Integrations, Security Automation, Webhooks, API">
   <meta name="author" content="Cyber Sec Space">
   <link rel="canonical" href="https://openticket.cyber-sec.space/plugins-guide.html" />
@@ -14,22 +15,26 @@
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://openticket.cyber-sec.space/plugins-guide.html">
   <meta property="og:title" content="OpenTicket | Security Plugin Development Guide">
-  <meta property="og:description" content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions.">
+  <meta property="og:description"
+    content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions.">
   <meta property="og:image" content="https://openticket.cyber-sec.space/assets/plugin-ui-injection.png">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://openticket.cyber-sec.space/plugins-guide.html">
   <meta property="twitter:title" content="OpenTicket | Security Plugin Development Guide">
-  <meta property="twitter:description" content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions.">
+  <meta property="twitter:description"
+    content="Learn how to build Next.js security plugins, connect SOAR Webhooks, and deploy server-side extensions.">
   <meta property="twitter:image" content="https://openticket.cyber-sec.space/assets/plugin-ui-injection.png">
 
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -43,7 +48,10 @@
   <nav class="navbar glass">
     <div class="nav-container">
       <div class="logo">
-        <a href="index.html" style="text-decoration: none;"><h2 class="text-gradient" style="font-family: 'Outfit'; font-weight: 800; letter-spacing: -1px; margin-bottom: 0;">OPENTICKET</h2></a>
+        <a href="index.html" style="text-decoration: none;">
+          <h2 class="text-gradient"
+            style="font-family: 'Outfit'; font-weight: 800; letter-spacing: -1px; margin-bottom: 0;">OPENTICKET</h2>
+        </a>
       </div>
       <div class="nav-links">
         <a href="index.html#features">Architecture</a>
@@ -51,8 +59,15 @@
         <a href="installation.html">Deploy</a>
       </div>
       <div class="nav-actions">
-        <a href="https://github.com/Cyber-Sec-Space/openticket" target="_blank" class="btn btn-outline" style="border-radius: 2rem;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: text-bottom; display: inline-block;"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg> Star on GitHub
+        <a href="https://github.com/Cyber-Sec-Space/openticket" target="_blank" class="btn btn-outline"
+          style="border-radius: 2rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="margin-right: 6px; vertical-align: text-bottom; display: inline-block;">
+            <path
+              d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+            <path d="M9 18c-4.51 2-5-2-7-2" />
+          </svg> Star on GitHub
         </a>
       </div>
     </div>
@@ -60,9 +75,11 @@
 
   <main class="content-wrapper section-padding" style="margin-top: 100px;">
     <div class="reveal">
-      <h1 class="hero-title" style="font-size: clamp(3rem, 5vw, 4rem); margin-bottom: 1rem;">Hook Engine <span class="text-gradient">Plugins</span></h1>
+      <h1 class="hero-title" style="font-size: clamp(3rem, 5vw, 4rem); margin-bottom: 1rem;">Hook Engine <span
+          class="text-gradient">Plugins</span></h1>
       <p class="section-subtitle" style="text-align: left; margin-bottom: 4rem; max-width: 800px; margin-left: 0;">
-        Integrate seamlessly with your existing SOC infrastructure using robust, zero-config external extensions perfectly mapped to OpenTicket's sandbox.
+        Integrate seamlessly with your existing SOC infrastructure using robust, zero-config external extensions
+        perfectly mapped to OpenTicket's sandbox.
       </p>
     </div>
 
@@ -75,12 +92,20 @@
           <div style="flex: 1;">
             <div class="bento-icon"><i data-lucide="layers"></i></div>
             <h3>The Hybrid Plugin Architecture</h3>
-            <p>OpenTicket plugins operate as dynamic external modules. Since this is an edge-compatible Next.js application, plugins interact purely with the centralized Hook Engine (<code>CorePluginLoader</code>) and EventBus rather than polluting core monolithic logic.</p>
-            <p class="mt-4"><strong>SaaS Orchestration:</strong> You no longer need to write code to install plugins into the server! Administrators browse the <strong>Plugin Registry</strong> inside their dashboard and orchestrate remote capabilities dynamically via our API endpoints.</p>
+            <p>OpenTicket plugins operate as dynamic external modules. Since this is an edge-compatible Next.js
+              application, plugins interact purely with the centralized Hook Engine (<code>CorePluginLoader</code>) and
+              EventBus rather than polluting core monolithic logic.</p>
+            <p class="mt-4"><strong>SaaS Orchestration:</strong> You no longer need to write code to install plugins
+              into the server! Administrators browse the <strong>Plugin Registry</strong> inside their dashboard and
+              orchestrate remote capabilities dynamically via our API endpoints.</p>
           </div>
           <div style="flex: 1;" class="terminal">
-            <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
-            <pre><code><span class="comment">// 0.5.2 Internal Event Bus Pipeline</span>
+            <div class="mac-header">
+              <div class="mac-dot red"></div>
+              <div class="mac-dot yellow"></div>
+              <div class="mac-dot green"></div>
+            </div>
+            <pre><code><span class="comment">// v1.0.0-rc.1 Internal Event Bus Pipeline</span>
 <span class="keyword">await</span> eventBus.emit(<span class="string">'onIncidentResolved'</span>, {  
   <span class="property">targetId</span>: <span class="string">'inc_992x'</span>,
   <span class="property">trigger</span>: <span class="string">'AUTOMATION'</span>
@@ -93,11 +118,19 @@
       <!-- ITEM 2: Developing (Wide) -->
       <div class="bento-card glass item-wide reveal">
         <div class="bento-icon"><i data-lucide="code"></i></div>
-        <h3>Zero-Trust Standard (API Version 1.1.0)</h3>
-        <p>A plugin is simply a TypeScript object conforming to the <code>OpenTicketPlugin</code> definition. With our hardened architecture, plugins must explicitly declare the privileges they require via the <code>requestedPermissions</code> array, and all network manifests must pass an <code>integritySha256</code> cryptographic check before loading into memory.</p>
-        
+        <h3>Zero-Trust Standard (API Version 1.4.0)</h3>
+        <p>A plugin is simply a TypeScript object conforming to the <code>OpenTicketPlugin</code> definition. With our
+          hardened architecture, plugins must explicitly declare the privileges they require via the
+          <code>requestedPermissions</code> array, and all network manifests must pass an <code>integritySha256</code>
+          cryptographic check before loading into memory.
+        </p>
+
         <div class="terminal mt-4">
-          <div class="mac-header"><div class="mac-dot red"></div><div class="mac-dot yellow"></div><div class="mac-dot green"></div></div>
+          <div class="mac-header">
+            <div class="mac-dot red"></div>
+            <div class="mac-dot yellow"></div>
+            <div class="mac-dot green"></div>
+          </div>
           <pre><code><span class="keyword">export const</span> jiraSyncPlugin: OpenTicketPlugin = {
   manifest: {
     id: <span class="string">'jira-bridge'</span>,
@@ -121,9 +154,13 @@
       <div class="bento-card glass reveal delay-1">
         <div class="bento-icon"><i data-lucide="lock-keyhole"></i></div>
         <h3>Cryptography Engine</h3>
-        <p>You cannot import raw database providers! You are strictly restricted to the <code>context.api</code> module Sandbox. If your plugin calls <code>api.deleteIncident()</code> but lacked <code>DELETE_INCIDENTS</code> consent, the Node Promise will instantly reject.</p>
+        <p>You cannot import raw database providers! You are strictly restricted to the <code>context.api</code> module
+          Sandbox. If your plugin calls <code>api.deleteIncident()</code> but lacked <code>DELETE_INCIDENTS</code>
+          consent, the Node Promise will instantly reject.</p>
         <div class="alert-box cyan mt-4" style="margin-top: 2rem;">
-          <p style="font-size: 0.85rem; margin: 0;"><strong>AES-256-GCM Storage:</strong> All user-supplied API credentials configured in the UI are securely encrypted at REST protecting keys during database breaches.</p>
+          <p style="font-size: 0.85rem; margin: 0;"><strong>AES-256-GCM Storage:</strong> All user-supplied API
+            credentials configured in the UI are securely encrypted at REST protecting keys during database breaches.
+          </p>
         </div>
       </div>
 
@@ -131,41 +168,56 @@
       <div class="bento-card glass item-wide reveal" style="border-color: rgba(59, 130, 246, 0.3);">
         <div class="bento-icon"><i data-lucide="shield-check"></i></div>
         <h3>OAuth-style Registry Consent</h3>
-        <p>Administrators will review and actively consent to plugin boundaries dynamically via our built-in OAuth-style UI before anything executes on your Edge.</p>
-        
+        <p>Administrators will review and actively consent to plugin boundaries dynamically via our built-in OAuth-style
+          UI before anything executes on your Edge.</p>
+
         <!-- The pure HTML Consent Mockup from previous version -->
-        <div class="consent-mockup mt-4" style="background: rgba(10,15,25,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; max-width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div class="consent-mockup mt-4"
+          style="background: rgba(10,15,25,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; max-width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-            <div style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.4);">
+            <div
+              style="width: 48px; height: 48px; background: rgba(59, 130, 246, 0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.4);">
               <i data-lucide="shield-alert" style="color: #60a5fa;"></i>
             </div>
             <div>
               <h4 style="margin: 0; font-size: 1.2rem; color: #fff;">Authorization Required</h4>
-              <p style="margin: 0; font-size: 0.9rem; color: #9ca3af;"><strong>Jira Two-Way Sync</strong> is requesting system access</p>
+              <p style="margin: 0; font-size: 0.9rem; color: #9ca3af;"><strong>Jira Two-Way Sync</strong> is requesting
+                system access</p>
             </div>
           </div>
-          <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <p style="margin-top: 0; margin-bottom: 0.75rem; font-weight: 600; font-size: 0.85rem; color: #9ca3af; text-transform: uppercase;">Requested Scope Approvals (2)</p>
+          <div
+            style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+            <p
+              style="margin-top: 0; margin-bottom: 0.75rem; font-weight: 600; font-size: 0.85rem; color: #9ca3af; text-transform: uppercase;">
+              Requested Scope Approvals (2)</p>
             <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
               <li style="display: flex; align-items: flex-start; gap: 0.75rem;">
-                <i data-lucide="check" style="width: 16px; margin-top: 2px; color: #10b981;"></i> 
+                <i data-lucide="check" style="width: 16px; margin-top: 2px; color: #10b981;"></i>
                 <div>
-                  <code style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa; border: 1px solid rgba(255,255,255,0.1);">VIEW_INCIDENTS_ALL</code>
-                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Read access to all incidents within the organization.</div>
+                  <code
+                    style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa; border: 1px solid rgba(255,255,255,0.1);">VIEW_INCIDENTS_ALL</code>
+                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Read access to all incidents within
+                    the organization.</div>
                 </div>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 0.75rem;">
-                <i data-lucide="check" style="width: 16px; margin-top: 2px; color: #10b981;"></i> 
+                <i data-lucide="check" style="width: 16px; margin-top: 2px; color: #10b981;"></i>
                 <div>
-                  <code style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa; border: 1px solid rgba(255,255,255,0.1);">ADD_COMMENTS</code>
-                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Post and append automation logs on instances.</div>
+                  <code
+                    style="background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; color: #60a5fa; border: 1px solid rgba(255,255,255,0.1);">ADD_COMMENTS</code>
+                  <div style="font-size: 0.85rem; color: #d1d5db; margin-top: 4px;">Post and append automation logs on
+                    instances.</div>
                 </div>
               </li>
             </ul>
           </div>
           <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-            <button style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 500;">Reject Source</button>
-            <button style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">Authorize Signature</button>
+            <button
+              style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 500;">Reject
+              Source</button>
+            <button
+              style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; color: white; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);">Authorize
+              Signature</button>
           </div>
         </div>
       </div>
@@ -174,79 +226,120 @@
       <div class="bento-card glass reveal delay-2">
         <div class="bento-icon"><i data-lucide="layout-template"></i></div>
         <h3>Settings Injection</h3>
-        <p>Don't force users to write JSON. By declaring <code>ui: { settingsPanels: [...] }</code>, plugins dynamically broadcast their own React form components over the internal APIs. Administrators interface with visual switches, dropping config inputs straight into the securely vaulted DB.</p>
+        <p>Don't force users to write JSON. By declaring <code>ui: { settingsPanels: [...] }</code>, plugins dynamically
+          broadcast their own React form components over the internal APIs. Administrators interface with visual
+          switches, dropping config inputs straight into the securely vaulted DB.</p>
         <div class="bento-image-container mt-4" style="min-height: 150px; background: transparent; border: none;">
           <!-- Expects: docs/assets/plugin-ui-injection.png -->
-          <img src="assets/plugin-ui-injection.png" class="bento-img" style="border-radius: 6px; border: 1px solid var(--glass-border);" alt="Plugin Settings Panel UI" onerror="this.outerHTML='<div class=\'placeholder-box\'><i data-lucide=\'component\'></i><span>AWAITING FILE: docs/assets/plugin-ui-injection.png</span></div>'">
+          <img src="assets/plugin-ui-injection.png" class="bento-img"
+            style="border-radius: 6px; border: 1px solid var(--glass-border);" alt="Plugin Settings Panel UI"
+            onerror="this.outerHTML='<div class=\'placeholder-box\'><i data-lucide=\'component\'></i><span>AWAITING FILE: docs/assets/plugin-ui-injection.png</span></div>'">
         </div>
       </div>
 
       <!-- ITEM 6: PERMISSION DICTIONARY (Full Width) -->
       <div class="bento-card glass item-full reveal">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
-           <div>
-             <h3>Permission Matrix Lexicon</h3>
-             <p>Reference these strict identifiers when formatting your network manifest.</p>
-           </div>
-           <div class="bento-icon" style="margin: 0;"><i data-lucide="key"></i></div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-          
-          <!-- Incidents -->
-          <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #ef4444;">
-            <h5 style="color: #ef4444; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">Core Incident Scopes</h5>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_INCIDENTS_ALL</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_INCIDENTS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_INCIDENT_STATUS_RESOLVE</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_INCIDENTS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ADD_COMMENTS</code>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">And 12 more granular resolution bindings.</p>
+          <div>
+            <h3>Permission Matrix Lexicon</h3>
+            <p>Reference these strict identifiers when formatting your network manifest.</p>
           </div>
-          
-          <!-- Vulnerabilities -->
-          <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #f59e0b;">
-            <h5 style="color: #f59e0b; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">Asset Topology</h5>
+          <div class="bento-icon" style="margin: 0;"><i data-lucide="key"></i></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+
+          <!-- Incidents -->
+          <div
+            style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #ef4444;">
+            <h5
+              style="color: #ef4444; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">
+              Core Incident Scopes</h5>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_ASSETS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_ASSETS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_VULNERABILITIES</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">LINK_VULN_TO_ASSET</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_INCIDENTS_ALL</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_INCIDENTS</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_INCIDENT_STATUS_RESOLVE</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">DELETE_INCIDENTS</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ADD_COMMENTS</code>
             </div>
-            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">Allows mapping external SOC IPs directly to internal vectors.</p>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">And 12 more granular
+              resolution bindings.</p>
+          </div>
+
+          <!-- Vulnerabilities -->
+          <div
+            style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #f59e0b;">
+            <h5
+              style="color: #f59e0b; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">
+              Asset Topology</h5>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_ASSETS</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_ASSETS</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">CREATE_VULNERABILITIES</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">LINK_VULN_TO_ASSET</code>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">Allows mapping
+              external SOC IPs directly to internal vectors.</p>
           </div>
 
           <!-- Admins -->
-          <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #8b5cf6;">
-            <h5 style="color: #8b5cf6; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">High Privilege Tiers</h5>
+          <div
+            style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 1.5rem; border-top: 4px solid #8b5cf6;">
+            <h5
+              style="color: #8b5cf6; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1rem;">
+              High Privilege Tiers</h5>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_USERS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">SUSPEND_USERS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_SYSTEM_SETTINGS</code>
-              <code style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ISSUE_API_TOKENS</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">VIEW_USERS</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">SUSPEND_USERS</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">UPDATE_SYSTEM_SETTINGS</code>
+              <code
+                style="font-size: 0.75rem; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">ISSUE_API_TOKENS</code>
             </div>
-            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">Requires master admin elevated authorization during Plugin Setup.</p>
+            <p style="font-size: 0.85rem; color: var(--muted); margin-top: 1rem; margin-bottom: 0;">Requires master
+              admin elevated authorization during Plugin Setup.</p>
           </div>
 
         </div>
       </div>
 
-       <!-- ITEM 7: Syntax Constraints (Wide) -->
-       <div class="bento-card glass item-wide reveal delay-1" style="border-color: rgba(239, 68, 68, 0.4);">
-        <div class="bento-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);"><i data-lucide="triangle-alert"></i></div>
-        <h3>AST Sandbox Verification</h3>
-        <p>Bad plugins crash mono-repos. To protect the Host container's stability, OpenTicket embeds an <strong>AST Pre-flight Syntax Checker</strong> utilizing the isolated context during runtime installation flow. Any code triggering a `DiagnosticCategory.Error` throws an immediate uninstallation lock preserving Node loops.</p>
-        
-        <div style="background: rgba(239,68,68,0.1); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); padding: 1.5rem; margin-top: 1.5rem;">
-           <h5 style="color: #fca5a5; font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase;">Recovery Protocols</h5>
-           <p style="font-size: 0.95rem; margin-bottom: 1rem;">If you bypass Node guards and somehow trigger a fatal recursive 502 crash loop locally, run the manual unlinking procedure:</p>
-           <div class="terminal" style="background: #000; border: none;"><pre style="padding: 1rem;"><code class="string">npm run plugin:reset</code></pre></div>
-           <p style="font-size: 0.85rem; color: #9ca3af; margin-top: 1rem; margin-bottom: 0;">This isolates corrupt payloads from the Prisma mappings and regenerates clean Node execution clusters.</p>
+      <!-- ITEM 7: Syntax Constraints (Wide) -->
+      <div class="bento-card glass item-wide reveal delay-1" style="border-color: rgba(239, 68, 68, 0.4);">
+        <div class="bento-icon"
+          style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);"><i
+            data-lucide="triangle-alert"></i></div>
+        <h3>V8 Isolate Sandbox Engine</h3>
+        <p>Bad plugins crash mono-repos. To protect the Host container's stability and prevent malicious exploits,
+          OpenTicket executes all plugin scripts inside a <strong>V8 Isolate Sandbox</strong> using
+          <code>isolated-vm</code>. Plugin code operates within a strict 128MB memory ceiling and is subjected to a
+          5000ms TTL `Promise.race()` bomb to prevent event-loop hijacking.
+        </p>
+
+        <div
+          style="background: rgba(239,68,68,0.1); border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); padding: 1.5rem; margin-top: 1.5rem;">
+          <h5 style="color: #fca5a5; font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase;">Recovery
+            Protocols</h5>
+          <p style="font-size: 0.95rem; margin-bottom: 1rem;">If you bypass Node guards and somehow trigger a fatal
+            recursive 502 crash loop locally, run the manual unlinking procedure:</p>
+          <div class="terminal" style="background: #000; border: none;">
+            <pre style="padding: 1rem;"><code class="string">npm run plugin:reset</code></pre>
+          </div>
+          <p style="font-size: 0.85rem; color: #9ca3af; margin-top: 1rem; margin-bottom: 0;">This isolates corrupt
+            payloads from the Prisma mappings and regenerates clean Node execution clusters.</p>
         </div>
       </div>
-      
+
     </div>
   </main>
 
@@ -256,7 +349,8 @@
       <div class="logo">
         <h3 class="text-gradient" style="font-family: 'Outfit'; font-weight: 800; margin-bottom: 0;">OPENTICKET</h3>
       </div>
-      <p class="text-muted" style="font-size: 0.9rem;">© 2026 Cyber Sec Space. The Next-Gen Open Source SecOps Platform.</p>
+      <p class="text-muted" style="font-size: 0.9rem;">© 2026 Cyber Sec Space. The Next-Gen Open Source SecOps Platform.
+      </p>
     </div>
   </footer>
 
@@ -279,4 +373,5 @@
     window.onload = reveal;
   </script>
 </body>
+
 </html>

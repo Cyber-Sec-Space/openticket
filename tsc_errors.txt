@@ -1,0 +1,18 @@
+src/app/(dashboard)/api/export/route.ts(63,18): error TS2561: Object literal may only specify known properties, but 'asset' does not exist in type 'IncidentInclude<InternalArgs & { result: {}; model: {}; query: {}; client: {}; }>'. Did you mean to write 'assets'?
+src/app/(dashboard)/api/export/route.ts(80,25): error TS2339: Property 'name' does not exist on type 'never'.
+src/app/(dashboard)/settings/plugins/plugin-card.tsx(522,107): error TS2322: Type '{ className: string; title: string; }' is not assignable to type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
+src/app/(dashboard)/settings/plugins/store/page.tsx(106,104): error TS2339: Property 'integritySha256' does not exist on type 'RegistryPluginVersion'.
+src/app/(dashboard)/settings/plugins/store/page.tsx(113,65): error TS2339: Property 'integritySha256' does not exist on type 'RegistryPluginVersion'.
+src/app/(dashboard)/settings/plugins/store/page.tsx(113,91): error TS2339: Property 'signature' does not exist on type 'RegistryPlugin'.
+src/app/(dashboard)/users/[id]/reset-password-action.ts(43,52): error TS2322: Type 'string | null' is not assignable to type 'Exact<string | StringFilter<"PasswordResetToken"> | undefined, string | StringFilter<"PasswordResetToken"> | undefined>'.
+  Type 'null' is not assignable to type 'Exact<string | StringFilter<"PasswordResetToken"> | undefined, string | StringFilter<"PasswordResetToken"> | undefined>'.
+src/app/(dashboard)/users/[id]/reset-password-action.ts(46,12): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/app/(dashboard)/users/[id]/reset-password-action.ts(62,116): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string | number | boolean'.
+  Type 'null' is not assignable to type 'string | number | boolean'.
+src/app/(dashboard)/users/[id]/reset-password-action.ts(63,35): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/app/register/actions.ts(66,50): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/components/ui/date-time-picker.tsx(99,27): error TS2322: Type '{ children: Element; asChild: true; }' is not assignable to type 'IntrinsicAttributes & NativeButtonProps & Omit<WithBaseUIEvent<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>>, "className" | ... 2 more ... | "defaultChecked"> & { ...; } & { ...; }'.
+  Property 'asChild' does not exist on type 'IntrinsicAttributes & NativeButtonProps & Omit<WithBaseUIEvent<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>>, "className" | ... 2 more ... | "defaultChecked"> & { ...; } & { ...; }'.

@@ -3,10 +3,18 @@ import { db } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { hasPermission } from "@/lib/auth-utils"
 
+function sanitizeCsvCell(value: string) {
+  const escaped = value.replace(/"/g, '""')
+  if (/^[=\+\-@\t\r]/.test(escaped)) {
+    return `'${escaped}`
+  }
+  return escaped
+}
+
 export async function GET(req: Request) {
   const session = await auth()
   if (!session?.user) {
-    return new NextResponse("Unauthorized", { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const { searchParams } = new URL(req.url)
@@ -15,8 +23,8 @@ export async function GET(req: Request) {
   const skipParam = parseInt(searchParams.get('skip') || '0', 10)
   const skip = isNaN(skipParam) ? 0 : skipParam
 
-  const canExportIncidents = hasPermission(session as any, 'EXPORT_INCIDENTS')
-  const canViewAll = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
+  const canExportIncidents = hasPermission(session, 'EXPORT_INCIDENTS')
+  const canViewAll = hasPermission(session, 'VIEW_INCIDENTS_ALL')
   let csvContent = ""
 
   if (type === 'incident') {
@@ -30,8 +38,8 @@ export async function GET(req: Request) {
        return new NextResponse("Forbidden: You require standard or advanced export permissions.", { status: 403 })
     }
 
-    const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
-    const canViewUnassigned = hasPermission(session as any, 'VIEW_INCIDENTS_UNASSIGNED')
+    const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
+    const canViewUnassigned = hasPermission(session, 'VIEW_INCIDENTS_UNASSIGNED')
 
     if (!canViewAll && !canViewAssigned && !canViewUnassigned) {
        return new NextResponse("Forbidden: No view permissions granted.", { status: 403 })
@@ -52,7 +60,7 @@ export async function GET(req: Request) {
     // Resource Constraint Enforcement (OOM Prevention) w/ Safe Paging
     const incidents = await db.incident.findMany({
       where: whereClause,
-      include: { asset: true, reporter: true, assignees: true },
+      include: { assets: true, reporter: true, assignees: true },
       orderBy: { createdAt: 'desc' },
       take: 5000,
       skip: skip
@@ -62,16 +70,16 @@ export async function GET(req: Request) {
     csvContent += headers.join(",") + "\n"
 
     for (const incident of incidents) {
-      const assigneesStr = incident.assignees.map(a => a.name).join("; ")
+      const assigneesStr = incident.assignees.map((a: any) => a.name).join("; ")
       const row = [
         incident.id,
-        `"${incident.title.replace(/"/g, '""')}"`,
+        `"${sanitizeCsvCell(incident.title)}"`,
         incident.type,
         incident.severity,
         incident.status,
-        incident.asset?.name || "Unlinked",
+        (incident as any).assets?.[0]?.name || "Unlinked",
         incident.reporter?.name || incident.reporter?.email || "Deleted Operator",
-        `"${assigneesStr}"`,
+        `"${sanitizeCsvCell(assigneesStr)}"`,
         incident.targetSlaDate ? incident.targetSlaDate.toISOString() : "None",
         incident.createdAt.toISOString()
       ]
@@ -79,7 +87,7 @@ export async function GET(req: Request) {
     }
   } else if (type === 'vulnerability') {
     // BOLA Enforcement
-    const hasVulnExportPrivilege = hasPermission(session as any, 'VIEW_VULNERABILITIES') && hasPermission(session as any, 'EXPORT_INCIDENTS')
+    const hasVulnExportPrivilege = hasPermission(session, 'VIEW_VULNERABILITIES') && hasPermission(session, 'EXPORT_INCIDENTS')
     if (!hasVulnExportPrivilege) {
        return new NextResponse("Forbidden: Comprehensive Threat intelligence extracts mandate explicit clearance.", { status: 403 })
     }
@@ -106,11 +114,11 @@ export async function GET(req: Request) {
       const row = [
         vuln.id,
         vuln.cveId || "None",
-        `"${vuln.title.replace(/"/g, '""')}"`,
+        `"${sanitizeCsvCell(vuln.title)}"`,
         vuln.cvssScore || "0",
         vuln.severity,
         vuln.status,
-        `"${assetsStr}"`,
+        `"${sanitizeCsvCell(assetsStr)}"`,
         vuln.targetSlaDate ? vuln.targetSlaDate.toISOString() : "None",
         vuln.createdAt.toISOString()
       ]

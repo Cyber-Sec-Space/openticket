@@ -60,10 +60,8 @@ export function InviteModal() {
 
   return (
     <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) reset(); }}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]">
-          <Send className="w-3.5 h-3.5 mr-2" /> Invite Operator
-        </Button>
+      <DialogTrigger render={<Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]" />}>
+        <Send className="w-3.5 h-3.5 mr-2" /> Invite Operator
       </DialogTrigger>
       <DialogContent className="sm:max-w-md bg-black/95 border-white/10 shadow-2xl">
         <DialogHeader>

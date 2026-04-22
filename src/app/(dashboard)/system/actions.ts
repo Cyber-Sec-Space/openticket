@@ -6,219 +6,97 @@ import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
 import { encryptString, decryptString } from "@/lib/plugins/crypto"
 import nodemailer from "nodemailer"
+import { getGlobalSettings, invalidateGlobalSettings } from "@/lib/settings";
 
 export async function updateSystemSettings(formData: FormData) {
-  const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')) {
+  try {
+    const session = await auth()
+  if (!session?.user || !hasPermission(session, 'UPDATE_SYSTEM_SETTINGS')) {
     throw new Error("Unauthorized")
   }
 
-  // base-ui Checkbox with name="allowRegistration" will send "on" if checked, otherwise it won't be in formData
-  const allowRegistration = formData.get("allowRegistration") === "on"
-  const requireGlobal2FA = formData.get("requireGlobal2FA") === "on"
-  const requireEmailVerification = formData.get("requireEmailVerification") === "on"
-  
-  let systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
-  try { new URL(systemPlatformUrl); } catch { systemPlatformUrl = "http://localhost:3000"; }
-  
-  const defaultRoleName = formData.get("defaultRoleId") as string
-  let rolePayload: any = undefined
-  if (defaultRoleName === "NONE") {
-    rolePayload = { set: [] }
-  } else if (defaultRoleName) {
-    const role = await db.customRole.findUnique({ where: { name: defaultRoleName } })
-    if (role) {
-      rolePayload = { set: [{ id: role.id }] }
-    }
+  // Extract simple fields
+  const payload: any = {
+    allowRegistration: formData.get("allowRegistration") === "on",
+    allowPasswordReset: formData.get("allowPasswordReset") === "on",
+    requireGlobal2FA: formData.get("requireGlobal2FA") === "on",
+    requireEmailVerification: formData.get("requireEmailVerification") === "on",
+    defaultRoleName: formData.get("defaultRoleId") as string,
+    webhookEnabled: formData.get("webhookEnabled") === "on",
+    rateLimitEnabled: formData.get("rateLimitEnabled") === "on",
+    smtpEnabled: formData.get("smtpEnabled") === "on",
+    smtpTriggerOnCritical: formData.get("smtpTriggerOnCritical") === "on",
+    smtpTriggerOnHigh: formData.get("smtpTriggerOnHigh") === "on",
+    smtpTriggerOnAssign: formData.get("smtpTriggerOnAssign") === "on",
+    smtpTriggerOnResolution: formData.get("smtpTriggerOnResolution") === "on",
+    smtpTriggerOnAssetCompromise: formData.get("smtpTriggerOnAssetCompromise") === "on",
+    smtpTriggerOnNewUser: formData.get("smtpTriggerOnNewUser") === "on",
+    smtpTriggerOnNewVulnerability: formData.get("smtpTriggerOnNewVulnerability") === "on",
+    soarAutoQuarantineEnabled: formData.get("soarAutoQuarantineEnabled") === "on",
   }
 
-  const webhookEnabled = formData.get("webhookEnabled") === "on"
+  let systemPlatformUrl = formData.get("systemPlatformUrl") as string || "http://localhost:3000"
+  try { 
+    const parsed = new URL(systemPlatformUrl); 
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error();
+  } catch { systemPlatformUrl = "http://localhost:3000"; }
+  payload.systemPlatformUrl = systemPlatformUrl;
+
   let webhookUrl = formData.get("webhookUrl") as string || ""
   if (webhookUrl) {
-    try { new URL(webhookUrl); } catch { webhookUrl = ""; }
+    try { 
+      const parsed = new URL(webhookUrl); 
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error();
+    } catch { webhookUrl = ""; }
+  }
+  payload.webhookUrl = webhookUrl;
+
+  const parseNum = (key: string, def?: number) => {
+    const val = parseInt(formData.get(key) as string, 10);
+    return isNaN(val) ? def : val;
   }
 
-  const ptCrit = parseInt(formData.get("slaCriticalHours") as string, 10)
-  const slaCriticalHours = isNaN(ptCrit) ? 4 : ptCrit
+  payload.slaCriticalHours = parseNum("slaCriticalHours", 4);
+  payload.slaHighHours = parseNum("slaHighHours", 24);
+  payload.slaMediumHours = parseNum("slaMediumHours", 72);
+  payload.slaLowHours = parseNum("slaLowHours", 168);
+  payload.slaInfoHours = parseNum("slaInfoHours", 720);
+
+  payload.vulnSlaCriticalHours = parseNum("vulnSlaCriticalHours", 12);
+  payload.vulnSlaHighHours = parseNum("vulnSlaHighHours", 48);
+  payload.vulnSlaMediumHours = parseNum("vulnSlaMediumHours", 168);
+  payload.vulnSlaLowHours = parseNum("vulnSlaLowHours", 336);
+  payload.vulnSlaInfoHours = parseNum("vulnSlaInfoHours", 720);
+
+  payload.rateLimitWindowMs = parseNum("rateLimitWindowMs", 900000);
+  payload.rateLimitMaxAttempts = parseNum("rateLimitMaxAttempts", 5);
+
+  payload.mailerProvider = formData.get("mailerProvider") as any || "SMTP";
+  payload.mailerApiKeyRaw = formData.get("mailerApiKey") as string || null;
+  payload.smtpHost = formData.get("smtpHost") as string || null;
+  payload.smtpPort = parseNum("smtpPort", null as any);
+  payload.smtpUser = formData.get("smtpUser") as string || null;
+  payload.smtpPasswordRaw = formData.get("smtpPassword") as string || null;
+  payload.smtpFrom = formData.get("smtpFrom") as string || null;
   
-  const ptHigh = parseInt(formData.get("slaHighHours") as string, 10)
-  const slaHighHours = isNaN(ptHigh) ? 24 : ptHigh
-  
-  const ptMed = parseInt(formData.get("slaMediumHours") as string, 10)
-  const slaMediumHours = isNaN(ptMed) ? 72 : ptMed
-  
-  const ptLow = parseInt(formData.get("slaLowHours") as string, 10)
-  const slaLowHours = isNaN(ptLow) ? 168 : ptLow
-  
-  const ptInfo = parseInt(formData.get("slaInfoHours") as string, 10)
-  const slaInfoHours = isNaN(ptInfo) ? 720 : ptInfo
+  const soarThresh = formData.get("soarAutoQuarantineThreshold") as string;
+  if (soarThresh) payload.soarAutoQuarantineThreshold = soarThresh;
 
-  // Rate Limiting Config
-  const rateLimitEnabled = formData.get("rateLimitEnabled") === "on"
-  
-  const ptWindow = parseInt(formData.get("rateLimitWindowMs") as string, 10)
-  const rateLimitWindowMs = isNaN(ptWindow) ? 900000 : ptWindow
-  
-  const ptMax = parseInt(formData.get("rateLimitMaxAttempts") as string, 10)
-  const rateLimitMaxAttempts = isNaN(ptMax) ? 5 : ptMax
-
-  // SMTP Settings
-  const smtpEnabled = formData.get("smtpEnabled") === "on"
-  const smtpHost = formData.get("smtpHost") as string || null
-  const smtpPortStr = formData.get("smtpPort") as string
-  const parsedPort = parseInt(smtpPortStr, 10)
-  const smtpPort = smtpPortStr && !isNaN(parsedPort) ? parsedPort : null
-  const smtpUser = formData.get("smtpUser") as string || null
-  const smtpPasswordRaw = formData.get("smtpPassword") as string || null
-  const smtpFrom = formData.get("smtpFrom") as string || null
-  
-  let passwordPayload: any = undefined
-  if (smtpPasswordRaw === "<CLEAR>") {
-    passwordPayload = { smtpPassword: null }
-  } else if (smtpPasswordRaw) {
-    passwordPayload = { smtpPassword: encryptString(smtpPasswordRaw) }
-  }
-
-  const smtpTriggerOnCritical = formData.get("smtpTriggerOnCritical") === "on"
-  const smtpTriggerOnHigh = formData.get("smtpTriggerOnHigh") === "on"
-  const smtpTriggerOnAssign = formData.get("smtpTriggerOnAssign") === "on"
-  const smtpTriggerOnResolution = formData.get("smtpTriggerOnResolution") === "on"
-  const smtpTriggerOnAssetCompromise = formData.get("smtpTriggerOnAssetCompromise") === "on"
-  const smtpTriggerOnNewUser = formData.get("smtpTriggerOnNewUser") === "on"
-  const smtpTriggerOnNewVulnerability = formData.get("smtpTriggerOnNewVulnerability") === "on"
-
-  // SOAR Automations
-  const soarAutoQuarantineEnabled = formData.get("soarAutoQuarantineEnabled") === "on"
-  const soarAutoQuarantineThresholdRaw = formData.get("soarAutoQuarantineThreshold") as string
-  const soarAutoQuarantineThreshold = (soarAutoQuarantineThresholdRaw || "CRITICAL") as any
-
-  // Detect state change for email verification
-  const currentSettings = await db.systemSetting.findUnique({ where: { id: "global" } })
-  const wasEmailVerificationRequired = currentSettings?.requireEmailVerification ?? false
-
-  await db.systemSetting.upsert({
-    where: { id: "global" },
-    update: {
-      allowRegistration,
-      requireGlobal2FA,
-      requireEmailVerification,
-      systemPlatformUrl,
-      webhookEnabled,
-      webhookUrl,
-      ...(rolePayload ? { defaultUserRoles: rolePayload } : {}),
-      slaCriticalHours,
-      slaHighHours,
-      slaMediumHours,
-      slaLowHours,
-      slaInfoHours,
-      rateLimitEnabled,
-      rateLimitWindowMs,
-      rateLimitMaxAttempts,
-      smtpEnabled,
-      smtpHost,
-      smtpPort,
-      smtpUser,
-      ...(passwordPayload ? passwordPayload : {}),
-      smtpFrom,
-      smtpTriggerOnCritical,
-      smtpTriggerOnHigh,
-      smtpTriggerOnAssign,
-      smtpTriggerOnResolution,
-      smtpTriggerOnAssetCompromise,
-      smtpTriggerOnNewUser,
-      smtpTriggerOnNewVulnerability,
-      soarAutoQuarantineEnabled,
-      soarAutoQuarantineThreshold
-    },
-    create: {
-      id: "global",
-      allowRegistration,
-      requireGlobal2FA,
-      requireEmailVerification,
-      systemPlatformUrl,
-      webhookEnabled,
-      webhookUrl,
-      ...(rolePayload ? { defaultUserRoles: { connect: rolePayload.set } } : {}),
-      slaCriticalHours,
-      slaHighHours,
-      slaMediumHours,
-      slaLowHours,
-      slaInfoHours,
-      rateLimitEnabled,
-      rateLimitWindowMs,
-      rateLimitMaxAttempts,
-      smtpEnabled,
-      smtpHost,
-      smtpPort,
-      smtpUser,
-      ...(passwordPayload ? passwordPayload : {}),
-      smtpFrom,
-      smtpTriggerOnCritical,
-      smtpTriggerOnHigh,
-      smtpTriggerOnAssign,
-      smtpTriggerOnResolution,
-      smtpTriggerOnAssetCompromise,
-      smtpTriggerOnNewUser,
-      smtpTriggerOnNewVulnerability,
-      soarAutoQuarantineEnabled,
-      soarAutoQuarantineThreshold
-    }
-  })
-
-  // If email verification was freshly turned ON, grandfather in all existing accounts by forcefully marking them as verified
-  if (!wasEmailVerificationRequired && requireEmailVerification) {
-    await db.user.updateMany({
-      where: { emailVerified: null },
-      data: { emailVerified: new Date() }
-    })
-  }
-
-  const { fireHook } = await import("@/lib/plugins/hook-engine");
-  const updatedSettings = await db.systemSetting.findUnique({ where: { id: "global" } });
-  await fireHook("onSystemSettingsUpdated", updatedSettings);
-
-
-  // Retroactively patch SLA dates for unresolved incidents and vulnerabilities
-  setTimeout(async () => {
-    try {
-      await db.$executeRawUnsafe(`
-        UPDATE "Incident"
-        SET "targetSlaDate" = "createdAt" + (
-          CASE "severity"::text
-            WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
-            WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
-            WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
-            WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
-            WHEN 'INFO'     THEN $5::int * INTERVAL '1 hour'
-          END
-        )
-        WHERE "status"::text IN ('NEW', 'IN_PROGRESS', 'PENDING_INFO')
-      `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours, slaInfoHours)
-      
-      await db.$executeRawUnsafe(`
-        UPDATE "Vulnerability"
-        SET "targetSlaDate" = "createdAt" + (
-          CASE "severity"::text
-            WHEN 'CRITICAL' THEN $1::int * INTERVAL '1 hour'
-            WHEN 'HIGH'     THEN $2::int * INTERVAL '1 hour'
-            WHEN 'MEDIUM'   THEN $3::int * INTERVAL '1 hour'
-            WHEN 'LOW'      THEN $4::int * INTERVAL '1 hour'
-            WHEN 'INFO'     THEN $5::int * INTERVAL '1 hour'
-          END
-        )
-        WHERE "status"::text IN ('OPEN', 'MITIGATED')
-      `, slaCriticalHours, slaHighHours, slaMediumHours, slaLowHours, slaInfoHours)
-    } catch (e) {
-      console.error("Failed to retroactively update SLA dates:", e)
-    }
-  }, 0)
+  // Delegate strictly to the service layer
+  const { SystemConfigService } = await import("@/services/system-config.service");
+  await SystemConfigService.updateSettings(session.user.id, payload);
 
   revalidatePath("/system")
+} catch (e: any) {
+  require('fs').writeFileSync('/tmp/open-ticket-error.log', String(e) + '\n\n' + e.stack);
+  console.error("CRITICAL SETTINGS ERROR:", e)
+  throw e
+}
 }
 
 export async function testSmtpConnection(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')) {
+  if (!session?.user || !hasPermission(session, 'UPDATE_SYSTEM_SETTINGS')) {
     return { error: "Unauthorized" }
   }
 
@@ -232,7 +110,7 @@ export async function testSmtpConnection(formData: FormData) {
   let finalPassword = smtpPasswordRaw
   if (!finalPassword) {
     // If empty, try to fetch the existing securely stored password
-    const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+    const settings = await getGlobalSettings()
     if (settings?.smtpPassword) {
       finalPassword = decryptString(settings.smtpPassword)
     }
@@ -250,7 +128,7 @@ export async function testSmtpConnection(formData: FormData) {
         pass: finalPassword,
       } : undefined,
       tls: {
-        rejectUnauthorized: false
+        rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false"
       }
     })
 

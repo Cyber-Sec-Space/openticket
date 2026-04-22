@@ -29,7 +29,7 @@ async function computeVulnStatus(vulnId: string) {
 export async function updateVulnAssetStatusAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'UPDATE_VULNERABILITIES')) {
+  if (!session?.user || !hasPermission(session, 'UPDATE_VULNERABILITIES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -60,13 +60,14 @@ export async function updateVulnAssetStatusAction(formData: FormData) {
   })
 
   revalidatePath(`/vulnerabilities/${vulnId}`)
+  revalidatePath(`/vulnerabilities/[id]`, 'page')
   revalidatePath(`/vulnerabilities`)
 }
 
 export async function addAssigneesAction(formData: FormData) {
   const session = await auth()
-  const hasSelf = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF')
-  const hasOthers = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')
+  const hasSelf = hasPermission(session, 'ASSIGN_VULNERABILITIES_SELF')
+  const hasOthers = hasPermission(session, 'ASSIGN_VULNERABILITIES_OTHERS')
   if (!session?.user || (!hasSelf && !hasOthers)) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string
@@ -87,12 +88,13 @@ export async function addAssigneesAction(formData: FormData) {
   await fireHook("onVulnerabilityUpdated", updatedVuln as any)
 
   revalidatePath(`/vulnerabilities/${vulnId}`)
+  revalidatePath(`/vulnerabilities/[id]`, 'page')
 }
 
 export async function removeAssigneeAction(formData: FormData) {
   const session = await auth()
-  const hasSelf = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_SELF')
-  const hasOthers = hasPermission(session as any, 'ASSIGN_VULNERABILITIES_OTHERS')
+  const hasSelf = hasPermission(session, 'ASSIGN_VULNERABILITIES_SELF')
+  const hasOthers = hasPermission(session, 'ASSIGN_VULNERABILITIES_OTHERS')
   if (!session?.user || (!hasSelf && !hasOthers)) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string
@@ -111,13 +113,14 @@ export async function removeAssigneeAction(formData: FormData) {
   await fireHook("onVulnerabilityUpdated", updatedVuln as any)
 
   revalidatePath(`/vulnerabilities/${vulnId}`)
+  revalidatePath(`/vulnerabilities/[id]`, 'page')
 }
 
 export async function postVulnCommentAction(formData: FormData) {
   const session = await auth()
   if (!session?.user) throw new Error("Unauthorized")
 
-  if (!hasPermission(session as any, 'VIEW_VULNERABILITIES') || !hasPermission(session as any, 'ADD_COMMENTS')) {
+  if (!hasPermission(session, 'VIEW_VULNERABILITIES') || !hasPermission(session, 'ADD_COMMENTS')) {
      throw new Error("Forbidden: You lack either view clearance or the ADD_COMMENTS capability.")
   }
 
@@ -138,30 +141,36 @@ export async function postVulnCommentAction(formData: FormData) {
   await fireHook("onCommentAdded", newComment);
   
   revalidatePath(`/vulnerabilities/${vulnId}`)
+  revalidatePath(`/vulnerabilities/[id]`, 'page')
 }
 
 export async function linkVulnAssetAction(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'LINK_VULN_TO_ASSET')) throw new Error("Unauthorized")
+  if (!session?.user || !hasPermission(session, 'LINK_VULN_TO_ASSET')) throw new Error("Unauthorized")
 
   const vulnId = formData.get("vulnId") as string
-  const assetId = formData.get("assetId") as string
+  const assetIds = formData.getAll("assetIds") as string[]
+  
+  if (!assetIds || assetIds.length === 0 || assetIds[0] === 'NONE') return
   
   try {
-    await db.vulnerabilityAsset.create({
-      data: { vulnId, assetId }
-    })
+    for (const assetId of assetIds) {
+      await db.vulnerabilityAsset.create({
+        data: { vulnId, assetId }
+      }).catch(e => {}) // ignore unique constraint individually
+    }
     await computeVulnStatus(vulnId)
   } catch (e) {
-    // ignore unique constraint
+    // top level catch
   }
   
   revalidatePath(`/vulnerabilities/${vulnId}`)
+  revalidatePath(`/vulnerabilities/[id]`, 'page')
 }
 
 export async function unlinkVulnAssetAction(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'LINK_VULN_TO_ASSET')) throw new Error("Unauthorized")
+  if (!session?.user || !hasPermission(session, 'LINK_VULN_TO_ASSET')) throw new Error("Unauthorized")
 
   const vulnAssetId = formData.get("vulnAssetId") as string
   const vulnId = formData.get("vulnId") as string
@@ -172,12 +181,13 @@ export async function unlinkVulnAssetAction(formData: FormData) {
   await computeVulnStatus(vulnId)
   
   revalidatePath(`/vulnerabilities/${vulnId}`)
+  revalidatePath(`/vulnerabilities/[id]`, 'page')
 }
 
 export async function deleteVulnerabilityAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'DELETE_VULNERABILITIES')) {
+  if (!session?.user || !hasPermission(session, 'DELETE_VULNERABILITIES')) {
     throw new Error("Forbidden: Strict Admin Access Control for Destructive Operations")
   }
 
@@ -217,3 +227,43 @@ export async function deleteVulnerabilityAction(formData: FormData) {
   revalidatePath("/vulnerabilities")
   redirect("/vulnerabilities")
 }
+
+export async function setVulnAssigneesAction(formData: FormData) {
+  const session = await auth()
+  const hasSelf = hasPermission(session, 'ASSIGN_VULNERABILITIES_SELF')
+  const hasOthers = hasPermission(session, 'ASSIGN_VULNERABILITIES_OTHERS')
+  if (!session?.user || (!hasSelf && !hasOthers)) throw new Error("Unauthorized")
+
+  const vulnId = formData.get("vulnId") as string
+  const assigneeIdsRaw = formData.getAll("assigneeIds") as string[]
+  const validAssigneeIds = assigneeIdsRaw.filter(id => id !== "UNASSIGNED")
+  
+  const currentVuln = await db.vulnerability.findUnique({ where: { id: vulnId }, include: { assignees: true } })
+  if (!currentVuln) throw new Error("Vulnerability not found")
+  
+  const currentAssigneeIds = new Set(currentVuln.assignees.map(a => a.id))
+  const requestedAssigneeSet = new Set(validAssigneeIds)
+
+  if (!hasOthers && hasSelf) {
+    let validMutation = true
+    validAssigneeIds.forEach(id => {
+       if (id !== session.user.id && !currentAssigneeIds.has(id)) validMutation = false
+    })
+    Array.from(currentAssigneeIds).forEach(id => {
+       if (id !== session.user.id && !requestedAssigneeSet.has(id)) validMutation = false
+    })
+    if (!validMutation) throw new Error("Forbidden: You can only assign or remove yourself.")
+  }
+
+  const updatedVuln = await db.vulnerability.update({
+    where: { id: vulnId },
+    data: { assignees: { set: validAssigneeIds.map(id => ({ id })) } }
+  })
+  
+  const { fireHook } = await import("@/lib/plugins/hook-engine")
+  await fireHook("onVulnerabilityUpdated", updatedVuln as any)
+
+  revalidatePath(`/vulnerabilities/${vulnId}`)
+  revalidatePath(`/vulnerabilities/[id]`, 'page')
+}
+

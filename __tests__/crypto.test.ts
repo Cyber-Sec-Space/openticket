@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { encryptPluginConfig, parsePluginConfig, encryptString, decryptString } from "../src/lib/plugins/crypto"
 
 describe("Crypto Utils", () => {
@@ -10,6 +19,14 @@ describe("Crypto Utils", () => {
     expect(decrypted).toEqual(config)
   })
 
+  it("decrypts payload with unknown version falling back to v1", () => {
+    const config = { test: "fallback" }
+    const encrypted = encryptPluginConfig(config)
+    const v99Encrypted = encrypted.replace("enc.v1.", "enc.v99.");
+    const decrypted = parsePluginConfig(v99Encrypted);
+    expect(decrypted).toEqual(config);
+  })
+
   it("handles null undefined in plugin config", () => {
     expect(encryptPluginConfig(null)).toBe("enc.v1.")
     expect(parsePluginConfig("")).toEqual({})
@@ -19,13 +36,16 @@ describe("Crypto Utils", () => {
     expect(parsePluginConfig("enc.v1.bad.bad.bad")).toEqual({}) // catch block
   })
 
-  it("handles missing NEXTAUTH_SECRET fallback", () => {
+  it("throws when encryption secret is missing", () => {
     jest.isolateModules(() => {
-        const og = process.env.NEXTAUTH_SECRET
+        const ogNextAuthSecret = process.env.NEXTAUTH_SECRET
+        const ogAuthSecret = process.env.AUTH_SECRET
         delete process.env.NEXTAUTH_SECRET
+        delete process.env.AUTH_SECRET
         const crypto2 = require("../src/lib/plugins/crypto")
-        expect(crypto2.encryptString("test")).toContain("enc.v1.")
-        process.env.NEXTAUTH_SECRET = og
+        expect(() => crypto2.encryptString("test")).toThrow("Missing NEXTAUTH_SECRET/AUTH_SECRET")
+        process.env.NEXTAUTH_SECRET = ogNextAuthSecret
+        process.env.AUTH_SECRET = ogAuthSecret
     })
   })
 

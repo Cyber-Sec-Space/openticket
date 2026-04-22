@@ -48,7 +48,7 @@ export default async function SettingsPage() {
           <p className="text-muted-foreground mt-2">Manage your personal identification matrix mapping across the perimeter.</p>
         </div>
         <div className="flex items-center gap-3">
-          {hasPermission(session as any, 'ISSUE_API_TOKENS') && (
+          {hasPermission(session, 'ISSUE_API_TOKENS') && (
              <Link href="/settings/tokens">
                 <Button className="bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)]">
                   API Tokens
@@ -90,7 +90,7 @@ export default async function SettingsPage() {
             <div className="space-y-4">
               <Label className="uppercase text-xs tracking-widest text-muted-foreground flex justify-between items-center">
                 <span>Operational Privilege Tier</span>
-                {hasPermission(session as any, 'VIEW_SYSTEM_SETTINGS') && (
+                {hasPermission(session, 'VIEW_SYSTEM_SETTINGS') && (
                   <span className="flex items-center text-primary text-xs gap-1">
                     <ShieldCheck className="w-3.5 h-3.5" /> Core Staff
                   </span>

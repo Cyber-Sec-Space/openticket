@@ -1,3 +1,12 @@
+
+jest.mock("../../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { render, screen } from '@testing-library/react'
 import PluginStorePage from '@/app/(dashboard)/settings/plugins/store/page'
 import { TextEncoder, TextDecoder } from 'util'
@@ -23,6 +32,9 @@ jest.mock('@/lib/db', () => ({
   db: {
     pluginState: {
       findMany: jest.fn().mockResolvedValue([])
+    },
+    systemSetting: {
+      findUnique: jest.fn().mockResolvedValue({ id: "global", systemPlatformUrl: "http://localhost:3000" })
     }
   }
 }))
@@ -32,7 +44,7 @@ global.fetch = jest.fn()
 describe('PluginStorePage Server Component', () => {
   beforeEach(() => {
     (global.fetch as jest.Mock).mockClear()
-    process.env.NODE_ENV = "production"
+    ;(process.env as any).NODE_ENV = "production"
   })
 
   it('renders Cannot Connect to Plugin Registry when fetch fails or returns invalid structurally', async () => {

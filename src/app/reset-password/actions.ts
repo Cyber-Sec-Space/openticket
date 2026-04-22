@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 
 export async function executeReset(prevState: any, formData: FormData) {
   const token = formData.get("token") as string

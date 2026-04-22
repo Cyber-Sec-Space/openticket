@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { hasPermission } from "@/lib/auth-utils"
+import { getGlobalSettings } from "@/lib/settings";
 
 // Phase 12 Security: Vertical Privilege Validation
 async function verifyTargetHeightAndSubset(executor: any, targetUserIds: string[], roleIds?: string[]) {
@@ -42,7 +43,7 @@ export async function updateUserRole(formData: FormData) {
   const session = await auth()
   
   // Security boundary: Only ASSIGN_USER_ROLES can modify RBAC.
-  if (!session?.user || !hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
+  if (!session?.user || !hasPermission(session, 'ASSIGN_USER_ROLES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -84,7 +85,7 @@ export async function updateUserRole(formData: FormData) {
 export async function deleteUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'DELETE_USERS')) {
+  if (!session?.user || !hasPermission(session, 'DELETE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -121,12 +122,14 @@ export async function deleteUserAction(formData: FormData) {
   })
 
   revalidatePath("/users")
+  const { redirect } = await import("next/navigation")
+  redirect("/users")
 }
 
 export async function toggleUserStatusAction(userId: string, isDisabled: boolean) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'SUSPEND_USERS')) {
+  if (!session?.user || !hasPermission(session, 'SUSPEND_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -167,7 +170,7 @@ export async function toggleUserStatusAction(userId: string, isDisabled: boolean
 export async function bulkDeleteUsersAction(userIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'DELETE_USERS')) {
+  if (!session?.user || !hasPermission(session, 'DELETE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -203,7 +206,7 @@ export async function bulkDeleteUsersAction(userIds: string[]) {
 export async function bulkUpdateRolesAction(userIds: string[], roleIds: string[]) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
+  if (!session?.user || !hasPermission(session, 'ASSIGN_USER_ROLES')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -248,7 +251,7 @@ export async function createInvitation(formData: FormData) {
   const session = await auth()
   if (!session?.user) throw new Error("Unauthorized")
   
-  if (!hasPermission(session as any, 'CREATE_USERS')) {
+  if (!hasPermission(session, 'CREATE_USERS')) {
     throw new Error("Insufficient Permissions")
   }
 
@@ -279,7 +282,7 @@ export async function createInvitation(formData: FormData) {
   })
 
   // Get system URL for the link
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   const baseUrl = settings?.systemPlatformUrl || "http://localhost:3000"
   const joinUrl = `${baseUrl}/register?invite=${token}`
 
@@ -288,6 +291,16 @@ export async function createInvitation(formData: FormData) {
     const { sendOperatorInvitationEmail } = await import("@/lib/mailer")
     await sendOperatorInvitationEmail(email, joinUrl, session.user.name || "Unknown")
   }
+
+  await db.auditLog.create({
+    data: {
+      action: "CREATE",
+      entityType: "INVITATION",
+      entityId: "new",
+      userId: session.user.id,
+      changes: { details: `Created a new system invitation link. Sent to email: ${email || "None"}.` }
+    }
+  });
 
   return { success: true, joinUrl }
 }

@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { ShieldAlert } from "lucide-react"
 import { ResetPasswordForm } from "./reset-password-form"
 import { redirect } from "next/navigation"
+import { getGlobalSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic"
 
@@ -12,6 +13,11 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
 
   if (!token || !email) {
     redirect("/forgot-password?error=Invalid parameters")
+  }
+
+  const settings = await getGlobalSettings()
+  if (settings?.allowPasswordReset === false) {
+      redirect("/login?error=Password reset has been disabled by the administrator.")
   }
 
   // Pre-validate token

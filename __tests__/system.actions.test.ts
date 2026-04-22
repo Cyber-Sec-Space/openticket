@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { updateSystemSettings, testSmtpConnection } from "../src/app/(dashboard)/system/actions"
 import { db } from "../src/lib/db"
 import { auth } from "@/auth"
@@ -17,7 +26,11 @@ jest.mock("../src/lib/db", () => ({
     customRole: {
       findUnique: jest.fn(),
     },
-    $executeRawUnsafe: jest.fn()
+    auditLog: {
+      create: jest.fn(),
+    },
+    $executeRaw: jest.fn(),
+    $executeRaw: jest.fn()
   }
 }))
 
@@ -79,13 +92,13 @@ describe("System Actions", () => {
       fd.append("webhookUrl", "https://cyber-sec.space/webhook")
       fd.append("soarAutoQuarantineThreshold", "")
       
-      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue({ requireEmailVerification: false })
+      ;(getGlobalSettings as jest.Mock).mockResolvedValue({ requireEmailVerification: false })
       
       await updateSystemSettings(fd)
       
       expect(db.systemSetting.upsert).toHaveBeenCalled()
       expect(db.user.updateMany).toHaveBeenCalled()
-      expect(db.$executeRawUnsafe).toHaveBeenCalledTimes(2)
+      expect(db.$executeRaw).toHaveBeenCalledTimes(2)
     })
     
     it("handles parsing roles and encrypting smtp password and URL fallback parsing", async () => {
@@ -96,8 +109,9 @@ describe("System Actions", () => {
       fd.append("defaultRoleId", "CustomRole1")
       fd.append("smtpPassword", "newpass")
       fd.append("webhookEnabled", "on")
-      fd.append("webhookUrl", "invalid_url")
-      fd.append("systemPlatformUrl", "invalid_url")
+      fd.append("webhookUrl", "ftp://invalid_protocol") // Will parse as URL but fail protocol check
+      fd.append("systemPlatformUrl", "ftp://invalid_protocol") // Will parse as URL but fail protocol check
+      fd.append("soarAutoQuarantineThreshold", "HIGH")
       fd.append("slaCriticalHours", "invalid")
       fd.append("slaHighHours", "invalid")
       fd.append("slaMediumHours", "invalid")
@@ -116,12 +130,13 @@ describe("System Actions", () => {
       const upsertArgs = (db.systemSetting.upsert as jest.Mock).mock.calls[0][0]
       expect(upsertArgs.update.systemPlatformUrl).toBe("http://localhost:3000") // Fallback
       expect(upsertArgs.update.webhookUrl).toBe("") // Fallback
+      expect(upsertArgs.update.soarAutoQuarantineThreshold).toBe("HIGH")
     })
 
     it("upserts system settings with explicit valid smtp port and no password", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
-      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue(null)
+      ;(getGlobalSettings as jest.Mock).mockResolvedValue(null)
       const fd = new FormData()
       fd.append("smtpPort", "587")
       fd.append("slaCriticalHours", "5")
@@ -140,12 +155,12 @@ describe("System Actions", () => {
     it("catches DB exception silently during SLA update", async () => {
        (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
        ;(hasPermission as jest.Mock).mockReturnValue(true)
-       ;(db.$executeRawUnsafe as jest.Mock).mockRejectedValue(new Error("DB FAULT"))
+       ;(db.$executeRaw as jest.Mock).mockRejectedValue(new Error("DB FAULT"))
        const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {})
        
        await updateSystemSettings(new FormData())
        
-       expect(consoleSpy).toHaveBeenCalledWith("Failed to retroactively update SLA dates:", expect.any(Error))
+       expect(consoleSpy).toHaveBeenCalledWith("[SystemConfigService] Failed to retroactively update SLA dates:", expect.any(Error))
        consoleSpy.mockRestore()
     })
   })
@@ -168,7 +183,7 @@ describe("System Actions", () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
-      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue({ smtpPassword: "encrypted_pwd" })
+      ;(getGlobalSettings as jest.Mock).mockResolvedValue({ smtpPassword: "encrypted_pwd" })
       
       const fd = new FormData()
       fd.append("smtpHost", "smtp.test.com")
@@ -211,7 +226,7 @@ describe("System Actions", () => {
     it("tests smtp connection with missing password but no stored password", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
-      ;(db.systemSetting.findUnique as jest.Mock).mockResolvedValue(null)
+      ;(getGlobalSettings as jest.Mock).mockResolvedValue(null)
       const fd = new FormData()
       fd.append("smtpHost", "smtp.test.com")
       fd.append("smtpUser", "user")

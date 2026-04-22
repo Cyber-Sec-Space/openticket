@@ -19,27 +19,36 @@ if [ ! -f .env ]; then
     echo -e "\033[1;31m[ERR] .env.example not found! Providing template...\033[0m"
     echo "DATABASE_URL=\"postgresql://user:password@localhost:5432/openticket\"" > .env
     echo "AUTH_SECRET=\"$(openssl rand -base64 32)\"" >> .env
+    echo "NEXTAUTH_SECRET=\"$(openssl rand -base64 32)\"" >> .env
   fi
 else
   echo -e "\033[1;32m[INF] .env file already exists.\033[0m"
 fi
 
-echo -e "\n\033[1;34m[?] Do you want to configure PostgreSQL database credentials? (Y/n)\033[0m"
-read -r config_db < /dev/tty
+if [[ "$1" == "--non-interactive" ]]; then
+  echo -e "\n\033[1;33m[INF] Running in non-interactive mode. Bypassing prompts...\033[0m"
+  config_db="y"
+  pg_user="openticket_admin"
+  pg_pass="supersecurepassword"
+  pg_db="openticket_prod"
+  pg_host="localhost:5432"
+else
+  echo -e "\n\033[1;34m[?] Do you want to configure PostgreSQL database credentials? (Y/n)\033[0m"
+  read -r config_db < /dev/tty
+  if [[ ! "$config_db" =~ ^([nN][oO]|[nN])$ ]]; then
+    echo -e "\033[1;36m(Press Enter to accept defaults)\033[0m"
+    read -p "PostgreSQL User [openticket]: " pg_user < /dev/tty
+    pg_user=${pg_user:-openticket}
+    read -p "PostgreSQL Password [supersecure]: " pg_pass < /dev/tty
+    pg_pass=${pg_pass:-supersecure}
+    read -p "PostgreSQL Database Name [openticket_prod]: " pg_db < /dev/tty
+    pg_db=${pg_db:-openticket_prod}
+    read -p "Database Host (e.g. localhost:5432 or db:5432) [localhost:5432]: " pg_host < /dev/tty
+    pg_host=${pg_host:-localhost:5432}
+  fi
+fi
+
 if [[ ! "$config_db" =~ ^([nN][oO]|[nN])$ ]]; then
-  echo -e "\033[1;36m(Press Enter to accept defaults)\033[0m"
-  
-  read -p "PostgreSQL User [openticket]: " pg_user < /dev/tty
-  pg_user=${pg_user:-openticket}
-  
-  read -p "PostgreSQL Password [supersecure]: " pg_pass < /dev/tty
-  pg_pass=${pg_pass:-supersecure}
-  
-  read -p "PostgreSQL Database Name [openticket_prod]: " pg_db < /dev/tty
-  pg_db=${pg_db:-openticket_prod}
-  
-  read -p "Database Host (e.g. localhost:5432 or db:5432) [localhost:5432]: " pg_host < /dev/tty
-  pg_host=${pg_host:-localhost:5432}
   
   db_url="postgresql://${pg_user}:${pg_pass}@${pg_host}/${pg_db}"
   
@@ -70,8 +79,7 @@ npm install
 # 3. Database Migration
 echo -e "\n\033[1;36m>> Synchronizing Database Schema...\033[0m"
 npx prisma generate
-npx prisma migrate deploy
-npm run upgrade:0.5.0
+npm run migrate:prod
 
 echo -e "\n\033[1;36m====================================================\033[0m"
 echo -e "\033[1;32m🎉 Setup Complete! 🎉\033[0m"

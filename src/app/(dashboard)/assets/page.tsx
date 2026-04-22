@@ -11,14 +11,15 @@ import { CreateAssetModal } from "./create-asset-modal"
 
 import Form from "next/form";
 import {  notFound , redirect } from "next/navigation"
+import { LocalTime } from "@/components/local-time"
 
 export default async function AssetsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
   if (!session?.user) { redirect("/login"); return null; }
 
   // STRICT BOLA ENFORCEMENT
-  if (!hasPermission(session as any, 'VIEW_ASSETS')) return notFound()
-  const canCreate = hasPermission(session as any, 'CREATE_ASSETS')
+  if (!hasPermission(session, 'VIEW_ASSETS')) return notFound()
+  const canCreate = hasPermission(session, 'CREATE_ASSETS')
 
   const resolvedParams = await searchParams;
   let page = parseInt(resolvedParams.page || "1", 10);
@@ -116,11 +117,17 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
               </SelectTrigger>
               <SelectContent className="bg-black/95 border-white/10 shadow-2xl backdrop-blur-md">
                 <SelectItem value="ALL">All Types</SelectItem>
-                <SelectItem value="SERVER">Server</SelectItem>
-                <SelectItem value="ENDPOINT">Endpoint</SelectItem>
-                <SelectItem value="NETWORK">Network</SelectItem>
-                <SelectItem value="SOFTWARE">Software</SelectItem>
-                <SelectItem value="OTHER">Other</SelectItem>
+                <SelectItem value="SERVER">Server / Compute</SelectItem>
+                <SelectItem value="ENDPOINT">Client Endpoint</SelectItem>
+                <SelectItem value="NETWORK">Networking Hardware</SelectItem>
+                <SelectItem value="SOFTWARE">Software / Cloud Service</SelectItem>
+                <SelectItem value="REPOSITORY">Code Repository</SelectItem>
+                <SelectItem value="CLOUD_RESOURCE">Cloud Resource / VM</SelectItem>
+                <SelectItem value="DOMAIN">DNS Domain</SelectItem>
+                <SelectItem value="IAM_ROLE">IAM Role</SelectItem>
+                <SelectItem value="SAAS_APP">SaaS Platform</SelectItem>
+                <SelectItem value="CONTAINER">Container / Pod</SelectItem>
+                <SelectItem value="OTHER">Other Telemetry Node</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -176,7 +183,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
                     {asset.status.replace(/_/g, ' ')}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right text-muted-foreground font-mono text-xs pr-6">{asset.createdAt.toLocaleDateString()}</TableCell>
+                <TableCell className="text-right text-muted-foreground font-mono text-xs pr-6"><LocalTime date={asset.createdAt} format="date" /></TableCell>
               </TableRow>
             ))}
           </TableBody>

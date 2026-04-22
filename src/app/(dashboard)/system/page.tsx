@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { updateSystemSettings } from "./actions"
-import { SlaSettingsPanel } from "./sla-settings-panel"
+import { SlaSettingsPanel, VULN_TEMPLATES } from "./sla-settings-panel"
 import { SmtpTestButton } from "./smtp-test-button"
 import { SystemTabsLayout } from "./system-tabs-layout"
 import { PLUGIN_API_VERSION } from "@/lib/plugins/types"
@@ -23,7 +23,7 @@ import { createPluginContext } from "@/lib/plugins/sdk-context"
 
 export default async function SystemSettingsPage() {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'VIEW_SYSTEM_SETTINGS')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_SYSTEM_SETTINGS')) {
     redirect("/login")
   }
 
@@ -41,7 +41,12 @@ export default async function SystemSettingsPage() {
       slaHighHours: 24,
       slaMediumHours: 72,
       slaLowHours: 168,
-      slaInfoHours: 720
+      slaInfoHours: 720,
+      vulnSlaCriticalHours: 12,
+      vulnSlaHighHours: 48,
+      vulnSlaMediumHours: 168,
+      vulnSlaLowHours: 336,
+      vulnSlaInfoHours: 720
     }
   })
 
@@ -142,6 +147,27 @@ export default async function SystemSettingsPage() {
                           </Label>
                           <p className="text-xs text-muted-foreground leading-relaxed">
                             Strictly block dashboard access for newly registered users until their email is cryptographically verified to belong to them. (Action aborts if SMTP is offline).
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Password Reset Toggle */}
+                      <div className={`flex flex-row items-center space-x-4 rounded-xl border border-white/10 p-5 shadow-sm transition-colors ${settings.smtpEnabled ? "bg-black/40 hover:bg-black/60" : "bg-black/20 opacity-60"}`}>
+                        <Checkbox 
+                          key={`reset-${settings.allowPasswordReset}-${settings.smtpEnabled}`} 
+                          id="allowPasswordReset" 
+                          name="allowPasswordReset" 
+                          value="on" 
+                          defaultChecked={settings.allowPasswordReset && settings.smtpEnabled} 
+                          disabled={!settings.smtpEnabled}
+                        />
+                        <div className="space-y-1.5 leading-none">
+                          <Label htmlFor="allowPasswordReset" className={`text-sm font-semibold tracking-wide flex items-center ${settings.smtpEnabled ? "cursor-pointer text-emerald-400 hover:text-emerald-300" : "cursor-not-allowed text-muted-foreground"} transition-colors`}>
+                            <ShieldCheck className="w-4 h-4 mr-2" /> Allow Password Resets
+                          </Label>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Permit users to initiate password recovery workflows via email. 
+                            {!settings.smtpEnabled && <span className="text-amber-500 font-bold ml-1">(SMTP Relay must be configured and enabled first).</span>}
                           </p>
                         </div>
                       </div>
@@ -272,19 +298,35 @@ export default async function SystemSettingsPage() {
                   </div>
                 ),
                 "sla": (
-                  <div className="pt-4 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="pt-4 space-y-6 animate-in fade-in slide-in-from-bottom-2">
                     <div className="p-6 border border-white/10 rounded-xl bg-black/40 shadow-inner">
-                      <div className="mb-6">
-                        <h3 className="text-xl font-bold tracking-wide text-white mb-2">Service Level Agreements (SLA)</h3>
-                        <p className="text-sm text-muted-foreground">Configure the automated countdown timers assigned to incidents based on their initial severity classifications.</p>
-                      </div>
-                      <SlaSettingsPanel defaultSla={{ 
-                        critical: settings.slaCriticalHours, 
-                        high: settings.slaHighHours, 
-                        medium: settings.slaMediumHours, 
-                        low: settings.slaLowHours,
-                        info: settings.slaInfoHours
-                      }} />
+                      <SlaSettingsPanel 
+                        title="Incident SLA Framework"
+                        description="Configure countdown timers assigned to Incidents (Operational Threats)."
+                        namePrefix="sla"
+                        defaultSla={{ 
+                          critical: settings.slaCriticalHours, 
+                          high: settings.slaHighHours, 
+                          medium: settings.slaMediumHours, 
+                          low: settings.slaLowHours,
+                          info: settings.slaInfoHours
+                        }} 
+                      />
+                    </div>
+                    <div className="p-6 border border-white/10 rounded-xl bg-black/40 shadow-inner">
+                      <SlaSettingsPanel 
+                        title="Vulnerability SLA Framework"
+                        description="Configure countdown timers assigned to Vulnerabilities (Infrastructural Flaws)."
+                        namePrefix="vulnSla"
+                        templates={VULN_TEMPLATES}
+                        defaultSla={{ 
+                          critical: settings.vulnSlaCriticalHours, 
+                          high: settings.vulnSlaHighHours, 
+                          medium: settings.vulnSlaMediumHours, 
+                          low: settings.vulnSlaLowHours,
+                          info: settings.vulnSlaInfoHours
+                        }} 
+                      />
                     </div>
                   </div>
                 ),

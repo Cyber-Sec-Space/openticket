@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TagInput } from "@/components/ui/tag-input"
+import { MultiAssetPicker } from "@/components/ui/multi-asset-picker"
 import { createIncident } from "./new/actions"
+import { SubmitButton } from "@/components/ui/submit-button"
 
 export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: boolean, assets: any[] }) {
   const [open, setOpen] = useState(false)
@@ -28,18 +30,7 @@ export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: bo
         <p className="text-muted-foreground text-sm mb-6">Create a new security event payload for immediate inspection.</p>
         
         <form action={async (formData) => {
-          const assetName = formData.get("assetName") as string
-          const resolvedAssetId = !assetName 
-            ? null 
-            : assets.find(a => a.name === assetName)?.id || null
-          
-          const data = new FormData()
-          for (const [key, value] of formData.entries()) {
-            data.append(key, value)
-          }
-          data.set("assetId", resolvedAssetId || "")
-          
-          await createIncident({}, data)
+          await createIncident({}, formData)
         }} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm tracking-wide font-semibold text-primary">Incident Definition</Label>
@@ -66,7 +57,7 @@ export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: bo
                     <SelectItem value="DATA_BREACH">Data Breach</SelectItem>
                     <SelectItem value="UNAUTHORIZED_ACCESS">Unauthorized Access</SelectItem>
                     <SelectItem value="NETWORK_ANOMALY">Network Anomaly</SelectItem>
-                    <SelectItem value="OTHER" className="text-muted-foreground">Other / Triage</SelectItem>
+                    <SelectItem value="OTHER">Other / Triage</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -92,19 +83,9 @@ export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: bo
 
             {hasPrivilege && (
               <div className="space-y-2">
-                <Label htmlFor="assetId" className="text-sm tracking-wide font-semibold text-primary">Correlated Asset</Label>
+                <Label className="text-sm tracking-wide font-semibold text-primary">Correlated Assets</Label>
                 <div className="relative">
-                  <Select name="assetName" defaultValue="">
-                     <SelectTrigger className="flex h-12 w-full appearance-none rounded-md border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary transition-all">
-                       <SelectValue placeholder="Associate Infrastructure (Optional)" />
-                     </SelectTrigger>
-                     <SelectContent className="bg-black/95 border border-border/60 shadow-2xl backdrop-blur-md max-h-56">
-                       <SelectItem value="" className="text-muted-foreground italic">None Selected</SelectItem>
-                       {assets.map(asset => (
-                         <SelectItem key={asset.id} value={asset.name} className="font-mono">{asset.name}</SelectItem>
-                       ))}
-                     </SelectContent>
-                  </Select>
+                  <MultiAssetPicker assets={assets} />
                 </div>
               </div>
             )}
@@ -128,9 +109,9 @@ export function CreateIncidentModal({ hasPrivilege, assets }: { hasPrivilege: bo
             />
           </div>
 
-          <Button type="submit" className="w-full h-12 text-md font-bold mt-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(0,255,200,0.4)] transition-all">
+          <SubmitButton loadingText="Deploying Payload..." className="w-full h-12 text-md font-bold mt-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(0,255,200,0.4)] transition-all">
              Deploy Report Payload
-          </Button>
+          </SubmitButton>
         </form>
       </DialogContent>
     </Dialog>

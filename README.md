@@ -1,97 +1,94 @@
-# OpenTicket (Beta)
+# OpenTicket
 
 <p align="center">
   <img src="./public/banner.png" alt="OpenTicket Banner" width="100%">
 </p>
 
-[🌍 Official Webpage](https://openticket.cyber-sec.space) | [🌐 Read in Traditional Chinese (繁體中文)](README.zh-TW.md) | [🏗️ Architecture Specs](docs/ARCHITECTURE.md) | [🔌 Plugin Registry](https://github.com/Cyber-Sec-Space/openticket-plugin-registry)
+[🌍 Official Webpage](https://openticket.cyber-sec.space) | [🌐 閱讀繁體中文版](README.zh-TW.md) | [🏗️ Architecture Specs](docs/ARCHITECTURE.md) | [🔌 Plugin Registry](https://github.com/Cyber-Sec-Space/openticket-plugin-registry)
 
-A next-generation Cybersecurity Incident & Inventory Management system for SecOps and IT personnel. Designed to be a lightweight, centralized, and visually stunning alternative to enterprise IT ticketing tools like Jira and ServiceNow.
+![License](https://img.shields.io/badge/License-AGPLv3%20%2F%20Enterprise-blue.svg)
+![Version](https://img.shields.io/badge/version-v1.0.0--rc.1-brightgreen)
+![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue?logo=typescript)
+![Prisma](https://img.shields.io/badge/Prisma-ORM-1B222D?logo=prisma)
 
-## ✨ Key Features
-- **Absolute Zero-Trust Edge Perimeters (L7 DDoS Defense):** Incoming API payloads are proactively intercepted by Next.js Edge Middleware (`proxy.ts`), physically divorcing unauthenticated volumetric traffic from the downstream Node.js core execution thread and PostgreSQL Database.
-- **SSRF & DNS Rebinding Immunity:** Neutralizes complex Time-of-Check Time-of-Use (TOCTOU) DNS rebinding attacks securely freezing IPv4 address resolutions dynamically before fetching webhooks, protecting inner VPC spaces.
-- **Botnet Deflection (Decoupled Auth Limits):** Employs strict in-memory rate limiting completely severing IP enumeration patterns from targeted identity credential stuffing pipelines.
-- **Postgres Full-Text Search (tsvector):** Radically scales Log and Alert dashboard lookups leveraging native structural `tsquery` optimizations over generic DB `O(N)` LIKE queries.
-- **Asynchronous Modal Transactions:** Eradicates synchronous UI blockers (Browser alerts), replacing core operational confirms with seamless Shadcn portaled `<Dialog>` primitives.
-- **Centralized Dashboard:** Real-time analytics, Typology Distributions, and Severity Matrices tracking organizational exposure.
-- **Incident & Vulnerability Tracking:** End-to-end triaging pipelines mapping discrete incidents and CVE vulnerabilities directly to internal assets.
-- **Native Two-Factor Authentication (2FA):** TOTP-based 2FA module that integrates effortlessly with standard authenticator applications (Google Authenticator, Authy). Supports Global Enforce locks by System Administrators.
-- **High-Density Analytics Layout:** Redesigned single-row 8-metric KPI grid allowing deep visibility into SOC operations, positioning actionable components (Command Actions) centrally for immediate triage responsiveness.
-- **Enterprise High-Availability (HA):** Natively embeds a `PgBouncer` Sidecar topology enforcing Transactional Connection Pooling. Effectively eradicates multi-node horizontal scaling starvation, ensuring massive concurrent Database throughput underneath load balancers.
-- **Zero-Trust M2M Identities:** Rigidly decouples automated Machine-to-Machine API interactions from human Administrator roles. Systematically assigns independent `Automation Bot (M2M)` boundaries to API Tokens, ensuring token-based authentications cannot escalate or inherit UI administration privileges even within compromised CI/CD scripts.
-- **Dynamic Granular Permission Matrix:** Platform Administrators can leverage fine-grained access control by defining "Custom Privilege Tiers" bounding exact atomic actions (e.g., `CREATE_INCIDENTS`, `VIEW_ASSETS`, `INSTALL_PLUGINS`). Operators can be assigned multiple discrete roles simultaneously, enabling true Zero-Trust (ZT) organizational flexibility natively mapped to PostgreSQL matrices.
-- **Zero-Trust EventBus & Plugins:** Equipped with a heavily-fortified background EventBus. External third-party dependencies are natively sandboxed via distinct isolation layers including: Promise `Time-Bomb` execution caps (5000ms), `Thundering Herd` query neutralization caching, and `End-to-End AES-256-GCM` configuration storage. Administrators browse the Plugin Registry and explicitly grant bounded Sandbox Permissions via an embedded immersive UI authorization flow. Registry plugins safely inject Remote React `settingsPanels` natively extending frontend capabilities, and undergo rigorous **Pre-flight AST Syntax validations** resolving devastating source code malformations completely pre-deployment.
-- **Granular Plugin UI Extensibility:** Exposes surgically precise UI hooks (e.g., `*MainWidgets` and `*SidebarWidgets`), allowing external plugins to seamlessly embed specialized cards and displays strictly into the primary timelines or secondary data columns across Incident, Vulnerability, Asset, and User Profile architectures without breaking Core UI integrity.
-- **Omni-channel Notifications:** Natively handles email transmission via configurable SMTP configurations, accompanied by an HTML5 Desktop Push Notification center operating persistently in background tabs via highly-efficient Server-Sent Events (SSE) filtering specifically for Critical/High system incidents.
-- **Security-First Paradigm:** Defends against credential stuffing with in-memory Brute Force Rate Limiting across authentication pipelines. Ensures strict BOLA (Broken Object Level Authorization) evaluations actively rejecting unauthorized object-level manipulation.
-- **Transparent Dual-Licensing:** Natively surfaces dual-licensing modes (AGPL-3.0 / Enterprise) directly within the dashboard infrastructure, ensuring enterprise deployments maintain strict licensing hygiene and regulatory compliance.
-- **Multi-Version Protocol:** Rigidly decouples the OpenTicket Base platform version from the isolated Plugin SDK Framework (`PLUGIN_API_VERSION`). Allows external developer extensions to mandate specific Hook Sandbox runtimes ensuring precise back-compatibility constraints.
-- **Enterprise-Grade UI Components:** Built on TailwindCSS utilizing modern blur/backdrop-filter dynamics, combined with deeply interactive BaseUI/Shadcn components, fully portaled `react-datepicker` forms, and Recharts.
+A next-generation, high-performance IT Service Management (ITSM) and cybersecurity incident response platform, engineered for Enterprise SecOps. Built as a lightweight, visual, and highly secure alternative to traditional ticketing systems like Jira or ServiceNow.
 
-<!-- IMAGE PLACEHOLDER: [OpenTicket Dashboard / Threat Matrix Preview] -->
+## ✨ Core Features
+
+- **Absolute Zero-Trust Edge Perimeter:** All routes (including API endpoints) are actively intercepted by a Next.js Edge Middleware proxy (`proxy.ts`). Unauthenticated requests are rejected at the Edge before reaching the Node.js runtime, creating a hardened L7 defense boundary.
+- **Distributed Rate Limiting (No Redis):** A database-backed dual-vector rate limiter simultaneously tracks both source IP and target account attempts, inherently blocking brute-force, credential stuffing, and distributed password-spraying attacks without external infrastructure.
+- **TOTP Two-Factor Authentication (2FA) & Account Security:** Features an Edge cryptography-backed 2FA module using `otpauth` with QR code enrollment, supporting global enforcement. Includes administrator-initiated SMTP password resets, operator invitations via signed Join URLs, and email verification flows.
+- **Immunity to DNS Rebinding & SSRF Mitigation:** The Webhook engine pre-resolves DNS and freezes the target IPv4 address before dispatching. Comprehensive blocklists cover `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, link-local `169.254.169.254`, and IPv6 loopback — preventing internal VPC penetration.
+- **Native Postgres GIN Full-Text Search:** Utilizes PostgreSQL's native `to_tsvector` and GIN index structures (deployed via `npm run indexing`) to maintain ultra-fast, millisecond-level search responses across thousands of Incidents and Vulnerabilities.
+- **Zero-Trust Sandbox & Plugin Ecosystem (isolated-vm):** Third-party plugins are locked down via five native defensive layers: `isolated-vm` 128MB memory ceiling, 5000ms time-bomb execution limit, AST syntax tree pre-flight validation prior to installation, cryptographic signature verification, and Zod schema enforcement across all SDK operations.
+- **High-Resolution Plugin UI Injection:** Through precise UI hook slots defined in the Plugin SDK, plugins inject interactive React widgets natively into the Dashboard, Incident, Asset, Vulnerability, User, Settings, and System Configuration pages. Officially verified plugins receive a cryptographic verification badge. Plugins can also register entirely new full-page routes and system configuration tabs.
+- **ITSM & SOAR Automation Engine:** Automatically calculates and tracks SLA targets based on configurable severity-to-hours matrices (for both Incidents and Vulnerabilities). During CRITICAL incidents, it triggers auto-quarantine protocols, instantly shifting linked Assets to a `COMPROMISED` state and broadcasting global alerts via SMTP and Webhooks. Supports Multi-Asset Correlation.
+- **Seamless Evidence Upload & DDE-Immune CSV Export:** A custom drag-and-drop file upload component handles digital evidence attachment with strict MIME validation. The raw data CSV export engine sanitizes all cell prefixes (`=`, `+`, `-`, `@`, `\t`, `\r`) to ensure absolute immunity to CSV-Injection (DDE) attacks.
+- **Machine-to-Machine (M2M) API Tokens:** A dedicated API Key management interface allows operators to generate, track, and revoke SHA-256 hashed automation tokens with optional expiry dates. Tokens inherit the issuer's RBAC permissions and are validated at the Edge before Node.js processing.
+- **Dynamic Granular Permission Matrix:** Advanced native RBAC isolation supporting over 30 atomic-level permission settings across Incidents, Vulnerabilities, Assets, Users, Roles, Plugins, API Tokens, and System Configuration. Operators can stack multiple custom role tags simultaneously.
+- **Multi-Provider Mailer Engine:** Supports three mail delivery providers out of the box — traditional SMTP (via Nodemailer), Resend API, and SendGrid API — all configurable from the System Settings dashboard. SMTP passwords and API keys are encrypted at rest using AES-256-GCM.
+- **Cyberpunk UI & LocalTime Synchronization:** Custom skeleton loaders and a client-side `LocalTime` component ensure all timestamps are automatically displayed in the operator's local timezone, eliminating timezone confusion across distributed SOC teams.
 
 ---
 
 ## 🚀 Examples & Usage
 
 ### 1. Declaring an Incident
-When an operator possessing the `CREATE_INCIDENTS` permission discovers a threat:
-- Click **"Declare Incident"** from the Dashboard.
-- Provide the Incident Signature (e.g., *Suspicious outbound traffic on Port 443*).
-- Select the **Target Node (Asset)** it corresponds to (e.g., *SRV-WEB-01*). 
-- Identify the **Topology** mapping (e.g., *Phishing, Malware, Network Anomaly*).
+When an operator with the `CREATE_INCIDENTS` permission identifies a potential threat:
+- Click **"Declare Incident"** from the dashboard.
+- Enter incident characteristics (e.g., *Suspicious outbound traffic on Port 443*).
+- Select associated **Target Nodes** (Assets) via multi-select (e.g., *SRV-WEB-01*).
+- Assign the corresponding **Typology** (e.g., *Phishing, Malware, Network Anomaly*).
 
 ### 2. Triaging Vulnerabilities
-Vulnerability components mirror the system's asset inventory:
+The vulnerability tracking module directly mirrors the system asset inventory:
 - Navigate to **"Log Vulnerability"**.
-- Input the official `CVE-ID` and select its inherent CVSS severity scale.
-- Assign the Node it affects. The Dashboard's *Vulnerability Heatmap* updates immediately in real-time.
+- Enter the official `CVE-ID` and specify its CVSS severity score.
+- Assign the vulnerability to specific system nodes (Assets). Upon submission, the *Vulnerability Heatmap* updates dynamically in real-time.
 
-### 3. Machine-to-Machine Automation (API Tokens)
-You can directly bridge OpenTicket to your CI/CD pipelines or SOAR orchestrators.
-- Navigate to **"Identity Preferences -> API Tokens"** (Requires `ISSUE_API_TOKENS` capability).
-- Mint a new cryptographic automation token (e.g., *GitHub Actions Push*).
-- Provide the generated raw token payload in the Header: `Authorization: Bearer <token>` when directly calling the `/api/incidents` or `/api/assets` endpoints. Your automated integration inherently assumes your exact privilege tier.
-
-### API & Integrations
-- **Zero-Trust Hook Engine**: Asynchronous Event-bus architecture (`onIncidentCreated`, `onAssetCompromise`, `onIncidentResolved`) allowing external execution explicitly shielded against Denial-of-Service loops by a 5-second `Promise.race` Sandbox.
-- **External Plugin Sandbox Orchestration**: Seamlessly hot-swap modular integrations (e.g., Jira SOC Sync, Slack Webhooks) directly via the dashboard Plugin Store. Integrations undergo Server-Side Manifest Intersections enforcing Least-Privilege authorizations that demand manual admin constraint approvals.
-- **Secure M2M Key Cryptography**: Fully resilient against unauthorized dumping. Configuration dependencies are vaulted utilizing `AES-256-GCM` encryption, alongside classic unrecoverable Machine-to-Machine (M2M) bearer hashes.
-- **Brute Force & Rate Limiting**: Global backend constraints throttling aggressive login scripts to protect structural integrity natively, preventing server-crashing enumeration loops.
+### 3. Machine-to-Machine (M2M) API Tokens
+Directly pipe OpenTicket telemetry to CI/CD pipelines or enterprise SOAR playbooks:
+- Navigate to **"Identity Preferences → API Tokens"** (requires the `ISSUE_API_TOKENS` permission).
+- Generate a cryptographically protected automation key (e.g., *GitHub Actions Push*).
+- Append the header `Authorization: Bearer <token>` when external scripts call `/api/incidents` or `/api/assets`. The call dynamically inherits the server privileges of the key issuer.
 
 ---
 
 ## 🛠️ Core Technology Stack
 - **Framework:** Next.js 16.2 (App Router & Server Actions)
-- **Database:** PostgreSQL (with Prisma ORM V6)
+- **Database:** PostgreSQL 15 (via Prisma ORM V6) + PgBouncer
 - **Authentication:** Auth.js v5 (NextAuth.js) / bcrypt / OTPAuth
-- **Styling & Components:** TailwindCSS v4, Lucide React, Shadcn/UI, React-Datepicker (Custom Portals & Context Masking)
+- **Styling & Components:** TailwindCSS v4, Lucide React, Shadcn/UI
 - **Data Visualization:** Recharts v3
-- **Security Scanned by:** Snyk
+- **Input Validation:** Zod v4
+- **XSS Sanitization:** isomorphic-dompurify
+- **Plugin Sandbox:** isolated-vm
+- **Security Scanning:** Snyk
 
 ---
 
-## 🚀 Quick Start (Installation)
+## 🚀 Quick Start / Deployment
 
-OpenTicket provides two frictionless ways to deploy the platform: **Full Containerization** (Recommended for Production) or a **Bare-metal Setup Script** (Recommended for Development).
+OpenTicket provides three deployment methodologies: **Fully Containerized** (Recommended for Production), **Bare-Metal Development Script**, and **Pre-Compiled Standalone**.
 
-### Option A: Complete Docker Deployment (Enterprise)
-The simplest way to run OpenTicket is via Docker Compose, which automatically provisions the PostgreSQL database, executes isolated Migrator state pipelines asynchronously, starts PgBouncer pooling, and spins up the optimized Next.js standalone container.
+### Option A: Fully Containerized Deployment (Docker Enterprise)
+The easiest way to run OpenTicket. Docker Compose handles the PostgreSQL database, asynchronous schema migrator pipelines, PgBouncer connection pooling, and boots the highly optimized Next.js standalone container.
 
 ```bash
-# Ensure you copy your secure production configuration first
+# 1. Copy template environment variables
 cp .env.example .env
 
+# 2. Boot the stack (migrator runs automatically)
 docker-compose up -d --build
 ```
-*Your application will boot up on `http://localhost:3000`. Stop it anytime with `docker-compose down`.*
+*Your application will start on `http://localhost:3000`. Stop it anytime using `docker-compose down`.*
 
-### Option B: Bare-Metal Setup CLI (Development)
-If you prefer running Node.js locally without Docker, simply execute the setup script. It will interactively configure your `.env` file, install dependencies, and run Prisma migrations.
+### Option B: Bare-Metal Development Script
+If you prefer running Node.js directly on your host machine, use the setup script. It interactively provisions your `.env` variables, installs dependencies, and runs Prisma migrations.
 
 ```bash
-# Ensure you have an empty PostgreSQL database available
+# Ensure a local PostgreSQL instance is running before proceeding
 chmod +x setup.sh
 ./setup.sh
 
@@ -99,44 +96,70 @@ chmod +x setup.sh
 npm run dev
 ```
 
-### Option C: Pre-compiled Standalone Release (Production / Minimalist)
-For users who do not wish to orchestrate Docker but want a heavily optimized Next.js production build, OpenTicket provides a pre-compiled Standalone package in the [GitHub Releases](https://github.com/Cyber-Sec-Space/open-ticket/releases) section.
-This `.tar.gz` archive contains the compiled `.next/standalone` output, drastically reducing the deployment footprint manually without requiring raw compilation.
+> **Local Email Testing**: For local development, it is recommended to use [MailDev](https://github.com/maildev/maildev) as a safe SMTP interceptor. All outbound system emails (Setup OTPs, Incident Assignments, Auto-Quarantine Alerts) can be intercepted and viewed at `http://localhost:1080`.
+
+### Option C: Pre-Compiled Standalone Bundle (Minimalist Production)
+For strictly constrained internal networks without Docker, OpenTicket offers a pre-compiled standalone tarball in the [GitHub Releases](https://github.com/Cyber-Sec-Space/open-ticket/releases) section. It contains the fully optimized Next.js `.next/standalone` output, avoiding the need for lengthy `npm install` executions on production hardware.
 
 ```bash
-# 1. Download the latest standalone bundle from GitHub Releases
-wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v0.5.2/openticket-standalone-v0.5.2.tar.gz
+# 1. Download the Standalone Tarball
+wget https://github.com/Cyber-Sec-Space/open-ticket/releases/download/v1.0.0-rc.1/openticket-standalone-v1.0.0-rc.1.tar.gz
 
-# (Optional) Verify Cryptographic Integrity (SHA-512)
-# Expected: (SHA-512 Hash for v0.5.2 will be published upon build pipeline completion)
-shasum -a 512 openticket-standalone-v0.5.2.tar.gz
-
-# Extract
-tar -xzf openticket-standalone-v0.5.2.tar.gz
+# 2. Extract and enter the directory
+tar -xzf openticket-standalone-v1.0.0-rc.1.tar.gz
 cd openticket-standalone
 
-# 2. Configure your specific environment parameters
+# 3. Setup environment variables
 cp .env.example .env
-nano .env # Explicitly set your DATABASE_URL and NEXTAUTH_SECRET
+nano .env # Set DATABASE_URL and AUTH_SECRET
 
-# 3. Apply schema mechanisms to your active database
+# 4. Migrate your prepared PostgreSQL Database
 npx prisma migrate deploy
 
-# 4. Boot the Production Server natively
+# 5. Native Node.js Production Boot
 node server.js
 ```
 
-### ⬆️ Multi-Version Legacy Upgrades (0.3.0 -> 0.5.0)
-Version 0.5.0 finalizes the massive **Zero-Trust Plugin SDK** and **PgBouncer** integration, building directly upon the RBAC overhauls initiated in 0.4.0.
-To prevent catastrophic SQL column-drop data loss across legacy transitions, OpenTicket natively encapsulates idempotent backward-compatible interceptions. 
+---
 
-If operating Docker, pulling the latest `docker-compose.yml` and executing `docker-compose up` natively triggers the chained `migrate:prod` pipeline resolving structural updates asynchronously. 
-For Bare-Metal deployments, you **MUST** run the designated sequential upgrade command, guaranteeing legacy Role Mapping extraction operates before schema deprecation:
+### ⬆️ Painless Cross-Version Upgrades (Direct to 1.0.0-rc.1)
+Version `1.0.0-rc.1` finalizes the **Zero-Trust Plugin SDK**, **SOAR SLA Engine**, and **PgBouncer** integration, building upon previous RBAC and security foundations.
+To prevent destructive column loss during generational upgrades, OpenTicket implements backward-compatible idempotent defenses at the database layer.
+
+If you are using Docker, running `docker-compose up` automatically triggers the full `migrate:prod` pipeline.
+If you are on Bare-Metal, you **must** manually run the specialized migration script. It retroactively calculates missing SLA targets for legacy incidents/vulnerabilities, and injects the latest plugin role authorizations:
 
 ```bash
-# Safely pull legacy permissions, apply schema drops, remap to CustomRoles, and bootstrap Plugin System constraints
+# Chains: backup → prisma migrate → upgrade:0.4.0 → 0.5.0 → 0.5.2 → 1.0.0-rc.1 → indexing
 npm run migrate:prod
 ```
 
-### 🪄 First-Time Bootstrap Workflow
-No matter which method you choose, visiting `http://localhost:3000` for the first time will automatically intercept and route you to the **Setup Wizard (`/setup`)**. This securely provisions your first Global System Administrator account.
+### 🪄 First-Time Initialization Wizard
+Regardless of your chosen deployment method, upon first accessing `http://localhost:3000`, the system redirects you to the **System Initialization Wizard (`/setup`)**. This guides you through the secure registration of the first Global System Administrator account, including SMTP configuration and email OTP verification.
+
+---
+
+## 🔒 Security Architecture
+
+- **Vulnerability Vaulting**: All Plugin configurations are encrypted at rest using `AES-256-GCM` with a versioned rotating key-vault schema derived from `AUTH_SECRET`.
+- **Network Isolation**: Webhooks enforce strict SSRF protections against `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, and local DNS resolution via pre-resolved IP freezing.
+- **Security Headers**: All responses include `Strict-Transport-Security`, `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, and a restrictive `Permissions-Policy`.
+- **Plugin Safe Mode**: In case of a malfunctioning plugin causing boot failures, run `npm run plugin:reset` to deactivate all plugins at the database level.
+
+---
+
+## 📖 Documentation
+
+- [REST API Documentation](docs/API.md) — Integrating OpenTicket with external tools and SOAR playbooks.
+- [Architecture Specification](docs/ARCHITECTURE.md) — Deep dive into system design, data flow, and security boundaries.
+- [Contributing Guide](CONTRIBUTING.md) — How to run locally, code style rules, and PR process.
+- [Security Policy](SECURITY.md) — How to responsibly report vulnerabilities.
+
+---
+
+## 💼 Dual Licensing
+
+OpenTicket is dual-licensed:
+
+1. **Open Source (AGPL-3.0)**: Free for non-commercial and open-source deployments.
+2. **Enterprise Commercial**: For organizations needing to embed OpenTicket into proprietary platforms without copyleft restrictions. Contact `sales@cyber-sec.space`.

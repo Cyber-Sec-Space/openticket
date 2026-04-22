@@ -8,7 +8,7 @@ import { hasPermission } from "@/lib/auth-utils"
 
 export async function createAsset(formData: FormData) {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'CREATE_ASSETS')) {
+  if (!session?.user || !hasPermission(session, 'CREATE_ASSETS')) {
     throw new Error("Forbidden")
   }
 

@@ -16,10 +16,10 @@ import { CreateVulnModal } from "./create-vuln-modal"
 export default async function VulnerabilitiesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'VIEW_VULNERABILITIES')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_VULNERABILITIES')) {
     return redirect("/login")
   }
-  const canCreate = hasPermission(session as any, 'CREATE_VULNERABILITIES')
+  const canCreate = hasPermission(session, 'CREATE_VULNERABILITIES')
   const assets = canCreate ? await db.asset.findMany({ select: { id: true, name: true, ipAddress: true }, orderBy: { name: 'asc' } }) : []
 
   const resolvedParams = await searchParams;
@@ -213,7 +213,7 @@ export default async function VulnerabilitiesPage({ searchParams }: { searchPara
                  </TableCell>
 
                  <TableCell className="text-center font-mono py-4">
-                    <div className="flex gap-1.5 flex-wrap flex-1 min-w-[200px]">
+                    <div className="flex justify-center gap-1.5 flex-wrap flex-1 min-w-[200px]">
                       {vuln.vulnerabilityAssets?.length > 0 ? (
                         vuln.vulnerabilityAssets.slice(0, 3).map((va: any) => (
                           <Badge key={va.assetId || va.id} variant="outline" className={`text-[10px] bg-black/40 border-white/5 font-mono ${va.status === 'MITIGATED' ? 'text-yellow-500' : va.status === 'PATCHED' ? 'text-green-500' : 'text-red-400'}`}>

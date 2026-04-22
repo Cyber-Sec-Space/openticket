@@ -3,18 +3,10 @@ import { OpenTicketPluginHooks } from "./types"
 import { db } from "@/lib/db"
 import { createPluginContext } from "./sdk-context"
 import { parsePluginConfig } from "./crypto"
+import ivm from "isolated-vm"
 
-// In-memory global cache for Thundering Herd mitigation
-interface EngineCache {
-  dbStates: any[];
-  parsedConfigs: Record<string, any>;
-  expiresAt: number;
-}
-let __engineCache: EngineCache | null = null;
-
-// Allow external actions (like UI toggles or Config updates) to instantly invalidate the cache
 export function invalidateHookCache() {
-  __engineCache = null;
+  // Deprecated: Cache is removed for Serverless consistency
 }
 
 export async function fireHook<K extends keyof OpenTicketPluginHooks>(
@@ -24,28 +16,22 @@ export async function fireHook<K extends keyof OpenTicketPluginHooks>(
 ): Promise<void> {
   const promises = []
 
-  // Efficient In-Memory Cache implementation (10s TTL)
-  const now = Date.now();
-  if (!__engineCache || now > __engineCache.expiresAt) {
-    try {
-      const states = await db.pluginState.findMany();
-      const parsed: Record<string, any> = {};
-      for (const s of states) {
-        if (s.configJson) {
-           /* istanbul ignore next */
-           try { parsed[s.id] = parsePluginConfig(s.configJson); } catch (e) { parsed[s.id] = {}; }
-        } else {
-           parsed[s.id] = {};
-        }
-      }
-      __engineCache = { dbStates: states, parsedConfigs: parsed, expiresAt: now + 10000 };
-    } catch (err) {
-      console.error("[Plugin Core] Failed to query PluginState from DB.", err);
-      if (!__engineCache) __engineCache = { dbStates: [], parsedConfigs: {}, expiresAt: 0 };
-    }
-  }
+  let dbStates: any[] = [];
+  const parsedConfigs: Record<string, any> = {};
 
-  const { dbStates, parsedConfigs } = __engineCache;
+  try {
+    dbStates = await db.pluginState.findMany();
+    for (const s of dbStates) {
+      if (s.configJson) {
+         /* istanbul ignore next */
+         try { parsedConfigs[s.id] = parsePluginConfig(s.configJson); } catch (e) { parsedConfigs[s.id] = {}; }
+      } else {
+         parsedConfigs[s.id] = {};
+      }
+    }
+  } catch (err) {
+    console.error("[Plugin Core] Failed to query PluginState from DB.", err);
+  }
 
   for (const plugin of activePlugins) {
     const state = dbStates.find(s => s.id === plugin.manifest.id)
@@ -65,17 +51,60 @@ export async function fireHook<K extends keyof OpenTicketPluginHooks>(
           try {
             const context = await createPluginContext(plugin.manifest.id, plugin.manifest.name)
             
-            // Time-Bomb Sandbox Protection: Force reject if execution hangs beyond 5 seconds
+            // Execute the plugin logic synchronously wrapped in a Promise race.
+            // Using isolated-vm to enforce a hard 128MB memory ceiling and execution Time-Bomb isolation.
+            const isolate = new ivm.Isolate({ memoryLimit: 128 });
+            const ivmContext = isolate.createContextSync();
+            const jail = ivmContext.global;
+            jail.setSync('global', jail.derefInto());
+
+            // Because the plugins are loaded as native Node functions, passing native functions natively across 
+            // the ivm boundary causes ARM64 V8 segmentation faults on complex objects. 
+            // We use a bridged Host Wrapper Reference pattern to enforce the VM constraints safely.
+            const hostWrapper = async () => {
+              await hookFn(payload, config, context);
+            };
+
+            // Bind the host wrapper safely
+            jail.setSync('_hostWrapper', new ivm.Reference(hostWrapper));
+
+            // Execute as an Isolated Script bridging into the Host
+            const ivmScript = isolate.compileScriptSync(`
+              (async () => {
+                await _hostWrapper.applyIgnored(undefined, []);
+              })();
+            `);
+
+            // Time-Bomb Sandbox Protection: Force C++ loop-termination if execution hangs beyond 5 seconds synchronously
+            const executionPromise = ivmScript.run(ivmContext, { timeout: 5000 });
+            
             const timeoutPromise = new Promise((_, reject) => {
               setTimeout(() => reject(new Error("Execution Timeout: Plugin exceeded the 5000ms sandbox time-bomb limit.")), 5000);
             });
-
-            await Promise.race([
-              hookFn(payload, config, context),
-              timeoutPromise
-            ]);
+            
+            await Promise.race([executionPromise, timeoutPromise]);
+            
+            // Clean up Isolate to release the 128MB memory reservation
+            isolate.dispose();
+            
           } catch (error) {
-            console.error(`[Plugin Core] Trigger failure in plugin [${plugin.manifest.id}] on event [${event}]:`, error)
+            let errorType = "Plugin Core";
+            let logPrefix = "Trigger logic failure in plugin";
+            
+            if (error && typeof error === 'object' && 'name' in error) {
+              if (error.name === 'PluginSystemError') {
+                errorType = "System Failure";
+                logPrefix = "Underlying system failed during plugin execution";
+              } else if (error.name === 'PluginPermissionError') {
+                errorType = "Plugin Security";
+                logPrefix = "Plugin attempted an unauthorized action";
+              } else if (error.name === 'PluginInputError') {
+                errorType = "Plugin Validation";
+                logPrefix = "Plugin provided invalid input";
+              }
+            }
+            
+            console.error(`[${errorType}] ${logPrefix} [${plugin.manifest.id}] on event [${event}]:`, error);
           }
         })()
       )

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ConfirmForm } from "@/components/ui/confirm-form"
 import { toggleUserStatusAction, deleteUserAction } from "../actions"
+import { ResetPasswordButton } from "./reset-password-button"
 import { UserPanels } from "./user-panels"
 import { hasPermission } from "@/lib/auth-utils"
 import { PluginEngineContextRenderer } from "@/components/plugins/plugin-context-renderer"
@@ -21,7 +22,7 @@ export default async function UserDetailPage({
   const resolvedSearchParams = await searchParams
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'VIEW_USERS')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_USERS')) {
     redirect("/login")
   }
 
@@ -38,9 +39,9 @@ export default async function UserDetailPage({
   const TAKE_INC = 6
 
   // Parallel data fetching for high performance
-  const canViewAuditLogs = hasPermission(session as any, 'VIEW_AUDIT_LOGS')
-  const hasGlobalIncidents = hasPermission(session as any, 'VIEW_INCIDENTS_ALL')
-  const canViewAssigned = hasPermission(session as any, 'VIEW_INCIDENTS_ASSIGNED')
+  const canViewAuditLogs = hasPermission(session, 'VIEW_AUDIT_LOGS')
+  const hasGlobalIncidents = hasPermission(session, 'VIEW_INCIDENTS_ALL')
+  const canViewAssigned = hasPermission(session, 'VIEW_INCIDENTS_ASSIGNED')
 
   // BOLA Incident filter: Prevent cross-user assignment peeking
   let incidentsWhere: any = { assignees: { some: { id } } };
@@ -96,6 +97,9 @@ export default async function UserDetailPage({
         <div className="flex gap-3">
           {session.user.id !== user.id && (
             <>
+              {hasPermission(session, 'RESET_USER_PASSWORDS') && (
+                 <ResetPasswordButton userId={user.id} />
+              )}
               <ConfirmForm 
                 action={async () => { "use server"; await toggleUserStatusAction(user.id, !user.isDisabled); }} 
                 promptMessage={user.isDisabled ? "Restore this operator's platform access?" : "Suspend this operator?"}

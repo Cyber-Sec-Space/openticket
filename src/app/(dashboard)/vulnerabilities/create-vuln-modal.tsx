@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { VulnFormClient } from "./new/vuln-form-client"
+import { VulnFormClient } from "@/app/(dashboard)/vulnerabilities/new/vuln-form-client"
 
 export function CreateVulnModal({ assets }: { assets: any[] }) {
   const [open, setOpen] = useState(false)

@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { togglePluginState, updatePluginConfig, installExternalPlugin, uninstallExternalPlugin, triggerProductionBuild, triggerServerRestart } from "../src/app/(dashboard)/settings/plugins/actions"
 import { auth } from "@/auth"
 import { hasPermission } from "@/lib/auth-utils"
@@ -15,6 +24,9 @@ jest.mock("@/lib/db", () => ({
       findUnique: jest.fn(),
       upsert: jest.fn(),
       deleteMany: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn(),
     }
   }
 }))
@@ -92,6 +104,7 @@ describe("Plugin Actions", () => {
       expect(activePlugins[0].hooks.onUninstall).toHaveBeenCalled()
     })
 
+
     it("throws if lifecycle hook fails with Error instance", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
@@ -116,6 +129,51 @@ describe("Plugin Actions", () => {
       activePlugins[0].hooks.onInstall.mockRejectedValueOnce("string error")
       
       await expect(togglePluginState("test-plugin", false)).rejects.toThrow("Plugin lifecycle initialization failed: string error")
+    })
+
+    it("throws PluginSystemError correctly during installation", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ id: "test-plugin", configJson: "enc.v1.xxx" })
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ test: true })
+      
+      const { activePlugins } = require("@/plugins")
+      const err = new Error("system failed");
+      err.name = "PluginSystemError";
+      activePlugins[0].hooks.onInstall.mockRejectedValueOnce(err)
+      
+      await expect(togglePluginState("test-plugin", false)).rejects.toThrow("System failure during plugin installation: system failed")
+    })
+
+    it("throws PluginPermissionError correctly during installation", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ id: "test-plugin", configJson: "enc.v1.xxx" })
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ test: true })
+      
+      const { activePlugins } = require("@/plugins")
+      const err = new Error("perm denied");
+      err.name = "PluginPermissionError";
+      activePlugins[0].hooks.onInstall.mockRejectedValueOnce(err)
+      
+      await expect(togglePluginState("test-plugin", false)).rejects.toThrow("Permission denied during plugin installation: perm denied")
+    })
+
+    it("throws PluginInputError correctly during installation", async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
+      ;(hasPermission as jest.Mock).mockReturnValue(true)
+      ;(db.pluginState.findUnique as jest.Mock).mockResolvedValue({ id: "test-plugin", configJson: "enc.v1.xxx" })
+      const crypto = require("../src/lib/plugins/crypto")
+      jest.spyOn(crypto, "parsePluginConfig").mockReturnValue({ test: true })
+      
+      const { activePlugins } = require("@/plugins")
+      const err = new Error("bad input");
+      err.name = "PluginInputError";
+      activePlugins[0].hooks.onInstall.mockRejectedValueOnce(err)
+      
+      await expect(togglePluginState("test-plugin", false)).rejects.toThrow("Invalid input provided during plugin installation: bad input")
     })
 
     it("toggles state when config json contains real data to test length branching", async () => {
@@ -180,7 +238,7 @@ describe("Plugin Actions", () => {
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
+      ;(process.env as any).NODE_ENV = "production"
       
       ;(global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
@@ -197,7 +255,7 @@ describe("Plugin Actions", () => {
       await installExternalPlugin("new-plugin", "1.0", "registry")
       
       expect(fs.promises.writeFile).toHaveBeenCalledTimes(2) // Once for plugin source, once for index.ts
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
     it("throws on structural AST error", async () => {
@@ -205,7 +263,7 @@ describe("Plugin Actions", () => {
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
+      ;(process.env as any).NODE_ENV = "production"
       
       ;(global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
@@ -218,7 +276,7 @@ describe("Plugin Actions", () => {
       });
       
       await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("critical structural syntax errors")
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
     it("fetches from local file system if not in production", async () => {
@@ -226,7 +284,7 @@ describe("Plugin Actions", () => {
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "development"
+      ;(process.env as any).NODE_ENV = "development"
       
       ;(fs.existsSync as jest.Mock).mockReturnValue(true)
       ;(fs.promises.readFile as jest.Mock).mockResolvedValue("export const activePlugins: OpenTicketPlugin[] = [\n];")
@@ -239,27 +297,27 @@ describe("Plugin Actions", () => {
       await installExternalPlugin("new-plugin", "1.0", "registry")
       
       expect(fs.promises.readFile).toHaveBeenCalled()
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
     it("throws if index.ts structure is malformed", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "development"
+      ;(process.env as any).NODE_ENV = "development"
       ;(fs.existsSync as jest.Mock).mockReturnValue(true)
       ;(fs.promises.readFile as jest.Mock).mockResolvedValue("export const somethingElse = []")
       const ts = require("typescript");
       ts.transpileModule.mockReturnValueOnce({ diagnostics: [] });
       await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Failed to inject plugin: activePlugins array structure is malformed or missing.")
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
     
     it("bypasses pre-flight if typescript fails internally with generic error", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
+      ;(process.env as any).NODE_ENV = "production"
       ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, text: async () => 'export const plugin = {}' })
       const ts = require("typescript");
       ts.transpileModule.mockImplementationOnce(() => { throw new Error("Could not initialize TS compiler"); });
@@ -269,7 +327,7 @@ describe("Plugin Actions", () => {
       
       await installExternalPlugin("new-plugin", "1.0", "registry")
       expect(consoleSpy).toHaveBeenCalledWith("[Plugin Pre-flight] TypeScript AST parser unavailable. Bypassing pre-flight validation.")
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
       consoleSpy.mockRestore()
     })
     
@@ -277,7 +335,7 @@ describe("Plugin Actions", () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
+      ;(process.env as any).NODE_ENV = "production"
       
       ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, text: async () => 'export const plugin = {}' })
       const ts = require("typescript");
@@ -291,46 +349,54 @@ describe("Plugin Actions", () => {
       await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Path traversal boundaries violated.")
       
       ;(path.join as any) = ogJoin
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
     it("bypasses pre-flight if typescript returns undefined diagnostics", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
+      ;(process.env as any).NODE_ENV = "production"
       
       ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, text: async () => 'export const plugin = {}' })
       const ts = require("typescript");
       ts.transpileModule.mockReturnValueOnce({}); // Missing diagnostics property
       
       await installExternalPlugin("new-plugin", "1.0", "registry")
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
     it("throws if fetch fails with 404", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
+      ;(process.env as any).NODE_ENV = "production"
       
       ;(global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 404 })
-      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Failed to download plugin source code from registry (HTTP 404).")
+      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Failed to download plugin source code from remote registry (HTTP 404).")
       
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
-    it("throws error if local file is missing", async () => {
+    it("warns and falls back to remote if local file is missing", async () => {
       (auth as jest.Mock).mockResolvedValue({ user: { id: "1" } })
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "development"
+      ;(process.env as any).NODE_ENV = "development"
       ;(fs.existsSync as jest.Mock).mockReturnValue(false)
       
-      await expect(installExternalPlugin("new-plugin", "1.0", "registry")).rejects.toThrow("Local development registry file not found")
+      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {})
+      ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true, text: async () => 'export const plugin = {}' })
+      const ts = require("typescript");
+      ts.transpileModule.mockReturnValueOnce({ diagnostics: [] });
+      ;(fs.promises.readFile as jest.Mock).mockResolvedValue("export const activePlugins: OpenTicketPlugin[] = [\n];")
       
-      process.env.NODE_ENV = originalEnv
+      await installExternalPlugin("new-plugin", "1.0", "registry")
+      
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining("Falling back to remote production registry"))
+      consoleWarnSpy.mockRestore()
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
     it("throws error if NPM is requested via UI", async () => {
@@ -400,13 +466,13 @@ describe("Plugin Actions", () => {
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "development"
+      ;(process.env as any).NODE_ENV = "development"
       
       const { exec } = require("child_process")
       await triggerProductionBuild()
       expect(exec).not.toHaveBeenCalled()
       
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
     it("executes build if production", async () => {
@@ -414,13 +480,13 @@ describe("Plugin Actions", () => {
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
+      ;(process.env as any).NODE_ENV = "production"
       
       const { exec } = require("child_process")
       await triggerProductionBuild()
       expect(exec).toHaveBeenCalled()
       
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
   })
 
@@ -435,7 +501,7 @@ describe("Plugin Actions", () => {
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "development"
+      ;(process.env as any).NODE_ENV = "development"
       
       const spyKill = jest.spyOn(process, "kill").mockImplementation(() => true)
       global.setTimeout = jest.fn() as any
@@ -444,7 +510,7 @@ describe("Plugin Actions", () => {
       expect(global.setTimeout).not.toHaveBeenCalled()
       
       spyKill.mockRestore()
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
 
     it("schedules kill if production", async () => {
@@ -452,7 +518,7 @@ describe("Plugin Actions", () => {
       ;(hasPermission as jest.Mock).mockReturnValue(true)
       
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = "production"
+      ;(process.env as any).NODE_ENV = "production"
       
       global.setTimeout = jest.fn((cb) => cb()) as any
       const spyKill = jest.spyOn(process, "kill").mockImplementation(() => true)
@@ -462,7 +528,7 @@ describe("Plugin Actions", () => {
       expect(spyKill).toHaveBeenCalledWith(process.pid, 'SIGKILL')
       
       spyKill.mockRestore()
-      process.env.NODE_ENV = originalEnv
+      ;(process.env as any).NODE_ENV = originalEnv
     })
   })
 })

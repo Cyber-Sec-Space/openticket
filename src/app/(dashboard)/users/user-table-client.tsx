@@ -98,8 +98,8 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
           </div>
           <div className="flex items-center gap-2">
             <Popover>
-              <PopoverTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs border-white/20">
-                  {bulkRoles.length > 0 ? bulkRoles.map(id => allCustomRoles?.find(r => r.id === id)?.name || id).join(', ') : "Select Roles"}
+              <PopoverTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 text-xs border-white/20 max-w-[200px] sm:max-w-[300px] truncate">
+                  {bulkRoles.length > 0 ? (bulkRoles.length <= 2 ? bulkRoles.map(id => allCustomRoles?.find(r => r.id === id)?.name || id).join(', ') : `${bulkRoles.length} Roles Selected`) : "Select Roles"}
               </PopoverTrigger>
               <PopoverContent className="w-56 bg-black/95 shadow-2xl border border-white/10 p-4 space-y-3">
                 <div className="font-semibold text-xs tracking-wider text-muted-foreground uppercase mb-2">Set Privilege Tiers</div>
@@ -205,21 +205,32 @@ export function UserTableClient({ users, sessionUserId, allCustomRoles }: { user
                    <TableCell className="hidden sm:table-cell">
                      <div className="flex flex-wrap gap-1.5 justify-center items-center">
                        {user.customRoles && user.customRoles.length > 0 ? (
-                         user.customRoles.map((r: any) => (
-                           <Badge 
-                             key={r.id || r.name} 
-                             variant="outline" 
-                             className={`truncate max-w-[160px] ${
-                               r.name.includes('Admin') || r.isSystem ? 'border-primary/50 text-primary bg-primary/10' :
-                               r.name.includes('SecOps') ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
-                               'border-muted-foreground/30 text-muted-foreground bg-black/20'
-                             }`}
-                             title={r.name}
-                           >
-                             <span className="truncate">{r.name}</span>
-                             {r.name.includes('Admin') && <ShieldCheck className="w-3 h-3 ml-1 flex-shrink-0" />}
-                           </Badge>
-                         ))
+                         <>
+                           {user.customRoles.slice(0, 2).map((r: any) => (
+                             <Badge 
+                               key={r.id || r.name} 
+                               variant="outline" 
+                               className={`truncate max-w-[160px] ${
+                                 r.name.includes('Admin') || r.isSystem ? 'border-primary/50 text-primary bg-primary/10' :
+                                 r.name.includes('SecOps') ? 'border-blue-400/50 text-blue-400 bg-blue-400/10' :
+                                 'border-muted-foreground/30 text-muted-foreground bg-black/20'
+                               }`}
+                               title={r.name}
+                             >
+                               <span className="truncate">{r.name}</span>
+                               {r.name.includes('Admin') && <ShieldCheck className="w-3 h-3 ml-1 flex-shrink-0" />}
+                             </Badge>
+                           ))}
+                           {user.customRoles.length > 2 && (
+                             <Badge 
+                               variant="outline" 
+                               className="border-muted-foreground/30 text-muted-foreground bg-black/20 truncate" 
+                               title={user.customRoles.slice(2).map((r: any) => r.name).join(', ')}
+                             >
+                               +{user.customRoles.length - 2}
+                             </Badge>
+                           )}
+                         </>
                        ) : (
                          <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground bg-black/20">NONE</Badge>
                        )}

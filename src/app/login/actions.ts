@@ -4,16 +4,22 @@ import { signIn } from "@/auth"
 import { AuthError } from "next-auth"
 import { db } from "@/lib/db"
 import { headers } from "next/headers"
+import { getGlobalSettings } from "@/lib/settings";
 
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
 ) {
   const reqHeaders = await headers()
-  const ip = reqHeaders.get('x-forwarded-for') || reqHeaders.get('x-real-ip') || 'unknown-ip'
+  const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true"
+  const xRealIp = reqHeaders.get("x-real-ip")?.trim()
+  const xForwardedFor = reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim()
+  const ip = trustProxyHeaders
+    ? (xRealIp || xForwardedFor || "unknown-ip")
+    : (xRealIp || "unknown-ip")
   const email = formData.get('email') as string || 'unknown-email'
 
-  const settings = await db.systemSetting.findUnique({ where: { id: "global" } })
+  const settings = await getGlobalSettings()
   
   if (settings?.rateLimitEnabled) {
     const windowStart = new Date(Date.now() - settings.rateLimitWindowMs)
@@ -32,12 +38,17 @@ export async function authenticate(
   try {
     const payload = Object.fromEntries(formData)
     await signIn('credentials', { ...payload, redirectTo: '/' })
-  } catch (error) {
-    if (error instanceof AuthError) {
-      const errMessage = (error.cause?.err as any)?.message;
+  } catch (error: any) {
+    // NextAuth errors might fail instanceof check due to package resolution issues, so we check type or name
+    const isAuthError = error instanceof AuthError || error?.name?.includes('AuthError') || error?.type?.includes('Error') || typeof error.type === 'string';
+    
+    if (isAuthError) {
+      const customCause = error.cause?.err as any;
+      const errMessage = customCause?.message || customCause?.code || error.code || error.type || error.message;
+      
       if (errMessage === "Missing2FA") return "REQUIRES_2FA";
       
-      // If it's a real failure, Cleanup old records asynchronously so DB doesn't bloat
+      // Cleanup old records
       if (errMessage === "Invalid2FA" || error.type === 'CredentialsSignin') {
         if (settings?.rateLimitEnabled) {
           const cleanupWindow = new Date(Date.now() - (settings.rateLimitWindowMs * 2))
@@ -50,14 +61,22 @@ export async function authenticate(
       if (errMessage === "Invalid2FA") return "INVALID_2FA";
       if (errMessage === "Global2FAEnforced") return "GLOBAL_LOCKED";
       if (errMessage === "EmailNotVerified") return "EMAIL_NOT_VERIFIED";
+      if (errMessage === "IdentitySuspended") return "IDENTITY_SUSPENDED";
       
-      switch (error.type) {
-        case 'CredentialsSignin':
-          return 'Invalid credentials.'
-        default:
-          return 'Something went wrong.'
+      if (error.type === 'CredentialsSignin') {
+        return 'Invalid credentials.'
       }
+      
+      console.error("Authentication Error Details:", { type: error.type, message: error.message, cause: error.cause });
+      return 'Something went wrong.'
     }
-    throw error
+    
+    // If it's a NEXT_REDIRECT error, we MUST throw it so Next.js can perform the redirect!
+    if (error?.message?.includes('NEXT_REDIRECT') || error?.name === 'RedirectError' || (error && typeof error.digest === 'string' && error.digest.startsWith('NEXT_REDIRECT'))) {
+      throw error;
+    }
+    
+    console.error("Unknown Error during authentication:", error);
+    return 'Something went wrong.'
   }
 }

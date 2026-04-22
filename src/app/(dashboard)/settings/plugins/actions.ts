@@ -17,7 +17,7 @@ const execAsync = promisify(exec);
 
 export async function togglePluginState(pluginId: string, currentState: boolean) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'TOGGLE_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'TOGGLE_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -38,9 +38,19 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
       } else if (!newState && pluginNode.hooks?.onUninstall) {
         await pluginNode.hooks.onUninstall(config, context);
       }
-    } catch (err) {
+    } catch (err: any) {
       /* istanbul ignore next */
       console.error(`Lifecycle hook failed for plugin ${pluginId}:`, err);
+      /* istanbul ignore next */
+      if (err && typeof err === 'object' && 'name' in err) {
+        if (err.name === 'PluginSystemError') {
+          throw new Error(`System failure during plugin installation: ${err.message}`);
+        } else if (err.name === 'PluginPermissionError') {
+          throw new Error(`Permission denied during plugin installation: ${err.message}`);
+        } else if (err.name === 'PluginInputError') {
+          throw new Error(`Invalid input provided during plugin installation: ${err.message}`);
+        }
+      }
       /* istanbul ignore next */
       throw new Error(`Plugin lifecycle initialization failed: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -54,6 +64,16 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
     create: { id: pluginId, isActive: newState, configJson: configSavePayload }
   });
 
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      entityType: "PLUGIN",
+      entityId: pluginId,
+      userId: session!.user!.id!,
+      changes: { details: `Plugin '${pluginId}' state toggled to ${newState ? "ACTIVE" : "INACTIVE"}.` }
+    }
+  });
+
   invalidateHookCache();
 
 
@@ -63,7 +83,7 @@ export async function togglePluginState(pluginId: string, currentState: boolean)
 
 export async function updatePluginConfig(pluginId: string, formData: FormData) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'CONFIGURE_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'CONFIGURE_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -90,6 +110,16 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
     create: { id: pluginId, isActive: false, configJson: encryptPluginConfig(config) }
   });
 
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      entityType: "PLUGIN",
+      entityId: pluginId,
+      userId: session.user.id,
+      changes: { details: `Plugin '${pluginId}' configuration updated.` }
+    }
+  });
+
   invalidateHookCache();
 
   revalidatePath('/settings/plugins');
@@ -98,7 +128,7 @@ export async function updatePluginConfig(pluginId: string, formData: FormData) {
 
 export async function installExternalPlugin(pluginId: string, version: string, sourceType: string, packageName?: string) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'INSTALL_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'INSTALL_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -113,7 +143,7 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       throw new Error("Invalid version string format.");
     }
 
-    let code: string;
+    let code: string | undefined;
     
     // Developer Sandbox: Source from local filesystem if in dev mode
     if (process.env.NODE_ENV !== "production") {
@@ -121,11 +151,13 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       if (fs.existsSync(localSourcePath)) {
         code = await fs.promises.readFile(localSourcePath, "utf-8");
       } else {
-        throw new Error(`Local development registry file not found: ${localSourcePath}`);
+        console.warn(`[DEV] Local development registry file not found: ${localSourcePath}. Falling back to remote production registry...`);
       }
-    } else {
-      const res = await fetch(`https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/plugins/${pluginId}/${version}/index.tsx`);
-      if (!res.ok) throw new Error(`Failed to download plugin source code from registry (HTTP ${res.status}).`);
+    }
+    
+    if (!code) {
+      const res = await fetch(`https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/plugins/${pluginId}/${version}/index.tsx`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Failed to download plugin source code from remote registry (HTTP ${res.status}).`);
       code = await res.text();
     }
     
@@ -184,6 +216,16 @@ export async function installExternalPlugin(pluginId: string, version: string, s
       indexCode = newCode;
       await fs.promises.writeFile(indexPath, indexCode, "utf-8");
     }
+    await db.auditLog.create({
+      data: {
+        action: "CREATE",
+        entityType: "PLUGIN",
+        entityId: pluginId,
+        userId: session.user.id,
+        changes: { details: `External plugin '${pluginId}' version '${version}' installed from registry.` }
+      }
+    });
+
   } else if (sourceType === "npm" && packageName) {
     /* istanbul ignore next */
     throw new Error("NPM dynamic installation via UI is currently restricted. Please use CLI.");
@@ -192,7 +234,7 @@ export async function installExternalPlugin(pluginId: string, version: string, s
 
 export async function uninstallExternalPlugin(pluginId: string) {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'INSTALL_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'INSTALL_PLUGINS')) {
     throw new Error("Unauthorized");
   }
 
@@ -236,13 +278,23 @@ export async function uninstallExternalPlugin(pluginId: string) {
   await db.pluginState.deleteMany({ where: { id: pluginId } });
   invalidateHookCache();
   
+  await db.auditLog.create({
+    data: {
+      action: "DELETE",
+      entityType: "PLUGIN",
+      entityId: pluginId,
+      userId: session.user.id,
+      changes: { details: `External plugin '${pluginId}' source and registry entries removed.` }
+    }
+  });
+
   revalidatePath('/settings/plugins');
   revalidatePath('/settings/plugins/store');
 }
 
 export async function triggerProductionBuild() {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
+  if (!session?.user?.id || !hasPermission(session, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
   
   // Prevent Next.js concurrency corruption by skipping 'build' if running in dev mode.
   if (process.env.NODE_ENV !== "production") {
@@ -252,17 +304,37 @@ export async function triggerProductionBuild() {
   
   // Execute the production build (Wait asynchronously)
   await execAsync("npm run build");
+
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      entityType: "SYSTEM_SETTINGS",
+      entityId: "build",
+      userId: session.user.id,
+      changes: { details: `Production build manually triggered by user.` }
+    }
+  });
 }
 
 export async function triggerServerRestart() {
   const session = await auth();
-  if (!session?.user?.id || !hasPermission(session as any, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
+  if (!session?.user?.id || !hasPermission(session, 'RESTART_SYSTEM_SERVICES')) throw new Error("Unauthorized");
   
   if (process.env.NODE_ENV !== "production") {
     console.log("[System] Bypassing server restart. Next.js HMR will intelligently hot-reload the plugin injection.");
     return;
   }
   
+  await db.auditLog.create({
+    data: {
+      action: "UPDATE",
+      entityType: "SYSTEM_SETTINGS",
+      entityId: "restart",
+      userId: session.user.id,
+      changes: { details: `System service restart triggered by user. Node.js process terminating.` }
+    }
+  });
+
   // Schedule the process kill out of band so the HTTP response can return success to UI first.
   // Next.js will close gracefully and be brought back up by PM2/Docker restart-policies.
   setTimeout(() => {

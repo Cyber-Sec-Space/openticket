@@ -4,14 +4,15 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { sendNewRegistrationAlertEmail } from "@/lib/mailer"
 import { hasPermission } from "@/lib/auth-utils"
+import { getGlobalSettings } from "@/lib/settings";
 
 export async function createUserAction(formData: FormData) {
   const session = await auth()
   
-  if (!session?.user || !hasPermission(session as any, 'CREATE_USERS')) {
+  if (!session?.user || !hasPermission(session, 'CREATE_USERS')) {
     throw new Error("Forbidden: Strict Access Control")
   }
 
@@ -52,12 +53,12 @@ export async function createUserAction(formData: FormData) {
   
   let finalRoleIds: string[] = []
   
-  if (customRoleIds.length > 0 && hasPermission(session as any, 'ASSIGN_USER_ROLES')) {
-     const hasRoot = hasPermission(session as any, 'UPDATE_SYSTEM_SETTINGS')
+  if (customRoleIds.length > 0 && hasPermission(session, 'ASSIGN_USER_ROLES')) {
+     const hasRoot = hasPermission(session, 'UPDATE_SYSTEM_SETTINGS')
      if (!hasRoot) {
        // Validate Subset Integrity
        const targetRoles = await db.customRole.findMany({ where: { id: { in: customRoleIds } } })
-       const callerPerms = new Set((session as any).user?.permissions || [])
+       const callerPerms = new Set((session).user?.permissions || [])
        let isSubset = true
        for (const role of targetRoles) {
          for (const perm of role.permissions) {
@@ -74,28 +75,32 @@ export async function createUserAction(formData: FormData) {
      finalRoleIds = settings?.defaultUserRoles?.map(r => r.id) || []
   }
 
-  const newUser = await db.user.create({
-    data: {
-      email,
-      name,
-      passwordHash,
-      customRoles: finalRoleIds.length > 0 ? { connect: finalRoleIds.map(id => ({ id })) } : undefined
-    }
-  })
+  const newUser = await db.$transaction(async (tx) => {
+    const created = await tx.user.create({
+      data: {
+        email,
+        name,
+        passwordHash,
+        customRoles: finalRoleIds.length > 0 ? { connect: finalRoleIds.map(id => ({ id })) } : undefined
+      }
+    });
+
+    // Telemetry Audit log hook
+    await tx.auditLog.create({
+      data: {
+        action: "USER_CREATED",
+        entityType: "User",
+        entityId: created.id,
+        userId: session.user.id,
+        changes: `Minted new Identity Record [${email}]`
+      }
+    });
+
+    return created;
+  });
 
   const { fireHook } = await import("@/lib/plugins/hook-engine");
   await fireHook("onUserCreated", newUser);
-
-  // Telemetry Audit log hook
-  await db.auditLog.create({
-    data: {
-      action: "USER_CREATED",
-      entityType: "User",
-      entityId: newUser.id,
-      userId: session.user.id,
-      changes: `Minted new Identity Record [${email}]`
-    }
-  })
 
   // Phase 10: Email Alert on New Registration
   if (settings?.smtpTriggerOnNewUser) {

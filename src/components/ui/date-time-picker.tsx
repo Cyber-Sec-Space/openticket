@@ -1,61 +1,132 @@
 "use client";
-import React, { useState, forwardRef, useEffect } from "react";
-import DatePicker, { DatePickerProps } from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import React, { forwardRef, useState } from "react";
+import { format, parse, isValid } from "date-fns";
+import { Calendar as CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "./input";
-import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 
-export interface DateTimePickerProps extends Omit<DatePickerProps, "onChange"> {
-  className?: string;
+export interface DateTimePickerProps {
   name?: string;
+  className?: string;
   defaultValue?: string | Date | null;
+  disabled?: boolean;
 }
 
-// Custom input component that auto-adds slashes and colons for YYYY/MM/DD HH:mm format
-const MaskedDateInput = forwardRef<HTMLInputElement, any>(
-  ({ onChange, value, className, ...props }, ref) => {
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      let val = e.target.value;
-      // Let deletions happen normally, only auto-append when adding characters
-      if (!value || val.length > value.length) {
-        val = val.replace(/[^\d\/\s:]/g, ""); // Allow only valid characters
-        if (val.length === 4) val += "/";
-        if (val.length === 7) val += "/";
-        if (val.length === 10) val += " ";
-        if (val.length === 13) val += ":";
-        val = val.slice(0, 16); // Max length limit
-        e.target.value = val;
+export const DateTimePicker = forwardRef<HTMLDivElement, DateTimePickerProps>(
+  ({ className, name, defaultValue, disabled }, ref) => {
+    // Initial parse
+    const initialDate = defaultValue ? new Date(defaultValue) : undefined;
+    const isValidInit = initialDate && !isNaN(initialDate.getTime());
+
+    const [date, setDate] = useState<Date | undefined>(isValidInit ? initialDate : undefined);
+    
+    // The textual representation the user interacts with
+    const [inputValue, setInputValue] = useState<string>(
+      isValidInit ? format(initialDate, "yyyy-MM-dd HH:mm") : ""
+    );
+
+    const [timeString, setTimeString] = useState<string>(
+      isValidInit ? format(initialDate, "HH:mm") : "00:00"
+    );
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      setInputValue(val);
+
+      // Try to parse basic format "yyyy-MM-dd HH:mm"
+      const parsed = parse(val, "yyyy-MM-dd HH:mm", new Date());
+      if (isValid(parsed)) {
+        setDate(parsed);
+        setTimeString(format(parsed, "HH:mm"));
+      } else {
+        // Fallback for just dates "yyyy-MM-dd"
+        const parsedDate = parse(val, "yyyy-MM-dd", new Date());
+        if (isValid(parsedDate)) {
+           const [hours, minutes] = timeString.split(":");
+           parsedDate.setHours(parseInt(hours || "0", 10));
+           parsedDate.setMinutes(parseInt(minutes || "0", 10));
+           setDate(parsedDate);
+        } else {
+           setDate(undefined);
+        }
       }
-      if (onChange) onChange(e);
+    };
+
+    const handleDateSelect = (selectedDate: Date | undefined) => {
+      if (selectedDate) {
+        const [hours, minutes] = timeString.split(":");
+        selectedDate.setHours(parseInt(hours || "0", 10));
+        selectedDate.setMinutes(parseInt(minutes || "0", 10));
+        setDate(selectedDate);
+        setInputValue(format(selectedDate, "yyyy-MM-dd HH:mm"));
+      } else {
+        setDate(undefined);
+        setInputValue("");
+      }
+    };
+
+    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      setTimeString(val);
+      if (date && val) {
+        const [hours, minutes] = val.split(":");
+        const newDate = new Date(date);
+        newDate.setHours(parseInt(hours || "0", 10));
+        newDate.setMinutes(parseInt(minutes || "0", 10));
+        setDate(newDate);
+        setInputValue(format(newDate, "yyyy-MM-dd HH:mm"));
+      }
     };
 
     return (
-      <div className="relative w-full">
-        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
-        <Input 
-          className={cn("pl-9 !h-10 text-white bg-black/50 border-white/10", className)} 
-          ref={ref}
-          placeholder="YYYY/MM/DD HH:mm"
-          autoComplete="off"
-          value={value}
-          onChange={handleChange}
-          {...props}
+      <div className={cn("relative flex items-center w-full group", className)} ref={ref}>
+        <Input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          placeholder="YYYY-MM-DD HH:mm"
+          className="w-full bg-black/40 border-white/10 text-white focus:ring-primary focus:border-primary placeholder:text-muted-foreground/50 transition-all font-mono text-sm h-10 pr-12"
+          disabled={disabled}
         />
-      </div>
-    );
-  }
-);
-MaskedDateInput.displayName = "MaskedDateInput";
-
-export const DateTimePicker = forwardRef<any, DateTimePickerProps>(
-  ({ className, name, defaultValue, ...props }, ref) => {
-    const [date, setDate] = useState<Date | null>(
-      defaultValue ? new Date(defaultValue) : null
-    );
-
-    return (
-      <div className={cn("relative w-full", className)}>
+        
+        <Popover>
+          <PopoverTrigger 
+              className="absolute right-1 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-white/5 hover:text-primary focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={disabled}
+          >
+              <CalendarIcon className="h-4 w-4" />
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 bg-black/95 border border-white/10 shadow-[0_0_30px_rgba(0,255,200,0.15)] backdrop-blur-xl rounded-xl overflow-hidden glass-panel" align="end">
+            <div className="bg-gradient-to-b from-white/5 to-transparent">
+              <Calendar
+                mode="single"
+                selected={date as any}
+                onSelect={handleDateSelect as any}
+                initialFocus
+                className="bg-transparent"
+              />
+              <div className="p-3 border-t border-white/10 flex items-center justify-between gap-3 bg-black/50">
+                <div className="flex items-center gap-2 text-primary/80">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Time</span>
+                </div>
+                <Input 
+                  type="time" 
+                  value={timeString}
+                  onChange={handleTimeChange}
+                  className="bg-black/60 border-white/10 text-white h-8 w-[120px] focus:ring-primary focus:border-primary font-mono text-sm [color-scheme:dark]"
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+        {/* Hidden field for form data */}
         {name && (
           <input 
             type="hidden" 
@@ -63,40 +134,6 @@ export const DateTimePicker = forwardRef<any, DateTimePickerProps>(
             value={date ? date.toISOString() : ""} 
           />
         )}
-        <DatePicker
-          selected={date}
-          onChange={(newDate: Date | null) => setDate(newDate)}
-          showTimeSelect
-          timeFormat="HH:mm"
-          timeIntervals={15}
-          timeCaption="Time"
-          dateFormat="yyyy/MM/dd HH:mm"
-          portalId="calendar-portal"
-          showPopperArrow={false}
-          customInput={<MaskedDateInput />}
-          wrapperClassName="w-full"
-          {...props as any}
-        />
-        {/* Inject dark theme styles globally or scoped */}
-        <style dangerouslySetInnerHTML={{__html: `
-          .react-datepicker-wrapper { width: 100%; display: block; }
-          .react-datepicker-popper { z-index: 9999; }
-          .react-datepicker { font-family: inherit; background-color: #09090b; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
-          .react-datepicker__header { background-color: #09090b; border-bottom: 1px solid rgba(255,255,255,0.1); padding-top: 12px; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
-          .react-datepicker__current-month, .react-datepicker-time__header, .react-datepicker-year-header { color: #fff; font-weight: 600; font-size: 0.9rem; }
-          .react-datepicker__day-name, .react-datepicker__day, .react-datepicker__time-name { color: #a1a1aa; width: 2rem; line-height: 2rem; margin: 0.2rem; }
-          .react-datepicker__day:hover, .react-datepicker__month-text:hover, .react-datepicker__quarter-text:hover, .react-datepicker__year-text:hover { background-color: rgba(255,255,255,0.1); border-radius: 0.3rem; }
-          .react-datepicker__day--selected, .react-datepicker__day--in-selecting-range, .react-datepicker__day--in-range, .react-datepicker__month-text--selected, .react-datepicker__month-text--in-selecting-range, .react-datepicker__month-text--in-range, .react-datepicker__quarter-text--selected, .react-datepicker__quarter-text--in-selecting-range, .react-datepicker__quarter-text--in-range, .react-datepicker__year-text--selected, .react-datepicker__year-text--in-selecting-range, .react-datepicker__year-text--in-range { background-color: #3b82f6; color: #fff; border-radius: 0.3rem; font-weight: bold; }
-          .react-datepicker__time-container { border-left: 1px solid rgba(255,255,255,0.1); width: 100px; }
-          .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item { height: auto; padding: 8px 10px; color: #a1a1aa; display: flex; align-items: center; justify-content: center; }
-          .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover { background-color: rgba(255,255,255,0.1); color: white; }
-          .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected { background-color: #3b82f6 !important; color: #fff; font-weight: bold; }
-          .react-datepicker__time-container .react-datepicker__time { background-color: #09090b; border-radius: 0.5rem; }
-          .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle::before, .react-datepicker-popper[data-placement^=bottom] .react-datepicker__triangle::after { border-bottom-color: #09090b; }
-          .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle::before, .react-datepicker-popper[data-placement^=top] .react-datepicker__triangle::after { border-top-color: #09090b; }
-          .react-datepicker__navigation-icon::before { border-color: #a1a1aa; border-width: 2px 2px 0 0; }
-          .react-datepicker__navigation:hover *::before { border-color: #fff; }
-        `}} />
       </div>
     );
   }

@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function RolesPage() {
   const session = await auth()
-  if (!session?.user || !hasPermission(session as any, 'VIEW_ROLES')) {
+  if (!session?.user || !hasPermission(session, 'VIEW_ROLES')) {
     redirect("/login")
   }
 
@@ -41,17 +41,16 @@ export default async function RolesPage() {
     "UPDATE_INCIDENT_STATUS_CLOSE",
     "ASSIGN_INCIDENTS_SELF",
     "ASSIGN_INCIDENTS_OTHERS",
-    "DELETE_INCIDENTS",
-    "VIEW_INCIDENT_COMMENTS",
-    "CREATE_INCIDENT_COMMENTS",
-    "DELETE_INCIDENT_COMMENTS",
+    "LINK_INCIDENT_TO_ASSET",
     "UPLOAD_INCIDENT_ATTACHMENTS",
     "DELETE_INCIDENT_ATTACHMENTS",
-    "LINK_INCIDENT_TO_ASSET",
+    "DELETE_INCIDENTS",
+    "EXPORT_INCIDENTS",
 
-    // Collaboration
-    "VIEW_TEAMS",
-    "MANAGE_TEAMS",
+    // Comments
+    "ADD_COMMENTS",
+    "DELETE_OWN_COMMENTS",
+    "DELETE_ANY_COMMENTS",
 
     // Assets
     "VIEW_ASSETS",
@@ -64,7 +63,11 @@ export default async function RolesPage() {
     "CREATE_VULNERABILITIES",
     "UPDATE_VULNERABILITIES",
     "DELETE_VULNERABILITIES",
+    "ASSIGN_VULNERABILITIES_SELF",
+    "ASSIGN_VULNERABILITIES_OTHERS",
     "LINK_VULN_TO_ASSET",
+    "UPLOAD_VULN_ATTACHMENTS",
+    "DELETE_VULN_ATTACHMENTS",
 
     // Users
     "VIEW_USERS",
@@ -86,15 +89,20 @@ export default async function RolesPage() {
     "VIEW_SYSTEM_SETTINGS",
     "UPDATE_SYSTEM_SETTINGS",
     "MANAGE_INTEGRATIONS",
+    
+    // Plugins
     "VIEW_PLUGINS",
     "INSTALL_PLUGINS",
     "TOGGLE_PLUGINS",
     "CONFIGURE_PLUGINS",
+    
+    // Audit & System Services
     "RESTART_SYSTEM_SERVICES",
     "VIEW_AUDIT_LOGS",
-    "EXPORT_DATA",
 
-    // Auth & Bots
+    // API & Automations
+    "ACCESS_API",
+    "VIEW_API_TOKENS",
     "ISSUE_API_TOKENS",
     "REVOKE_API_TOKENS"
   ]

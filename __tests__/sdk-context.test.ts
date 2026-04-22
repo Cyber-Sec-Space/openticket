@@ -1,3 +1,12 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { createPluginContext } from "../src/lib/plugins/sdk-context"
 import { db } from "../src/lib/db"
 
@@ -11,7 +20,8 @@ jest.mock("../src/lib/db", () => ({
     incident: {
       create: jest.fn(),
       update: jest.fn(),
-      findMany: jest.fn()
+      findMany: jest.fn(),
+      findUnique: jest.fn().mockResolvedValue({ id: "inc-1" })
     },
     auditLog: {
       create: jest.fn()
@@ -28,7 +38,8 @@ jest.mock("../src/lib/db", () => ({
     },
     systemSetting: {
       findFirst: jest.fn().mockResolvedValue({ slaCriticalHours: 4 })
-    }
+    },
+    $executeRaw: jest.fn().mockResolvedValue(1)
   }
 }));
 
@@ -58,11 +69,17 @@ describe("Plugin SDK Context", () => {
           title: "Test Incident",
           type: "OTHER",
           severity: "LOW",
-          reporterId: "bot-123"
+          reporter: { connect: { id: "bot-123" } }
         })
       });
 
-      expect(db.auditLog.create).toHaveBeenCalled();
+      expect(db.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: "[PLUGIN:test] INCIDENT_CREATED",
+          entityType: "Incident"
+        })
+      });
+
       expect(res).toEqual({ id: "inc-1" });
     });
 

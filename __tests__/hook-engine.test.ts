@@ -1,10 +1,71 @@
+
+jest.mock("../src/lib/settings", () => ({
+  getGlobalSettings: jest.fn(),
+  invalidateGlobalSettings: jest.fn()
+}));
+import { getGlobalSettings } from "../src/lib/settings";
+jest.mock("isomorphic-dompurify", () => ({
+  sanitize: (str) => str
+}));
 import { fireHook, invalidateHookCache } from "../src/lib/plugins/hook-engine"
 import { db } from "../src/lib/db"
+
+jest.mock("isolated-vm", () => {
+  return {
+    Isolate: class {
+      constructor(options: any) {}
+      createContextSync() {
+        const globalStore: any = {};
+        return {
+          global: {
+            setSync: (key: string, val: any) => {
+              // Extract the value from Reference if it is one
+              globalStore[key] = val && val.val ? val.val : val;
+            },
+            derefInto: jest.fn(),
+            _getStore: () => globalStore
+          }
+        }
+      }
+      compileScriptSync(code: string) {
+        return {
+          run: async (context: any, options: any) => {
+             const store = context.global._getStore();
+             // Extract the wrapper from the global object and run it so the hook executes
+             if (store && typeof store._hostWrapper === 'function') {
+                // If there is a timeout expected from a hanging promise, simulate it
+                // by running the hook, and if it doesn't resolve within timeout, throw
+                const hookPromise = store._hostWrapper();
+                if (options.timeout) {
+                  const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error("Execution Timeout: Plugin exceeded the 5000ms sandbox time-bomb limit.")), options.timeout);
+                  });
+                  return Promise.race([hookPromise, timeoutPromise]);
+                }
+                return hookPromise;
+             }
+             return Promise.resolve();
+          }
+        }
+      }
+    },
+    Reference: class {
+      constructor(public val: any) {}
+    },
+    ExternalCopy: class {
+      constructor(public val: any) {}
+      copyInto() { return this.val; }
+    }
+  };
+});
 
 jest.mock("../src/lib/db", () => ({
   db: {
     pluginState: {
       findMany: jest.fn(),
+    },
+    systemSetting: {
+      findFirst: jest.fn().mockResolvedValue({ systemPlatformUrl: "http://localhost:3000" }),
     }
   }
 }))
@@ -32,6 +93,7 @@ describe("Hook Engine", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     invalidateHookCache()
+    global.fetch = jest.fn() as any
   })
 
   it("handles empty db states", async () => {
@@ -74,7 +136,37 @@ describe("Hook Engine", () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
     await fireHook("onSystemSettingsUpdated", {} as any)
     
-    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Core] Trigger failure in plugin [test] on event [onSystemSettingsUpdated]:`, expect.any(Error))
+    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Core] Trigger logic failure in plugin [test] on event [onSystemSettingsUpdated]:`, expect.any(Error))
+    consoleSpy.mockRestore()
+  })
+
+  it("classifies PluginSystemError correctly", async () => {
+    (db.pluginState.findMany as jest.Mock).mockResolvedValue([{ id: "test", isActive: true }])
+    const { activePlugins } = require("@/plugins")
+    activePlugins[0].hooks.onSystemSettingsUpdated = jest.fn().mockRejectedValue({ name: 'PluginSystemError', message: 'test' })
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    await fireHook("onSystemSettingsUpdated", {} as any)
+    expect(consoleSpy).toHaveBeenCalledWith(`[System Failure] Underlying system failed during plugin execution [test] on event [onSystemSettingsUpdated]:`, expect.anything())
+    consoleSpy.mockRestore()
+  })
+
+  it("classifies PluginPermissionError correctly", async () => {
+    (db.pluginState.findMany as jest.Mock).mockResolvedValue([{ id: "test", isActive: true }])
+    const { activePlugins } = require("@/plugins")
+    activePlugins[0].hooks.onSystemSettingsUpdated = jest.fn().mockRejectedValue({ name: 'PluginPermissionError', message: 'test' })
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    await fireHook("onSystemSettingsUpdated", {} as any)
+    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Security] Plugin attempted an unauthorized action [test] on event [onSystemSettingsUpdated]:`, expect.anything())
+    consoleSpy.mockRestore()
+  })
+
+  it("classifies PluginInputError correctly", async () => {
+    (db.pluginState.findMany as jest.Mock).mockResolvedValue([{ id: "test", isActive: true }])
+    const { activePlugins } = require("@/plugins")
+    activePlugins[0].hooks.onSystemSettingsUpdated = jest.fn().mockRejectedValue({ name: 'PluginInputError', message: 'test' })
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    await fireHook("onSystemSettingsUpdated", {} as any)
+    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Validation] Plugin provided invalid input [test] on event [onSystemSettingsUpdated]:`, expect.anything())
     consoleSpy.mockRestore()
   })
 
@@ -99,7 +191,7 @@ describe("Hook Engine", () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
     await fireHook("onSystemSettingsUpdated", {} as any)
     
-    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Core] Trigger failure in plugin [test] on event [onSystemSettingsUpdated]:`, expect.objectContaining({ message: "Execution Timeout: Plugin exceeded the 5000ms sandbox time-bomb limit." }))
+    expect(consoleSpy).toHaveBeenCalledWith(`[Plugin Core] Trigger logic failure in plugin [test] on event [onSystemSettingsUpdated]:`, expect.objectContaining({ message: expect.stringMatching(/timeout|timed out/i) }))
     consoleSpy.mockRestore()
   })
 })

@@ -64,12 +64,12 @@ enum Permission {
   VIEW_SYSTEM_SETTINGS
   UPDATE_SYSTEM_SETTINGS
   MANAGE_INTEGRATIONS
-  
+
   VIEW_PLUGINS
   INSTALL_PLUGINS
   TOGGLE_PLUGINS
   CONFIGURE_PLUGINS
-  
+
   RESTART_SYSTEM_SERVICES
   VIEW_AUDIT_LOGS
 
@@ -81,13 +81,13 @@ enum Permission {
 
 model CustomRole {
   id          String       @id @default(cuid())
-  name        String       @unique 
+  name        String       @unique
   description String?
-  isSystem    Boolean      @default(false) 
-  permissions Permission[] 
+  isSystem    Boolean      @default(false)
+  permissions Permission[]
 
-  users       User[]       @relation("UserCustomRoles")
-  systemRule  SystemSetting[] @relation("DefaultUserRoles")
+  users      User[]          @relation("UserCustomRoles")
+  systemRule SystemSetting[] @relation("DefaultUserRoles")
 }
 
 model Account {
@@ -118,20 +118,20 @@ model Session {
 }
 
 model User {
-  id                 String    @id @default(cuid())
+  id                 String       @id @default(cuid())
   name               String?
-  email              String?   @unique
+  email              String?      @unique
   emailVerified      DateTime?
   image              String?
   passwordHash       String? // Added for Credentials provider MVP
   customRoles        CustomRole[] @relation("UserCustomRoles")
-  isTwoFactorEnabled Boolean   @default(false)
+  isTwoFactorEnabled Boolean      @default(false)
   twoFactorSecret    String?
-  isDisabled         Boolean   @default(false) // Phase 5 Suspension Support
+  isDisabled         Boolean      @default(false) // Phase 5 Suspension Support
 
   // Plugin Identity Mapping
-  isBot               Boolean   @default(false)
-  botPluginIdentifier String?   @unique
+  isBot               Boolean @default(false)
+  botPluginIdentifier String? @unique
 
   // Browser Notification Preferences
   browserNotificationsEnabled Boolean @default(false)
@@ -147,27 +147,27 @@ model User {
   apiTokens ApiToken[]
 
   // Relations for OpenTicket
-  reportedIncidents Incident[]   @relation("Reporter")
-  assignedIncidents Incident[]   @relation("IncidentAssignees")
-  assignedVulnerabilities Vulnerability[] @relation("VulnAssignees")
-  comments          Comment[]
-  auditLogs         AuditLog[]
-  attachments       Attachment[]
-  notifications     UserNotification[]
-  createdInvitations Invitation[] @relation("UserCreatesInvitations")
+  reportedIncidents       Incident[]         @relation("Reporter")
+  assignedIncidents       Incident[]         @relation("IncidentAssignees")
+  assignedVulnerabilities Vulnerability[]    @relation("VulnAssignees")
+  comments                Comment[]
+  auditLogs               AuditLog[]
+  attachments             Attachment[]
+  notifications           UserNotification[]
+  createdInvitations      Invitation[]       @relation("UserCreatesInvitations")
 }
 
 model UserNotification {
-  id          String   @id @default(cuid())
-  userId      String
-  title       String
-  body        String
-  link        String?
-  isRead      Boolean  @default(false)
-  isPushed    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  link      String?
+  isRead    Boolean  @default(false)
+  isPushed  Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -191,11 +191,18 @@ model PasswordResetToken {
 // Global Configuration (Singleton Model)
 // -----------------------------------------------------------------------------
 
+enum MailerProvider {
+  SMTP
+  RESEND
+  SENDGRID
+}
+
 model SystemSetting {
-  id                String  @id @default("global") // Enforce singleton
-  allowRegistration Boolean @default(true)
-  requireGlobal2FA  Boolean @default(false)
-  defaultUserRoles  CustomRole[] @relation("DefaultUserRoles")
+  id                 String       @id @default("global") // Enforce singleton
+  allowRegistration  Boolean      @default(true)
+  allowPasswordReset Boolean      @default(true)
+  requireGlobal2FA   Boolean      @default(false)
+  defaultUserRoles   CustomRole[] @relation("DefaultUserRoles")
 
   webhookUrl     String?
   webhookEnabled Boolean @default(false)
@@ -207,18 +214,27 @@ model SystemSetting {
   slaLowHours      Int @default(168)
   slaInfoHours     Int @default(720)
 
+  // Vulnerability SLA Matrix Config (Hours)
+  vulnSlaCriticalHours Int @default(12)
+  vulnSlaHighHours     Int @default(48)
+  vulnSlaMediumHours   Int @default(168)
+  vulnSlaLowHours      Int @default(336)
+  vulnSlaInfoHours     Int @default(720)
+
   // Rate Limiting Config
   rateLimitEnabled     Boolean @default(true)
   rateLimitWindowMs    Int     @default(900000) // 15 minutes default
   rateLimitMaxAttempts Int     @default(5)
 
-  // SMTP Configuration
-  smtpEnabled          Boolean @default(false)
-  smtpHost             String?
-  smtpPort             Int?
-  smtpUser             String?
-  smtpPassword         String?
-  smtpFrom             String?
+  // Mailer Configuration
+  mailerProvider MailerProvider @default(SMTP)
+  mailerApiKey   String?
+  smtpEnabled    Boolean        @default(false)
+  smtpHost       String?
+  smtpPort       Int?
+  smtpUser       String?
+  smtpPassword   String?
+  smtpFrom       String?
 
   // SMTP Event Triggers
   smtpTriggerOnCritical         Boolean @default(true)
@@ -230,12 +246,12 @@ model SystemSetting {
   smtpTriggerOnNewVulnerability Boolean @default(true)
 
   // Auth Enforcements
-  requireEmailVerification      Boolean @default(false)
-  systemPlatformUrl             String  @default("http://localhost:3000")
+  requireEmailVerification Boolean @default(false)
+  systemPlatformUrl        String  @default("http://localhost:3000")
 
   // SOAR Automations
-  soarAutoQuarantineEnabled     Boolean @default(true)
-  soarAutoQuarantineThreshold   Severity @default(CRITICAL)
+  soarAutoQuarantineEnabled   Boolean  @default(true)
+  soarAutoQuarantineThreshold Severity @default(CRITICAL)
 
   updatedAt DateTime @updatedAt
 }
@@ -258,12 +274,12 @@ enum AssetType {
   ENDPOINT
   NETWORK
   SOFTWARE
-  REPOSITORY      // Added for GitHub / GitLab / Source Control
-  CLOUD_RESOURCE  // Added for AWS / Azure / GCP resources
-  DOMAIN          // Added for URLs and DNS names
-  IAM_ROLE        // Added for Identity and Access Management
-  SAAS_APP        // Added for external SaaS identities
-  CONTAINER       // Added for Docker / K8s
+  REPOSITORY // Added for GitHub / GitLab / Source Control
+  CLOUD_RESOURCE // Added for AWS / Azure / GCP resources
+  DOMAIN // Added for URLs and DNS names
+  IAM_ROLE // Added for Identity and Access Management
+  SAAS_APP // Added for external SaaS identities
+  CONTAINER // Added for Docker / K8s
   OTHER
 }
 
@@ -275,20 +291,20 @@ enum AssetStatus {
 }
 
 model Asset {
-  id        String      @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  type      AssetType   @default(OTHER)
+  type      AssetType @default(OTHER)
   ipAddress String?
-  
+
   // Phase 5: Virtual Asset Compatibility
-  externalId String?    // Used to uniquely identify assets coming from outside (e.g., github repo URLs, AWS ARNs)
-  metadata   Json?      // Highly flexible JSON column for plugin-specific data (e.g. { "language": "TypeScript", "visibility": "public" })
+  externalId String? // Used to uniquely identify assets coming from outside (e.g., github repo URLs, AWS ARNs)
+  metadata   Json? // Highly flexible JSON column for plugin-specific data (e.g. { "language": "TypeScript", "visibility": "public" })
 
   status    AssetStatus @default(ACTIVE)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
-  incidents       Incident[]
+  incidents           Incident[]           @relation("IncidentAssets")
   vulnerabilityAssets VulnerabilityAsset[]
 
   @@index([name])
@@ -309,13 +325,13 @@ enum VulnAssetStatus {
 }
 
 model VulnerabilityAsset {
-  id      String @id @default(cuid())
-  vulnId  String
-  assetId String
-  status  VulnAssetStatus @default(AFFECTED)
-  notes   String? @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String          @id @default(cuid())
+  vulnId    String
+  assetId   String
+  status    VulnAssetStatus @default(AFFECTED)
+  notes     String?         @db.Text
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   vulnerability Vulnerability @relation(fields: [vulnId], references: [id], onDelete: Cascade)
   asset         Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
@@ -336,9 +352,9 @@ model Vulnerability {
   targetSlaDate DateTime?
 
   vulnerabilityAssets VulnerabilityAsset[]
-  attachments    Attachment[]
-  assignees User[] @relation("VulnAssignees")
-  comments Comment[]
+  attachments         Attachment[]
+  assignees           User[]               @relation("VulnAssignees")
+  comments            Comment[]
 
   @@index([severity])
   @@index([status])
@@ -382,12 +398,11 @@ model Incident {
   reporterId String?
   reporter   User?   @relation("Reporter", fields: [reporterId], references: [id], onDelete: SetNull)
 
-  tags        String[]       @default([])
+  tags String[] @default([])
 
   assignees User[] @relation("IncidentAssignees")
 
-  assetId String?
-  asset   Asset?  @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  assets Asset[] @relation("IncidentAssets")
 
   targetSlaDate DateTime?
 
@@ -442,19 +457,20 @@ model Attachment {
   uploaderId String?
   uploader   User?   @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
 }
+
 // -----------------------------------------------------------------------------
 // Machine-to-Machine Authenticators
 // -----------------------------------------------------------------------------
 
 model ApiToken {
-  id          String    @id @default(cuid())
-  name        String
-  tokenHash   String    @unique
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  expiresAt   DateTime?
-  lastUsedAt  DateTime?
+  id         String    @id @default(cuid())
+  name       String
+  tokenHash  String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
 
   @@index([tokenHash])
 }
@@ -476,14 +492,14 @@ model PluginState {
 // -----------------------------------------------------------------------------
 
 model MetricSnapshot {
-  id          String   @id @default(cuid())
-  timestamp   DateTime // Defines the 30-min window
-  scopeType   String   // 'GLOBAL' or 'USER'
-  scopeId     String   // 'ALL' or user_id
-  
-  payload     String   @db.Text // JSON with detailed active counts and rates
-  
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  timestamp DateTime // Defines the 30-min window
+  scopeType String // 'GLOBAL' or 'USER'
+  scopeId   String // 'ALL' or user_id
+
+  payload String @db.Text // JSON with detailed active counts and rates
+
+  createdAt DateTime @default(now())
 
   @@unique([timestamp, scopeType, scopeId])
   @@index([timestamp])
@@ -497,6 +513,5 @@ model Invitation {
   createdAt   DateTime @default(now())
   createdById String
 
-  createdBy   User     @relation("UserCreatesInvitations", fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy User @relation("UserCreatesInvitations", fields: [createdById], references: [id], onDelete: Cascade)
 }
-

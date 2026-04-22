@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { PrismaClient, Permission } from '@prisma/client';
 import fs from 'fs';
-import { execSync } from 'child_process';
 
 const backupFile = './role-backup.json';
 
@@ -19,49 +18,16 @@ async function main() {
   const prisma = new PrismaClient();
 
   try {
-    console.log("[1/5] Connecting to database to check existing roles...");
-
-    let backups: any[] = [];
+    console.log("[1/3] Checking if migration is already applied...");
     
-    // Check if the 'role' column still exists on User table using raw SQL
-    try {
-      const usersWithOldRole: any[] = await prisma.$queryRawUnsafe(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name='User' AND column_name='role';
-      `);
-      
-      if (usersWithOldRole && usersWithOldRole.length > 0) {
-        console.log("      Found legacy 'role' EnumArray. Extracting user roles...");
-        const rolesQuery: any[] = await prisma.$queryRawUnsafe(`SELECT id, role FROM "User";`);
-        backups = rolesQuery;
-
-        fs.writeFileSync(backupFile, JSON.stringify(backups, null, 2));
-        console.log(`      ✅ Successfully backed up ${backups.length} user roles to ${backupFile}.`);
-      }
-    } catch (e) {
-      console.log("      Query inspection failed or column disappeared. Assumed already migrated.");
+    const existingAdminRole = await prisma.customRole.findUnique({ where: { name: 'System Administrator' } });
+    if (existingAdminRole && !fs.existsSync(backupFile)) {
+       console.log("      [SKIPPED] Custom Roles already exist and no backup file found.");
+       console.log("🎉 Upgrade to v0.4.0 already applied. Safe to proceed.\n");
+       return;
     }
 
-    if (backups.length === 0) {
-      if (fs.existsSync(backupFile)) {
-         console.log("      Legacy 'role' column already dropped, but found local backup file. Resuming from backup.");
-         backups = JSON.parse(fs.readFileSync(backupFile, 'utf-8'));
-      } else {
-         console.log("      ✅ Legacy 'role' column is already migrated, and no backup file found. Safe to proceed.");
-      }
-    }
-
-    console.log("\n[2/5] Running Prisma database schema migrations...");
-    try {
-      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-      console.log("      ✅ Migrations applied successfully.");
-    } catch (e) {
-      console.error("❌ ERROR: Failed to apply database migrations.");
-      process.exit(1);
-    }
-
-    console.log("\n[3/5] Seeding Global Custom Roles (Granular Permission Matrix)...");
+    console.log("[2/3] Seeding Global Custom Roles (Granular Permission Matrix)...");
     
     // Seed standard base roles
     const systemRoles = {
@@ -83,51 +49,46 @@ async function main() {
     }
     console.log("      ✅ Custom Roles synchronized in the database.");
 
-    console.log("\n[4/5] Restoring user roles from legacy to new relation...");
+    console.log("\n[3/3] Restoring user roles from legacy backup...");
     
-    if (backups.length > 0) {
-      let migratedCount = 0;
-      for (const user of backups) {
-        if (!user.role || !Array.isArray(user.role)) continue;
+    if (fs.existsSync(backupFile)) {
+      const backups = JSON.parse(fs.readFileSync(backupFile, 'utf-8'));
+      if (backups && backups.length > 0) {
+        let migratedCount = 0;
+        for (const user of backups) {
+          if (!user.role || !Array.isArray(user.role)) continue;
 
-        const roleIdsToConnect = user.role
-          .map((r: string) => roleMap[r])
-          .filter(Boolean)
-          .map((id: string) => ({ id }));
+          const roleIdsToConnect = user.role
+            .map((r: string) => roleMap[r])
+            .filter(Boolean)
+            .map((id: string) => ({ id }));
 
-        if (roleIdsToConnect.length > 0) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              customRoles: {
-                connect: roleIdsToConnect
+          if (roleIdsToConnect.length > 0) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                customRoles: {
+                  connect: roleIdsToConnect
+                }
               }
-            }
-          });
-          migratedCount++;
+            });
+            migratedCount++;
+          }
         }
+        console.log(`      ✅ Successfully migrated privileges for ${migratedCount} users.`);
+      } else {
+        console.log("      ✅ Backup artifact is empty.");
       }
-      console.log(`      ✅ Successfully migrated privileges for ${migratedCount} users.`);
       
       // Cleanup backup file
       fs.unlinkSync(backupFile);
       console.log("      ✅ Backup artifact cleaned up.");
     } else {
-      console.log("      ✅ No user restorations needed.");
-    }
-
-    console.log("\n[5/5] Rebuilding Prisma Client schemas...");
-    try {
-      execSync('npx prisma generate', { stdio: 'inherit' });
-      console.log("      ✅ Prisma Client generated.");
-    } catch (e) {
-      console.error("❌ ERROR: Failed to generate Prisma client.");
-      process.exit(1);
+      console.log("      ✅ No backup file found. No user restorations needed.");
     }
 
     console.log("\n====================================================");
     console.log("🎉 Upgrade to v0.4.0 Complete! 🎉");
-    console.log("You can now safely run 'npm run dev' or deploy to production.");
     console.log("====================================================\n");
 
   } catch (error) {

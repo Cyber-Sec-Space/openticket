@@ -4,6 +4,8 @@ import { hasPermission } from "@/lib/auth-utils"
 import { redirect } from "next/navigation"
 import { activePlugins } from "@/plugins"
 import { PluginCard } from "../plugin-card"
+import { parsePluginConfig } from "@/lib/plugins/crypto"
+import { getGlobalSettings } from "@/lib/settings";
 
 // We define the registry interface based on the latest JSON schema
 interface RegistryPluginVersion {
@@ -32,15 +34,18 @@ export const dynamic = "force-dynamic";
 
 export default async function PluginStorePage() {
   const session = await auth()
-  if (!session?.user?.id || !hasPermission(session as any, 'VIEW_PLUGINS')) {
+  if (!session?.user?.id || !hasPermission(session, 'VIEW_PLUGINS')) {
     redirect("/")
   }
 
   const dbStates = await db.pluginState.findMany();
+  const settings = await getGlobalSettings();
   
   let registryPlugins: RegistryPlugin[] = [];
   try {
     let rawData: any;
+    
+    let fetched = false;
     
     // Developer Sandbox: Resolve from local filesystem if in dev mode
     if (process.env.NODE_ENV !== "production") {
@@ -49,15 +54,19 @@ export default async function PluginStorePage() {
       const localRegistryPath = path.resolve(process.cwd(), "../openticket-plugin-registry/registry.json");
       if (fs.existsSync(localRegistryPath)) {
         rawData = JSON.parse(await fs.promises.readFile(localRegistryPath, "utf-8"));
+        fetched = true;
       } else {
-        console.error("Local dev registry not found at", localRegistryPath);
+        console.warn(`[DEV] Local dev registry not found at ${localRegistryPath}. Falling back to remote production registry...`);
       }
-    } else {
-      const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { cache: "no-store" });
+    }
+    
+    if (!fetched) {
+      // Use ISR caching (revalidate every 300 seconds / 5 minutes) to avoid GitHub Rate Limiting
+      const res = await fetch("https://raw.githubusercontent.com/Cyber-Sec-Space/openticket-plugin-registry/main/registry.json", { next: { revalidate: 300 } });
       if (res.ok) {
         rawData = await res.json();
       } else {
-        console.error("Failed to fetch registry list", res.status);
+        console.error("Failed to fetch registry list data:", res.status);
       }
     }
       
@@ -91,10 +100,17 @@ export default async function PluginStorePage() {
             const isLocal = !!activePluginNode;
 
             // Merge registry metadata upwards to perfectly match the expected `OpenTicketPlugin['manifest']` shape for PluginCard
-            const cardManifest = activePluginNode ? activePluginNode.manifest : {
+            const cardManifest = activePluginNode ? {
+              ...plugin,
+              ...activePluginNode.manifest,
+              signature: activePluginNode.manifest.signature || (plugin.versions[plugin.latestVersion] as any)?.integritySha256,
+              supportedPluginApiVersion: activePluginNode.manifest.supportedPluginApiVersion || plugin.versions[plugin.latestVersion]?.supportedPluginApiVersion
+            } : {
               ...plugin,
               version: plugin.latestVersion,
-              requestedPermissions: plugin.versions[plugin.latestVersion]?.requestedPermissions || []
+              requestedPermissions: plugin.versions[plugin.latestVersion]?.requestedPermissions || [],
+              supportedPluginApiVersion: plugin.versions[plugin.latestVersion]?.supportedPluginApiVersion || [],
+              signature: (plugin.versions[plugin.latestVersion] as any)?.integritySha256 || (plugin as any).signature
             };
 
             return (
@@ -102,11 +118,12 @@ export default async function PluginStorePage() {
                 key={plugin.id} 
                 manifest={cardManifest as any} 
                 isActive={state?.isActive || false} 
-                configJson={state?.configJson || null}
+                configJson={state?.configJson ? JSON.stringify(parsePluginConfig(state.configJson)) : null}
                 layout="grid"
                 versions={plugin.versions}
                 latestVersion={plugin.latestVersion}
                 isLocal={isLocal}
+                systemPlatformUrl={settings?.systemPlatformUrl || "http://localhost:3000"}
               />
             )
           })}

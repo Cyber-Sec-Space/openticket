@@ -1,10 +1,13 @@
 import { Sidebar } from "@/components/layout/Sidebar"
 import { MobileNav } from "@/components/layout/MobileNav"
+import { NavigationProvider, NavigationContent } from "@/components/layout/NavigationProvider"
 import { auth, signOut } from "@/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { BrowserNotifier } from "@/components/browser-notifier"
 import { TwoFactorPanel } from "./settings/two-factor-panel"
+
+export const dynamic = 'force-dynamic'
 
 export default async function DashboardLayout({
   children,
@@ -12,7 +15,9 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
+  console.log(`[LAYOUT] Session User ID: ${session?.user?.id || 'null'}`);
   if (!session?.user?.id) {
+    console.log(`[LAYOUT] Redirecting to clearsession...`);
     redirect("/login?clearsession=true")
   }
 
@@ -67,20 +72,24 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <BrowserNotifier isEnabled={userConfig.browserNotificationsEnabled || false} />
-      <div className="block md:hidden">
-        <MobileNav userPermissions={session?.user?.permissions as string[]} enabledPlugins={enabledPlugins} />
-      </div>
-      <div className="flex w-full min-h-screen">
-        <Sidebar userPermissions={session?.user?.permissions as string[]} enabledPlugins={enabledPlugins} />
-        <main className="flex-1 w-full min-w-0 md:pl-64 flex flex-col relative animate-fade-in-up min-h-[100dvh]">
-          <div className="flex-1 flex flex-col w-full h-full">
-            {children}
-          </div>
-          <footer className="w-full py-6 mt-auto border-t border-white/5 bg-black/10">
-            <p className="opacity-50 text-xs text-center font-mono text-white/80">Copyright © 2026 Cyber Sec Space. All rights reserved.</p>
-          </footer>
-        </main>
-      </div>
+      <NavigationProvider>
+        <div className="block md:hidden">
+          <MobileNav userPermissions={session?.user?.permissions as string[]} enabledPlugins={enabledPlugins} />
+        </div>
+        <div className="flex w-full min-h-screen">
+          <Sidebar userPermissions={session?.user?.permissions as string[]} enabledPlugins={enabledPlugins} />
+          <main className="flex-1 w-full min-w-0 md:pl-64 flex flex-col relative animate-fade-in-up min-h-[100dvh]">
+            <NavigationContent>
+              <div className="flex-1 flex flex-col w-full h-full">
+                {children}
+              </div>
+            </NavigationContent>
+            <footer className="w-full py-6 mt-auto border-t border-white/5 bg-black/10">
+              <p className="opacity-50 text-xs text-center font-mono text-white/80">Copyright © 2026 Cyber Sec Space. All rights reserved.</p>
+            </footer>
+          </main>
+        </div>
+      </NavigationProvider>
     </div>
   )
 }
