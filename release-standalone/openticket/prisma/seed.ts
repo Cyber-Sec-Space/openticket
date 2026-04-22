@@ -148,8 +148,8 @@ async function main() {
     { name: 'AWS-S3-BUCKET-DATA', type: AssetType.OTHER, ipAddress: '', status: AssetStatus.ACTIVE },
   ];
 
-  // Sprinkle 25 endpoints dynamically
-  for (let i = 1; i <= 25; i++) {
+  // Sprinkle 986 endpoints dynamically to hit 1000 assets total
+  for (let i = 1; i <= 986; i++) {
     const status = Math.random() < 0.1 ? AssetStatus.COMPROMISED : (Math.random() < 0.2 ? AssetStatus.INACTIVE : AssetStatus.ACTIVE);
     assetData.push({
       name: `EMPLOYEE-${Math.random() > 0.5 ? 'WIN' : 'MAC'}-${i.toString().padStart(3, '0')}`,
@@ -182,7 +182,8 @@ async function main() {
     { title: 'Outdated jQuery Library', cveId: '', score: 4.3, severity: Severity.LOW, desc: 'jQuery version is vulnerable to XSS.' },
   ];
 
-  for (const bp of vulnBlueprints) {
+  for (let i = 0; i < 5000; i++) {
+    const bp = vulnBlueprints[Math.floor(Math.random() * vulnBlueprints.length)];
     // Pick random assets
     const affected = assets.filter(() => Math.random() > 0.85); // 15% chance to link any given asset
     const assignees = allUsers.filter(() => Math.random() > 0.7); // 30% chance for users to be assigned
@@ -215,7 +216,7 @@ async function main() {
   }
 
   // 4. Create Incidents
-  console.log("Generating 10000 incidents over 30 days of telemetry...")
+  console.log("Generating 5000 incidents over 30 days of telemetry...")
 
   const incidentTemplates = [
     { title: 'Suspicious East-West DB Traffic', type: IncidentType.DATA_BREACH, severity: Severity.CRITICAL },
@@ -245,7 +246,7 @@ async function main() {
 
   const statuses = [IncidentStatus.NEW, IncidentStatus.IN_PROGRESS, IncidentStatus.PENDING_INFO, IncidentStatus.RESOLVED, IncidentStatus.CLOSED]
 
-  for (let i = 0; i < 10000; i++) {
+  for (let i = 0; i < 5000; i++) {
     const template = incidentTemplates[Math.floor(Math.random() * incidentTemplates.length)]
     const asset = assets[Math.floor(Math.random() * assets.length)]
     const status = statuses[Math.floor(Math.random() * statuses.length)]
@@ -324,7 +325,7 @@ async function main() {
     }
   }
 
-  console.log(`Massive DB Injection Completed Fully! 150 incidents generated.`)
+  console.log(`Massive DB Injection Completed Fully! 5000 incidents generated.`)
 }
 
 main()
